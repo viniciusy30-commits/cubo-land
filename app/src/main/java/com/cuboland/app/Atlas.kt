@@ -168,7 +168,7 @@ object Atlas {
 
     private fun water(u: Float, v: Float): Int {
         val k = 0.5f + 0.5f * sin((u + v) * TAU * 2f + vn(u, v, 3, 3, 50) * 3f)
-        return lerp(lerp(0x84D8F2, 0xA9ECFB, k), 0xFFFFFF, sm(0.9f, 1f, k) * 0.55f)
+        return lerp(lerp(0x6FCDEB, 0x94E0F6, k), 0xFFFFFF, sm(0.93f, 1f, k) * 0.25f)
     }
 
     private fun candy(u: Float, v: Float, col: Int): Int {

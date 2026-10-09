@@ -5,6 +5,8 @@ import java.util.Random
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 import kotlin.math.floor
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlin.math.sqrt
 
 object B {
@@ -55,7 +57,7 @@ class World {
         const val CX = SX / CH; const val CZ = SZ / CH; const val WATER_Y = 9
         val CU = intArrayOf(0, 1); val CV = intArrayOf(0, 1)
         val QU = intArrayOf(0, 1, 1, 0); val QV = intArrayOf(0, 0, 1, 1)
-        val AOB = floatArrayOf(0.74f, 0.83f, 0.92f, 1f)
+        val AOB = floatArrayOf(0.86f, 0.91f, 0.96f, 1f)
     }
 
     val blocks = ByteArray(SX * SY * SZ)
@@ -171,6 +173,25 @@ class World {
         out[0] = ((c shr 16) and 255) / 255f * sh; out[1] = ((c shr 8) and 255) / 255f * sh; out[2] = (c and 255) / 255f * sh
     }
 
+    /** bolota de folhas (esfera lowpoly com normal p/ luz): dá volume 3D à copa */
+    private fun puff(o: MeshBuf, cx: Float, cy: Float, cz: Float, r: Float, n: Int, m: Int, rot: Float, vr: Float) {
+        for (j in 0..m) {
+            val th = 3.14159f * j / m
+            for (i in 0..n) {
+                val ph = rot + 6.28318f * i / n
+                val nx = sin(th) * cos(ph); val ny = cos(th); val nz = sin(th) * sin(ph)
+                val sh = (0.68f + 0.32f * (0.5f + 0.5f * ny)) * vr
+                o.vert(cx + r * nx, cy + r * 0.92f * ny, cz + r * nz, sh, sh, sh, (8 + 0.01f + 0.98f * i / n) / Atlas.NT, 0.01f + 0.98f * j / m)
+            }
+        }
+        val w = n + 1
+        for (j in 0 until m) for (i in 0 until n) {
+            val a = j * w + i; val b = a + 1; val c = a + w; val d = c + 1
+            o.tri(a, b, c); o.tri(b, d, c)
+        }
+        o.vc += (m + 1) * w
+    }
+
     fun buildChunk(cx: Int, cz: Int, o: MeshBuf, w: MeshBuf) {
         o.clear(); w.clear()
         val c = IntArray(3); val p = FloatArray(3); val col = FloatArray(3); val ao = FloatArray(4)
@@ -181,6 +202,21 @@ class World {
             val lowered = isW && get(x, y + 1, z) == B.AIR
             val vr = 0.94f + 0.06f * hash(x, z, y)
             c[0] = x; c[1] = y; c[2] = z
+            if (id == B.LEAVES) {
+                val ddx = intArrayOf(1, -1, 0, 0, 0, 0); val ddy = intArrayOf(0, 0, 1, -1, 0, 0); val ddz = intArrayOf(0, 0, 0, 0, 1, -1)
+                var open = false
+                for (k in 0 until 6) { val nn = get(x + ddx[k], y + ddy[k], z + ddz[k]); if (nn == B.AIR || nn == B.WATER) open = true }
+                if (open && o.vc < 56000) {
+                    val jx = (hash(x, z, y + 21) - 0.5f) * 0.2f; val jy = (hash(x, z, y + 22) - 0.5f) * 0.2f; val jz = (hash(x, z, y + 23) - 0.5f) * 0.2f
+                    puff(o, x + 0.5f + jx, y + 0.5f + jy, z + 0.5f + jz, 0.68f, 10, 6, hash(x, z, y + 24) * 6.28f, vr)
+                    for (k in 0 until 6) {
+                        val nn = get(x + ddx[k], y + ddy[k], z + ddz[k])
+                        if (nn == B.AIR || nn == B.WATER)
+                            puff(o, x + 0.5f + ddx[k] * 0.4f + jx, y + 0.5f + ddy[k] * 0.4f + jy, z + 0.5f + ddz[k] * 0.4f + jz, 0.4f, 7, 5, hash(x, z, y + 30 + k) * 6.28f, vr)
+                    }
+                }
+                continue
+            }
             if (id == B.GRASS && get(x, y + 1, z) == B.AIR) {
                 val r = hash(x, z, 3)
                 if (r > 0.55f) {

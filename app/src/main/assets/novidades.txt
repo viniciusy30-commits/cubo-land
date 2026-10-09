@@ -1,3 +1,12 @@
+#id 2026-10-09-f
+#titulo Árvores fofas e água viva!
+- Copas das árvores em tufos 3D redondinhos, com volume e florzinhas
+- Água com ondas, brilhos que cintilam e movimento suave
+- Embaixo d'água: tudo fica azulado, com névoa e luz dançando
+- Mão fechada de verdade: dedos enrolados e polegar segurando o cabo
+- Blocos seguros pela palma, com os dedos por trás
+- Sombras dos cantos bem mais suaves
+
 #id 2026-10-09-e
 #titulo Mundo fofinho e pastel!
 - Visual novo todo em tons pastel, liso e sem granulado

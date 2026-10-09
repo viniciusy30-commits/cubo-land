@@ -15,7 +15,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     private var prog = 0
     private var aPos = 0; private var aCol = 0; private var aUV = 0
     private var uVP = 0; private var uModel = 0; private var uCam = 0; private var uTint = 0
-    private var uTime = 0; private var uWind = 0; private var uAlpha = 0; private var uFog = 0; private var uTex = 0
+    private var uTime = 0; private var uWind = 0; private var uUnder = 0; private var uAlpha = 0; private var uFog = 0; private var uTex = 0
     private val proj = FloatArray(16); private val view = FloatArray(16); private val vp = FloatArray(16)
     private val ident = FloatArray(16)
     private val tmp = FloatArray(16); private val base = FloatArray(16); private val arm = FloatArray(16)
@@ -34,7 +34,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     private var prevYaw = 0f; private var prevPitch = 0f; private var swayX = 0f; private var swayY = 0f
 
     private val VS = """
-        uniform mat4 uVP; uniform mat4 uModel; uniform vec3 uCam; uniform float uTime; uniform float uWind;
+        uniform mat4 uVP; uniform mat4 uModel; uniform vec3 uCam; uniform float uTime; uniform float uWind; uniform float uUnder;
         attribute vec3 aPos; attribute vec3 aCol; attribute vec2 aUV;
         varying vec3 vCol; varying float vFog; varying vec2 vUV; varying vec3 vWP; varying float vTile;
         void main() {
@@ -51,30 +51,43 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                     wp.z += cos(uTime * 1.4 + wp.y * 1.1 + wp.x * 0.8) * 0.04 * gust;
                     wp.y += sin(uTime * 2.1 + wp.x * 1.2 + wp.z) * 0.018;
                 } else if (tile == 10.0) {
-                    wp.y += sin(uTime * 1.6 + wp.x * 1.1) * 0.03 + cos(uTime * 1.3 + wp.z * 1.4) * 0.03;
+                    wp.y += sin(uTime * 1.8 + wp.x * 1.3 + wp.z * 0.7) * 0.05 + cos(uTime * 1.4 + wp.z * 1.5 - wp.x * 0.6) * 0.04;
                 }
             }
             gl_Position = uVP * wp;
             vCol = aCol; vUV = aUV; vWP = wp.xyz; vTile = tile;
-            vFog = clamp((length(wp.xyz - uCam) - 38.0) / 52.0, 0.0, 1.0);
+            vFog = clamp((length(wp.xyz - uCam) - mix(38.0, 1.0, uUnder)) / mix(52.0, 22.0, uUnder), 0.0, 1.0);
             vFog = vFog * vFog * (3.0 - 2.0 * vFog);
         }"""
     private val FS = """
         precision mediump float;
-        uniform vec3 uTint; uniform vec3 uFog; uniform float uAlpha; uniform sampler2D uTex; uniform float uTime;
+        uniform vec3 uTint; uniform vec3 uFog; uniform float uAlpha; uniform sampler2D uTex; uniform float uTime; uniform float uUnder;
         varying vec3 vCol; varying float vFog; varying vec2 vUV; varying vec3 vWP; varying float vTile;
         void main() {
-            vec4 t = texture2D(uTex, vUV);
+            vec2 uv = vUV;
+            if (vTile > 9.5 && vTile < 10.5) {
+                uv += vec2(sin(vWP.z * 2.0 + uTime * 1.2), cos(vWP.x * 2.0 + uTime)) * 0.006;
+                uv = vec2(clamp(uv.x, 10.012 / 32.0, 10.988 / 32.0), clamp(uv.y, 0.012, 0.988));
+            }
+            vec4 t = texture2D(uTex, uv);
             if (t.a < 0.4) discard;
             float l = clamp((vCol.r - 0.3) / 0.7, 0.0, 1.0);
             vec3 light = mix(vec3(0.80, 0.84, 1.0), vec3(1.05, 1.02, 0.95), l);
             vec3 c = t.rgb * vCol * uTint * light * 1.06;
             if (vTile > 7.5 && vTile < 8.5) c *= 1.1 + 0.1 * sin(vWP.x * 0.7 + vWP.z * 0.5 + uTime * 0.8);
             if (vTile > 9.5 && vTile < 10.5) {
-                float sp = pow(0.5 + 0.5 * sin(vWP.x * 1.1 + vWP.z * 0.8 + uTime * 1.3), 14.0);
-                c = mix(c, vec3(0.8, 0.93, 1.0), 0.15) + vec3(1.0) * sp * 0.15;
+                float a = sin(vWP.x * 4.0 + uTime * 1.6 + sin(vWP.z * 1.7 + uTime * 0.8) * 1.5);
+                float b = sin(vWP.z * 3.7 - uTime * 1.3 + sin(vWP.x * 1.9 + uTime * 0.7) * 1.5);
+                float gl = smoothstep(0.62, 0.9, a * b);
+                float sw = 0.5 + 0.5 * sin(vWP.x * 0.9 + vWP.z * 0.7 + uTime * 0.9);
+                c = mix(c, vec3(0.62, 0.9, 1.0), 0.16 + 0.12 * sw) + vec3(1.0) * gl * 0.3;
             }
             if (vTile > 14.5 && vTile < 15.5) c = t.rgb * 1.25;
+            if (uUnder > 0.5) {
+                c *= vec3(0.78, 0.95, 1.05);
+                float k1 = sin(vWP.x * 3.0 + uTime * 1.5) + sin(vWP.z * 3.3 - uTime * 1.2) + sin((vWP.x + vWP.z) * 2.0 + uTime);
+                c += vec3(0.6, 0.9, 1.0) * pow(max(0.0, k1 * 0.33), 3.0) * 0.5;
+            }
             float g = dot(c, vec3(0.299, 0.587, 0.114));
             c = mix(vec3(g), c, 1.04); c = mix(c, vec3(1.0, 0.98, 0.97), 0.05);
             c = mix(c, uFog, vFog);
@@ -122,7 +135,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         uVP = G.glGetUniformLocation(prog, "uVP"); uModel = G.glGetUniformLocation(prog, "uModel")
         uCam = G.glGetUniformLocation(prog, "uCam"); uTint = G.glGetUniformLocation(prog, "uTint")
         uAlpha = G.glGetUniformLocation(prog, "uAlpha"); uFog = G.glGetUniformLocation(prog, "uFog")
-        uTex = G.glGetUniformLocation(prog, "uTex"); uTime = G.glGetUniformLocation(prog, "uTime"); uWind = G.glGetUniformLocation(prog, "uWind")
+        uTex = G.glGetUniformLocation(prog, "uTex"); uTime = G.glGetUniformLocation(prog, "uTime"); uWind = G.glGetUniformLocation(prog, "uWind"); uUnder = G.glGetUniformLocation(prog, "uUnder")
         skyProg = G.glCreateProgram()
         G.glAttachShader(skyProg, shader(G.GL_VERTEX_SHADER, SVS)); G.glAttachShader(skyProg, shader(G.GL_FRAGMENT_SHADER, SFS))
         G.glLinkProgram(skyProg)
@@ -243,7 +256,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val glint = 0.5f + 0.5f * sin(t * 3f)
         when {
             id in 1..13 -> {
-                box(m, 0f, 0.1f, 0.2f, 0f, 30f, 0.27f, 0.27f, 0.27f, 0f, 0xFFFFFF, 1f, 1f, null, id)
+                box(m, 0f, 0.1f, 0.2f, 0f, 30f, 0.28f, 0.28f, 0.28f, 0f, 0xFFFFFF, 1f, 1f, null, id)
             }
             id == Items.SWORD -> {
                 box(m, 0f, 0f, 0.55f, 0f, 0f, 0.115f, 0.03f, 0.78f, 0f, 0xD7E4F4)        // lâmina
@@ -373,6 +386,23 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         box(base, 0.3f * sxz, y - 0.1f * sy, 0.4f * sxz, 0f, 0f, 0.1f, 0.05f, 0.03f, 0f, 0xFF8FA8, 0.8f)
     }
 
+    /** punho fechado: palma + 4 dedos enrolados no cabo + polegar por cima (cabo em +Z passa por dentro) */
+    private fun drawFist(m: FloatArray) {
+        val skin = 0xF2C29B; val skinD = 0xE2AE86
+        box(m, 0f, -0.02f, -0.045f, 0f, 0f, 0.15f, 0.12f, 0.19f, 0f, skinD)
+        for (k in 0 until 4) box(m, 0f, 0.05f, -0.115f + k * 0.05f, 0f, 0f, 0.17f, 0.09f, 0.046f, 0f, if (k % 2 == 0) skin else 0xEDB78F)
+        box(m, 0.025f, 0.108f, -0.02f, 0f, 0f, 0.055f, 0.05f, 0.15f, 0f, skin)
+        box(m, 0.025f, 0.108f, 0.06f, 0f, 0f, 0.05f, 0.045f, 0.03f, 0f, 0xF8D2B2)
+    }
+
+    /** mão segurando bloco: palma por baixo, dedos subindo pela parte de trás e polegar do lado */
+    private fun drawBlockHand(m: FloatArray) {
+        val skin = 0xF2C29B
+        box(m, 0f, -0.08f, 0.16f, 0f, 0f, 0.17f, 0.07f, 0.19f, 0f, skin)
+        for (k in 0 until 4) box(m, -0.06f + k * 0.04f, -0.01f, 0.05f, 0f, 0f, 0.034f, 0.13f, 0.042f, 0f, if (k % 2 == 0) skin else 0xEDB78F)
+        box(m, 0.17f, -0.01f, 0.2f, 0f, 0f, 0.045f, 0.045f, 0.13f, 0f, skin)
+    }
+
     private fun drawHand(dt: Float) {
         G.glClear(G.GL_DEPTH_BUFFER_BIT)
         G.glUniformMatrix4fv(uVP, 1, false, proj, 0); G.glUniform3f(uCam, 0f, 0f, 0f)
@@ -394,17 +424,16 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val rest = if (id in 1..13) -12f else -20f
         Matrix.rotateM(fp, 0, rest + swingDelta(id, game.swing), 1f, 0f, 0f)
         if (game.swing < 1f) Matrix.rotateM(fp, 0, -sin(game.swing * 3.1416f) * 14f, 0f, 1f, 0f)
-        val skin = 0xF2C29B; val skinD = 0xD9A27A
+        val skin = 0xF2C29B
         box(fp, 0f, 0f, 0.22f, 0f, 0f, 0.15f, 0.15f, 0.44f, 0f, 0x7FD9C8)       // manga
         box(fp, 0f, 0f, 0.45f, 0f, 0f, 0.17f, 0.17f, 0.05f, 0f, 0xFFA3C8)       // punho da manga
-        box(fp, 0f, 0f, 0.57f, 0f, 0f, 0.15f, 0.15f, 0.2f, 0f, skin)            // mão fechada
-        for (k in -1..1) box(fp, 0f, k * 0.045f, 0.6f, 0f, 0f, 0.158f, 0.012f, 0.13f, 0f, skinD) // dedos
-        box(fp, 0.085f, 0.03f, 0.52f, 0f, 0f, 0.045f, 0.06f, 0.12f, 0f, skin)   // polegar
+        box(fp, 0f, 0f, 0.52f, 0f, 0f, 0.12f, 0.12f, 0.1f, 0f, skin)            // pulso
         System.arraycopy(fp, 0, itemM, 0, 16)
-        Matrix.translateM(itemM, 0, 0f, 0f, 0.58f)
+        Matrix.translateM(itemM, 0, 0f, 0f, 0.6f)
         Matrix.rotateM(itemM, 0, 30f, 0f, 1f, 0f)
         val ir = if (id in 1..13) 0f else if (id == Items.STAFF) -28f else -40f
         if (ir != 0f) Matrix.rotateM(itemM, 0, ir, 1f, 0f, 0f)
+        if (id in 1..13) drawBlockHand(itemM) else drawFist(itemM)
         if (id == Items.AXE) Matrix.rotateM(itemM, 0, 180f, 0f, 0f, 1f)
         else if (id == Items.SWORD || id == Items.PICK) Matrix.rotateM(itemM, 0, 90f, 0f, 0f, 1f)
         drawItem(itemM, id, game.time)
@@ -432,12 +461,14 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val ez = game.camZ + (rnd.nextFloat() - 0.5f) * sh
         Matrix.setLookAtM(view, 0, ex, ey, ez, ex + game.lookDirX(), ey + game.lookDirY(), ez + game.lookDirZ(), 0f, 1f, 0f)
         Matrix.multiplyMM(vp, 0, proj, 0, view, 0)
+        val under = world.get(floor(ex).toInt(), floor(ey).toInt(), floor(ez).toInt()) == B.WATER
+        val fr = if (under) 0.38f else fogR; val fg = if (under) 0.76f else fogG; val fb = if (under) 0.93f else fogB
         // céu: degradê, sol, nuvens suaves
         Matrix.invertM(inv, 0, vp, 0)
         G.glDisable(G.GL_DEPTH_TEST); G.glDisable(G.GL_CULL_FACE)
         G.glUseProgram(skyProg)
         G.glUniformMatrix4fv(skyInv, 1, false, inv, 0); G.glUniform3f(skyCam, ex, ey, ez)
-        G.glUniform3f(skyHor, fogR, fogG, fogB); G.glUniform1f(skyTime, game.time)
+        G.glUniform3f(skyHor, fr, fg, fb); G.glUniform1f(skyTime, game.time)
         G.glBindBuffer(G.GL_ARRAY_BUFFER, 0)
         G.glEnableVertexAttribArray(skyP); G.glVertexAttribPointer(skyP, 2, G.GL_FLOAT, false, 0, quad)
         G.glDrawArrays(G.GL_TRIANGLE_STRIP, 0, 4)
@@ -447,8 +478,8 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         G.glActiveTexture(G.GL_TEXTURE0); G.glUniform1i(uTex, 0)
         G.glUniformMatrix4fv(uVP, 1, false, vp, 0)
         G.glUniform3f(uCam, ex, ey, ez)
-        G.glUniform3f(uFog, fogR, fogG, fogB)
-        G.glUniform1f(uTime, game.time); G.glUniform1f(uWind, 1f)
+        G.glUniform3f(uFog, fr, fg, fb)
+        G.glUniform1f(uTime, game.time); G.glUniform1f(uWind, 1f); G.glUniform1f(uUnder, if (under) 1f else 0f)
         G.glDisable(G.GL_BLEND)
 
         G.glUniformMatrix4fv(uModel, 1, false, ident, 0)
@@ -485,11 +516,13 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         }
         G.glUniform1f(uWind, 1f)
         G.glUniformMatrix4fv(uModel, 1, false, ident, 0)
-        tint(0xFFFFFF, 0.7f, 0.94f + 0.06f * sin(game.time * 2f))
+        G.glDisable(G.GL_CULL_FACE)
+        tint(0xFFFFFF, 0.8f, 0.94f + 0.06f * sin(game.time * 2f))
         for (i in 0 until World.CX * World.CZ) {
             if (cnt[i * 2 + 1] == 0) continue
             bindMesh(vbo[i * 2 + 1], ibo[i * 2 + 1]); G.glDrawElements(G.GL_TRIANGLES, cnt[i * 2 + 1], G.GL_UNSIGNED_SHORT, 0)
         }
+        G.glEnable(G.GL_CULL_FACE)
         G.glUniform1f(uWind, 0f)
         if (!game.thirdPerson && game.deadTimer <= 0f) drawHand(dt)
     }
