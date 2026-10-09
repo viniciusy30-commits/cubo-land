@@ -1,3 +1,11 @@
+#id 2026-10-09-i
+#titulo Mãos arrumadas!
+- Mão simples e cúbica, sem dedos soltos
+- Ferramentas seguras pelo punho, apontando pra cima e levemente pra frente
+- Espada, machado e picareta mostram o lado, como no Minecraft
+- Blocos apoiados na mão, mostrando o topo e as laterais
+- Ferramentas continuam acompanhando o golpe
+
 #id 2026-10-09-h
 #titulo Ferramentas novas e água limpinha!
 - Espada, machado e picareta redesenhados em 3D, com visual próprio: pastel, gemas, cabo colorido e brilho
