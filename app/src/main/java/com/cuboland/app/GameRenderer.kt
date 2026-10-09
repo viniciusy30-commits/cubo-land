@@ -681,8 +681,46 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             floatArrayOf(1f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
         )
 
+    private val KF_SWORD2 = arrayOf(
+            floatArrayOf(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f),
+            floatArrayOf(0.22f, 2f, 0.05f, 0f, 0.05f, 4f, -18f, -30f, 4f, -48f, 0f, 0f),
+            floatArrayOf(0.28f, 0f, 0.055f, 0f, 0.06f, 4f, -20f, -34f, 4f, -56f, 0f, 0f),
+            floatArrayOf(0.5f, 1f, -0.09f, -0.04f, -0.18f, -6f, 36f, 34f, -26f, 52f, 0f, 0f),
+            floatArrayOf(0.66f, 2f, -0.11f, -0.05f, -0.13f, -4f, 42f, 38f, -16f, 58f, 0f, 0f),
+            floatArrayOf(1f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
+        )
+
+    private val KF_SWORD3 = arrayOf(
+            floatArrayOf(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f),
+            floatArrayOf(0.22f, 2f, -0.04f, -0.05f, 0.05f, -4f, 16f, 16f, 2f, 28f, 0f, 0f),
+            floatArrayOf(0.28f, 0f, -0.045f, -0.055f, 0.06f, -5f, 18f, 18f, 2f, 32f, 0f, 0f),
+            floatArrayOf(0.5f, 1f, 0.09f, 0.07f, -0.2f, 12f, -26f, -20f, -22f, -34f, 0f, 0f),
+            floatArrayOf(0.66f, 2f, 0.11f, 0.08f, -0.15f, 14f, -32f, -24f, -14f, -42f, 0f, 0f),
+            floatArrayOf(1f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
+        )
+
+    private val KF_SWORD4 = arrayOf(
+            floatArrayOf(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f),
+            floatArrayOf(0.3f, 2f, 0f, 0.06f, 0.06f, 20f, -3f, -4f, 22f, -3f, 0f, 0f),
+            floatArrayOf(0.36f, 0f, 0f, 0.07f, 0.07f, 22f, -3f, -5f, 25f, -4f, 0f, 0f),
+            floatArrayOf(0.54f, 1f, -0.02f, -0.12f, -0.28f, -28f, 3f, 3f, -26f, 4f, 0f, 0f),
+            floatArrayOf(0.68f, 2f, -0.02f, -0.09f, -0.22f, -22f, 2f, 2f, -16f, 3f, 0f, 0f),
+            floatArrayOf(1f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
+        )
+
+    private val KF_SWORD5 = arrayOf(
+            floatArrayOf(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f),
+            floatArrayOf(0.3f, 2f, 0.03f, -0.03f, 0.14f, 6f, -4f, -6f, 14f, -6f, 0f, 0f),
+            floatArrayOf(0.38f, 0f, 0.03f, -0.03f, 0.15f, 6f, -4f, -6f, 16f, -7f, 0f, 0f),
+            floatArrayOf(0.52f, 1f, -0.03f, 0.02f, -0.4f, -4f, 4f, 3f, -46f, 6f, 0f, 0f),
+            floatArrayOf(0.72f, 2f, -0.03f, 0.02f, -0.32f, -3f, 3f, 2f, -36f, 4f, 0f, 0f),
+            floatArrayOf(1f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
+        )
+
+    private val SWORD_COMBO = arrayOf(KF_SWORD, KF_SWORD2, KF_SWORD3, KF_SWORD4, KF_SWORD5)
+
     private fun kfFor(id: Int) = when {
-        id == Items.SWORD -> KF_SWORD; id == Items.AXE -> KF_AXE; id == Items.PICK -> KF_PICK; id == Items.STAFF -> KF_STAFF
+        id == Items.SWORD -> SWORD_COMBO[game.combo % SWORD_COMBO.size]; id == Items.AXE -> KF_AXE; id == Items.PICK -> KF_PICK; id == Items.STAFF -> KF_STAFF
         id in 1..13 -> KF_BLOCK; else -> KF_FIST
     }
 

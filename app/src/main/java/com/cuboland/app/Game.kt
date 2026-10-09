@@ -36,7 +36,7 @@ class Game(val world: World) {
     @Volatile var hp = 10; @Volatile var kills = 0; @Volatile var hurtFlash = 0f
     @Volatile var deadTimer = 0f; @Volatile var thirdPerson = true
     var yaw = 0f; var pitch = -0.25f; var bodyYaw = 0f
-    var time = 0f; var walkPhase = 0f; var walkAmt = 0f; var swing = 1f
+    var time = 0f; var walkPhase = 0f; var walkAmt = 0f; var swing = 1f; var combo = 0
     var atkCd = 0f; var hurtCd = 0f; var regen = 0f; var spawnT = 2f
     var camX = 0f; var camY = 0f; var camZ = 0f; var camDist = 0f
     var hasHit = false; var hx = 0; var hy = 0; var hz = 0; var px = 0; var py = 0; var pz = 0
@@ -148,6 +148,7 @@ class Game(val world: World) {
         val item = cur()
         if (atkCd > 0f) return
         atkCd = Items.cooldown(item); swing = 0f; bodyYaw = yaw
+        if (item == Items.SWORD) combo = (combo + 1) % 5   // cada ataque da espada muda o ângulo do corte
         updateCamera()
         if (item == Items.STAFF) { shoot(); return }
         val reach = Items.reach(item)

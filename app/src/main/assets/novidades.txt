@@ -1,3 +1,9 @@
+#id 2026-10-09-s
+#titulo Espada com combo!
+- A espada agora corta em ângulos diferentes a cada ataque: diagonal, horizontal, diagonal invertida, vertical por cima e estocada
+- O rastro brilhante acompanha cada corte
+- Ferramentas agora ficam em pé, com o punho reto e o braço colado nele
+
 #id 2026-10-09-r
 #titulo Mão de verdade e golpes novos!
 - Punho maior e o cabo da ferramenta passa pelo meio dele, agora parece que a mão está segurando de verdade (sem dedos)
