@@ -392,13 +392,17 @@ class World {
             c[0] = x; c[1] = y; c[2] = z
             if (id == B.LEAVES) {
                 if (o.vc > 55000) continue
-                var open = false
-                for (f in 0 until 6) {
-                    val aa = f shr 1; val ss = if ((f and 1) == 0) 1 else -1
-                    val q = get(x + if (aa == 0) ss else 0, y + if (aa == 1) ss else 0, z + if (aa == 2) ss else 0)
-                    if (q == B.AIR || q == B.WATER) { open = true; break }
+                if (!leafOpen(x, y, z)) {
+                    // segunda camada: folha escondida mas vizinha de uma folha exposta desenha só o cubo interno (aparece pelos buraquinhos)
+                    var near = false
+                    for (f in 0 until 6) {
+                        val aa = f shr 1; val ss = if ((f and 1) == 0) 1 else -1
+                        val qx = x + if (aa == 0) ss else 0; val qy = y + if (aa == 1) ss else 0; val qz = z + if (aa == 2) ss else 0
+                        if (get(qx, qy, qz) == B.LEAVES && leafOpen(qx, qy, qz)) { near = true; break }
+                    }
+                    if (near && o.vc < 50000) leafFaces(o, x, y, z, 0.16f, 0.84f, false, vr, 0.72f)
+                    continue
                 }
-                if (!open) continue
                 leafFaces(o, x, y, z, 0f, 1f, true, vr, 1f)        // casca externa (só faces expostas)
                 leafFaces(o, x, y, z, 0.16f, 0.84f, false, vr, 0.72f)   // cubo interno: dá profundidade pelos buracos
                 continue
@@ -431,7 +435,7 @@ class World {
                 val nid = get(nx, ny, nz)
                 if (isW) { if (nid != B.AIR) continue }
                 else if (id == B.LEAVES) { if (nid != B.AIR && nid != B.WATER && nid != B.LEAVES) continue }
-                else if (nid != B.AIR && nid != B.WATER) continue
+                else if (nid != B.AIR && nid != B.WATER && nid != B.LEAVES) continue   // folha tem buracos: o que está atrás dela precisa ser desenhado
                 val u = (a + 1) % 3; val v = (a + 2) % 3
                 val shade = when { id == B.LANTERN -> 1f; id == B.LEAVES -> (if (a == 1) (if (s > 0) 1f else 0.8f) else if (a == 0) 0.92f else 0.86f); a == 1 -> if (s > 0) 1f else 0.55f; a == 0 -> 0.82f; else -> 0.7f }
                 val buf = if (isW) w else o
@@ -473,6 +477,15 @@ class World {
                 buf.vc += 4
             }
         }
+    }
+
+    private fun leafOpen(x: Int, y: Int, z: Int): Boolean {
+        for (f in 0 until 6) {
+            val aa = f shr 1; val ss = if ((f and 1) == 0) 1 else -1
+            val q = get(x + if (aa == 0) ss else 0, y + if (aa == 1) ss else 0, z + if (aa == 2) ss else 0)
+            if (q == B.AIR || q == B.WATER) return true
+        }
+        return false
     }
 
     /** faces de folha recortada (tile 8). outer = só faces voltadas pra ar/água; senão todas (cubo interno menor) */

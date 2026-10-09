@@ -1,3 +1,10 @@
+#id 2026-10-09-x
+#titulo Quebra em etapas, criativo e copas completas!
+- Blocos agora racham a cada batida e só quebram no fim; o machado racha madeira bem rápido e o golpe carregado vale 2 batidas
+- Modo criativo (nas configurações): toque duas vezes no pulo pra voar, botão de descer, quebra tudo de uma batida e nada te machuca
+- Corrigido: terra, madeira e outros blocos atrás das folhas agora aparecem pelos buraquinhos
+- Copas ganharam uma segunda camada visível por dentro, sem céu vazando
+
 #id 2026-10-09-w
 #titulo Golpe carregado e folhas mais vivas!
 - Segure o botão de ataque com espada ou machado: o braço sobe e a ferramenta fica pra trás, com anel de carga no botão

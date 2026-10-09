@@ -281,6 +281,34 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         if (yawDeg != 0f) Matrix.rotateM(base, 0, yawDeg, 0f, 1f, 0f)
     }
 
+    /** rachaduras pixeladas que crescem a cada batida, nas faces do bloco voltadas pra câmera */
+    private val crackCells: IntArray = run {
+        val rd = java.util.Random(77); val out = IntArray(104); val xs = intArrayOf(3, 4, 4); val ys = intArrayOf(3, 3, 4)
+        for (i in 0 until 52) {
+            val w = i % 3; out[i * 2] = xs[w]; out[i * 2 + 1] = ys[w]
+            xs[w] = (xs[w] + rd.nextInt(3) - 1).coerceIn(0, 7); ys[w] = (ys[w] + rd.nextInt(3) - 1).coerceIn(0, 7)
+        }
+        out
+    }
+
+    private fun drawCracks(bx: Int, by: Int, bz: Int, prog: Float) {
+        val n = (prog * 52f).toInt().coerceIn(3, 52)
+        setBase(bx + 0.5f, by + 0.5f, bz + 0.5f, 0f)
+        G.glDepthMask(false)
+        val cc = floatArrayOf(game.camX - (bx + 0.5f), game.camY - (by + 0.5f), game.camZ - (bz + 0.5f))
+        val pos = FloatArray(3); val sc = FloatArray(3)
+        for (a in 0 until 3) {
+            val s = if (cc[a] >= 0f) 1f else -1f
+            val u = (a + 1) % 3; val v = (a + 2) % 3
+            for (i in 0 until n) {
+                pos[a] = s * 0.505f; pos[u] = (crackCells[i * 2] - 3.5f) / 8f; pos[v] = (crackCells[i * 2 + 1] - 3.5f) / 8f
+                sc[a] = 0.012f; sc[u] = 0.125f; sc[v] = 0.125f
+                box(base, pos[0], pos[1], pos[2], 0f, 0f, sc[0], sc[1], sc[2], 0f, 0x1E120A, 0.62f)
+            }
+        }
+        G.glDepthMask(true)
+    }
+
     private fun groundY(x: Float, y: Float, z: Float): Float {
         var yy = floor(y + 0.5f).toInt()
         while (yy > 0 && !world.solid(floor(x).toInt(), yy, floor(z).toInt())) yy--
@@ -1000,6 +1028,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             box(base, 0f, 0f, 0f, 0f, 0f, 1.01f, 1.01f, 1.01f, 0f, 0xFFFFFF, 0.18f + 0.1f * sin(game.time * 6f))
             G.glDepthMask(true)
         }
+        if (game.brProg > 0f && game.brY > 0 && game.deadTimer <= 0f && world.get(game.brX, game.brY, game.brZ) != 0) drawCracks(game.brX, game.brY, game.brZ, game.brProg)
         G.glUniform1f(uWind, 1f)
         G.glUniformMatrix4fv(uModel, 1, false, ident, 0)
         G.glDisable(G.GL_CULL_FACE)

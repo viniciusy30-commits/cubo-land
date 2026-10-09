@@ -20,13 +20,13 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
     private var scx = 0f; private var scy = 0f; private var sx = 0f; private var sy = 0f
     private var lx = 0f; private var ly = 0f
     private val btnId = HashMap<Int, Int>()
-    private val press = FloatArray(6)
+    private val press = FloatArray(7)
     private var invOpen = false; private var invSel = -1
     private var bounce = 0f; private var lastSel = -1
     // 0 atacar, 1 pular, 2 colocar, 3 câmera, 4 sair, 5 mochila
-    private fun bx(i: Int) = when (i) { 0 -> width - 100 * d; 1 -> width - 195 * d; 2 -> width - 70 * d; 3 -> width - 40 * d; 5 -> width - 92 * d; else -> 40 * d }
-    private fun byy(i: Int) = when (i) { 0 -> height - 100 * d; 1 -> height - 62 * d; 2 -> height - 190 * d; else -> 40 * d }
-    private fun br(i: Int) = when (i) { 0 -> 44 * d; 1 -> 34 * d; 2 -> 32 * d; else -> 22 * d }
+    private fun bx(i: Int) = when (i) { 0 -> width - 100 * d; 1 -> width - 195 * d; 6 -> width - 195 * d; 2 -> width - 70 * d; 3 -> width - 40 * d; 5 -> width - 92 * d; else -> 40 * d }
+    private fun byy(i: Int) = when (i) { 0 -> height - 100 * d; 1 -> height - 62 * d; 6 -> height - 152 * d; 2 -> height - 190 * d; else -> 40 * d }
+    private fun br(i: Int) = when (i) { 0 -> 44 * d; 1 -> 34 * d; 6 -> 30 * d; 2 -> 32 * d; else -> 22 * d }
     private val slot get() = 46 * d
     private fun hbLeft() = (width - 8 * slot - 7 * 4 * d) / 2f
     private fun hbTop() = height - slot - 10 * d
@@ -58,7 +58,7 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
     private fun toggleInv() {
         invOpen = !invOpen
         stickId = -1; lookId = -1; sx = 0f; sy = 0f
-        game.stickX = 0f; game.stickY = 0f; game.jumpHeld = false; game.attackHeld = false; btnId.clear()
+        game.stickX = 0f; game.stickY = 0f; game.jumpHeld = false; game.downHeld = false; game.attackHeld = false; btnId.clear()
         invSel = game.cur()
     }
 
@@ -83,11 +83,12 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
             if (x < pl() || x > pr() || y < pt0() || y > pb()) toggleInv()
             return
         }
-        for (i in 0 until 5) if (hypot(x - bx(i), y - byy(i)) < br(i) * 1.15f) {
+        for (i in intArrayOf(0, 1, 2, 3, 4, 6)) if ((i != 6 || game.flying) && hypot(x - bx(i), y - byy(i)) < br(i) * 1.15f) {
             btnId[id] = i
             when (i) {
                 0 -> { game.attackPress = true; game.attackHeld = true }
-                1 -> game.jumpHeld = true
+                1 -> { game.jumpHeld = true; game.jumpTap() }
+                6 -> game.downHeld = true
                 2 -> game.wantPlace = true
                 3 -> game.wantCam = true
                 4 -> onExit()
@@ -117,6 +118,7 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
         if (id == lookId) lookId = -1
         val b = btnId.remove(id)
         if (b == 1) game.jumpHeld = false
+        if (b == 6) game.downHeld = false
         if (b == 0) { game.attackHeld = false; game.attackRelease = true }
     }
 
@@ -183,8 +185,9 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
             pt.style = Paint.Style.STROKE; pt.strokeWidth = 2f * d; pt.color = Color.argb(150, 255, 255, 255); c.drawCircle(jx, jy, 60 * d, pt)
             pt.style = Paint.Style.FILL; pt.color = Color.argb(190, 255, 255, 255); c.drawCircle(jx + sx * 60 * d, jy + sy * 60 * d, 24 * d, pt)
         }
-        for (i in 0 until 6) {
+        for (i in 0 until 7) {
             if (invOpen && i != 5) continue
+            if (i == 6 && !game.flying) continue
             circle(c, i, btnId.containsValue(i) || (i == 5 && invOpen))
             val x = bx(i); val y = byy(i)
             pt.style = Paint.Style.STROKE; pt.strokeWidth = 4f * d; pt.color = Color.WHITE; pt.strokeCap = Paint.Cap.ROUND; pt.strokeJoin = Paint.Join.ROUND
@@ -195,6 +198,8 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
                     c.drawLine(x, y - 7 * d, x, y + 12 * d, pt) }
                 2 -> { c.drawRoundRect(x - 11 * d, y - 11 * d, x + 11 * d, y + 11 * d, 3 * d, 3 * d, pt); c.drawLine(x - 5 * d, y, x + 5 * d, y, pt); c.drawLine(x, y - 5 * d, x, y + 5 * d, pt) }
                 3 -> { pt.strokeWidth = 3f * d; c.drawOval(x - 12 * d, y - 7 * d, x + 12 * d, y + 7 * d, pt); pt.style = Paint.Style.FILL; c.drawCircle(x, y, 3.5f * d, pt) }
+                6 -> { path.reset(); path.moveTo(x - 12 * d, y - 5 * d); path.lineTo(x, y + 7 * d); path.lineTo(x + 12 * d, y - 5 * d); c.drawPath(path, pt)
+                    c.drawLine(x, y + 7 * d, x, y - 12 * d, pt) }
                 5 -> { pt.strokeWidth = 3f * d; c.drawRoundRect(x - 10 * d, y - 6 * d, x + 10 * d, y + 11 * d, 5 * d, 5 * d, pt)
                     path.reset(); path.moveTo(x - 6 * d, y - 6 * d); path.cubicTo(x - 6 * d, y - 15 * d, x + 6 * d, y - 15 * d, x + 6 * d, y - 6 * d); c.drawPath(path, pt)
                     c.drawLine(x - 10 * d, y, x + 10 * d, y, pt) }

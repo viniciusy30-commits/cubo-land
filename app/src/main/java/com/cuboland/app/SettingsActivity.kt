@@ -38,6 +38,11 @@ class SettingsActivity : AppCompatActivity() {
         fun add(b: android.view.View) {
             val lp = LinearLayout.LayoutParams(dp(300), LinearLayout.LayoutParams.WRAP_CONTENT); lp.topMargin = dp(12); col.addView(b, lp)
         }
+        fun cTxt() = if (sp.getBoolean("creative", false)) "🕊  Modo criativo: LIGADO" else "🕊  Modo criativo: desligado"
+        val cHold = arrayOfNulls<android.widget.Button>(1)
+        cHold[0] = btn(cTxt(), Color.rgb(46, 160, 100)) { sp.edit().putBoolean("creative", !sp.getBoolean("creative", false)).apply(); cHold[0]?.text = cTxt() }
+        add(cHold[0]!!)
+        col.addView(label("No criativo: toque duas vezes no pulo pra voar, quebra tudo de uma batida e nada te machuca.", 13f))
         add(btn("🔄  Verificar atualização", Color.rgb(66, 133, 244)) { Updater.check(this, true) })
         add(btn("✨  O que mudou", Color.rgb(171, 71, 188)) { Novidades.showLatest(this) })
         add(btn("🗑  Recomeçar o mundo", Color.rgb(229, 80, 70)) {

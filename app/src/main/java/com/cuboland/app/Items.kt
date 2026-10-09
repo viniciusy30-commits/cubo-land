@@ -16,7 +16,7 @@ object Items {
 
     fun desc(id: Int) = when (id) {
         SWORD -> "Rápida e leve. Dano 2, golpes velozes."
-        AXE -> "Pesada! Dano 3 e empurra bem longe."
+        AXE -> "Pesada! Dano 3, empurra longe e racha madeira bem rápido."
         STAFF -> "Dispara estrelas mágicas à distância."
         PICK -> "Quebra blocos rápido e dá uma bicada nos slimes."
         else -> "Bloco de construção. Toque em Colocar para usar."
@@ -28,5 +28,5 @@ object Items {
     fun knock(id: Int) = when (id) { AXE -> 10f; SWORD -> 6f; else -> 4f }
     /** duração da animação de golpe (s) */
     fun swingTime(id: Int) = when (id) { SWORD -> 0.54f; AXE -> 0.66f; PICK -> 0.36f; STAFF -> 0.55f; else -> 0.3f }
-    fun breaks(id: Int) = id == PICK || isBlock(id)
+    fun breaks(id: Int) = id == PICK || id == AXE || isBlock(id)
 }

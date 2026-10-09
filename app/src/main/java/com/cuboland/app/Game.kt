@@ -32,6 +32,8 @@ class Game(val world: World) {
     @Volatile var attackHeld = false; @Volatile var attackPress = false; @Volatile var attackRelease = false
     @Volatile var charging = false; @Volatile var charge = 0f
     private var pressT = 0f; private var pressing = false; var swingDur = 0.46f; @Volatile var powerSwing = false
+    @Volatile var creative = false; @Volatile var flying = false; @Volatile var downHeld = false; private var lastJumpT = -9f
+    var brX = 0; var brY = -1; var brZ = 0; @Volatile var brProg = 0f; private var brT = 0f
     private var hitT = -1f; private var hitItem = 0; private var hitStab = false
     private var pendingT = -1f; private var pendingPower = 0f
     val leafFall = ArrayList<LeafP>(); private var leafT = 0f; var comboT = 0f
@@ -86,7 +88,19 @@ class Game(val world: World) {
         e.inWater = world.get(floor(e.x).toInt(), floor(e.y + 0.4f).toInt(), floor(e.z).toInt()) == B.WATER
     }
 
+    fun jumpTap() {   // toque duplo no pulo (modo criativo) liga/desliga o voo
+        if (!creative) return
+        if (time - lastJumpT < 0.32f) { flying = !flying; if (flying) player.vy = 0f }
+        lastJumpT = time
+    }
+
     private fun physics(e: Ent, dt: Float) {
+        if (flying && e === player) {
+            val tv = (if (jumpHeld) 7f else 0f) - (if (downHeld) 7f else 0f)
+            e.vy += (tv - e.vy) * min(1f, 8f * dt)
+            move(e, e.vx * dt, e.vy * dt, e.vz * dt)
+            return
+        }
         val g = if (e.inWater) 8f else 26f
         e.vy -= g * dt
         if (e.inWater) { e.vy = max(e.vy, -3f); e.vx *= 1f - 3f * dt; e.vz *= 1f - 3f * dt }
@@ -181,11 +195,30 @@ class Game(val world: World) {
         }
         if (best != null) { hitSlime(best, Items.damage(item) + (if (stab) 1 else 0), best.x - player.x, best.z - player.z, Items.knock(item) * (if (stab) 1.4f else 1f)); return }
         if (!Items.breaks(item)) return
+        blockHit(item, 1f)
+    }
+
+    private fun hardness(id: Int) = when (id) { B.LEAVES -> 1.5f; B.GRASS, B.DIRT, B.SAND -> 3f; B.WOOD -> 8f; B.PLANK -> 6f; B.STONE -> 10f; B.BRICK -> 9f; else -> 4f }
+    private fun efficiency(item: Int, id: Int) = when (item) {
+        Items.PICK -> when (id) { B.STONE, B.BRICK -> 2f; B.DIRT, B.GRASS, B.SAND -> 1.5f; else -> 1f }
+        Items.AXE -> when (id) { B.WOOD, B.PLANK -> 2f; B.LEAVES -> 1.5f; else -> 0.6f }
+        else -> 0.7f
+    }
+
+    /** cada batida avança o estágio de quebra do bloco mirado; mult 2 = golpe carregado */
+    private fun blockHit(item: Int, mult: Float) {
         raycast(camX, camY, camZ, dirX(), dirY(), dirZ(), camDist, camDist + 5.5f)
-        if (hasHit && hy > 0) {
-            val id = world.get(hx, hy, hz)
-            burst(hx + 0.5f, hy + 0.5f, hz + 0.5f, B.top[id], 14, 4f)
-            world.set(hx, hy, hz, B.AIR)
+        if (!hasHit || hy <= 0) return
+        val id = world.get(hx, hy, hz)
+        if (brY != hy || brX != hx || brZ != hz || brT <= 0f) { brX = hx; brY = hy; brZ = hz; brProg = 0f }
+        brT = 3f
+        brProg += if (creative) 1f else efficiency(item, id) * mult / hardness(id)
+        if (brProg >= 1f) {
+            burst(hx + 0.5f, hy + 0.5f, hz + 0.5f, B.top[id], 16, 4f)
+            world.set(hx, hy, hz, B.AIR); brProg = 0f; brY = -1; brT = 0f
+        } else {
+            burst(hx + 0.5f, hy + 0.5f, hz + 0.5f, B.top[id], 5, 2.5f)
+            shake = max(shake, 0.06f * mult)
         }
     }
 
@@ -201,14 +234,17 @@ class Game(val world: World) {
     private fun powerHit(pw: Float) {
         val item = cur()
         val reach = Items.reach(item) + 0.7f + pw * 0.8f
+        var anyHit = false
         for (s in slimes.toList()) {
             if (s.dead) continue
             val dx = s.x - player.x; val dy = s.y + 0.4f - (player.y + 1f); val dz = s.z - player.z
             if (sqrt(dx * dx + dy * dy + dz * dz) > reach) continue
             val dot = (dx * sin(yaw) + dz * cos(yaw)) / max(0.001f, sqrt(dx * dx + dz * dz))
             if (dot < 0.15f) continue
+            anyHit = true
             hitSlime(s, Items.damage(item) + 1 + (pw * 4f).toInt(), dx, dz, Items.knock(item) * (1.3f + pw))
         }
+        if (!anyHit && Items.breaks(item)) { updateCamera(); blockHit(item, 2f) }   // golpe carregado: 2x de progresso na quebra
         shake = max(shake, 0.35f + 0.5f * pw)
         val fx = (player.x + sin(yaw) * 2f); val fz = (player.z + cos(yaw) * 2f)
         val fy = world.surfaceY(fx.toInt().coerceIn(1, World.SX - 2), fz.toInt().coerceIn(1, World.SZ - 2)).toFloat()
@@ -240,7 +276,7 @@ class Game(val world: World) {
     }
 
     private fun hurt(dx: Float, dz: Float) {
-        if (hurtCd > 0f) return
+        if (hurtCd > 0f || creative) return
         hp--; hurtCd = 1f; hurtFlash = 1f; regen = 0f; shake = 0.5f
         val l = max(0.01f, sqrt(dx * dx + dz * dz))
         player.vx = dx / l * 7f; player.vz = dz / l * 7f; player.vy = 6f
@@ -258,7 +294,9 @@ class Game(val world: World) {
         if (deadTimer > 0f) { deadTimer -= dt; if (deadTimer <= 0f) respawn(); updateCamera(); return }
 
         val p = player
-        val sp = (if (p.inWater) 2.8f else 5f) * (if (charging) 0.55f else 1f)
+        if (!creative) flying = false
+        if (flying && p.onGround && downHeld) flying = false
+        val sp = (if (p.inWater && !flying) 2.8f else if (flying) 9f else 5f) * (if (charging) 0.55f else 1f)
         val f = sin(yaw); val c = cos(yaw)
         val mx = (f * stickY + (-c) * stickX) * sp; val mz = (c * stickY + f * stickX) * sp
         val k = min(1f, (if (p.onGround) 14f else 5f) * dt)
@@ -270,7 +308,7 @@ class Game(val world: World) {
             while (diff > PI) diff -= (2 * PI).toFloat(); while (diff < -PI) diff += (2 * PI).toFloat()
             bodyYaw += diff * min(1f, 12f * dt)
         } else if (!thirdPerson) bodyYaw = yaw
-        if (jumpHeld) {
+        if (jumpHeld && !flying) {
             if (p.inWater) p.vy = 3.6f else if (p.onGround) { p.vy = 8.6f; p.onGround = false }
         }
         for (i in 0 until 2) physics(p, dt / 2f)
@@ -295,6 +333,7 @@ class Game(val world: World) {
             if (pressing) { pressing = false; if (charging) { val pw = charge; charging = false; charge = 0f; releasePower(pw) } else attack() }
         }
         if (!attackHeld && charging) { charging = false; charge = 0f }
+        brT -= dt; if (brT <= 0f) brProg = 0f
         if (hitT > 0f) { hitT -= dt; if (hitT <= 0f) strikeHit(hitItem, hitStab) }
         if (pendingT > 0f) { pendingT -= dt; if (pendingT <= 0f) powerHit(pendingPower) }
         if (wantPlace) { wantPlace = false; place() }
