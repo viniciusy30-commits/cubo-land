@@ -84,7 +84,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             if (isLeaf) {   // pixel-art nítido (16x16 por bloco)
                 float lu = clamp(vUV.x * 32.0 - 8.0, 0.0, 0.9999);
                 float lv = clamp(vUV.y, 0.0, 0.9999);
-                uv = vec2((8.0 + (floor(lu * 16.0) + 0.5) / 16.0) / 32.0, (floor(lv * 16.0) + 0.5) / 16.0);
+                uv = vec2((8.0 + (floor(lu * 32.0) + 0.5) / 32.0) / 32.0, (floor(lv * 32.0) + 0.5) / 32.0);
             }
             vec4 t = texture2D(uTex, uv);
             if (t.a < 0.4) discard;
@@ -309,7 +309,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val glint = 0.5f + 0.5f * sin(t * 3f)
         when {
             id in 1..13 -> {
-                box(m, 0f, 0.13f, 0.18f, 0f, 30f, 0.3f, 0.3f, 0.3f, 0f, 0xFFFFFF, 1f, 1f, null, id)
+                box(m, 0f, 0.22f, 0.2f, 0f, 30f, 0.3f, 0.3f, 0.3f, 0f, 0xFFFFFF, 1f, 1f, null, id)
             }
             id == Items.SWORD -> {
                 box(m, 0f, 0f, 0.55f, 0f, 0f, 0.115f, 0.03f, 0.78f, 0f, 0xD7E4F4)        // lâmina
@@ -442,21 +442,10 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     private val SKIN = 0xF2C29B; private val SKIN_D = 0xD9A07A
     private val showLeftHand = true   // mão esquerda vazia no canto, como no Minecraft (false = esconde)
 
-    /** braço estilo Minecraft: manga grossa + punho rosa + antebraço de pele. Origem = ombro, estende em +Z */
+    /** braço estilo Minecraft: caixa comprida de manga + mão de pele na ponta (sem dedos soltos). Origem = ombro, estende em +Z */
     private fun drawArm(m: FloatArray) {
-        box(m, 0f, 0f, 0.1f, 0f, 0f, 0.2f, 0.2f, 0.8f, 0f, 0x7FD9C8)         // manga
-        box(m, 0f, 0f, 0.53f, 0f, 0f, 0.215f, 0.215f, 0.07f, 0f, 0xFFA3C8)   // punho da manga
-        box(m, 0f, 0f, 0.62f, 0f, 0f, 0.16f, 0.16f, 0.12f, 0f, SKIN)         // pulso
-    }
-
-    /** mão cúbica fechada: bloco de pele, divisões dos dedos enrolados e polegar por cima (cabo passa por dentro) */
-    private fun drawFist(m: FloatArray, fingers: Boolean) {
-        box(m, 0f, 0f, 0f, 0f, 0f, 0.2f, 0.19f, 0.2f, 0f, SKIN)
-        if (fingers) {
-            for (k in 0 until 3) box(m, 0f, 0f, -0.05f + k * 0.05f, 0f, 0f, 0.207f, 0.197f, 0.012f, 0f, SKIN_D)
-            box(m, 0.045f, 0.105f, 0.075f, 0f, -10f, 0.075f, 0.05f, 0.13f, 0f, SKIN)
-            box(m, 0.045f, 0.105f, 0.14f, 0f, -10f, 0.06f, 0.045f, 0.03f, 0f, 0xF8D2B2)
-        }
+        box(m, 0f, 0f, 0.11f, 0f, 0f, 0.2f, 0.2f, 0.82f, 0f, 0x7FD9C8)   // manga
+        box(m, 0f, 0f, 0.63f, 0f, 0f, 0.2f, 0.2f, 0.22f, 0f, SKIN)       // mão (ponta do braço)
     }
 
     private fun drawHand(dt: Float) {
@@ -483,11 +472,10 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         if (game.swing < 1f) Matrix.rotateM(fp, 0, -sin(game.swing * 3.1416f) * 14f, 0f, 1f, 0f)
         drawArm(fp)
         System.arraycopy(fp, 0, itemM, 0, 16)
-        Matrix.translateM(itemM, 0, 0f, 0f, 0.6f)
+        Matrix.translateM(itemM, 0, 0f, 0f, 0.64f)
         Matrix.rotateM(itemM, 0, 30f, 0f, 1f, 0f)
         val ir = if (id in 1..13) 0f else if (id == Items.STAFF) -28f else -40f
         if (ir != 0f) Matrix.rotateM(itemM, 0, ir, 1f, 0f, 0f)
-        drawFist(itemM, id !in 1..13)
         if (id == Items.AXE) Matrix.rotateM(itemM, 0, 180f, 0f, 0f, 1f)
         else if (id == Items.SWORD || id == Items.PICK) Matrix.rotateM(itemM, 0, 90f, 0f, 0f, 1f)
         drawItem(itemM, id, game.time)
@@ -499,11 +487,6 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             Matrix.rotateM(fp, 0, -16f, 1f, 0f, 0f)
             Matrix.rotateM(fp, 0, -12f, 0f, 1f, 0f)
             drawArm(fp)
-            System.arraycopy(fp, 0, itemM, 0, 16)
-            Matrix.translateM(itemM, 0, 0f, 0f, 0.6f)
-            Matrix.rotateM(itemM, 0, -30f, 0f, 1f, 0f)
-            Matrix.rotateM(itemM, 0, -40f, 1f, 0f, 0f)
-            drawFist(itemM, true)
         }
     }
 

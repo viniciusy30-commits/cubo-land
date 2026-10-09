@@ -122,29 +122,37 @@ object Atlas {
         return lerp(c, 0xB07F55, sm(0.40f, 0.44f, max(abs(dx), abs(dy))))
     }
 
-    /** folhas estilo Minecraft realista: pixel-art 16x16 com buracos, tons variados e luz nas bordas */
+    /** folhas: várias folhinhas pontudas (com nervura) sobrepostas, em tons pastel, pixel fino 32x32 */
     private fun leaves(u: Float, v: Float): Int {
-        val g = 16
-        val gx = floor(u * g).toInt(); val gy = floor(v * g).toInt()
-        fun filled(x: Int, y: Int): Boolean {
-            val xx = wrap(x, g); val yy = wrap(y, g)
-            val n = vn((xx + 0.5f) / g, (yy + 0.5f) / g, 4, 4, 90) * 0.5f + h(xx, yy, 91) * 0.5f
-            return n > 0.31f
+        val g = 32
+        val qu = (floor(u * g) + 0.5f) / g; val qv = (floor(v * g) + 0.5f) / g
+        var out = CLEAR
+        for (i in 0 until 54) {
+            val cx = h(i, 0, 100); val cy = h(i, 1, 100)
+            val ang = h(i, 2, 100) * 3.1416f
+            val len = 0.14f + 0.07f * h(i, 3, 100); val wid = len * 0.45f
+            val light = h(i, 4, 100)
+            val ca = cos(ang); val sa = sin(ang)
+            for (ox in -1..1) for (oy in -1..1) {
+                val dx = qu - cx - ox; val dy = qv - cy - oy
+                if (dx * dx + dy * dy > len * len) continue
+                val al = dx * ca + dy * sa; val b = -dx * sa + dy * ca
+                val t = al / len
+                val half = wid * (1f - t * t)
+                if (abs(b) >= half) continue
+                val side = b / max(half, 0.001f)
+                var c = lerp(0x74C47E, 0xC9F6A4, (light * 0.65f + (0.5f - side * 0.5f) * 0.35f).coerceIn(0f, 1f))
+                if (side > 0.6f) c = lerp(c, 0x5FB070, 0.45f)
+                if (abs(b) < 0.02f && t > -0.85f) c = lerp(c, 0xEEFFD6, 0.55f)
+                out = op(c)
+            }
         }
-        if (!filled(gx, gy)) return CLEAR
-        val up = filled(gx, gy - 1); val lf = filled(gx - 1, gy)
-        val dn = filled(gx, gy + 1); val rt = filled(gx + 1, gy)
-        val tone = h(gx, gy, 92) * 0.6f + vn((gx + 0.5f) / g, (gy + 0.5f) / g, 8, 8, 93) * 0.4f
-        var c = when {
-            tone < 0.25f -> 0x2B6A2A
-            tone < 0.48f -> 0x3C8832
-            tone < 0.72f -> 0x56A843
-            else -> 0x7DCB57
+        for (j in 0 until 3) for (ox in -1..1) for (oy in -1..1) {
+            val dx = qu - h(j, 0, 110) - ox; val dy = qv - h(j, 1, 110) - oy
+            val d = sqrt(dx * dx + dy * dy)
+            if (d < 0.045f) out = if (d < 0.02f) op(0xFFEFA0) else op(0xFFC2DA)
         }
-        if (!up || !lf) c = lerp(c, 0xB4EC84, 0.38f)      // luz batendo na borda de cima/esquerda
-        if (!dn || !rt) c = mul(c, 0.7f)                  // sombra na borda de baixo/direita
-        if (h(gx, gy, 94) > 0.93f) c = mul(c, 0.62f)      // pontinhos escuros (nervuras)
-        return op(c)
+        return out
     }
 
     private fun plank(u: Float, v: Float): Int {
