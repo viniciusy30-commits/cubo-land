@@ -556,7 +556,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val delta = swingDelta(id, game.swing)
         val yawSw = if (game.swing < 1f) -sin(game.swing * 3.1416f) * 14f else 0f
         if (tool) {
-            val phi = when (id) { Items.AXE -> 78f; Items.PICK -> 80f; Items.SWORD -> 68f; else -> 0f }
+            val phi = when (id) { Items.AXE -> 32f; Items.PICK -> 28f; Items.SWORD -> 22f; else -> 0f }
             val sc = when (id) { Items.SWORD -> 0.72f; Items.AXE -> 0.74f; Items.PICK -> 0.74f; else -> 0.66f }
             toolMatrix(itemM, hx, hy, hz, 26f, phi, sc, delta, yawSw)
             drawItem(itemM, id, game.time)

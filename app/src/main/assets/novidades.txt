@@ -1,3 +1,11 @@
+#id 2026-10-09-j
+#titulo Árvores lindas e ferramentas pra frente!
+- Espada, machado e picareta agora apontam o fio e a ponta pra frente
+- Árvores novas: pequenas, médias, grandes e altas, cada uma de um jeito
+- Galhos tortos com folhagem nas pontas, copas irregulares e raízes aparentes
+- Árvores grandes com tronco grosso
+- Mundos antigos ganham as árvores novas automaticamente
+
 #id 2026-10-09-i
 #titulo Mãos arrumadas!
 - Mão simples e cúbica, sem dedos soltos

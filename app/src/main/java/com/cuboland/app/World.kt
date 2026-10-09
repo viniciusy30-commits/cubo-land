@@ -123,27 +123,7 @@ class World {
             }
             for (y in hh + 1..WATER_Y) blocks[(y * SZ + z) * SX + x] = B.WATER.toByte()
         }
-        val rnd = Random(seed.toLong())
-        val trees = ArrayList<IntArray>()
-        for (i in 0 until 220) {
-            val x = 4 + rnd.nextInt(SX - 8); val z = 4 + rnd.nextInt(SZ - 8)
-            val y = h[x * SZ + z]
-            if (get(x, y, z) != B.GRASS || y <= WATER_Y + 1) continue
-            if (Math.abs(x - SX / 2) < 5 && Math.abs(z - SZ / 2) < 5) continue
-            if (trees.any { Math.abs(it[0] - x) < 4 && Math.abs(it[1] - z) < 4 }) continue
-            trees.add(intArrayOf(x, z))
-            val th = 4 + rnd.nextInt(2)
-            for (t in 1..th) blocks[((y + t) * SZ + z) * SX + x] = B.WOOD.toByte()
-            for (dy in th - 2..th + 1) {
-                val r = if (dy >= th) 1 else 2
-                for (dx in -r..r) for (dz in -r..r) {
-                    if (Math.abs(dx) == r && Math.abs(dz) == r && rnd.nextBoolean()) continue
-                    val bx = x + dx; val by = y + dy; val bz = z + dz
-                    if (bx in 0 until SX && bz in 0 until SZ && by < SY && get(bx, by, bz) == B.AIR)
-                        blocks[(by * SZ + bz) * SX + bx] = B.LEAVES.toByte()
-                }
-            }
-        }
+        plantForest(Random(seed.toLong()), 420) { x, z -> h[x * SZ + z] }
         // pilares decorativos perto do spawn
         val cols = intArrayOf(B.PINK, B.BLUE, B.YELLOW, B.BRICK)
         for (i in 0 until 4) {
@@ -153,6 +133,124 @@ class World {
             blocks[((y + 3) * SZ + z) * SX + x] = B.LANTERN.toByte()
         }
         java.util.Arrays.fill(dirty, true)
+    }
+
+    // ================= ÁRVORES =================
+    private fun air(x: Int, y: Int, z: Int) = x in 0 until SX && z in 0 until SZ && y in 0 until SY && get(x, y, z) == B.AIR
+
+    /** copa irregular: elipsoide de folhas com bordas ruidosas */
+    private fun blob(cx: Int, cy: Int, cz: Int, rx: Float, ry: Float, rz: Float, rnd: Random) {
+        val ix = Math.ceil(rx.toDouble()).toInt() + 1; val iy = Math.ceil(ry.toDouble()).toInt() + 1; val iz = Math.ceil(rz.toDouble()).toInt() + 1
+        for (dx in -ix..ix) for (dy in -iy..iy) for (dz in -iz..iz) {
+            val d = (dx * dx) / (rx * rx) + (dy * dy) / (ry * ry) + (dz * dz) / (rz * rz)
+            val thr = 0.82f + rnd.nextFloat() * 0.34f
+            if (d <= thr && air(cx + dx, cy + dy, cz + dz)) set(cx + dx, cy + dy, cz + dz, B.LEAVES)
+        }
+    }
+
+    private fun wood(x: Int, y: Int, z: Int) {
+        val g = get(x, y, z)
+        if (g == B.AIR || g == B.LEAVES) set(x, y, z, B.WOOD)
+    }
+
+    /** galho torto que sobe; termina numa bolota de folhas. Retorna a ponta [x,y,z] */
+    private fun branch(x: Int, y: Int, z: Int, len: Int, rnd: Random): IntArray {
+        val dirs = arrayOf(intArrayOf(1, 0), intArrayOf(-1, 0), intArrayOf(0, 1), intArrayOf(0, -1), intArrayOf(1, 1), intArrayOf(-1, 1), intArrayOf(1, -1), intArrayOf(-1, -1))
+        val d = dirs[rnd.nextInt(8)]
+        var bx = x; var by = y; var bz = z
+        for (i in 1..len) {
+            bx += d[0]; bz += d[1]
+            if (i % 2 == 0 || rnd.nextInt(3) == 0) by++
+            wood(bx, by, bz)
+            if (i == len) { by++; wood(bx, by, bz) }
+        }
+        return intArrayOf(bx, by, bz)
+    }
+
+    /** tipo: 0 pequena, 1 média, 2 grande (tronco grosso), 3 alta e fina */
+    private fun pickTree(rnd: Random): Int { val r = rnd.nextInt(20); return when { r < 6 -> 0; r < 14 -> 1; r < 17 -> 2; else -> 3 } }
+    private val treeRadius = intArrayOf(2, 4, 6, 3)
+
+    private fun plantTree(x: Int, y: Int, z: Int, type: Int, rnd: Random) {
+        when (type) {
+            0 -> {
+                val th = 3 + rnd.nextInt(2)
+                for (t in 1..th) wood(x, y + t, z)
+                blob(x, y + th + 1, z, 2.4f, 1.9f, 2.4f, rnd)
+                if (rnd.nextBoolean()) { val e = branch(x, y + th - 1, z, 2, rnd); blob(e[0], e[1], e[2], 1.5f, 1.3f, 1.5f, rnd) }
+            }
+            1 -> {
+                val th = 5 + rnd.nextInt(3)
+                for (t in 1..th) wood(x, y + t, z)
+                wood(x + 1, y + 1, z); wood(x, y + 1, z + 1)
+                if (rnd.nextBoolean()) wood(x - 1, y + 1, z)
+                for (k in 0 until 2 + rnd.nextInt(2)) {
+                    val e = branch(x, y + th - 3 + rnd.nextInt(3), z, 2 + rnd.nextInt(2), rnd)
+                    blob(e[0], e[1], e[2], 2.2f, 1.8f, 2.2f, rnd)
+                }
+                blob(x, y + th + 1, z, 3.2f, 2.6f, 3.2f, rnd)
+            }
+            2 -> {
+                val th = 8 + rnd.nextInt(4)
+                val thick = get(x + 1, y, z) == B.GRASS && get(x, y, z + 1) == B.GRASS && get(x + 1, y, z + 1) == B.GRASS
+                for (t in 1..th) { wood(x, y + t, z); if (thick && t <= th - 2) { wood(x + 1, y + t, z); wood(x, y + t, z + 1); wood(x + 1, y + t, z + 1) } }
+                for (dx in -1..2) for (dz in -1..2) {   // raízes aparentes
+                    if ((dx == 0 || dx == 1) && (dz == 0 || dz == 1)) continue
+                    if (rnd.nextInt(3) == 0 && get(x + dx, y, z + dz) == B.GRASS && air(x + dx, y + 1, z + dz)) wood(x + dx, y + 1, z + dz)
+                }
+                for (k in 0 until 4 + rnd.nextInt(3)) {
+                    val e = branch(x, y + th - 5 + rnd.nextInt(4), z, 3 + rnd.nextInt(2), rnd)
+                    blob(e[0], e[1], e[2], 2.8f, 2.2f, 2.8f, rnd)
+                }
+                blob(x, y + th + 2, z, 4.6f, 3.2f, 4.6f, rnd)
+                blob(x + 2, y + th + 3, z - 1, 2.4f, 2.0f, 2.4f, rnd); blob(x - 2, y + th + 2, z + 2, 2.4f, 2.0f, 2.4f, rnd)
+            }
+            else -> {
+                val th = 8 + rnd.nextInt(3)
+                for (t in 1..th + 1) wood(x, y + t, z)
+                for (k in 0..3) { val r = 3.1f - k * 0.7f; blob(x, y + th - 4 + k * 2, z, r, 1.7f, r, rnd) }
+                blob(x, y + th + 3, z, 1.1f, 1.4f, 1.1f, rnd)
+            }
+        }
+    }
+
+    private fun plantForest(rnd: Random, tries: Int, groundAt: (Int, Int) -> Int) {
+        val placed = ArrayList<IntArray>()
+        for (i in 0 until tries) {
+            val x = 5 + rnd.nextInt(SX - 10); val z = 5 + rnd.nextInt(SZ - 10)
+            val y = groundAt(x, z)
+            if (get(x, y, z) != B.GRASS || y <= WATER_Y + 1 || !air(x, y + 1, z)) continue
+            if (Math.abs(x - SX / 2) < 6 && Math.abs(z - SZ / 2) < 6) continue
+            val type = pickTree(rnd); val r = treeRadius[type]
+            if (placed.any { Math.max(Math.abs(it[0] - x), Math.abs(it[1] - z)) < it[2] + r }) continue
+            placed.add(intArrayOf(x, z, r))
+            plantTree(x, y, z, type, rnd)
+        }
+    }
+
+    /** mundos antigos: apaga as árvores naturais (troncos em grama e folhas ligadas) e planta as novas */
+    fun replantTrees(seed: Int) {
+        val seen = BooleanArray(blocks.size)
+        val q = java.util.ArrayDeque<IntArray>()
+        for (x in 0 until SX) for (z in 0 until SZ) for (y in 1 until SY) {
+            if (get(x, y, z) != B.WOOD || get(x, y - 1, z) != B.GRASS) continue
+            q.clear(); q.add(intArrayOf(x, y, z)); seen[(y * SZ + z) * SX + x] = true
+            while (q.isNotEmpty()) {
+                val c = q.poll()
+                set(c[0], c[1], c[2], B.AIR)
+                for (dx in -1..1) for (dy in -1..1) for (dz in -1..1) {
+                    val nx = c[0] + dx; val ny = c[1] + dy; val nz = c[2] + dz
+                    if (nx < 0 || nx >= SX || nz < 0 || nz >= SZ || ny < 0 || ny >= SY) continue
+                    if (Math.abs(nx - x) > 9 || Math.abs(nz - z) > 9 || ny - y > 16) continue
+                    val id = get(nx, ny, nz)
+                    if (id != B.WOOD && id != B.LEAVES) continue
+                    val k = (ny * SZ + nz) * SX + nx
+                    if (seen[k]) continue
+                    seen[k] = true; q.add(intArrayOf(nx, ny, nz))
+                }
+            }
+        }
+        plantForest(Random(seed.toLong() + 99), 420) { x, z -> surfaceY(x, z) - 1 }
     }
 
     fun save(f: File) {
