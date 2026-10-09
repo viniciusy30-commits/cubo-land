@@ -3,7 +3,6 @@
 - Textura da folha de volta ao visual com buraquinhos, sem folhas saindo pra fora
 - Folhas caem das árvores balançando (quantidade moderada)
 - Primeiro golpe com peso: braço sobe pro alto e desce num corte rápido e pesado
-- Folhas em tons mais claros e fofos
 - Combo da espada refeito: corte diagonal, corte horizontal e estocada, um ligado no outro
 - A estocada alcança mais longe e machuca mais
 
