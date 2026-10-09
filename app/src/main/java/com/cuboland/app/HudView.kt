@@ -58,7 +58,7 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
     private fun toggleInv() {
         invOpen = !invOpen
         stickId = -1; lookId = -1; sx = 0f; sy = 0f
-        game.stickX = 0f; game.stickY = 0f; game.jumpHeld = false; btnId.clear()
+        game.stickX = 0f; game.stickY = 0f; game.jumpHeld = false; game.attackHeld = false; btnId.clear()
         invSel = game.cur()
     }
 
@@ -86,7 +86,7 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
         for (i in 0 until 5) if (hypot(x - bx(i), y - byy(i)) < br(i) * 1.15f) {
             btnId[id] = i
             when (i) {
-                0 -> game.wantAttack = true
+                0 -> { game.attackPress = true; game.attackHeld = true }
                 1 -> game.jumpHeld = true
                 2 -> game.wantPlace = true
                 3 -> game.wantCam = true
@@ -117,6 +117,7 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
         if (id == lookId) lookId = -1
         val b = btnId.remove(id)
         if (b == 1) game.jumpHeld = false
+        if (b == 0) { game.attackHeld = false; game.attackRelease = true }
     }
 
     private fun heart(c: Canvas, cx: Float, cy: Float, s: Float, color: Int) {
@@ -199,6 +200,15 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
                     c.drawLine(x - 10 * d, y, x + 10 * d, y, pt) }
                 else -> { path.reset(); path.moveTo(x + 6 * d, y - 10 * d); path.lineTo(x - 6 * d, y); path.lineTo(x + 6 * d, y + 10 * d); c.drawPath(path, pt) }
             }
+        }
+        // anel de carga do golpe poderoso
+        if (game.charging && !invOpen) {
+            val rr0 = br(0) + 7 * d; val ch = game.charge
+            val rc = RectF(bx(0) - rr0, byy(0) - rr0, bx(0) + rr0, byy(0) + rr0)
+            pt.style = Paint.Style.STROKE; pt.strokeWidth = 5f * d; pt.strokeCap = Paint.Cap.ROUND
+            pt.color = Color.argb(70, 255, 255, 255); c.drawArc(rc, 0f, 360f, false, pt)
+            pt.color = if (ch >= 1f) Color.rgb(255, 214, 90) else Color.rgb(255, (255 - 60 * ch).toInt(), (255 - 170 * ch).toInt())
+            c.drawArc(rc, -90f, 360f * ch, false, pt)
         }
         // hotbar
         if (game.sel != lastSel) { lastSel = game.sel; bounce = 1f }

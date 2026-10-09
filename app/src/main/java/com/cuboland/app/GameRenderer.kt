@@ -47,9 +47,11 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                     wp.x += (sin(uTime * 2.3 + wp.x * 0.9 + wp.z * 0.6) * 0.07 + 0.04) * w * gust * 1.4;
                     wp.z += cos(uTime * 1.8 + wp.x * 0.5 + wp.z * 0.9) * 0.05 * w * gust * 1.4;
                 } else if (tile == 8.0 || tile == 20.0 || tile == 21.0 || tile == 22.0) {
-                    wp.x += sin(uTime * 1.7 + wp.y * 1.3 + wp.z * 0.8) * 0.04 * gust;
-                    wp.z += cos(uTime * 1.4 + wp.y * 1.1 + wp.x * 0.8) * 0.04 * gust;
-                    wp.y += sin(uTime * 2.1 + wp.x * 1.2 + wp.z) * 0.018;
+                    float ph = wp.x * 0.8 + wp.z * 0.7;
+                    float dx = (sin(uTime * 1.6 + wp.y * 1.2 + ph) * 0.05 + sin(uTime * 3.1 + ph * 1.7) * 0.015 + 0.02) * gust;
+                    float dz = (cos(uTime * 1.3 + wp.y * 1.0 + ph) * 0.05 + cos(uTime * 2.7 + ph * 1.3) * 0.015) * gust;
+                    float dy = sin(uTime * 2.0 + ph * 1.4 + wp.y) * 0.03;
+                    wp.x += dx; wp.z += dz; wp.y += dy;
                 } else if (tile == 10.0) {
                     wp.y += sin(uTime * 1.8 + wp.x * 1.3 + wp.z * 0.7) * 0.03 + cos(uTime * 1.4 + wp.z * 1.5 - wp.x * 0.6) * 0.025;
                 }
@@ -87,7 +89,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             vec3 light = mix(vec3(0.80, 0.84, 1.0), vec3(1.05, 1.02, 0.95), l);
             vec3 c = t.rgb * vCol * uTint * light * 0.9;
             float alpha = uAlpha * t.a;
-            if (isLeaf) c *= 1.2 + 0.05 * sin(vWP.x * 0.7 + vWP.z * 0.5 + uTime * 0.8);
+            if (isLeaf) { float shl = sin(vWP.x * 0.9 + vWP.z * 0.8 + uTime * 1.1) * sin(vWP.y * 1.3 + vWP.x * 0.4 - uTime * 0.8); c *= 1.18 + 0.09 * shl; c += vec3(0.03, 0.05, 0.0) * max(shl, 0.0); }
             if (isWater) {
                 float tm = uTime;
                 vec2 P = vWP.xz;
@@ -708,6 +710,41 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             floatArrayOf(1f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
         )
 
+    private val KF_SWORD_POWER = arrayOf(
+            floatArrayOf(0f, 0f, 0.05f, 0.17f, 0.1f, 54f, -5f, -6f, 70f, -10f, 0f, 0f),
+            floatArrayOf(0.06f, 0f, 0.05f, 0.19f, 0.11f, 58f, -5f, -6f, 76f, -10f, 0f, 0f),
+            floatArrayOf(0.26f, 1f, 0.0f, 0.0f, -0.28f, 6f, 6f, 2f, -10f, 10f, 0f, 0f),
+            floatArrayOf(0.36f, 2f, -0.09f, -0.18f, -0.36f, -34f, 16f, 10f, -62f, 32f, 0f, 0f),
+            floatArrayOf(0.44f, 0f, -0.09f, -0.16f, -0.32f, -31f, 17f, 11f, -58f, 32f, 0f, 0f),
+            floatArrayOf(0.62f, 0f, -0.08f, -0.12f, -0.2f, -22f, 15f, 10f, -48f, 30f, 0f, 0f),
+            floatArrayOf(1f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
+        )
+
+    private val KF_AXE_POWER = arrayOf(
+            floatArrayOf(0f, 0f, 0.05f, 0.18f, 0.11f, 56f, -4f, -5f, 60f, -8f, 0f, 0f),
+            floatArrayOf(0.07f, 0f, 0.05f, 0.2f, 0.12f, 60f, -4f, -5f, 66f, -8f, 0f, 0f),
+            floatArrayOf(0.3f, 1f, 0.0f, 0.0f, -0.3f, 6f, 3f, 2f, -12f, 6f, 0f, 0f),
+            floatArrayOf(0.4f, 2f, -0.07f, -0.2f, -0.42f, -38f, 10f, 8f, -60f, 20f, 0f, 0f),
+            floatArrayOf(0.5f, 0f, -0.07f, -0.17f, -0.38f, -35f, 11f, 9f, -56f, 20f, 0f, 0f),
+            floatArrayOf(0.68f, 0f, -0.05f, -0.12f, -0.24f, -24f, 8f, 6f, -44f, 16f, 0f, 0f),
+            floatArrayOf(1f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
+        )
+
+    private fun sm01(x: Float): Float { val t = x.coerceIn(0f, 1f); return t * t * (3f - 2f * t) }
+    private val CH_MID_S = floatArrayOf(0.04f, 0.15f, 0.09f, 48f, -4f, -5f, 62f, -8f, 0f, 0f)
+    private val CH_FULL_S = floatArrayOf(0.05f, 0.17f, 0.10f, 54f, -5f, -6f, 70f, -10f, 0f, 0f)
+    private val CH_MID_A = floatArrayOf(0.04f, 0.15f, 0.09f, 50f, -3f, -4f, 52f, -6f, 0f, 0f)
+    private val CH_FULL_A = floatArrayOf(0.05f, 0.18f, 0.11f, 56f, -4f, -5f, 60f, -8f, 0f, 0f)
+
+    /** segurando o ataque: braço sobe e a ferramenta fica pra trás; perto do máximo, treme de tanta força */
+    private fun chargePose(out: FloatArray, id: Int, ch: Float, tt: Float) {
+        val mid = if (id == Items.AXE) CH_MID_A else CH_MID_S; val full = if (id == Items.AXE) CH_FULL_A else CH_FULL_S
+        val e1 = sm01(ch / 0.3f); val e2 = sm01((ch - 0.3f) / 0.7f)
+        for (j in 0 until 10) out[j] = mid[j] * e1 + (full[j] - mid[j]) * e2
+        val tr = sm01((ch - 0.75f) / 0.25f)
+        out[0] += sin(tt * 70f) * 0.004f * tr; out[5] += sin(tt * 55f + 1f) * 1.2f * tr; out[3] += sin(tt * 63f) * 0.8f * tr
+    }
+
     private val SWORD_COMBO = arrayOf(KF_SWORD, KF_SWORD2, KF_SWORD3)
     private val lastRaw = FloatArray(10); private val blendFrom = FloatArray(10); private var prevSwingR = 1f
 
@@ -721,7 +758,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     }
 
     private fun kfFor(id: Int) = when {
-        id == Items.SWORD -> SWORD_COMBO[game.combo % SWORD_COMBO.size]; id == Items.AXE -> KF_AXE; id == Items.PICK -> KF_PICK; id == Items.STAFF -> KF_STAFF
+        id == Items.SWORD -> (if (game.powerSwing) KF_SWORD_POWER else SWORD_COMBO[game.combo % SWORD_COMBO.size]); id == Items.AXE -> (if (game.powerSwing) KF_AXE_POWER else KF_AXE); id == Items.PICK -> KF_PICK; id == Items.STAFF -> KF_STAFF
         id in 1..13 -> KF_BLOCK; else -> KF_FIST
     }
 
@@ -811,9 +848,11 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
 
         // ---- pose animada: golpe (keyframes da ferramenta) + respiração + andar + trocar de item ----
         val kfs = kfFor(id)
-        if (game.swing < prevSwingR) System.arraycopy(lastRaw, 0, blendFrom, 0, 10)   // novo golpe: guarda de onde a espada vinha
-        prevSwingR = game.swing
-        if (id == Items.SWORD) evalSword(poseP, kfs, game.swing) else evalPose(poseP, kfs, game.swing)
+        if (game.charging) chargePose(poseP, id, game.charge, tt) else {
+            if (game.swing < prevSwingR) System.arraycopy(lastRaw, 0, blendFrom, 0, 10)   // novo golpe: guarda de onde a espada vinha
+            prevSwingR = game.swing
+            if (id == Items.SWORD) evalSword(poseP, kfs, game.swing) else evalPose(poseP, kfs, game.swing)
+        }
         System.arraycopy(poseP, 0, lastRaw, 0, 10)
         val p = poseP
         val flow = sin(tt * 1.5f)
@@ -837,13 +876,13 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
 
         if (isTool) {
             // rastro do golpe: cópias translúcidas da parte que corta nos instantes anteriores (só aparece quando o golpe é rápido)
-            if (game.swing < 0.85f && id == Items.SWORD) {
+            if (game.swing < 0.85f && (id == Items.SWORD || (id == Items.AXE && game.powerSwing))) {
                 for (i in 1..8) {
                     val gs = game.swing - i * 0.02f
                     if (gs <= 0f) break
-                    evalSword(ghostP, kfs, gs)
+                    if (id == Items.SWORD) evalSword(ghostP, kfs, gs) else evalPose(ghostP, kfs, gs)
                     val diff = abs(ghostP[3] - p[3]) + abs(ghostP[4] - p[4]) + abs(ghostP[5] - p[5]) + abs(ghostP[6] - p[6]) + abs(ghostP[7] - p[7])
-                    val al = min(1f, diff / 30f) * 0.3f * (1f - i / 9f)
+                    val al = min(1f, diff / 30f) * (if (game.powerSwing) 0.5f else 0.3f) * (1f - i / 9f)
                     if (al < 0.02f) continue
                     poseMatrix(ghostM, ghostP, ox, oy, sx0, sy0, sz0)
                     toolBase(toolM, ghostP, hx, hy, hz)
@@ -941,9 +980,12 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             box(base, 0f, 0f, 0f, 0f, 0f, q.size, q.size, q.size, 0f, q.color, min(1f, q.life * 2f))
         }
         for (l in game.leafFall) {
-            setBase(l.x, l.y, l.z, l.age * 70f + l.ph * 57f)
-            val tl = if (l.landed) 0f else sin(l.age * 3f + l.ph) * 55f; val rl = if (l.landed) 0f else cos(l.age * 2.3f + l.ph) * 45f
-            box(base, 0f, 0f, 0f, tl, 0f, l.size, 0.012f, l.size * 1.4f, 0f, l.color, min(1f, l.life * 1.2f), 1f, null, 0, rl)
+            setBase(l.x, l.y, l.z, l.age * 50f + l.ph * 57f)
+            val tl = if (l.landed) 0f else sin(l.age * 3f + l.ph) * 50f; val rl = if (l.landed) 0f else cos(l.age * 2.3f + l.ph) * 40f
+            val al = min(1f, min(l.age * 3f, l.life * 1.2f))
+            box(base, 0f, 0f, 0f, tl, 0f, l.size * 0.95f, 0.01f, l.size * 1.05f, 0f, l.color, al, 1f, null, 0, rl)
+            box(base, 0f, 0f, 0f, tl, 0f, l.size * 0.5f, 0.011f, l.size * 1.75f, 0f, l.color, al, 1.08f, null, 0, rl)
+            box(base, 0f, 0.004f, 0f, tl, 0f, l.size * 0.1f, 0.012f, l.size * 1.8f, 0f, 0x2F6B1E, al * 0.8f, 1f, null, 0, rl)
         }
         for (b in game.bolts) {
             setBase(b.x, b.y, b.z, 0f)

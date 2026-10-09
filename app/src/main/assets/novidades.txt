@@ -1,3 +1,10 @@
+#id 2026-10-09-w
+#titulo Golpe carregado e folhas mais vivas!
+- Segure o botão de ataque com espada ou machado: o braço sobe e a ferramenta fica pra trás, com anel de carga no botão
+- Ao soltar, vem um golpe poderoso: mais dano, acerta vários slimes à frente, treme a tela e levanta poeira
+- Copas das árvores balançam com o vento de forma mais natural, com brilho de luz passando
+- Folhas caindo mais bonitas: formato de folha com nervura, giram e flutuam em espiral
+
 #id 2026-10-09-v
 #titulo Folhas fofinhas e combo novo!
 - Textura da folha de volta ao visual com buraquinhos, sem folhas saindo pra fora

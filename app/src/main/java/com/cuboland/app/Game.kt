@@ -29,6 +29,11 @@ class Game(val world: World) {
     val player = Ent(World.SX / 2f + 0.5f, 20f, World.SZ / 2f + 0.5f, 0.3f, 1.8f)
     val slimes = ArrayList<Slime>()
     val parts = ArrayList<Particle>()
+    @Volatile var attackHeld = false; @Volatile var attackPress = false; @Volatile var attackRelease = false
+    @Volatile var charging = false; @Volatile var charge = 0f
+    private var pressT = 0f; private var pressing = false; var swingDur = 0.46f; @Volatile var powerSwing = false
+    private var hitT = -1f; private var hitItem = 0; private var hitStab = false
+    private var pendingT = -1f; private var pendingPower = 0f
     val leafFall = ArrayList<LeafP>(); private var leafT = 0f; var comboT = 0f
     // entrada (escrita pela UI)
     @Volatile var stickX = 0f; @Volatile var stickY = 0f
@@ -150,11 +155,20 @@ class Game(val world: World) {
     private fun attack() {
         val item = cur()
         if (atkCd > 0f) return
-        atkCd = Items.cooldown(item); swing = 0f; bodyYaw = yaw
+        atkCd = Items.cooldown(item); swing = 0f; bodyYaw = yaw; swingDur = Items.swingTime(item); powerSwing = false
         if (item == Items.SWORD) { combo = if (comboT > 0f) (combo + 1) % 3 else 0; comboT = 1.1f }   // combo: corte diagonal -> corte horizontal -> estocada
         updateCamera()
         if (item == Items.STAFF) { shoot(); return }
-        val stab = item == Items.SWORD && combo == 2
+        if (hitT > 0f) { hitT = -1f; strikeHit(hitItem, hitStab) }   // golpe anterior ainda pendente: resolve antes de começar o novo
+        // o dano/quebra só acontece quando a ferramenta chega no alvo (momento do impacto da animação)
+        hitItem = item; hitStab = item == Items.SWORD && combo == 2
+        val frac = when (item) { Items.SWORD -> when (combo) { 0 -> 0.58f; 1 -> 0.53f; else -> 0.5f }; Items.AXE -> 0.55f; Items.PICK -> 0.54f; else -> 0.5f }
+        hitT = swingDur * frac
+    }
+
+    /** aplica o golpe normal (slime à frente ou bloco mirado) no instante do impacto */
+    private fun strikeHit(item: Int, stab: Boolean) {
+        updateCamera()
         val reach = Items.reach(item) + (if (stab) 0.8f else 0f)
         var best: Slime? = null; var bd = 9999f
         for (s in slimes) {
@@ -173,6 +187,33 @@ class Game(val world: World) {
             burst(hx + 0.5f, hy + 0.5f, hz + 0.5f, B.top[id], 14, 4f)
             world.set(hx, hy, hz, B.AIR)
         }
+    }
+
+    private fun releasePower(power: Float) {
+        val item = cur()
+        swing = 0f; swingDur = if (item == Items.AXE) 0.58f else 0.46f; powerSwing = true; bodyYaw = yaw
+        atkCd = Items.cooldown(item) * 1.3f; comboT = 0f; combo = 0
+        pendingPower = max(0.25f, power); pendingT = swingDur * (if (item == Items.AXE) 0.4f else 0.36f)
+        updateCamera()
+    }
+
+    /** impacto do golpe poderoso: acerta todos os slimes à frente, treme a tela e levanta poeira */
+    private fun powerHit(pw: Float) {
+        val item = cur()
+        val reach = Items.reach(item) + 0.7f + pw * 0.8f
+        for (s in slimes.toList()) {
+            if (s.dead) continue
+            val dx = s.x - player.x; val dy = s.y + 0.4f - (player.y + 1f); val dz = s.z - player.z
+            if (sqrt(dx * dx + dy * dy + dz * dz) > reach) continue
+            val dot = (dx * sin(yaw) + dz * cos(yaw)) / max(0.001f, sqrt(dx * dx + dz * dz))
+            if (dot < 0.15f) continue
+            hitSlime(s, Items.damage(item) + 1 + (pw * 4f).toInt(), dx, dz, Items.knock(item) * (1.3f + pw))
+        }
+        shake = max(shake, 0.35f + 0.5f * pw)
+        val fx = (player.x + sin(yaw) * 2f); val fz = (player.z + cos(yaw) * 2f)
+        val fy = world.surfaceY(fx.toInt().coerceIn(1, World.SX - 2), fz.toInt().coerceIn(1, World.SZ - 2)).toFloat()
+        burst(fx, fy + 0.1f, fz, 0xF4F0D8, 10 + (pw * 14).toInt(), 3f + pw * 3f)
+        burst(fx, fy + 0.2f, fz, 0x9BE36A, 6, 2.5f)
     }
 
     private fun place() {
@@ -213,11 +254,11 @@ class Game(val world: World) {
         yaw -= ddx * 0.0045f * sens; pitch = (pitch - ddy * 0.0045f * sens).coerceIn(-1.45f, 1.45f)
         if (wantCam) { wantCam = false; thirdPerson = !thirdPerson }
         atkCd -= dt; comboT -= dt; hurtCd -= dt; shake = max(0f, shake - dt * 1.5f); hurtFlash = max(0f, hurtFlash - dt * 2f)
-        if (swing < 1f) swing = min(1f, swing + dt / Items.swingTime(cur()))
+        if (swing < 1f) swing = min(1f, swing + dt / swingDur)
         if (deadTimer > 0f) { deadTimer -= dt; if (deadTimer <= 0f) respawn(); updateCamera(); return }
 
         val p = player
-        val sp = if (p.inWater) 2.8f else 5f
+        val sp = (if (p.inWater) 2.8f else 5f) * (if (charging) 0.55f else 1f)
         val f = sin(yaw); val c = cos(yaw)
         val mx = (f * stickY + (-c) * stickX) * sp; val mz = (c * stickY + f * stickX) * sp
         val k = min(1f, (if (p.onGround) 14f else 5f) * dt)
@@ -238,7 +279,24 @@ class Game(val world: World) {
         walkAmt += (min(1f, mag) * (if (p.onGround) 1f else 0.4f) - walkAmt) * min(1f, 10f * dt)
         walkPhase += dt * 9f * walkAmt
 
-        if (wantAttack) { wantAttack = false; attack() }
+        // ataque: toque = golpe normal; segurar (espada/machado) = carrega, soltar = golpe poderoso
+        val chargeable = cur() == Items.SWORD || cur() == Items.AXE
+        if (attackPress) { attackPress = false; if (chargeable) { pressing = true; pressT = 0f } else attack() }
+        if (pressing) {
+            if (!chargeable) { pressing = false; charging = false; charge = 0f }
+            else if (attackHeld) {
+                pressT += dt
+                if (!charging && pressT > 0.18f && swing >= 0.85f) { charging = true; charge = 0f }
+                if (charging) charge = min(1f, charge + dt / 0.85f)
+            }
+        }
+        if (attackRelease) {
+            attackRelease = false
+            if (pressing) { pressing = false; if (charging) { val pw = charge; charging = false; charge = 0f; releasePower(pw) } else attack() }
+        }
+        if (!attackHeld && charging) { charging = false; charge = 0f }
+        if (hitT > 0f) { hitT -= dt; if (hitT <= 0f) strikeHit(hitItem, hitStab) }
+        if (pendingT > 0f) { pendingT -= dt; if (pendingT <= 0f) powerHit(pendingPower) }
         if (wantPlace) { wantPlace = false; place() }
 
         spawnT -= dt
@@ -290,15 +348,15 @@ class Game(val world: World) {
         }
         // folhas caindo das árvores perto do jogador (quantidade moderada)
         leafT -= dt
-        if (leafT <= 0f && leafFall.size < 26) {
+        if (leafT <= 0f && leafFall.size < 30) {
             leafT = 0.2f + rnd.nextFloat() * 0.3f
             for (t in 0 until 28) {
                 val x = (player.x + (rnd.nextFloat() - 0.5f) * 30f).toInt(); val z = (player.z + (rnd.nextFloat() - 0.5f) * 30f).toInt()
                 val y = (player.y + (rnd.nextFloat() - 0.4f) * 18f).toInt()
                 if (x < 1 || z < 1 || x >= World.SX - 1 || z >= World.SZ - 1 || y < 2 || y >= World.SY) continue
                 if (world.get(x, y, z) != B.LEAVES || world.get(x, y - 1, z) != B.AIR) continue
-                val cols = intArrayOf(0x4FA52E, 0x6CBF3C, 0x8AD453, 0x3E8A25, 0xA3DF6A)
-                leafFall.add(LeafP(x + rnd.nextFloat(), y - 0.05f, z + rnd.nextFloat(), (rnd.nextFloat() - 0.5f) * 0.5f, (rnd.nextFloat() - 0.5f) * 0.5f,
+                val cols = intArrayOf(0x4FA52E, 0x6CBF3C, 0x8AD453, 0x3E8A25, 0xA3DF6A, 0xC4E070, 0x7FC84A)
+                leafFall.add(LeafP(x + rnd.nextFloat(), y - 0.05f, z + rnd.nextFloat(), (rnd.nextFloat() - 0.5f) * 0.4f + 0.2f, (rnd.nextFloat() - 0.5f) * 0.5f,
                     rnd.nextFloat() * 6.28f, cols[rnd.nextInt(cols.size)], 0.07f + rnd.nextFloat() * 0.05f, 9f))
                 break
             }
@@ -308,9 +366,9 @@ class Game(val world: World) {
             val l = li.next()
             l.age += dt; l.life -= dt
             if (!l.landed) {
-                val sway = sin(l.age * 2.2f + l.ph)
-                l.x += (l.vx + sway * 0.55f) * dt; l.z += (l.vz + cos(l.age * 1.7f + l.ph) * 0.45f) * dt
-                l.y -= (0.75f + 0.25f * sin(l.age * 3.1f + l.ph)) * dt
+                l.x += (l.vx + sin(l.age * 2.2f + l.ph) * 0.5f + cos(l.age * 1.3f + l.ph) * 0.25f) * dt
+                l.z += (l.vz + cos(l.age * 1.9f + l.ph) * 0.4f + sin(l.age * 1.1f + l.ph) * 0.25f) * dt
+                l.y -= (0.5f + 0.35f * abs(sin(l.age * 3.1f + l.ph))) * dt
                 if (world.solid(floor(l.x).toInt(), floor(l.y).toInt(), floor(l.z).toInt())) { l.landed = true; l.life = min(l.life, 1.4f) }
             }
             if (l.life <= 0f || l.y < 0f) li.remove()
