@@ -26,14 +26,17 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     private val ob = MeshBuf(); private val wb = MeshBuf()
     private var last = 0L
     private val rnd = java.util.Random()
-    private val fogR = 0.60f; private val fogG = 0.84f; private val fogB = 0.96f
+    private val fogR = 0.74f; private val fogG = 0.88f; private val fogB = 0.98f
+    private var skyProg = 0; private var skyP = 0; private var skyInv = 0; private var skyCam = 0; private var skyHor = 0; private var skyTime = 0
+    private val inv = FloatArray(16)
+    private val quad = ByteBuffer.allocateDirect(32).order(ByteOrder.nativeOrder()).asFloatBuffer().apply { put(floatArrayOf(-1f, -1f, 1f, -1f, -1f, 1f, 1f, 1f)); position(0) }
     private var lastId = -1; private var equip = 1f
     private var prevYaw = 0f; private var prevPitch = 0f; private var swayX = 0f; private var swayY = 0f
 
     private val VS = """
         uniform mat4 uVP; uniform mat4 uModel; uniform vec3 uCam; uniform float uTime; uniform float uWind;
         attribute vec3 aPos; attribute vec3 aCol; attribute vec2 aUV;
-        varying vec3 vCol; varying float vFog; varying vec2 vUV;
+        varying vec3 vCol; varying float vFog; varying vec2 vUV; varying vec3 vWP; varying float vTile;
         void main() {
             vec4 wp = uModel * vec4(aPos, 1.0);
             float tile = floor(aUV.x * 32.0);
@@ -41,29 +44,69 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                 float gust = 0.6 + 0.4 * sin(wp.x * 0.12 + wp.z * 0.08 + uTime * 0.7);
                 if (tile >= 16.0 && tile < 20.0) {
                     float w = clamp((0.99 - aUV.y) / 0.98, 0.0, 1.0); w = w * w;
-                    wp.x += (sin(uTime * 2.3 + wp.x * 0.9 + wp.z * 0.6) * 0.10 + 0.07) * w * gust * 1.6;
-                    wp.z += cos(uTime * 1.8 + wp.x * 0.5 + wp.z * 0.9) * 0.07 * w * gust * 1.6;
+                    wp.x += (sin(uTime * 2.3 + wp.x * 0.9 + wp.z * 0.6) * 0.07 + 0.04) * w * gust * 1.4;
+                    wp.z += cos(uTime * 1.8 + wp.x * 0.5 + wp.z * 0.9) * 0.05 * w * gust * 1.4;
                 } else if (tile == 8.0) {
-                    wp.x += sin(uTime * 1.7 + wp.y * 1.3 + wp.z * 0.8) * 0.045 * gust;
-                    wp.z += cos(uTime * 1.4 + wp.y * 1.1 + wp.x * 0.8) * 0.045 * gust;
-                    wp.y += sin(uTime * 2.1 + wp.x * 1.2 + wp.z) * 0.02;
+                    wp.x += sin(uTime * 1.7 + wp.y * 1.3 + wp.z * 0.8) * 0.04 * gust;
+                    wp.z += cos(uTime * 1.4 + wp.y * 1.1 + wp.x * 0.8) * 0.04 * gust;
+                    wp.y += sin(uTime * 2.1 + wp.x * 1.2 + wp.z) * 0.018;
                 } else if (tile == 10.0) {
                     wp.y += sin(uTime * 1.6 + wp.x * 1.1) * 0.03 + cos(uTime * 1.3 + wp.z * 1.4) * 0.03;
                 }
             }
             gl_Position = uVP * wp;
-            vCol = aCol; vUV = aUV;
+            vCol = aCol; vUV = aUV; vWP = wp.xyz; vTile = tile;
             vFog = clamp((length(wp.xyz - uCam) - 38.0) / 52.0, 0.0, 1.0);
+            vFog = vFog * vFog * (3.0 - 2.0 * vFog);
         }"""
     private val FS = """
         precision mediump float;
-        uniform vec3 uTint; uniform vec3 uFog; uniform float uAlpha; uniform sampler2D uTex;
-        varying vec3 vCol; varying float vFog; varying vec2 vUV;
+        uniform vec3 uTint; uniform vec3 uFog; uniform float uAlpha; uniform sampler2D uTex; uniform float uTime;
+        varying vec3 vCol; varying float vFog; varying vec2 vUV; varying vec3 vWP; varying float vTile;
         void main() {
             vec4 t = texture2D(uTex, vUV);
-            if (t.a < 0.5) discard;
-            vec3 c = mix(t.rgb * vCol * uTint * vec3(1.06, 1.02, 0.95), uFog, vFog);
+            if (t.a < 0.4) discard;
+            float l = clamp((vCol.r - 0.3) / 0.7, 0.0, 1.0);
+            vec3 light = mix(vec3(0.62, 0.70, 0.98), vec3(1.10, 1.03, 0.86), l);
+            vec3 c = t.rgb * vCol * uTint * light * 1.1;
+            if (vTile > 7.5 && vTile < 8.5) c *= 1.1 + 0.1 * sin(vWP.x * 0.7 + vWP.z * 0.5 + uTime * 0.8);
+            if (vTile > 9.5 && vTile < 10.5) {
+                float sp = pow(max(0.0, sin(vWP.x * 2.7 + uTime * 1.9) * sin(vWP.z * 2.3 - uTime * 1.4)), 8.0);
+                c = mix(c, vec3(0.7, 0.86, 1.0), 0.14) + vec3(0.8, 0.9, 1.0) * sp * 0.6;
+            }
+            if (vTile > 14.5 && vTile < 15.5) c = t.rgb * 1.5;
+            float g = dot(c, vec3(0.299, 0.587, 0.114));
+            c = mix(vec3(g), c, 1.18);
+            c = mix(c, uFog, vFog);
             gl_FragColor = vec4(c, uAlpha * t.a);
+        }"""
+    private val SVS = """
+        attribute vec2 aP; uniform mat4 uInv; varying vec4 vF;
+        void main() { vF = uInv * vec4(aP, 1.0, 1.0); gl_Position = vec4(aP, 0.999, 1.0); }"""
+    private val SFS = """
+        #ifdef GL_FRAGMENT_PRECISION_HIGH
+        precision highp float;
+        #else
+        precision mediump float;
+        #endif
+        uniform vec3 uCam; uniform vec3 uHor; uniform float uTime; varying vec4 vF;
+        float hs(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+        float ns(vec2 p) { vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f);
+            return mix(mix(hs(i), hs(i + vec2(1.0, 0.0)), f.x), mix(hs(i + vec2(0.0, 1.0)), hs(i + vec2(1.0, 1.0)), f.x), f.y); }
+        void main() {
+            vec3 d = normalize(vF.xyz / vF.w - uCam);
+            float h = clamp(d.y, 0.0, 1.0);
+            vec3 c = mix(uHor, vec3(0.20, 0.46, 0.92), pow(h, 0.55));
+            vec3 sd = normalize(vec3(0.55, 0.5, 0.65));
+            float s = max(dot(d, sd), 0.0);
+            c += vec3(1.0, 0.85, 0.55) * pow(s, 6.0) * 0.25 + vec3(1.0, 0.95, 0.8) * pow(s, 300.0) * 2.0;
+            if (d.y > 0.02) {
+                vec2 q = d.xz / (d.y + 0.25) * 1.4 + vec2(uTime * 0.012, 0.0);
+                float n = ns(q * 1.5) * 0.55 + ns(q * 3.1) * 0.3 + ns(q * 6.5) * 0.15;
+                float cl = smoothstep(0.52, 0.78, n) * smoothstep(0.02, 0.25, d.y);
+                c = mix(c, vec3(1.0, 0.99, 0.97) * (0.86 + 0.14 * ns(q * 2.0)), cl * 0.85);
+            }
+            gl_FragColor = vec4(c, 1.0);
         }"""
 
     private fun shader(type: Int, src: String): Int {
@@ -80,6 +123,12 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         uCam = G.glGetUniformLocation(prog, "uCam"); uTint = G.glGetUniformLocation(prog, "uTint")
         uAlpha = G.glGetUniformLocation(prog, "uAlpha"); uFog = G.glGetUniformLocation(prog, "uFog")
         uTex = G.glGetUniformLocation(prog, "uTex"); uTime = G.glGetUniformLocation(prog, "uTime"); uWind = G.glGetUniformLocation(prog, "uWind")
+        skyProg = G.glCreateProgram()
+        G.glAttachShader(skyProg, shader(G.GL_VERTEX_SHADER, SVS)); G.glAttachShader(skyProg, shader(G.GL_FRAGMENT_SHADER, SFS))
+        G.glLinkProgram(skyProg)
+        skyP = G.glGetAttribLocation(skyProg, "aP"); skyInv = G.glGetUniformLocation(skyProg, "uInv")
+        skyCam = G.glGetUniformLocation(skyProg, "uCam"); skyHor = G.glGetUniformLocation(skyProg, "uHor")
+        skyTime = G.glGetUniformLocation(skyProg, "uTime")
         Matrix.setIdentityM(ident, 0)
         G.glEnable(G.GL_DEPTH_TEST); G.glEnable(G.GL_CULL_FACE); G.glCullFace(G.GL_BACK); G.glFrontFace(G.GL_CCW)
         G.glBlendFunc(G.GL_SRC_ALPHA, G.GL_ONE_MINUS_SRC_ALPHA)
@@ -194,7 +243,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val glint = 0.5f + 0.5f * sin(t * 3f)
         when {
             id in 1..13 -> {
-                box(m, 0f, 0.04f, 0.14f, 0f, 30f, 0.3f, 0.3f, 0.3f, 0f, 0xFFFFFF, 1f, 1f, null, id)
+                box(m, 0f, 0.1f, 0.2f, 0f, 30f, 0.27f, 0.27f, 0.27f, 0f, 0xFFFFFF, 1f, 1f, null, id)
             }
             id == Items.SWORD -> {
                 box(m, 0f, 0f, 0.55f, 0f, 0f, 0.115f, 0.03f, 0.78f, 0f, 0xD7E4F4)        // lâmina
@@ -338,21 +387,21 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val bobX = sin(wp) * 0.03f * wa; val bobY = abs(sin(wp)) * 0.03f * wa
         val breath = sin(game.time * 1.8f) * 0.006f
         Matrix.setIdentityM(fp, 0)
-        Matrix.translateM(fp, 0, 0.34f + bobX + swayX, -0.36f + bobY + swayY + breath - (1f - e) * 0.55f, -0.3f)
+        Matrix.translateM(fp, 0, 0.34f + bobX + swayX, -0.38f + bobY + swayY + breath - (1f - e) * 0.55f, -0.42f)
         Matrix.rotateM(fp, 0, 180f, 0f, 1f, 0f)
-        val rest = if (id in 1..13) -6f else -14f
+        val rest = if (id in 1..13) -12f else -20f
         Matrix.rotateM(fp, 0, rest + swingDelta(id, game.swing), 1f, 0f, 0f)
         if (game.swing < 1f) Matrix.rotateM(fp, 0, -sin(game.swing * 3.1416f) * 14f, 0f, 1f, 0f)
-        box(fp, 0f, 0f, 0.3f, 0f, 0f, 0.17f, 0.17f, 0.62f, 0f, 0x2FB7A5)
-        box(fp, 0f, 0f, 0.46f, 0f, 0f, 0.19f, 0.19f, 0.1f, 0f, 0xFF6FA5)
-        box(fp, 0f, 0f, 0.5f, 0f, 0f, 0.2f, 0.2f, 0.04f, 0f, 0xFFFFFF)   // punho da manga
-        box(fp, 0f, 0f, 0.66f, 0f, 0f, 0.185f, 0.17f, 0.2f, 0f, 0xF2C29B)  // palma
-        for (k in 0 until 4) box(fp, -0.066f + k * 0.044f, 0.095f, 0.68f, 0f, 0f, 0.04f, 0.05f, 0.15f, 0f, 0xE9B58C)  // dedos
-        box(fp, -0.11f, 0.02f, 0.62f, 0f, 20f, 0.05f, 0.07f, 0.14f, 0f, 0xF2C29B)  // polegar
-        box(fp, 0f, -0.095f, 0.7f, 0f, 0f, 0.17f, 0.04f, 0.12f, 0f, 0xDDA67C)  // sombra da palma
+        val skin = 0xF2C29B; val skinD = 0xD9A27A
+        box(fp, 0f, 0f, 0.22f, 0f, 0f, 0.15f, 0.15f, 0.44f, 0f, 0x2FB7A5)       // manga
+        box(fp, 0f, 0f, 0.45f, 0f, 0f, 0.17f, 0.17f, 0.05f, 0f, 0xFF6FA5)       // punho da manga
+        box(fp, 0f, 0f, 0.57f, 0f, 0f, 0.15f, 0.15f, 0.2f, 0f, skin)            // mão fechada
+        for (k in -1..1) box(fp, 0f, k * 0.045f, 0.6f, 0f, 0f, 0.158f, 0.012f, 0.13f, 0f, skinD) // dedos
+        box(fp, 0.085f, 0.03f, 0.52f, 0f, 0f, 0.045f, 0.06f, 0.12f, 0f, skin)   // polegar
         System.arraycopy(fp, 0, itemM, 0, 16)
-        Matrix.translateM(itemM, 0, 0f, 0.02f, 0.66f)
-        val ir = if (id in 1..13) 0f else if (id == Items.STAFF) -40f else -52f
+        Matrix.translateM(itemM, 0, 0f, 0f, 0.58f)
+        Matrix.rotateM(itemM, 0, 12f, 0f, 1f, 0f)
+        val ir = if (id in 1..13) 0f else if (id == Items.STAFF) -28f else -32f
         if (ir != 0f) Matrix.rotateM(itemM, 0, ir, 1f, 0f, 0f)
         drawItem(itemM, id, game.time)
     }
@@ -379,6 +428,19 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val ez = game.camZ + (rnd.nextFloat() - 0.5f) * sh
         Matrix.setLookAtM(view, 0, ex, ey, ez, ex + game.lookDirX(), ey + game.lookDirY(), ez + game.lookDirZ(), 0f, 1f, 0f)
         Matrix.multiplyMM(vp, 0, proj, 0, view, 0)
+        // céu: degradê, sol, nuvens suaves
+        Matrix.invertM(inv, 0, vp, 0)
+        G.glDisable(G.GL_DEPTH_TEST); G.glDisable(G.GL_CULL_FACE)
+        G.glUseProgram(skyProg)
+        G.glUniformMatrix4fv(skyInv, 1, false, inv, 0); G.glUniform3f(skyCam, ex, ey, ez)
+        G.glUniform3f(skyHor, fogR, fogG, fogB); G.glUniform1f(skyTime, game.time)
+        G.glBindBuffer(G.GL_ARRAY_BUFFER, 0)
+        G.glEnableVertexAttribArray(skyP); G.glVertexAttribPointer(skyP, 2, G.GL_FLOAT, false, 0, quad)
+        G.glDrawArrays(G.GL_TRIANGLE_STRIP, 0, 4)
+        G.glDisableVertexAttribArray(skyP)
+        G.glEnable(G.GL_DEPTH_TEST); G.glEnable(G.GL_CULL_FACE)
+        G.glUseProgram(prog)
+        G.glActiveTexture(G.GL_TEXTURE0); G.glUniform1i(uTex, 0)
         G.glUniformMatrix4fv(uVP, 1, false, vp, 0)
         G.glUniform3f(uCam, ex, ey, ez)
         G.glUniform3f(uFog, fogR, fogG, fogB)
@@ -394,12 +456,6 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         G.glUniform1f(uWind, 0f)
         bindMesh(cubeVb, cubeIb)
         if (game.thirdPerson && game.deadTimer <= 0f) drawPlayer(game.time)
-        for (i in 0 until 9) {
-            val cx = ((i * 37 + game.time * 1.2f) % 150f) - 25f; val cz = (i * 53 % 100).toFloat() - 2f
-            setBase(cx, 42f + (i % 3) * 2f, cz, 0f)
-            box(base, 0f, 0f, 0f, 0f, 0f, 9f, 1.6f, 5f, 0f, 0xFFFFFF)
-            box(base, 2f, 1.2f, 1f, 0f, 0f, 5f, 1.4f, 3f, 0f, 0xFFFFFF)
-        }
         G.glEnable(G.GL_BLEND)
         G.glDepthMask(false)
         for (s in game.slimes) shadow(s.x, s.y, s.z, 0.9f)

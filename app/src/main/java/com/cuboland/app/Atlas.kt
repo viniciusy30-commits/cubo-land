@@ -114,13 +114,7 @@ object Atlas {
                 if (maxOf(abs(dx), abs(dy)) > 14f) mul(lerp(0x58391F, 0x7A5230, vn(u, v, 8, 8, 24)), 0.95f)
                 else lerp(0xB88C54, 0xD8B678, 0.5f + 0.5f * sin(r * 0.95f))
             }
-            8 -> {
-                worley(u, v, 6, 30)
-                var m = 1.12f - wd1 * 0.85f
-                if (wd2 - wd1 < 0.08f) m *= 0.55f
-                if (wd1 < 0.12f && wid > 0.7f) m *= 1.18f
-                mul(lerp(0x286F2B, 0x6CC63F, wid), m * (0.94f + 0.12f * h(x, y, 31)))
-            }
+            8 -> leaf(x, y, u, v)
             9 -> {
                 val row = y / 8; val xs = (x + (row % 2) * 16) % 32
                 val grain = vn(u, v, 2, 16, 41)
@@ -163,17 +157,55 @@ object Atlas {
         }
     }
 
-    private fun tuft(x: Int, y: Int): Int {
-        val yb = 31 - y; var out = CLEAR
-        for (k in 0 until 7) {
-            val cx = 2.5f + k * 4.2f + (h(k, 0, 70) - 0.5f) * 2f
-            val ht = 14f + 17f * h(k, 1, 70)
-            if (yb >= ht) continue
-            val f = yb / ht; val lean = (h(k, 2, 70) - 0.5f) * 9f
-            val xc = cx + lean * f * f; val w = 1.9f * (1 - f) + 0.35f
-            if (abs(x + 0.5f - xc) < w) out = mul(lerp(0x2A7326, 0xA8E366, f), 0.9f + 0.2f * h(k, 3, 70))
+    /** folhagem: dezenas de folhinhas sobrepostas, nervura central, luz e sombra, e frestas de céu */
+    private fun leaf(x: Int, y: Int, u: Float, v: Float): Int {
+        var col = lerp(0x1F5E26, 0x2F7D32, fbm(u, v, 30))
+        var covered = false
+        for (i in 0 until 34) {
+            val cx = h(i, 0, 100) * 32f; val cy = h(i, 1, 100) * 32f; val ang = h(i, 2, 100) * 3.1416f
+            val ca = kotlin.math.cos(ang); val sa = sin(ang)
+            val aa = 4.6f + 3f * h(i, 3, 100); val bb = 2.3f + 1.2f * h(i, 5, 100)
+            for (ox in -1..1) for (oy in -1..1) {
+                val px = x + 0.5f - cx + ox * 32f; val py = y + 0.5f - cy + oy * 32f
+                val lx = px * ca + py * sa; val ly = -px * sa + py * ca
+                val d = (lx / aa) * (lx / aa) + (ly / bb) * (ly / bb)
+                if (d < 1f) {
+                    covered = true
+                    val tone = (0.5f + 0.5f * (-ly / bb) * 0.7f + (h(i, 4, 100) - 0.5f) * 0.6f + 0.15f * (1f - d)).coerceIn(0f, 1f)
+                    var c = lerp(0x2A7430, 0x86D84F, tone)
+                    if (abs(ly) < 0.3f) c = mul(c, 1.14f)
+                    c = mul(c, 0.78f + 0.22f * (1f - d * d))
+                    col = c
+                }
+            }
         }
-        return out
+        if (!covered && fbm(u, v, 33) > 0.56f) return CLEAR
+        return col
+    }
+
+    /** tufo de grama: lâminas curvas, alfa suave (supersampling 4x4) -> borda lisinha */
+    private fun tuft(x: Int, y: Int): Int {
+        var hit = 0; var r = 0f; var g = 0f; var b = 0f
+        for (sy in 0 until 4) for (sx in 0 until 4) {
+            val fx = x + (sx + 0.5f) / 4f; val yb = 32f - (y + (sy + 0.5f) / 4f)
+            var fk = -1; var ff = 0f
+            for (k in 0 until 5) {
+                val cx = 3.2f + k * 6.4f + (h(k, 0, 70) - 0.5f) * 2f
+                val ht = if (k == 2) 29f else 14f + 12f * h(k, 1, 70)
+                if (yb >= ht) continue
+                val f = yb / ht; val lean = (h(k, 2, 70) - 0.5f) * 10f
+                val w = 2.5f * (1f - f) * (1f - 0.3f * f) + 0.12f
+                if (abs(fx - (cx + lean * f * f)) < w) { fk = k; ff = f }
+            }
+            if (fk >= 0) {
+                hit++
+                val c = mul(lerp(0x2B7527, 0xB7EC72, Math.pow(ff.toDouble(), 0.8).toFloat()), 0.92f + 0.16f * h(fk, 3, 70))
+                r += (c shr 16) and 255; g += (c shr 8) and 255; b += c and 255
+            }
+        }
+        if (hit == 0) return CLEAR
+        val a = (hit * 255 / 16)
+        return (a shl 24) or ((r / hit).toInt() shl 16) or ((g / hit).toInt() shl 8) or (b / hit).toInt()
     }
 
     private fun flower(x: Int, y: Int, petal: Int): Int {
