@@ -22,11 +22,11 @@ class Seg(val x1: Float, val y1: Float, val x2: Float, val y2: Float, val w: Flo
 
 /** marca de impacto numa face do bloco. kind: 0 corte de machado, 1 furo de picareta, 2 talho de espada, 3 estocada, 4 amassado */
 class Mark(val a: Int, val s: Int, val u: Float, val v: Float, val kind: Int, val ang: Float, val len: Float, val born: Float) {
-    val segs = ArrayList<Seg>(); var g = 0f; var chips = FloatArray(0)
+    val segs = ArrayList<Seg>(); var g = 0f; var chips = FloatArray(0); var blobs = FloatArray(0); var gr = 0f
 }
 
 /** dano acumulado de um bloco: todas as marcas + progresso de quebra */
-class Dmg(val x: Int, val y: Int, val z: Int, val id: Int) { var prog = 0f; var idle = 0f; val marks = ArrayList<Mark>() }
+class Dmg(val x: Int, val y: Int, val z: Int, val id: Int) { var felled = false; var prog = 0f; var idle = 0f; val marks = ArrayList<Mark>() }
 
 /** mini-bloco que voa e quica quando algo quebra */
 class Debris(var x: Float, var y: Float, var z: Float, var vx: Float, var vy: Float, var vz: Float, val id: Int, val size: Float, var life: Float) {
@@ -233,7 +233,7 @@ class Game(val world: World) {
             if (dot > 0.5f && dist < bd) { bd = dist; best = s }
         }
         if (best != null) { hitSlime(best, Items.damage(item) + (if (stab) 1 else 0), best.x - player.x, best.z - player.z, Items.knock(item) * (if (stab) 1.4f else 1f)); return }
-        if (!Items.breaks(item)) return
+        if (!Items.breaks(item) && item != Items.SWORD) return
         blockHit(item, 1f)
     }
 
@@ -264,8 +264,10 @@ class Game(val world: World) {
         val d = dmg.getOrPut(key) { Dmg(hx, hy, hz, id) }
         d.idle = 0f; brX = hx; brY = hy; brZ = hz
         d.prog += if (creative) 1f else efficiency(item, id) * mult / hardness(id)
+        if (item == Items.SWORD && !creative) d.prog = min(d.prog, 0.5f)   // espada marca o bloco, mas não chega a quebrar
         hitPulse = 1f
         if (d.prog >= 1f) { dmg.remove(key); breakBlock(hx, hy, hz, id); return }
+        if (id == B.WOOD && !d.felled && d.prog >= 0.65f) { d.felled = true; fellTree(hx, hy, hz) }   // tronco quase destruído: a parte de cima já tomba
         if (d.marks.size >= 7) d.marks.removeAt(0)
         d.marks.add(makeMark(a, s, fu, fv, item, mult > 1.5f, hitStab))
         hitChips(hx + 0.5f + qx, hy + 0.5f + qy, hz + 0.5f + qz, a, s, id, item, mult > 1.5f)
@@ -340,6 +342,15 @@ class Game(val world: World) {
                     crack(m, u + cos(an) * 0.04f, v + sin(an) * 0.04f, an, 0.08f + rnd.nextFloat() * 0.08f, 0f, 0.7f, 0.012f, 0, 0.5f) }
             }
         }
+        m.gr = when (kind) { 0 -> 0.09f; 1 -> 0.12f; 2 -> 0.05f; 3 -> 0.04f; else -> 0.07f } * (if (big) 1.3f else 1f)
+        val nb = if (kind == 2) 3 else 6
+        val bl = FloatArray(nb * 4)
+        for (i in 0 until nb) {
+            val al = if (kind == 0 || kind == 2) (rnd.nextFloat() - 0.5f) * len * 0.8f else 0f
+            val rr = rnd.nextFloat() * m.gr * 0.7f; val an = rnd.nextFloat() * 6.283f
+            bl[i * 4] = c * al + cos(an) * rr; bl[i * 4 + 1] = sn * al + sin(an) * rr; bl[i * 4 + 2] = rnd.nextFloat() * 3.14f; bl[i * 4 + 3] = m.gr * (0.55f + rnd.nextFloat() * 0.6f)
+        }
+        m.blobs = bl
         return m
     }
 
@@ -355,6 +366,7 @@ class Game(val world: World) {
             parts.add(Particle(x + nx * 0.03f, y + ny * 0.03f, z + nz * 0.03f, nx * sp + (rnd.nextFloat() - 0.5f) * 1.6f, ny * sp + rnd.nextFloat() * 1.5f + 0.6f, nz * sp + (rnd.nextFloat() - 0.5f) * 1.6f,
                 (r shl 16) or (g shl 8) or b, 0.03f + rnd.nextFloat() * (if (item == Items.AXE) 0.06f else 0.04f), 0.45f + rnd.nextFloat() * 0.4f))
         }
+        spawnPieces(x + nx * 0.05f, y + ny * 0.05f, z + nz * 0.05f, id, if (big) 3 else 2, 0.11f, 0.08f, nx * 2.2f, ny * 2.2f, nz * 2.2f, 1.4f)   // pedacinhos arrancados
         val spark = when { item == Items.SWORD -> 0xCFF6FF; item == Items.PICK && (id == B.STONE || id == B.BRICK) -> 0xFFE7A0; else -> 0 }
         if (spark != 0) for (i in 0 until 3) parts.add(Particle(x, y, z, nx * 2.5f + (rnd.nextFloat() - 0.5f) * 2.5f, ny * 2.5f + rnd.nextFloat() * 2f + 1f, nz * 2.5f + (rnd.nextFloat() - 0.5f) * 2.5f, spark, 0.035f, 0.3f + rnd.nextFloat() * 0.2f))
     }
@@ -494,7 +506,7 @@ class Game(val world: World) {
             anyHit = true
             hitSlime(s, Items.damage(item) + 1 + (pw * 4f).toInt(), dx, dz, Items.knock(item) * (1.3f + pw))
         }
-        if (!anyHit && Items.breaks(item)) { updateCamera(); blockHit(item, 2f) }   // golpe carregado: 2x de progresso na quebra
+        if (!anyHit && (Items.breaks(item) || item == Items.SWORD)) { updateCamera(); blockHit(item, 2f) }   // golpe carregado: 2x de progresso na quebra
         shake = max(shake, 0.35f + 0.5f * pw)
         val fx = (player.x + sin(yaw) * 2f); val fz = (player.z + cos(yaw) * 2f)
         val fy = world.surfaceY(fx.toInt().coerceIn(1, World.SX - 2), fz.toInt().coerceIn(1, World.SZ - 2)).toFloat()

@@ -328,6 +328,18 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val tgt = (0.3f + 0.85f * d.prog).coerceAtMost(1f)
         m.g += (tgt - m.g) * min(1f, dt * 9f)
         val a = m.a; val s = m.s; val bx = d.x; val by = d.y; val bz = d.z
+        // pedaço arrancado: cratera irregular mostrando o miolo do bloco, com borda iluminada embaixo
+        val gs = (1f + 0.6f * d.prog.coerceIn(0f, 1f)) * kk
+        val dark = mixCol(B.top[d.id], 0x000000, 0.5f); val deep = mixCol(B.top[d.id], 0x000000, 0.75f)
+        var bi = 0
+        while (bi < m.blobs.size) {
+            val bu = (m.u + m.blobs[bi]).coerceIn(0.04f, 0.96f); val bv = (m.v + m.blobs[bi + 1]).coerceIn(0.04f, 0.96f); val ba = m.blobs[bi + 2]; val sz = m.blobs[bi + 3] * gs
+            decal(bx, by, bz, a, s, bu, bv, ba, sz * 1.3f, sz * 1.05f, 0x120904, 0.28f)
+            decal(bx, by, bz, a, s, bu, bv, ba, sz, sz * 0.8f, dark, 0.92f)
+            decal(bx, by, bz, a, s, bu, bv, ba + 0.7f, sz * 0.7f, sz * 0.55f, deep, 0.95f)
+            decal(bx, by, bz, a, s, bu, bv - sz * 0.45f, 0f, sz * 0.8f, sz * 0.12f, pale, 0.4f)
+            bi += 4
+        }
         // rachaduras: sombra suave, brilho de borda e miolo escuro
         for (sg in m.segs) {
             val r = ((m.g - sg.t0) / (sg.t1 - sg.t0)).coerceIn(0f, 1f)

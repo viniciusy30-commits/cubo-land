@@ -1,3 +1,9 @@
+#id 2026-10-10-f
+#titulo Pedaços arrancados e tronco que cede!
+- A espada agora também deixa marca nos blocos (sem quebrar eles)
+- Cada batida arranca um pedaço do bloco, bem na área atingida, junto das rachaduras, e uns pedacinhos voam
+- Quando o tronco está quase destruído, a parte de cima da árvore já tomba, sem ficar flutuando
+
 #id 2026-10-10-e
 #titulo Marcas de golpe, árvores que tombam e blocos que estilhaçam!
 - Acabou a animação de rachadura antiga: agora cada golpe deixa uma marca EXATAMENTE onde a ferramenta bateu
