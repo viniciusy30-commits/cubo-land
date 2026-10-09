@@ -87,7 +87,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             vec3 light = mix(vec3(0.80, 0.84, 1.0), vec3(1.05, 1.02, 0.95), l);
             vec3 c = t.rgb * vCol * uTint * light * 0.9;
             float alpha = uAlpha * t.a;
-            if (isLeaf) c *= 1.0 + 0.05 * sin(vWP.x * 0.7 + vWP.z * 0.5 + uTime * 0.8);
+            if (isLeaf) c *= 1.2 + 0.05 * sin(vWP.x * 0.7 + vWP.z * 0.5 + uTime * 0.8);
             if (isWater) {
                 float tm = uTime;
                 vec2 P = vWP.xz;
@@ -543,6 +543,19 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         out[12] = px; out[13] = py; out[14] = pz; out[15] = 1f
     }
 
+    /** desenha o sprite 16x16 como cubinhos: cada "run" horizontal vira uma caixa. Origem = célula de empunhadura. */
+    private fun drawSprite(m: FloatArray, sp: ToolSprites.Sprite, t: Float) {
+        val glint = 0.5f + 0.5f * sin(t * 3f)
+        for (r in sp.runs) {
+            val w = (r.x1 - r.x0 + 1).toFloat()
+            val cx = (r.x0 + r.x1 + 1) / 2f - (sp.gx + 0.5f)
+            val cy = -((r.y + 0.5f) - (sp.gy + 0.5f))
+            val col = r.c and 0xFFFFFF
+            val shine = if (col == 0xFFFFFF || col == 0xF2F7FF || col == 0x7FE8FF) 0.92f + 0.08f * glint else 1f
+            box(m, cx, cy, 0f, 0f, 0f, w, 1f, 1.3f, 0f, col, 1f, shine)
+        }
+    }
+
     private fun drawHand(dt: Float) {
         G.glClear(G.GL_DEPTH_BUFFER_BIT)
         G.glUniformMatrix4fv(uVP, 1, false, proj, 0); G.glUniform3f(uCam, 0f, 0f, 0f)
@@ -578,14 +591,21 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         drawArm(fp, len, armW)
         System.arraycopy(fp, 0, itemM, 0, 16)
         if (id > 0 && id !in 1..13) {
-            // ferramenta: em pé, virada de frente (lado chato pra câmera), ponta pra cima e levemente pra direita, cabo no punho
-            val sc = when (id) { Items.SWORD -> 1.09f; Items.AXE -> 1.1f; Items.PICK -> 1.0f; else -> 1.0f }
-            Matrix.translateM(itemM, 0, 0f, 0f, len + 0.01f)
-            Matrix.rotateM(itemM, 0, extra - 20.4f - 90f, 1f, 0f, 0f)
-            Matrix.rotateM(itemM, 0, 120.9f, 0f, 0f, 1f)
-            Matrix.scaleM(itemM, 0, sc, sc, sc)
-            Matrix.translateM(itemM, 0, 0f, 0f, -0.06f)
-            drawItem(itemM, id, game.time)
+            // ferramenta pixel-art: em pé, face chata virada pra câmera, ponta pra cima/direita (como o item na mão do Minecraft)
+            val sp = ToolSprites.get(id)
+            if (sp != null) {
+                val cell = when (id) { Items.SWORD -> 0.066f; Items.AXE -> 0.066f; Items.PICK -> 0.064f; else -> 0.066f }
+                Matrix.setIdentityM(camBlk, 0)
+                Matrix.translateM(camBlk, 0, 0.74f, -0.66f, -1.08f)
+                Matrix.rotateM(camBlk, 0, extra * 0.8f, 1f, 0f, 0f)   // golpe: inclina pra frente
+                Matrix.rotateM(camBlk, 0, -14f, 0f, 1f, 0f)           // mostra um pouco do lado
+                Matrix.rotateM(camBlk, 0, 18f, 0f, 0f, 1f)            // endireita a diagonal do sprite (ponta mais pra cima)
+                Matrix.invertM(restInv, 0, restM, 0)
+                Matrix.multiplyMM(itemM, 0, fp, 0, restInv, 0)
+                Matrix.multiplyMM(tmp2, 0, itemM, 0, camBlk, 0)
+                Matrix.scaleM(tmp2, 0, cell, cell, cell)
+                drawSprite(tmp2, sp, game.time)
+            }
         } else if (id in 1..13) {
             // bloco grande no canto inferior direito, topo e lateral aparecendo (posição fixa no espaço da câmera, presa ao braço no golpe)
             Matrix.setIdentityM(camBlk, 0)

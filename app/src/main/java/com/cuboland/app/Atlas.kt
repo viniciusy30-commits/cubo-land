@@ -123,34 +123,31 @@ object Atlas {
         return lerp(c, 0xB07F55, sm(0.40f, 0.44f, max(abs(dx), abs(dy))))
     }
 
-    /** folhas detalhadas (referência "depois"): dezenas de folhinhas pontudas sobrepostas em diagonal, cada uma com contorno escuro,
-     *  nervura clara e lado de baixo sombreado, sobre fundo escuro (dá profundidade) e com poucos buraquinhos. Sem bordas: repete certinho. */
+    /** folhas da referência "depois": dezenas de folhas pontudas e serrilhadas, sobrepostas em diagonal, verde vivo,
+     *  nervura clara, lado de baixo sombreado e contorno escuro, sobre fundo bem escuro (dá profundidade). Pixels duros 64x64, repete certinho. */
     private fun leaves(u: Float, v: Float): Int {
-        val g = 32
-        val gx = floor(u * g).toInt(); val gy = floor(v * g).toInt()
-        val qu = (gx + 0.5f) / g; val qv = (gy + 0.5f) / g
-        if (h(gx, gy, 91) < 0.07f) return CLEAR
-        var c = lerp(0x1E5A38, 0x2C7444, h(gx, gy, 92))
-        for (i in 0 until 70) {
-            val cx = h(i, 0, 100); val cy = h(i, 1, 100)
-            val base = if (h(i, 5, 100) < 0.5f) 0.75f else 2.35f
-            val ang = base + (h(i, 2, 100) - 0.5f) * 0.9f
-            val len = 0.115f + 0.05f * h(i, 3, 100); val wid = len * 0.5f
-            val light = h(i, 4, 100)
-            val ca = cos(ang); val sa = sin(ang)
+        val n = 64
+        val px = floor(u * n).toInt().coerceIn(0, n - 1); val py = floor(v * n).toInt().coerceIn(0, n - 1)
+        val x = px + 0.5f; val y = py + 0.5f
+        if (h(px / 5, py / 5, 91) < 0.035f && h(px, py, 93) < 0.6f) return CLEAR
+        var c = lerp(0x1B4D0F, 0x2F7F1A, 0.25f + 0.4f * h(px / 2, py / 2, 7))
+        for (i in 0 until 46) {
+            val cx = h(i, 0, 300) * n; val cy = h(i, 1, 300) * n
+            val ang = (if (h(i, 5, 300) < 0.5f) 0.7f else 2.4f) + (h(i, 2, 300) - 0.5f) * 0.7f
+            val ln = n * (0.17f + 0.07f * h(i, 3, 300)); val wd = ln * 0.5f
+            val ca = cos(ang); val sa = sin(ang); val tone = h(i, 4, 300)
             for (ox in -1..1) for (oy in -1..1) {
-                val dx = qu - cx - ox; val dy = qv - cy - oy
-                if (dx * dx + dy * dy > len * len * 1.05f) continue
-                val al = dx * ca + dy * sa; val b = -dx * sa + dy * ca
-                val t = al / len
+                val dx = x - cx - ox * n; val dy = y - cy - oy * n
+                if (dx * dx + dy * dy > ln * ln * 1.2f) continue
+                val al = dx * ca + dy * sa; val b = -dx * sa + dy * ca; val t = al / ln
                 if (abs(t) >= 1f) continue
-                val half = wid * (1f - t * t).pow(0.8f)
+                val half = wd * (1f - t * t).pow(0.7f) * (1f + 0.18f * sin(t * 14f))   // borda serrilhada
                 if (abs(b) >= half) continue
                 val side = b / max(half, 0.001f)
-                var lc = lerp(0x4FA85E, 0xA8E58A, light * 0.55f + (0.5f - side * 0.5f) * 0.5f)
-                if (side > 0.45f) lc = lerp(lc, 0x2F7A4A, 0.6f)                              // lado de baixo da folha
-                if (abs(b) < 0.55f / g && t > -0.8f && t < 0.75f) lc = lerp(lc, 0xD6FAB4, 0.55f)  // nervura central
-                if (abs(side) > 0.78f || t > 0.86f || t < -0.9f) lc = lerp(lc, 0x1B5233, 0.75f)   // contorno escuro
+                var lc = lerp(0x2F7F1A, 0x86D44A, tone * 0.6f + (0.5f - side * 0.5f) * 0.5f)
+                if (side > 0.4f) lc = lerp(lc, 0x2A7016, 0.55f)                                  // lado de baixo
+                if (abs(b) < 0.7f && t > -0.8f && t < 0.7f) lc = lerp(lc, 0xA5E266, 0.5f)       // nervura
+                if (abs(side) > 0.82f || t > 0.88f || t < -0.9f) lc = lerp(lc, 0x1B4D0F, 0.7f)  // contorno escuro
                 c = lc
             }
         }

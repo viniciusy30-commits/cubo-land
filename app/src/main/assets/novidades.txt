@@ -1,3 +1,8 @@
+#id 2026-10-09-p
+#titulo Ferramentas em pé e folhas iguais à referência!
+- Espada, machado, picareta e cajado agora aparecem em pé, de frente pra câmera, em pixel-art
+- Folhas refeitas: folhinhas pontudas e serrilhadas, verde vivo, nervura clara e sombra entre elas, como no "depois" da referência
+
 #id 2026-10-09-o
 #titulo Mão e folhas copiadas das fotos!
 - Mão vazia, mão com item e mão com bloco seguem as posições e ângulos das fotos de referência
