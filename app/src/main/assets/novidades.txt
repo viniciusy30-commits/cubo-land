@@ -1,3 +1,13 @@
+#id 2026-10-09-l
+#titulo Árvores mais bonitas e mão menor!
+- Troncos com curvas leves e raízes aparentes
+- Copas em camadas, com vários chumaços e folhas caindo pelas bordas
+- Pinheiros novos, em andares e pontudos
+- Arbustos e troncos caídos espalhados pela floresta
+- Mão do mesmo tamanho do braço, em linha com ele
+- Ferramentas e blocos presos ao punho, acompanhando o braço
+- As árvores dos mundos antigos são refeitas uma vez
+
 #id 2026-10-09-k
 #titulo Mão e ferramentas bem seguradas!
 - Braço agora entra pelo canto da tela e termina num punho cúbico, sem dedos
