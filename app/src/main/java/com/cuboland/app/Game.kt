@@ -33,7 +33,7 @@ class Game(val world: World) {
     @Volatile var charging = false; @Volatile var charge = 0f
     private var pressT = 0f; private var pressing = false; var swingDur = 0.46f; @Volatile var powerSwing = false
     @Volatile var creative = false; @Volatile var flying = false; @Volatile var downHeld = false; private var lastJumpT = -9f
-    var brX = 0; var brY = -1; var brZ = 0; @Volatile var brProg = 0f; private var brT = 0f
+    var brX = 0; var brY = -1; var brZ = 0; @Volatile var brProg = 0f; private var brT = 0f; @Volatile var hitPulse = 0f
     private var hitT = -1f; private var hitItem = 0; private var hitStab = false
     private var pendingT = -1f; private var pendingPower = 0f
     val leafFall = ArrayList<LeafP>(); private var leafT = 0f; var comboT = 0f
@@ -111,6 +111,27 @@ class Game(val world: World) {
     fun burst(x: Float, y: Float, z: Float, color: Int, n: Int, speed: Float) {
         for (i in 0 until n) parts.add(Particle(x, y, z, (rnd.nextFloat() - 0.5f) * speed, rnd.nextFloat() * speed * 0.9f + 1f,
             (rnd.nextFloat() - 0.5f) * speed, color, 0.08f + rnd.nextFloat() * 0.1f, 0.6f + rnd.nextFloat() * 0.5f))
+    }
+
+    /** lascas, pedaços e poeira saindo do bloco; big = quebra final */
+    fun breakFx(bx: Int, by: Int, bz: Int, id: Int, big: Boolean) {
+        val n = if (big) 30 else 8
+        for (i in 0 until n) {
+            val c = if (i % 3 == 0) B.side[id] else B.top[id]
+            val px = bx + 0.1f + rnd.nextFloat() * 0.8f; val py = by + 0.1f + rnd.nextFloat() * 0.8f; val pz = bz + 0.1f + rnd.nextFloat() * 0.8f
+            val sp = if (big) 4.8f else 2.8f
+            parts.add(Particle(px, py, pz, (px - bx - 0.5f) * sp * 1.6f + (rnd.nextFloat() - 0.5f), rnd.nextFloat() * sp * 0.9f + 1.2f,
+                (pz - bz - 0.5f) * sp * 1.6f + (rnd.nextFloat() - 0.5f), c, 0.06f + rnd.nextFloat() * 0.1f, 0.6f + rnd.nextFloat() * 0.6f))
+        }
+        if (big) {
+            for (i in 0 until 7) parts.add(Particle(bx + 0.5f, by + 0.5f, bz + 0.5f, (rnd.nextFloat() - 0.5f) * 5f, 2f + rnd.nextFloat() * 3.5f,
+                (rnd.nextFloat() - 0.5f) * 5f, B.side[id], 0.2f + rnd.nextFloat() * 0.12f, 0.9f + rnd.nextFloat() * 0.4f))
+            for (i in 0 until 9) parts.add(Particle(bx + 0.2f + rnd.nextFloat() * 0.6f, by + 0.3f + rnd.nextFloat() * 0.5f, bz + 0.2f + rnd.nextFloat() * 0.6f,
+                (rnd.nextFloat() - 0.5f) * 1.4f, 0.5f + rnd.nextFloat() * 1.1f, (rnd.nextFloat() - 0.5f) * 1.4f, 0xF1EDE2, 0.26f + rnd.nextFloat() * 0.12f, 0.45f + rnd.nextFloat() * 0.4f))
+            for (i in 0 until 5) parts.add(Particle(bx + 0.5f, by + 0.5f, bz + 0.5f, (rnd.nextFloat() - 0.5f) * 6f, 2f + rnd.nextFloat() * 4f,
+                (rnd.nextFloat() - 0.5f) * 6f, 0xFFF3B0, 0.05f, 0.7f))
+            shake = max(shake, 0.16f)
+        }
     }
 
     fun raycast(ox: Float, oy: Float, oz: Float, dx: Float, dy: Float, dz: Float, t0: Float, t1: Float) {
@@ -214,10 +235,10 @@ class Game(val world: World) {
         brT = 3f
         brProg += if (creative) 1f else efficiency(item, id) * mult / hardness(id)
         if (brProg >= 1f) {
-            burst(hx + 0.5f, hy + 0.5f, hz + 0.5f, B.top[id], 16, 4f)
+            breakFx(hx, hy, hz, id, true)
             world.set(hx, hy, hz, B.AIR); brProg = 0f; brY = -1; brT = 0f
         } else {
-            burst(hx + 0.5f, hy + 0.5f, hz + 0.5f, B.top[id], 5, 2.5f)
+            breakFx(hx, hy, hz, id, false); hitPulse = 1f
             shake = max(shake, 0.06f * mult)
         }
     }
@@ -333,7 +354,7 @@ class Game(val world: World) {
             if (pressing) { pressing = false; if (charging) { val pw = charge; charging = false; charge = 0f; releasePower(pw) } else attack() }
         }
         if (!attackHeld && charging) { charging = false; charge = 0f }
-        brT -= dt; if (brT <= 0f) brProg = 0f
+        brT -= dt; if (brT <= 0f) brProg = 0f; hitPulse = max(0f, hitPulse - dt * 4.5f)
         if (hitT > 0f) { hitT -= dt; if (hitT <= 0f) strikeHit(hitItem, hitStab) }
         if (pendingT > 0f) { pendingT -= dt; if (pendingT <= 0f) powerHit(pendingPower) }
         if (wantPlace) { wantPlace = false; place() }

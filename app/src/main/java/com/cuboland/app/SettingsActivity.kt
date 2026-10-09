@@ -54,7 +54,7 @@ class SettingsActivity : AppCompatActivity() {
         add(btn("←  Voltar", Color.rgb(90, 100, 120)) { finish() })
         col.addView(label("Versão instalada: ${packageManager.getPackageInfo(packageName, 0).versionName}", 13f))
         val sv = ScrollView(this)
-        sv.setBackgroundColor(Color.rgb(110, 190, 235))
+        sv.background = android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(Color.rgb(64, 140, 232), Color.rgb(140, 208, 250), Color.rgb(255, 236, 205)))
         sv.addView(col)
         setContentView(sv)
     }

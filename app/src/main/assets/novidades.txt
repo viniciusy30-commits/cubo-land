@@ -1,3 +1,11 @@
+#id 2026-10-10-a
+#titulo Quebra cinematográfica, HUD novo e ícones de verdade!
+- Quebra de blocos refeita: rachaduras ramificadas que crescem do impacto, pulso de luz a cada batida, lascas, pedaços grandes, poeira e faíscas ao estourar
+- HUD novo: botões de vidro com brilho, joystick com bolinha 3D, hotbar com números e destaque dourado pulsante, corações com brilho e contador de slimes em pílula
+- Ícones dos itens agora são o mesmo pixel-art das ferramentas na mão (espada, machado, picareta e cajado)
+- Mochila redesenhada com fundo escurecido, cabeçalho com nome e descrição do item
+- Menu principal novo: sol com raios, colinas, ilha flutuante com árvore, faíscas, título arco-íris animado e botões em estilo bloco 3D
+
 #id 2026-10-09-x
 #titulo Quebra em etapas, criativo e copas completas!
 - Blocos agora racham a cada batida e só quebram no fim; o machado racha madeira bem rápido e o golpe carregado vale 2 batidas

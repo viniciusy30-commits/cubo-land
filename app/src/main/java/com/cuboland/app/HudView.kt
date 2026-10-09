@@ -143,47 +143,69 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
         face(c, B.tSide[id], cx, cy, cx + s, cy - s / 2, cx, cy + s, fRight)
     }
 
-    private fun toolIcon(c: Canvas, cx: Float, cy: Float, s: Float, id: Int) {
-        c.save(); c.translate(cx, cy); c.rotate(45f)
-        pt.style = Paint.Style.FILL
-        fun r(l: Float, t: Float, rr: Float, b: Float, color: Int) { pt.color = col(color); c.drawRoundRect(l * s, t * s, rr * s, b * s, 0.03f * s, 0.03f * s, pt) }
-        when (id) {
-            Items.SWORD -> { r(-0.09f, -0.62f, 0.09f, 0.12f, 0xE2ECF8); r(-0.03f, -0.6f, 0.03f, 0.1f, 0x9FD8FF); r(-0.3f, 0.1f, 0.3f, 0.2f, 0xFFD060)
-                r(-0.06f, 0.2f, 0.06f, 0.42f, 0x7A5230); pt.color = col(0xFF6FA5); c.drawCircle(0f, 0.47f * s, 0.08f * s, pt) }
-            Items.AXE -> { r(-0.05f, -0.6f, 0.05f, 0.5f, 0x7A5230)
-                path.reset(); path.moveTo(0.05f * s, -0.58f * s); path.lineTo(0.5f * s, -0.45f * s); path.lineTo(0.5f * s, -0.02f * s); path.lineTo(0.05f * s, -0.15f * s); path.close()
-                pt.color = col(0xC8D2DE); c.drawPath(path, pt); r(0.46f, -0.45f, 0.52f, -0.02f, 0xFFFFFF) }
-            Items.STAFF -> { r(-0.05f, -0.5f, 0.05f, 0.55f, 0x9B6BE0); r(-0.09f, -0.42f, 0.09f, -0.36f, 0xFFD060)
-                pt.color = Color.argb(90, 127, 232, 255); c.drawCircle(0f, -0.64f * s, 0.3f * s, pt)
-                pt.color = col(0x7FE8FF); c.drawCircle(0f, -0.64f * s, 0.18f * s, pt); pt.color = Color.WHITE; c.drawCircle(-0.04f * s, -0.68f * s, 0.06f * s, pt) }
-            Items.PICK -> { r(-0.05f, -0.55f, 0.05f, 0.5f, 0x7A5230); r(-0.5f, -0.58f, 0.5f, -0.44f, 0xC8D2DE); r(-0.52f, -0.5f, -0.4f, -0.3f, 0xFFFFFF); r(0.4f, -0.5f, 0.52f, -0.3f, 0xFFFFFF) }
-        }
-        c.restore()
+    /** mesmo pixel-art da ferramenta na mão, em 2D */
+    private fun spriteIcon(c: Canvas, cx: Float, cy: Float, size: Float, sp: ToolSprites.Sprite) {
+        val px = size * 0.84f / 16f; val ox = cx - 8 * px; val oy = cy - 8 * px
+        bp.colorFilter = null; bp.style = Paint.Style.FILL
+        bp.color = Color.argb(70, 0, 0, 0)
+        for (r in sp.runs) c.drawRect(ox + r.x0 * px + px * 0.6f, oy + r.y * px + px * 0.8f, ox + (r.x1 + 1) * px + px * 0.6f, oy + (r.y + 1) * px + px * 0.8f, bp)
+        for (r in sp.runs) { bp.color = col(r.c); c.drawRect(ox + r.x0 * px, oy + r.y * px, ox + (r.x1 + 1) * px, oy + (r.y + 1) * px, bp) }
     }
 
     private fun icon(c: Canvas, cx: Float, cy: Float, size: Float, id: Int) {
-        if (Items.isBlock(id)) blockIcon(c, cx, cy, size * 0.3f, id) else toolIcon(c, cx, cy, size * 0.62f, id)
+        val sp = ToolSprites.get(id)
+        if (sp != null) spriteIcon(c, cx, cy, size, sp)
+        else {
+            pt.style = Paint.Style.FILL; pt.color = Color.argb(60, 0, 0, 0)
+            c.drawOval(cx - size * 0.28f, cy + size * 0.22f, cx + size * 0.28f, cy + size * 0.34f, pt)
+            blockIcon(c, cx, cy - size * 0.02f, size * 0.3f, id)
+        }
     }
+
+    private fun accent(i: Int) = when (i) { 0 -> Color.rgb(255, 120, 100); 1, 6 -> Color.rgb(120, 195, 255); 2 -> Color.rgb(130, 230, 130); else -> Color.rgb(200, 210, 235) }
+    private val rf = RectF()
+    private val gold = Color.rgb(255, 214, 90)
 
     private fun circle(c: Canvas, i: Int, active: Boolean) {
         press[i] += ((if (active) 1f else 0f) - press[i]) * 0.3f
-        val r = br(i) * (1f - 0.08f * press[i])
-        pt.style = Paint.Style.FILL; pt.color = Color.argb((90 + 70 * press[i]).toInt(), 20, 25, 40)
-        c.drawCircle(bx(i), byy(i), r, pt)
-        pt.style = Paint.Style.STROKE; pt.strokeWidth = 2.5f * d; pt.color = Color.argb(200, 255, 255, 255)
-        c.drawCircle(bx(i), byy(i), r, pt)
+        val cx = bx(i); val cy = byy(i); val r = br(i) * (1f - 0.08f * press[i]); val ac = accent(i)
+        pt.style = Paint.Style.FILL; pt.color = Color.argb(70, 0, 0, 0); c.drawCircle(cx, cy + 3 * d, r, pt)
+        pt.color = Color.argb((120 + 70 * press[i]).toInt(), 16, 20, 36); c.drawCircle(cx, cy, r, pt)
+        pt.color = Color.argb((35 + 70 * press[i]).toInt(), Color.red(ac), Color.green(ac), Color.blue(ac)); c.drawCircle(cx, cy, r * 0.86f, pt)
+        rf.set(cx - r * 0.78f, cy - r * 0.78f, cx + r * 0.78f, cy + r * 0.78f)
+        pt.style = Paint.Style.STROKE; pt.strokeWidth = 3f * d; pt.strokeCap = Paint.Cap.ROUND
+        pt.color = Color.argb(70, 255, 255, 255); c.drawArc(rf, 200f, 100f, false, pt)
+        pt.strokeWidth = 2.5f * d; pt.color = Color.argb(235, Color.red(ac), Color.green(ac), Color.blue(ac)); c.drawCircle(cx, cy, r, pt)
+        pt.strokeWidth = 1f * d; pt.color = Color.argb(90, 255, 255, 255); c.drawCircle(cx, cy, r + 2 * d, pt)
+    }
+
+    private fun pill(c: Canvas, l: Float, t: Float, r: Float, b: Float, a: Int = 110) {
+        rf.set(l, t, r, b); pt.style = Paint.Style.FILL; pt.color = Color.argb(a, 14, 18, 34); c.drawRoundRect(rf, (b - t) / 2, (b - t) / 2, pt)
+        pt.style = Paint.Style.STROKE; pt.strokeWidth = 1.5f * d; pt.color = Color.argb(90, 255, 255, 255); c.drawRoundRect(rf, (b - t) / 2, (b - t) / 2, pt)
     }
 
     override fun onDraw(c: Canvas) {
         val w = width.toFloat(); val h = height.toFloat()
+        val clock = System.nanoTime() / 1e9f
         if (game.hurtFlash > 0f) { pt.style = Paint.Style.FILL; pt.color = Color.argb((game.hurtFlash * 90).toInt(), 255, 0, 0); c.drawRect(0f, 0f, w, h, pt) }
-        pt.style = Paint.Style.STROKE; pt.strokeWidth = 2f * d; pt.color = Color.argb(200, 255, 255, 255); pt.strokeCap = Paint.Cap.ROUND
-        if (!invOpen) { c.drawLine(w / 2 - 8 * d, h / 2, w / 2 + 8 * d, h / 2, pt); c.drawLine(w / 2, h / 2 - 8 * d, w / 2, h / 2 + 8 * d, pt) }
+        pt.strokeCap = Paint.Cap.ROUND
         if (!invOpen) {
+            // mira com contorno
+            for (k in 0..1) {
+                pt.style = Paint.Style.STROKE; pt.strokeWidth = if (k == 0) 4f * d else 2f * d; pt.color = if (k == 0) Color.argb(90, 0, 0, 0) else Color.argb(230, 255, 255, 255)
+                c.drawLine(w / 2 - 8 * d, h / 2, w / 2 + 8 * d, h / 2, pt); c.drawLine(w / 2, h / 2 - 8 * d, w / 2, h / 2 + 8 * d, pt)
+            }
+            // joystick
             val jx = if (stickId >= 0) scx else defStickX(); val jy = if (stickId >= 0) scy else defStickY()
-            pt.style = Paint.Style.FILL; pt.color = Color.argb(60, 255, 255, 255); c.drawCircle(jx, jy, 60 * d, pt)
-            pt.style = Paint.Style.STROKE; pt.strokeWidth = 2f * d; pt.color = Color.argb(150, 255, 255, 255); c.drawCircle(jx, jy, 60 * d, pt)
-            pt.style = Paint.Style.FILL; pt.color = Color.argb(190, 255, 255, 255); c.drawCircle(jx + sx * 60 * d, jy + sy * 60 * d, 24 * d, pt)
+            pt.style = Paint.Style.FILL; pt.color = Color.argb(48, 255, 255, 255); c.drawCircle(jx, jy, 60 * d, pt)
+            pt.style = Paint.Style.STROKE; pt.strokeWidth = 2.5f * d; pt.color = Color.argb(170, 255, 255, 255); c.drawCircle(jx, jy, 60 * d, pt)
+            pt.style = Paint.Style.FILL; pt.color = Color.argb(150, 255, 255, 255)
+            for (k in 0 until 4) { val an = k * 1.5708f; c.drawCircle(jx + cos(an) * 46 * d, jy + sin(an) * 46 * d, 2.2f * d, pt) }
+            val kx = jx + sx * 60 * d; val ky = jy + sy * 60 * d
+            pt.color = Color.argb(70, 0, 0, 0); c.drawCircle(kx, ky + 3 * d, 25 * d, pt)
+            pt.color = Color.argb(235, 255, 255, 255); c.drawCircle(kx, ky, 25 * d, pt)
+            pt.color = Color.rgb(205, 220, 240); c.drawCircle(kx, ky, 17 * d, pt)
+            pt.color = Color.argb(200, 255, 255, 255); c.drawCircle(kx - 4 * d, ky - 5 * d, 6 * d, pt)
         }
         for (i in 0 until 7) {
             if (invOpen && i != 5) continue
@@ -219,63 +241,103 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
         if (game.sel != lastSel) { lastSel = game.sel; bounce = 1f }
         bounce = max(0f, bounce - 0.08f)
         val left = hbLeft(); val top = hbTop()
+        pill(c, left - 8 * d, top - 8 * d, left + 8 * slot + 7 * 4 * d + 8 * d, top + slot + 6 * d, 95)
         for (i in 0 until 8) {
             val x = left + i * (slot + 4 * d)
             val s = i == game.sel
-            val lift = if (s) 5 * d + 5 * d * sin(bounce * 3.14f) else 0f
-            pt.style = Paint.Style.FILL; pt.color = Color.argb(if (s) 200 else 120, 20, 25, 40)
-            val rr = RectF(x, top - lift, x + slot, top + slot - lift * 0.0f)
-            c.drawRoundRect(rr, 8 * d, 8 * d, pt)
-            pt.style = Paint.Style.STROKE; pt.strokeWidth = (if (s) 3f else 1.5f) * d; pt.color = if (s) Color.rgb(255, 224, 120) else Color.argb(120, 255, 255, 255)
-            c.drawRoundRect(rr, 8 * d, 8 * d, pt)
+            val lift = if (s) 4 * d + 5 * d * sin(bounce * 3.14f) else 0f
+            val rr = RectF(x, top - lift, x + slot, top + slot - lift)
+            if (s) {
+                val gl = 0.55f + 0.45f * sin(clock * 4f)
+                pt.style = Paint.Style.STROKE; pt.strokeWidth = 7f * d; pt.color = Color.argb((60 * gl).toInt(), 255, 214, 90)
+                c.drawRoundRect(rr, 10 * d, 10 * d, pt)
+            }
+            pt.style = Paint.Style.FILL; pt.color = Color.argb(if (s) 215 else 135, if (s) 44 else 24, if (s) 48 else 30, if (s) 72 else 50)
+            c.drawRoundRect(rr, 9 * d, 9 * d, pt)
+            rf.set(rr.left + 3 * d, rr.top + 3 * d, rr.right - 3 * d, rr.top + slot * 0.42f)
+            pt.color = Color.argb(if (s) 40 else 22, 255, 255, 255); c.drawRoundRect(rf, 6 * d, 6 * d, pt)
+            pt.style = Paint.Style.STROKE; pt.strokeWidth = (if (s) 2.8f else 1.4f) * d; pt.color = if (s) gold else Color.argb(110, 255, 255, 255)
+            c.drawRoundRect(rr, 9 * d, 9 * d, pt)
             icon(c, x + slot / 2, rr.top + slot * 0.5f, slot, game.hotbar[i])
+            pt.style = Paint.Style.FILL; pt.textSize = 9 * d; pt.textAlign = Paint.Align.LEFT; pt.color = Color.argb(if (s) 255 else 150, 255, 255, 255)
+            pt.typeface = Typeface.DEFAULT_BOLD; c.drawText("${i + 1}", rr.left + 5 * d, rr.top + 11 * d, pt)
         }
-        pt.style = Paint.Style.FILL; pt.color = Color.WHITE; pt.textSize = 14 * d; pt.textAlign = Paint.Align.CENTER
-        pt.setShadowLayer(3 * d, 0f, 1f, Color.BLACK)
-        if (!invOpen) c.drawText(Items.name(game.cur()), w / 2, top - 14 * d, pt)
+        if (!invOpen) {
+            pt.textSize = 14 * d; pt.typeface = Typeface.DEFAULT_BOLD; pt.textAlign = Paint.Align.CENTER
+            val nm = Items.name(game.cur()); val tw = pt.measureText(nm)
+            pill(c, w / 2 - tw / 2 - 14 * d, top - 40 * d, w / 2 + tw / 2 + 14 * d, top - 16 * d, 120)
+            pt.style = Paint.Style.FILL; pt.color = Color.WHITE; c.drawText(nm, w / 2, top - 22 * d, pt)
+        }
+        // corações
         val hp = game.hp
         for (i in 0 until 5) {
             val full = hp >= (i + 1) * 2; val half = hp == i * 2 + 1
             val cx = w / 2 - 60 * d + i * 30 * d
-            heart(c, cx, 28 * d, 11 * d, Color.argb(120, 0, 0, 0))
-            if (full) heart(c, cx, 28 * d, 10 * d, Color.rgb(255, 80, 100))
-            else if (half) { c.save(); c.clipRect(cx - 14 * d, 0f, cx, 80 * d); heart(c, cx, 28 * d, 10 * d, Color.rgb(255, 80, 100)); c.restore() }
+            val beat = if (hp <= 2 && hp > 0) 1f + 0.08f * sin(clock * 9f) else 1f
+            heart(c, cx, 28 * d, 12.5f * d * beat, Color.argb(190, 20, 10, 25))
+            heart(c, cx, 28 * d, 10.5f * d * beat, Color.argb(120, 80, 40, 60))
+            if (full || half) {
+                if (half) { c.save(); c.clipRect(cx - 16 * d, 0f, cx, 80 * d) }
+                heart(c, cx, 28 * d, 10.5f * d * beat, Color.rgb(255, 72, 96))
+                heart(c, cx, 26 * d, 6f * d * beat, Color.rgb(255, 120, 135))
+                pt.style = Paint.Style.FILL; pt.color = Color.argb(230, 255, 255, 255); c.drawCircle(cx - 4.5f * d, 22.5f * d, 2f * d, pt)
+                if (half) c.restore()
+            }
         }
-        pt.textAlign = Paint.Align.RIGHT; pt.textSize = 15 * d
-        c.drawText("Slimes: ${game.kills}", w - 124 * d, 46 * d, pt)
-        if (game.deadTimer > 0f) { pt.textAlign = Paint.Align.CENTER; pt.textSize = 26 * d; c.drawText("Você desmaiou! Renascendo...", w / 2, h / 2 - 40 * d, pt) }
-        pt.clearShadowLayer()
+        // contador de slimes
+        val ktxt = "${game.kills}"; pt.textSize = 15 * d; pt.typeface = Typeface.DEFAULT_BOLD; pt.textAlign = Paint.Align.LEFT
+        val kw = pt.measureText(ktxt) + 44 * d; val kr = w - 118 * d
+        pill(c, kr - kw, 18 * d, kr, 46 * d)
+        pt.style = Paint.Style.FILL; pt.color = Color.rgb(120, 225, 110); c.drawRoundRect(kr - kw + 8 * d, 26 * d, kr - kw + 26 * d, 40 * d, 5 * d, 5 * d, pt)
+        pt.color = Color.rgb(20, 60, 30); c.drawRect(kr - kw + 12 * d, 30 * d, kr - kw + 14.5f * d, 33 * d, pt); c.drawRect(kr - kw + 19.5f * d, 30 * d, kr - kw + 22 * d, 33 * d, pt)
+        pt.color = Color.WHITE; c.drawText(ktxt, kr - kw + 32 * d, 38 * d, pt)
+        pt.setShadowLayer(4 * d, 0f, 1f, Color.BLACK)
+        if (game.deadTimer > 0f) { pt.textAlign = Paint.Align.CENTER; pt.textSize = 26 * d; pt.color = Color.WHITE; c.drawText("Você desmaiou! Renascendo...", w / 2, h / 2 - 40 * d, pt) }
+        pt.clearShadowLayer(); pt.typeface = Typeface.DEFAULT
         if (invOpen) drawInventory(c)
         postInvalidateOnAnimation()
     }
 
     private fun drawInventory(c: Canvas) {
+        val w = width.toFloat(); val h = height.toFloat()
+        pt.style = Paint.Style.FILL; pt.color = Color.argb(150, 6, 8, 20); c.drawRect(0f, 0f, w, h, pt)
         val rr = RectF(pl(), pt0(), pr(), pb())
-        pt.style = Paint.Style.FILL; pt.color = Color.argb(215, 28, 34, 56); c.drawRoundRect(rr, 18 * d, 18 * d, pt)
-        pt.style = Paint.Style.STROKE; pt.strokeWidth = 3f * d; pt.color = Color.argb(200, 255, 224, 120); c.drawRoundRect(rr, 18 * d, 18 * d, pt)
-        pt.style = Paint.Style.FILL; pt.color = Color.WHITE; pt.textSize = 20 * d; pt.textAlign = Paint.Align.LEFT; pt.isFakeBoldText = true
-        c.drawText("Mochila", pl() + 18 * d, pt0() + 32 * d, pt)
-        pt.isFakeBoldText = false; pt.textSize = 12 * d; pt.color = Color.argb(200, 255, 255, 255)
-        c.drawText("Toque num item para colocá-lo no slot selecionado", pl() + 110 * d, pt0() + 31 * d, pt)
+        pt.shader = LinearGradient(0f, rr.top, 0f, rr.bottom, Color.argb(240, 40, 50, 88), Color.argb(240, 20, 24, 48), Shader.TileMode.CLAMP)
+        c.drawRoundRect(rr, 18 * d, 18 * d, pt); pt.shader = null
+        c.save(); c.clipRect(rr.left, rr.top, rr.right, rr.top + 46 * d)
+        pt.color = Color.argb(60, 255, 214, 90); c.drawRoundRect(rr, 18 * d, 18 * d, pt); c.restore()
+        pt.style = Paint.Style.STROKE; pt.strokeWidth = 3f * d; pt.color = Color.argb(230, 255, 214, 90); c.drawRoundRect(rr, 18 * d, 18 * d, pt)
+        pt.strokeWidth = 1f * d; pt.color = Color.argb(60, 255, 255, 255); c.drawLine(rr.left + 14 * d, rr.top + 46 * d, rr.right - 14 * d, rr.top + 46 * d, pt)
+        pt.style = Paint.Style.FILL; pt.color = Color.WHITE; pt.textSize = 20 * d; pt.textAlign = Paint.Align.LEFT; pt.typeface = Typeface.DEFAULT_BOLD
+        c.drawText("Mochila", pl() + 18 * d, pt0() + 31 * d, pt)
         // fechar
+        pt.color = Color.argb(90, 255, 255, 255); c.drawCircle(pr() - 20 * d, pt0() + 22 * d, 14 * d, pt)
         pt.style = Paint.Style.STROKE; pt.strokeWidth = 3f * d; pt.color = Color.WHITE; pt.strokeCap = Paint.Cap.ROUND
         val xx = pr() - 20 * d; val yy = pt0() + 22 * d
-        c.drawLine(xx - 7 * d, yy - 7 * d, xx + 7 * d, yy + 7 * d, pt); c.drawLine(xx + 7 * d, yy - 7 * d, xx - 7 * d, yy + 7 * d, pt)
+        c.drawLine(xx - 6 * d, yy - 6 * d, xx + 6 * d, yy + 6 * d, pt); c.drawLine(xx + 6 * d, yy - 6 * d, xx - 6 * d, yy + 6 * d, pt)
+        // info do item selecionado no cabeçalho
+        val sel = if (invSel > 0) invSel else game.cur()
+        val ix = pl() + 130 * d; val avail = pr() - 50 * d - ix
+        pt.style = Paint.Style.FILL; pt.color = Color.rgb(255, 224, 130); pt.textSize = 15 * d
+        c.drawText(Items.name(sel), ix, pt0() + 20 * d, pt)
+        pt.typeface = Typeface.DEFAULT; pt.color = Color.argb(225, 255, 255, 255); pt.textSize = 11.5f * d
+        val ds = Items.desc(sel); val dw = pt.measureText(ds); if (dw > avail) pt.textSize = 11.5f * d * avail / dw
+        c.drawText(ds, ix, pt0() + 37 * d, pt)
         for ((i, id) in Items.inventory.withIndex()) {
             val x = cellX(i); val y = cellY(i); val s = cell - 6 * d
-            pt.style = Paint.Style.FILL; pt.color = Color.argb(if (id == invSel) 150 else 80, 255, 255, 255)
-            val cr = RectF(x, y, x + s, y + s); c.drawRoundRect(cr, 10 * d, 10 * d, pt)
-            if (id == invSel) { pt.style = Paint.Style.STROKE; pt.strokeWidth = 3f * d; pt.color = Color.rgb(255, 224, 120); c.drawRoundRect(cr, 10 * d, 10 * d, pt) }
+            val on = id == invSel
+            pt.style = Paint.Style.FILL; pt.color = Color.argb(if (on) 70 else 34, 255, 255, 255)
+            val cr = RectF(x, y, x + s, y + s); c.drawRoundRect(cr, 11 * d, 11 * d, pt)
+            rf.set(x + 3 * d, y + 3 * d, x + s - 3 * d, y + s * 0.45f); pt.color = Color.argb(if (on) 40 else 18, 255, 255, 255); c.drawRoundRect(rf, 8 * d, 8 * d, pt)
+            pt.style = Paint.Style.STROKE; pt.strokeWidth = (if (on) 3f else 1.2f) * d; pt.color = if (on) gold else Color.argb(80, 255, 255, 255)
+            c.drawRoundRect(cr, 11 * d, 11 * d, pt)
             icon(c, x + s / 2, y + s / 2, s, id)
         }
-        val sel = if (invSel > 0) invSel else game.cur()
-        val ty = cellY(Items.inventory.size - 1) + cell + 18 * d
-        pt.style = Paint.Style.FILL; pt.color = Color.WHITE; pt.textSize = 17 * d; pt.isFakeBoldText = true
-        if (ty < pb() - 24 * d) {
-            c.drawText(Items.name(sel), pl() + 18 * d, ty, pt)
-            pt.isFakeBoldText = false; pt.textSize = 13 * d; pt.color = Color.argb(220, 255, 255, 255)
-            c.drawText(Items.desc(sel), pl() + 18 * d, ty + 20 * d, pt)
+        val ty = cellY(Items.inventory.size - 1) + cell + 8 * d
+        if (ty < pb() - 4 * d) {
+            pt.style = Paint.Style.FILL; pt.color = Color.argb(170, 255, 255, 255); pt.textSize = 11.5f * d; pt.textAlign = Paint.Align.LEFT
+            c.drawText("Toque num item para colocá-lo no slot selecionado", pl() + 18 * d, ty + 6 * d, pt)
         }
-        pt.isFakeBoldText = false
+        pt.typeface = Typeface.DEFAULT
     }
 }

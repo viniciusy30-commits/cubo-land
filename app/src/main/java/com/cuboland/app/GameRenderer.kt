@@ -281,29 +281,46 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         if (yawDeg != 0f) Matrix.rotateM(base, 0, yawDeg, 0f, 1f, 0f)
     }
 
-    /** rachaduras pixeladas que crescem a cada batida, nas faces do bloco voltadas pra câmera */
+    /** rachaduras ramificadas 16x16 que crescem do ponto de impacto a cada batida */
     private val crackCells: IntArray = run {
-        val rd = java.util.Random(77); val out = IntArray(104); val xs = intArrayOf(3, 4, 4); val ys = intArrayOf(3, 3, 4)
-        for (i in 0 until 52) {
-            val w = i % 3; out[i * 2] = xs[w]; out[i * 2 + 1] = ys[w]
-            xs[w] = (xs[w] + rd.nextInt(3) - 1).coerceIn(0, 7); ys[w] = (ys[w] + rd.nextInt(3) - 1).coerceIn(0, 7)
+        val rd = java.util.Random(91); val list = ArrayList<IntArray>(); val seen = HashSet<Int>()
+        fun walk(x0: Int, y0: Int, ang0: Float, steps: Int, start: Int) {
+            var x = x0.toFloat(); var y = y0.toFloat(); var a = ang0
+            for (s in 0 until steps) {
+                x += cos(a); y += sin(a); a += (rd.nextFloat() - 0.5f) * 0.9f
+                val ix = x.roundToInt(); val iy = y.roundToInt()
+                if (ix !in 0..15 || iy !in 0..15) break
+                if (seen.add(iy * 16 + ix)) list.add(intArrayOf(ix, iy, start + s))
+                if (s > 2 && start < 6 && rd.nextFloat() < 0.14f) walk(ix, iy, a + (if (rd.nextBoolean()) 1f else -1f), steps - s - 2, start + s + 1)
+            }
         }
+        for (k in 0 until 7) walk(8, 8, k * 6.283f / 7f + rd.nextFloat() * 0.5f, 9 + rd.nextInt(4), 0)
+        list.sortBy { it[2] }
+        val out = IntArray(list.size * 2)
+        for ((i, e) in list.withIndex()) { out[i * 2] = e[0]; out[i * 2 + 1] = e[1] }
         out
     }
 
     private fun drawCracks(bx: Int, by: Int, bz: Int, prog: Float) {
-        val n = (prog * 52f).toInt().coerceIn(3, 52)
+        val total = crackCells.size / 2
+        val n = (sqrt(prog) * total).toInt().coerceIn(4, total)
+        val pulse = game.hitPulse
         setBase(bx + 0.5f, by + 0.5f, bz + 0.5f, 0f)
         G.glDepthMask(false)
+        val k = 1.004f + 0.035f * pulse
+        box(base, 0f, 0f, 0f, 0f, 0f, k, k, k, 0f, 0x000000, 0.06f + 0.30f * prog)
+        if (pulse > 0f) box(base, 0f, 0f, 0f, 0f, 0f, k + 0.004f, k + 0.004f, k + 0.004f, 0f, 0xFFFFFF, 0.22f * pulse)
         val cc = floatArrayOf(game.camX - (bx + 0.5f), game.camY - (by + 0.5f), game.camZ - (bz + 0.5f))
         val pos = FloatArray(3); val sc = FloatArray(3)
         for (a in 0 until 3) {
             val s = if (cc[a] >= 0f) 1f else -1f
             val u = (a + 1) % 3; val v = (a + 2) % 3
             for (i in 0 until n) {
-                pos[a] = s * 0.505f; pos[u] = (crackCells[i * 2] - 3.5f) / 8f; pos[v] = (crackCells[i * 2 + 1] - 3.5f) / 8f
-                sc[a] = 0.012f; sc[u] = 0.125f; sc[v] = 0.125f
-                box(base, pos[0], pos[1], pos[2], 0f, 0f, sc[0], sc[1], sc[2], 0f, 0x1E120A, 0.62f)
+                pos[a] = s * (0.506f + 0.01f * pulse); pos[u] = (crackCells[i * 2] - 7.5f) / 16f; pos[v] = (crackCells[i * 2 + 1] - 7.5f) / 16f
+                sc[a] = 0.01f; sc[u] = 0.0625f; sc[v] = 0.0625f
+                box(base, pos[0], pos[1], pos[2], 0f, 0f, sc[0], sc[1], sc[2], 0f, 0x140B05, 0.85f)
+                // brilho claro nas rachaduras mais novas
+                if (i > n - 6) { pos[a] = s * 0.5065f; box(base, pos[0], pos[1], pos[2], 0f, 0f, sc[0] * 0.5f, sc[1] * 0.45f, sc[2] * 0.45f, 0f, 0xFFE7B0, 0.5f) }
             }
         }
         G.glDepthMask(true)
