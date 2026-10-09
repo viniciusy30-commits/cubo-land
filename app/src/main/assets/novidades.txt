@@ -1,3 +1,12 @@
+#id 2026-10-09-r
+#titulo Mão de verdade e golpes novos!
+- Punho maior e o cabo da ferramenta passa pelo meio dele, agora parece que a mão está segurando de verdade (sem dedos)
+- Espada: golpe em diagonal, de cima pra baixo, com rastro brilhante no ar
+- Machado: levanta devagar e desce pesado, com um quique no impacto
+- Picareta: golpe rápido por cima com batida seca
+- Cajado: puxa pra trás e dispara pra frente, a gema brilha e gira mais rápido
+- Ao trocar de item a ferramenta sobe girando; ao andar a mão balança, e o cajado flutua parado
+
 #id 2026-10-09-q
 #titulo Ferramentas 3D e folha nova!
 - Espada, machado, picareta e cajado agora são modelos 3D de ferro e madeira, sem pixel-art

@@ -208,7 +208,7 @@ class Game(val world: World) {
         yaw -= ddx * 0.0045f * sens; pitch = (pitch - ddy * 0.0045f * sens).coerceIn(-1.45f, 1.45f)
         if (wantCam) { wantCam = false; thirdPerson = !thirdPerson }
         atkCd -= dt; hurtCd -= dt; shake = max(0f, shake - dt * 1.5f); hurtFlash = max(0f, hurtFlash - dt * 2f)
-        if (swing < 1f) swing = min(1f, swing + dt / 0.35f)
+        if (swing < 1f) swing = min(1f, swing + dt / Items.swingTime(cur()))
         if (deadTimer > 0f) { deadTimer -= dt; if (deadTimer <= 0f) respawn(); updateCamera(); return }
 
         val p = player
