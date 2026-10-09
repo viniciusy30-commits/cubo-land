@@ -507,10 +507,10 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     }
 
     /** braço estilo Minecraft: manga + punho de pele (cubo, sem dedos). Origem = ombro, Z = direção da mão; len = distância até o punho */
-    private fun drawArm(m: FloatArray, len: Float) {
-        box(m, 0f, 0f, (len - 0.1f) / 2f, 0f, 0f, 0.17f, 0.17f, len - 0.1f, 0f, 0x7FD9C8)   // manga
-        box(m, 0f, 0f, len - 0.11f, 0f, 0f, 0.195f, 0.195f, 0.05f, 0f, 0xA6EBDD)           // barra da manga
-        box(m, 0f, 0f, len + 0.03f, 0f, 0f, 0.17f, 0.17f, 0.2f, 0f, SKIN)                  // punho
+    private fun drawArm(m: FloatArray, len: Float, fist: Boolean = true) {
+        box(m, 0f, 0f, (len - 0.04f) / 2f, 0f, 0f, 0.15f, 0.15f, len - 0.04f, 0f, 0x7FD9C8)   // manga (entra dentro do punho)
+        box(m, 0f, 0f, len - 0.13f, 0f, 0f, 0.175f, 0.175f, 0.05f, 0f, 0xA6EBDD)             // barra da manga
+        if (fist) box(m, 0f, 0f, len, 0f, 0f, 0.17f, 0.17f, 0.17f, 0f, SKIN)                 // punho
     }
 
     private val hp = FloatArray(4)
@@ -566,18 +566,20 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val len = armBasis(fp, 0.60f + ox, -0.80f + oy, -0.28f, 0.27f + ox, -0.25f + oy, -0.72f)
         Matrix.rotateM(fp, 0, armDelta, 1f, 0f, 0f)
         if (game.swing < 1f) Matrix.rotateM(fp, 0, yawSw, 0f, 1f, 0f)
-        drawArm(fp, len)
+        val tool = id !in 1..13
+        drawArm(fp, len, !tool)
         System.arraycopy(fp, 0, itemM, 0, 16)
         Matrix.translateM(itemM, 0, 0f, 0f, len)      // centro do punho
         val hx = itemM[12]; val hy = itemM[13]; val hz = itemM[14]
-        val tool = id !in 1..13
         if (tool) {
             val phi = when (id) { Items.AXE -> 32f; Items.PICK -> 28f; Items.SWORD -> 22f; else -> 0f }
-            val sc = when (id) { Items.SWORD -> 0.58f; Items.AXE -> 0.6f; Items.PICK -> 0.6f; else -> 0.54f }
+            val sc = when (id) { Items.SWORD -> 0.54f; Items.AXE -> 0.56f; Items.PICK -> 0.56f; else -> 0.5f }
             // ferramenta quase em pé (leve inclinação), cabo atravessando o punho com a ponta de baixo aparecendo
-            toolMatrix(itemM, hx, hy, hz, 2f, phi, sc, toolDelta, yawSw)
+            toolMatrix(itemM, hx, hy, hz, -8f, phi, sc, toolDelta, yawSw)
             val g = 0.06f
             itemM[12] -= itemM[8] * g; itemM[13] -= itemM[9] * g; itemM[14] -= itemM[10] * g
+            // punho alinhado ao cabo: o cabo passa pelo meio da mão
+            box(itemM, 0f, 0f, g, 0f, 0f, 0.19f / sc, 0.19f / sc, 0.2f / sc, 0f, SKIN)
             drawItem(itemM, id, game.time)
         } else {
             // bloco apoiado em cima do punho, virado pra mostrar topo e laterais
