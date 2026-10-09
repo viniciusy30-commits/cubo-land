@@ -122,19 +122,18 @@ object Atlas {
         return lerp(c, 0xB07F55, sm(0.40f, 0.44f, max(abs(dx), abs(dy))))
     }
 
-    /** folhas pixel-art 16x16 estilo "folhas detalhadas": várias folhas pontudas sobrepostas, cada uma com contorno escuro,
-     *  nervura clara e lado iluminado; fundo escuro com buraquinhos (dá profundidade). Mesmas cores verdes de antes. */
+    /** folhas pixel-art 16x16: base verde pastel com buraquinhos, folhinhas claras com nervura por cima, florzinhas rosa */
     private fun leaves(u: Float, v: Float): Int {
-        val g = 16
+        val g = 32
         val gx = floor(u * g).toInt(); val gy = floor(v * g).toInt()
         val qu = (gx + 0.5f) / g; val qv = (gy + 0.5f) / g
-        val n = h(gx, gy, 91) * 0.5f + vn(qu, qv, 4, 4, 90) * 0.5f
-        if (n < 0.2f) return CLEAR
-        var c = lerp(0x2F7448, 0x3E8A55, h(gx, gy, 92) * 0.6f + vn(qu, qv, 6, 6, 96) * 0.4f)   // fundo sombreado
-        for (i in 0 until 17) {
+        val n = h(gx, gy, 91) * 0.45f + vn(qu, qv, 6, 6, 90) * 0.55f
+        if (n < 0.27f) return CLEAR
+        var c = lerp(0x469A60, 0x62B672, h(gx, gy, 92) * 0.5f + vn(qu, qv, 8, 8, 96) * 0.5f)
+        for (i in 0 until 48) {
             val cx = h(i, 0, 100); val cy = h(i, 1, 100)
             val ang = h(i, 2, 100) * 3.1416f
-            val len = 0.21f + 0.09f * h(i, 3, 100); val wid = len * 0.56f
+            val len = 0.085f + 0.045f * h(i, 3, 100); val wid = len * 0.5f
             val light = h(i, 4, 100)
             val ca = cos(ang); val sa = sin(ang)
             for (ox in -1..1) for (oy in -1..1) {
@@ -145,14 +144,13 @@ object Atlas {
                 val half = wid * (1f - t * t)
                 if (abs(b) >= half) continue
                 val side = b / max(half, 0.001f)
-                var lc = lerp(0x58AE6A, 0xB6EC98, (light * 0.55f + (0.5f - side * 0.5f) * 0.45f).coerceIn(0f, 1f))
-                if (side > 0.35f) lc = lerp(lc, 0x3A8A54, 0.55f)                      // lado de baixo da folha, mais escuro
-                if (abs(b) < 0.5f / g && t > -0.85f) lc = lerp(lc, 0xE6FFC8, 0.55f)  // nervura central
-                if (abs(side) > 0.72f || t > 0.82f) lc = lerp(lc, 0x276840, 0.7f)    // contorno escuro da folha
+                var lc = lerp(0x72C47C, 0xC4F2A6, (light * 0.6f + (0.5f - side * 0.5f) * 0.4f).coerceIn(0f, 1f))
+                if (side > 0.5f) lc = lerp(lc, 0x469A60, 0.5f)
+                if (abs(b) < 0.014f && t > -0.8f) lc = lerp(lc, 0xE6FFC8, 0.5f)
                 c = lc
             }
         }
-        if (h(gx, gy, 95) > 0.985f) c = 0xFFC2DA
+        if (h(gx, gy, 95) > 0.99f) c = 0xFFC2DA
         return op(c)
     }
 

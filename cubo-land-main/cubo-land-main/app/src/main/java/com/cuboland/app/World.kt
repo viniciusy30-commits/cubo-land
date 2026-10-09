@@ -123,7 +123,27 @@ class World {
             }
             for (y in hh + 1..WATER_Y) blocks[(y * SZ + z) * SX + x] = B.WATER.toByte()
         }
-        plantForest(Random(seed.toLong()), 420) { x, z -> h[x * SZ + z] }
+        val rnd = Random(seed.toLong())
+        val trees = ArrayList<IntArray>()
+        for (i in 0 until 220) {
+            val x = 4 + rnd.nextInt(SX - 8); val z = 4 + rnd.nextInt(SZ - 8)
+            val y = h[x * SZ + z]
+            if (get(x, y, z) != B.GRASS || y <= WATER_Y + 1) continue
+            if (Math.abs(x - SX / 2) < 5 && Math.abs(z - SZ / 2) < 5) continue
+            if (trees.any { Math.abs(it[0] - x) < 4 && Math.abs(it[1] - z) < 4 }) continue
+            trees.add(intArrayOf(x, z))
+            val th = 4 + rnd.nextInt(2)
+            for (t in 1..th) blocks[((y + t) * SZ + z) * SX + x] = B.WOOD.toByte()
+            for (dy in th - 2..th + 1) {
+                val r = if (dy >= th) 1 else 2
+                for (dx in -r..r) for (dz in -r..r) {
+                    if (Math.abs(dx) == r && Math.abs(dz) == r && rnd.nextBoolean()) continue
+                    val bx = x + dx; val by = y + dy; val bz = z + dz
+                    if (bx in 0 until SX && bz in 0 until SZ && by < SY && get(bx, by, bz) == B.AIR)
+                        blocks[(by * SZ + bz) * SX + bx] = B.LEAVES.toByte()
+                }
+            }
+        }
         // pilares decorativos perto do spawn
         val cols = intArrayOf(B.PINK, B.BLUE, B.YELLOW, B.BRICK)
         for (i in 0 until 4) {
@@ -133,208 +153,6 @@ class World {
             blocks[((y + 3) * SZ + z) * SX + x] = B.LANTERN.toByte()
         }
         java.util.Arrays.fill(dirty, true)
-    }
-
-    // ================= ÁRVORES =================
-    private fun air(x: Int, y: Int, z: Int) = x in 0 until SX && z in 0 until SZ && y in 0 until SY && get(x, y, z) == B.AIR
-
-    /** copa irregular: elipsoide de folhas com bordas ruidosas */
-    private fun blob(cx: Int, cy: Int, cz: Int, rx: Float, ry: Float, rz: Float, rnd: Random) {
-        val ix = Math.ceil(rx.toDouble()).toInt() + 1; val iy = Math.ceil(ry.toDouble()).toInt() + 1; val iz = Math.ceil(rz.toDouble()).toInt() + 1
-        for (dx in -ix..ix) for (dy in -iy..iy) for (dz in -iz..iz) {
-            val d = (dx * dx) / (rx * rx) + (dy * dy) / (ry * ry) + (dz * dz) / (rz * rz)
-            val thr = 0.82f + rnd.nextFloat() * 0.34f
-            if (d <= thr && air(cx + dx, cy + dy, cz + dz)) set(cx + dx, cy + dy, cz + dz, B.LEAVES)
-        }
-    }
-
-    private fun wood(x: Int, y: Int, z: Int) {
-        val g = get(x, y, z)
-        if (g == B.AIR || g == B.LEAVES) set(x, y, z, B.WOOD)
-    }
-
-    /** galho torto que sobe; termina numa bolota de folhas. Retorna a ponta [x,y,z] */
-    private fun branch(x: Int, y: Int, z: Int, len: Int, rnd: Random): IntArray {
-        val dirs = arrayOf(intArrayOf(1, 0), intArrayOf(-1, 0), intArrayOf(0, 1), intArrayOf(0, -1), intArrayOf(1, 1), intArrayOf(-1, 1), intArrayOf(1, -1), intArrayOf(-1, -1))
-        val d = dirs[rnd.nextInt(8)]
-        var bx = x; var by = y; var bz = z
-        for (i in 1..len) {
-            bx += d[0]; bz += d[1]
-            if (i % 2 == 0 || rnd.nextInt(3) == 0) by++
-            wood(bx, by, bz)
-            if (i == len) { by++; wood(bx, by, bz) }
-        }
-        return intArrayOf(bx, by, bz)
-    }
-
-    /** tipo: 0 pequena, 1 média, 2 grande (tronco grosso), 3 alta e fina, 4 pinheiro, 5 arbusto, 6 tronco caído */
-    private fun pickTree(rnd: Random): Int {
-        val r = rnd.nextInt(24)
-        return when { r < 5 -> 0; r < 11 -> 1; r < 14 -> 2; r < 16 -> 3; r < 19 -> 4; r < 22 -> 5; else -> 6 }
-    }
-    private val treeRadius = intArrayOf(2, 4, 6, 3, 4, 2, 3)
-
-    /** tronco com curvas leves: a cada "kink" o tronco desvia 1 bloco pro lado. Retorna a coluna do topo [x,z] */
-    private fun trunk(x: Int, y: Int, z: Int, h: Int, kinks: Int, rnd: Random): IntArray {
-        var tx = x; var tz = z
-        val at = HashSet<Int>()
-        for (k in 0 until kinks) at.add(2 + rnd.nextInt(Math.max(1, h - 3)))
-        for (t in 1..h) {
-            wood(tx, y + t, tz)
-            if (t in at) {
-                val d = rnd.nextInt(4)
-                tx += if (d == 0) 1 else if (d == 1) -1 else 0
-                tz += if (d == 2) 1 else if (d == 3) -1 else 0
-                wood(tx, y + t, tz)
-            }
-        }
-        return intArrayOf(tx, tz)
-    }
-
-    /** raiz: 1 bloco encostado no base do tronco */
-    private fun root(x: Int, y: Int, z: Int, dx: Int, dz: Int) {
-        if (get(x + dx, y, z + dz) == B.GRASS && air(x + dx, y + 1, z + dz)) wood(x + dx, y + 1, z + dz)
-    }
-
-    /** folhas caindo pelas bordas da copa: tira o aspecto de "bola lisa" */
-    private fun droop(cx: Int, cy: Int, cz: Int, r: Int, h: Int, rnd: Random) {
-        for (dx in -r..r) for (dz in -r..r) {
-            val x = cx + dx; val z = cz + dz
-            var low = -1
-            for (yy in Math.max(1, cy - 4)..cy + h) if (get(x, yy, z) == B.LEAVES) { low = yy; break }
-            if (low < 0) continue
-            if (rnd.nextInt(4) == 0 && air(x, low - 1, z)) {
-                set(x, low - 1, z, B.LEAVES)
-                if (rnd.nextInt(3) == 0 && air(x, low - 2, z)) set(x, low - 2, z, B.LEAVES)
-            }
-        }
-    }
-
-    /** disco de folhas com borda irregular (usado no pinheiro) */
-    private fun disc(cx: Int, y: Int, cz: Int, rad: Float, rnd: Random) {
-        val ir = Math.ceil(rad.toDouble()).toInt() + 1
-        for (dx in -ir..ir) for (dz in -ir..ir) {
-            val d = sqrt((dx * dx + dz * dz).toFloat())
-            if (d <= rad + (rnd.nextFloat() - 0.5f) * 0.8f && air(cx + dx, y, cz + dz)) set(cx + dx, y, cz + dz, B.LEAVES)
-        }
-    }
-
-    private fun plantTree(x: Int, y: Int, z: Int, type: Int, rnd: Random) {
-        when (type) {
-            0 -> {
-                val th = 3 + rnd.nextInt(2)
-                val tp = trunk(x, y, z, th, rnd.nextInt(2), rnd)
-                blob(tp[0], y + th + 1, tp[1], 2.4f, 1.9f, 2.4f, rnd)
-                if (rnd.nextBoolean()) { val e = branch(tp[0], y + th - 1, tp[1], 2, rnd); blob(e[0], e[1], e[2], 1.5f, 1.3f, 1.5f, rnd) }
-                droop(tp[0], y + th, tp[1], 3, 3, rnd)
-            }
-            1 -> {
-                val th = 5 + rnd.nextInt(3)
-                val tp = trunk(x, y, z, th, 1 + rnd.nextInt(2), rnd)
-                root(x, y, z, 1, 0); root(x, y, z, 0, 1)
-                if (rnd.nextBoolean()) root(x, y, z, -1, 0)
-                for (k in 0 until 2 + rnd.nextInt(2)) {
-                    val e = branch(tp[0], y + th - 3 + rnd.nextInt(3), tp[1], 2 + rnd.nextInt(2), rnd)
-                    blob(e[0], e[1], e[2], 2.2f, 1.8f, 2.2f, rnd)
-                }
-                blob(tp[0], y + th + 1, tp[1], 3.2f, 2.6f, 3.2f, rnd)
-                blob(tp[0] + 2 - rnd.nextInt(5), y + th, tp[1] + 2 - rnd.nextInt(5), 2.2f, 1.7f, 2.2f, rnd)
-                droop(tp[0], y + th, tp[1], 5, 5, rnd)
-            }
-            2 -> {
-                val th = 8 + rnd.nextInt(4)
-                val thick = get(x + 1, y, z) == B.GRASS && get(x, y, z + 1) == B.GRASS && get(x + 1, y, z + 1) == B.GRASS
-                var tx = x; var tz = z
-                if (thick) {
-                    for (t in 1..th) { wood(x, y + t, z); if (t <= th - 2) { wood(x + 1, y + t, z); wood(x, y + t, z + 1); wood(x + 1, y + t, z + 1) } }
-                } else { val tp = trunk(x, y, z, th, 2, rnd); tx = tp[0]; tz = tp[1] }
-                for (dx in -1..2) for (dz in -1..2) {   // raízes aparentes, com pé no chão
-                    if ((dx == 0 || dx == 1) && (dz == 0 || dz == 1)) continue
-                    if (rnd.nextInt(3) == 0 && get(x + dx, y, z + dz) == B.GRASS && air(x + dx, y + 1, z + dz)) wood(x + dx, y + 1, z + dz)
-                }
-                for (k in 0 until 5 + rnd.nextInt(3)) {
-                    val e = branch(tx, y + th - 5 + rnd.nextInt(4), tz, 3 + rnd.nextInt(2), rnd)
-                    blob(e[0], e[1], e[2], 2.8f, 2.2f, 2.8f, rnd)
-                }
-                blob(tx, y + th + 2, tz, 4.6f, 3.2f, 4.6f, rnd)
-                blob(tx + 2, y + th + 3, tz - 1, 2.4f, 2.0f, 2.4f, rnd); blob(tx - 2, y + th + 2, tz + 2, 2.4f, 2.0f, 2.4f, rnd)
-                blob(tx - 3, y + th + 1, tz - 2, 2.2f, 1.7f, 2.2f, rnd); blob(tx + 3, y + th + 1, tz + 2, 2.2f, 1.7f, 2.2f, rnd)
-                droop(tx, y + th, tz, 7, 6, rnd)
-            }
-            3 -> {
-                val th = 8 + rnd.nextInt(3)
-                val tp = trunk(x, y, z, th + 1, 1, rnd)
-                for (k in 0..3) { val r = 3.1f - k * 0.7f; blob(tp[0], y + th - 4 + k * 2, tp[1], r, 1.7f, r, rnd) }
-                blob(tp[0], y + th + 3, tp[1], 1.1f, 1.4f, 1.1f, rnd)
-                droop(tp[0], y + th - 2, tp[1], 3, 6, rnd)
-            }
-            4 -> {   // pinheiro: camadas em degraus, bem fechadas embaixo e pontudas em cima
-                val th = 9 + rnd.nextInt(4)
-                for (t in 1..th + 1) wood(x, y + t, z)
-                val base = y + 3
-                for (ly in base..y + th + 1) {
-                    val f = (ly - base).toFloat() / (th - 2).coerceAtLeast(1)
-                    var rad = 3.7f * (1f - f) + 0.5f
-                    if ((ly - base) % 3 == 2) rad -= 1.2f          // "cintura" entre os andares
-                    if (rad > 0.2f) disc(x, ly, z, rad, rnd) else if (air(x, ly, z)) set(x, ly, z, B.LEAVES)
-                }
-                if (air(x, y + th + 2, z)) set(x, y + th + 2, z, B.LEAVES)
-                if (air(x, y + th + 3, z)) set(x, y + th + 3, z, B.LEAVES)
-            }
-            5 -> {   // arbusto com um toquinho escondido (pra ser limpo junto com as árvores)
-                wood(x, y + 1, z)
-                blob(x, y + 1, z, 1.7f, 1.3f, 1.7f, rnd)
-                if (rnd.nextBoolean()) blob(x + 1 - rnd.nextInt(3), y + 1, z + 1 - rnd.nextInt(3), 1.3f, 1.1f, 1.3f, rnd)
-            }
-            else -> {   // tronco caído, com folhas numa ponta
-                val ax = if (rnd.nextBoolean()) 1 else 0; val az = 1 - ax
-                val len = 3 + rnd.nextInt(2)
-                for (i in 0 until len) {
-                    val px = x + i * ax; val pz = z + i * az
-                    if (get(px, y, pz) == B.GRASS && air(px, y + 1, pz)) wood(px, y + 1, pz)
-                }
-                if (rnd.nextBoolean()) blob(x + (len - 1) * ax, y + 2, z + (len - 1) * az, 1.3f, 1.0f, 1.3f, rnd)
-            }
-        }
-    }
-
-    private fun plantForest(rnd: Random, tries: Int, groundAt: (Int, Int) -> Int) {
-        val placed = ArrayList<IntArray>()
-        for (i in 0 until tries) {
-            val x = 5 + rnd.nextInt(SX - 10); val z = 5 + rnd.nextInt(SZ - 10)
-            val y = groundAt(x, z)
-            if (get(x, y, z) != B.GRASS || y <= WATER_Y + 1 || !air(x, y + 1, z)) continue
-            if (Math.abs(x - SX / 2) < 6 && Math.abs(z - SZ / 2) < 6) continue
-            val type = pickTree(rnd); val r = treeRadius[type]
-            if (placed.any { Math.max(Math.abs(it[0] - x), Math.abs(it[1] - z)) < it[2] + r }) continue
-            placed.add(intArrayOf(x, z, r))
-            plantTree(x, y, z, type, rnd)
-        }
-    }
-
-    /** mundos antigos: apaga as árvores naturais (troncos em grama e folhas ligadas) e planta as novas */
-    fun replantTrees(seed: Int) {
-        val seen = BooleanArray(blocks.size)
-        val q = java.util.ArrayDeque<IntArray>()
-        for (x in 0 until SX) for (z in 0 until SZ) for (y in 1 until SY) {
-            if (get(x, y, z) != B.WOOD || get(x, y - 1, z) != B.GRASS) continue
-            q.clear(); q.add(intArrayOf(x, y, z)); seen[(y * SZ + z) * SX + x] = true
-            while (q.isNotEmpty()) {
-                val c = q.poll()
-                set(c[0], c[1], c[2], B.AIR)
-                for (dx in -1..1) for (dy in -1..1) for (dz in -1..1) {
-                    val nx = c[0] + dx; val ny = c[1] + dy; val nz = c[2] + dz
-                    if (nx < 0 || nx >= SX || nz < 0 || nz >= SZ || ny < 0 || ny >= SY) continue
-                    if (Math.abs(nx - x) > 9 || Math.abs(nz - z) > 9 || ny - y > 16) continue
-                    val id = get(nx, ny, nz)
-                    if (id != B.WOOD && id != B.LEAVES) continue
-                    val k = (ny * SZ + nz) * SX + nx
-                    if (seen[k]) continue
-                    seen[k] = true; q.add(intArrayOf(nx, ny, nz))
-                }
-            }
-        }
-        plantForest(Random(seed.toLong() + 99), 420) { x, z -> surfaceY(x, z) - 1 }
     }
 
     fun save(f: File) {

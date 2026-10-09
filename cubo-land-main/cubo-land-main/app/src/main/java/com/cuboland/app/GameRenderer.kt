@@ -26,7 +26,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     private val ob = MeshBuf(); private val wb = MeshBuf()
     private var last = 0L
     private val rnd = java.util.Random()
-    private val fogR = 0.70f; private val fogG = 0.83f; private val fogB = 0.97f
+    private val fogR = 0.82f; private val fogG = 0.92f; private val fogB = 1.0f
     private var skyProg = 0; private var skyP = 0; private var skyInv = 0; private var skyCam = 0; private var skyHor = 0; private var skyTime = 0
     private val inv = FloatArray(16)
     private val quad = ByteBuffer.allocateDirect(32).order(ByteOrder.nativeOrder()).asFloatBuffer().apply { put(floatArrayOf(-1f, -1f, 1f, -1f, -1f, 1f, 1f, 1f)); position(0) }
@@ -85,7 +85,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             if (t.a < 0.4) discard;
             float l = clamp((vCol.r - 0.3) / 0.7, 0.0, 1.0);
             vec3 light = mix(vec3(0.80, 0.84, 1.0), vec3(1.05, 1.02, 0.95), l);
-            vec3 c = t.rgb * vCol * uTint * light * 0.9;
+            vec3 c = t.rgb * vCol * uTint * light * 1.06;
             float alpha = uAlpha * t.a;
             if (isLeaf) c *= 1.0 + 0.05 * sin(vWP.x * 0.7 + vWP.z * 0.5 + uTime * 0.8);
             if (isWater) {
@@ -101,13 +101,13 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                 if (dot(n, V) < 0.0) n = -n;
                 vec3 L = normalize(vec3(0.55, 0.5, 0.65));
                 float depth = clamp(vCol.g, 0.0, 1.0);
-                vec3 shallow = vec3(0.30, 0.76, 0.76);
+                vec3 shallow = vec3(0.38, 0.90, 0.85);
                 vec3 deep = vec3(0.03, 0.20, 0.58);
                 vec3 base = shallow;   // cor única: toda a água igual à parte clara
                 float ndv = max(dot(n, V), 0.0);
                 float fres = 0.02 + 0.98 * pow(1.0 - ndv, 5.0);
                 vec3 R = reflect(-V, n);
-                vec3 sky = mix(uFog, vec3(0.34, 0.56, 0.94), pow(clamp(R.y, 0.0, 1.0), 0.45));
+                vec3 sky = mix(uFog, vec3(0.42, 0.66, 1.0), pow(clamp(R.y, 0.0, 1.0), 0.45));
                 float rl = max(dot(R, L), 0.0);
                 float spec = pow(rl, 30.0) * 0.16;
                 vec3 wc = base * (0.84 + 0.26 * dot(n, L));
@@ -137,7 +137,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                 c += vec3(0.6, 0.9, 1.0) * pow(max(0.0, k1 * 0.33), 3.0) * 0.5;
             }
             float g2 = dot(c, vec3(0.299, 0.587, 0.114));
-            c = mix(vec3(g2), c, 1.12); c = mix(c, smoothstep(0.0, 1.0, c), 0.3);
+            c = mix(vec3(g2), c, 1.04); c = mix(c, vec3(1.0, 0.98, 0.97), 0.05);
             c = mix(c, uFog, vFog);
             gl_FragColor = vec4(c, alpha);
         }"""
@@ -157,7 +157,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         void main() {
             vec3 d = normalize(vF.xyz / vF.w - uCam);
             float h = clamp(d.y, 0.0, 1.0);
-            vec3 c = mix(uHor, vec3(0.36, 0.60, 0.92), pow(h, 0.55));
+            vec3 c = mix(uHor, vec3(0.50, 0.72, 1.0), pow(h, 0.55));
             vec3 sd = normalize(vec3(0.55, 0.5, 0.65));
             float s = max(dot(d, sd), 0.0);
             c += vec3(1.0, 0.85, 0.55) * pow(s, 6.0) * 0.25 + vec3(1.0, 0.95, 0.8) * pow(s, 300.0) * 2.0;
@@ -165,7 +165,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                 vec2 q = d.xz / (d.y + 0.25) * 1.4 + vec2(uTime * 0.012, 0.0);
                 float n = ns(q * 1.5) * 0.55 + ns(q * 3.1) * 0.3 + ns(q * 6.5) * 0.15;
                 float cl = smoothstep(0.52, 0.78, n) * smoothstep(0.02, 0.25, d.y);
-                c = mix(c, vec3(0.93, 0.93, 0.93) * (0.84 + 0.14 * ns(q * 2.0)), cl * 0.85);
+                c = mix(c, vec3(1.0, 0.99, 0.97) * (0.86 + 0.14 * ns(q * 2.0)), cl * 0.85);
             }
             gl_FragColor = vec4(c, 1.0);
         }"""
@@ -490,57 +490,19 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     }
 
     private val SKIN = 0xF2C29B; private val SKIN_D = 0xD9A07A
-    private val showLeftHand = false   // mão esquerda vazia no canto, como no Minecraft (false = esconde)
+    private val showLeftHand = true   // mão esquerda vazia no canto, como no Minecraft (false = esconde)
 
-    /** Base do braço: origem no ombro (sx,sy,sz), eixo Z apontando pra mão (hx,hy,hz), Y pra cima. Retorna o comprimento. */
-    private fun armBasis(out: FloatArray, sx: Float, sy: Float, sz: Float, hx: Float, hy: Float, hz: Float): Float {
-        var zx = hx - sx; var zy = hy - sy; var zz = hz - sz
-        val len = sqrt(zx * zx + zy * zy + zz * zz); zx /= len; zy /= len; zz /= len
-        var xx = zz; var xz = -zx                       // X = cima x Z
-        val xl = sqrt(xx * xx + xz * xz); xx /= xl; xz /= xl
-        val yx = zy * xz; val yy = zz * xx - zx * xz; val yz = -zy * xx   // Y = Z x X (xy = 0)
-        out[0] = xx; out[1] = 0f; out[2] = xz; out[3] = 0f
-        out[4] = yx; out[5] = yy; out[6] = yz; out[7] = 0f
-        out[8] = zx; out[9] = zy; out[10] = zz; out[11] = 0f
-        out[12] = sx; out[13] = sy; out[14] = sz; out[15] = 1f
-        return len
-    }
-
-    /** braço estilo Minecraft: manga + punho de pele (cubo, sem dedos). Origem = ombro, Z = direção da mão; len = distância até o punho */
-    private fun drawArm(m: FloatArray, len: Float, w: Float = 0.15f) {
-        box(m, 0f, 0f, (len - 0.04f) / 2f, 0f, 0f, w, w, len - 0.04f, 0f, 0x7FD9C8)              // manga
-        box(m, 0f, 0f, len - 0.1f, 0f, 0f, w * 1.1f, w * 1.1f, 0.04f, 0f, 0xA6EBDD)             // barra da manga
-        box(m, 0f, 0f, len + 0.01f, 0f, 0f, w, w, 0.15f, 0f, SKIN)                               // punho: continuação do braço
-    }
-
-    private val tmp2 = FloatArray(16); private val restM = FloatArray(16); private val restInv = FloatArray(16); private val camBlk = FloatArray(16)
-
-    private val hp = FloatArray(4)
-    private val va = FloatArray(3); private val ve = FloatArray(3)
-    private fun nrm(v: FloatArray) { val l = sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]); if (l > 1e-6f) { v[0] /= l; v[1] /= l; v[2] /= l } }
-    private fun rotXv(v: FloatArray, deg: Float) { val r = Math.toRadians(deg.toDouble()); val c = cos(r).toFloat(); val s = sin(r).toFloat(); val y = v[1] * c - v[2] * s; val z = v[1] * s + v[2] * c; v[1] = y; v[2] = z }
-    private fun rotYv(v: FloatArray, deg: Float) { val r = Math.toRadians(deg.toDouble()); val c = cos(r).toFloat(); val s = sin(r).toFloat(); val x = v[0] * c + v[2] * s; val z = -v[0] * s + v[2] * c; v[0] = x; v[2] = z }
-
-    /** Monta a matriz da ferramenta direto no espaço da câmera (X direita, Y cima, -Z frente), com origem no punho.
-     *  Eixo da ferramenta = pra cima, inclinado pra frente (lean) e levemente pra dentro; phi = giro do fio/cabeça ao redor do cabo
-     *  (0 = fio pra frente, 90 = fio pra esquerda, mostrando o lado). Segue a animação de golpe. */
-    private fun toolMatrix(out: FloatArray, px: Float, py: Float, pz: Float, lean: Float, phi: Float, sc: Float, delta: Float, yawSw: Float) {
-        val lr = Math.toRadians(lean.toDouble())
-        va[0] = -0.12f; va[1] = cos(lr).toFloat(); va[2] = -sin(lr).toFloat(); nrm(va)
-        val d = va[2] * -1f   // F=(0,0,-1): F·A
-        ve[0] = 0f - d * va[0]; ve[1] = 0f - d * va[1]; ve[2] = -1f - d * va[2]; nrm(ve)
-        rotXv(va, -delta); rotXv(ve, -delta); rotYv(va, yawSw); rotYv(ve, yawSw)
-        // L = A x E
-        val lx = va[1] * ve[2] - va[2] * ve[1]; val ly = va[2] * ve[0] - va[0] * ve[2]; val lz = va[0] * ve[1] - va[1] * ve[0]
-        val pr = Math.toRadians(phi.toDouble()); val cp = cos(pr).toFloat(); val sp = sin(pr).toFloat()
-        val ex = cp * ve[0] + sp * lx; val ey = cp * ve[1] + sp * ly; val ez = cp * ve[2] + sp * lz
-        // Z = A ; Y = -E ; X = Y x Z
-        val yx = -ex; val yy = -ey; val yz = -ez
-        val xx = yy * va[2] - yz * va[1]; val xy = yz * va[0] - yx * va[2]; val xz = yx * va[1] - yy * va[0]
-        out[0] = xx * sc; out[1] = xy * sc; out[2] = xz * sc; out[3] = 0f
-        out[4] = yx * sc; out[5] = yy * sc; out[6] = yz * sc; out[7] = 0f
-        out[8] = va[0] * sc; out[9] = va[1] * sc; out[10] = va[2] * sc; out[11] = 0f
-        out[12] = px; out[13] = py; out[14] = pz; out[15] = 1f
+    /** braço: manga + mão fechada. grip = true desenha dedos e polegar apertando o cabo. Origem = ombro, estende em +Z */
+    private fun drawArm(m: FloatArray, grip: Boolean = false) {
+        box(m, 0f, 0f, 0.11f, 0f, 0f, 0.2f, 0.2f, 0.82f, 0f, 0x7FD9C8)   // manga
+        box(m, 0f, 0.0f, 0.1f, 0f, 0f, 0.215f, 0.215f, 0.06f, 0f, 0xA6EBDD) // punho da manga
+        box(m, 0f, 0f, 0.65f, 0f, 0f, 0.21f, 0.21f, 0.26f, 0f, SKIN)     // mão (punho fechado)
+        if (grip) {
+            for (k in 0 until 3) box(m, 0f, 0.106f, 0.58f + k * 0.065f, 0f, 0f, 0.212f, 0.014f, 0.012f, 0f, SKIN_D)  // vãos entre os dedos
+            box(m, 0f, 0.0f, 0.79f, 0f, 0f, 0.2f, 0.2f, 0.03f, 0f, SKIN_D)          // pontas dos dedos
+            box(m, 0.0f, 0.13f, 0.6f, 0f, 0f, 0.085f, 0.07f, 0.15f, 0f, SKIN)        // polegar por cima
+            box(m, 0.0f, 0.13f, 0.545f, 0f, 0f, 0.07f, 0.06f, 0.04f, 0f, SKIN_D)
+        }
     }
 
     private fun drawHand(dt: Float) {
@@ -559,50 +521,38 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val bobX = sin(wp) * 0.03f * wa; val bobY = abs(sin(wp)) * 0.03f * wa
         val breath = sin(game.time * 1.8f) * 0.006f
         // ---- mão direita (segura o item) ----
-        // braço entra pelo canto inferior direito, subindo pra frente; punho fica perto da câmera
-        val ox = bobX + swayX; val oy = bobY + swayY + breath - (1f - e) * 0.55f
-        val delta = swingDelta(id, game.swing)
-        val armDelta = if (delta < 0f) delta * 0.15f else delta * 0.4f   // braço inteiro (manga + punho + item) gira junto
-        val extra = if (delta < 0f) delta * 0.2f else delta * 0.55f      // o item ainda inclina um pouco mais no golpe
-        val yawSw = if (game.swing < 1f) -sin(game.swing * 3.1416f) * 14f else 0f
-        // poses copiadas das fotos de referência (câmera: X direita, Y cima, -Z frente; FOV 70°)
-        val empty = id <= 0
-        val armW = if (empty) 0.182f else 0.15f
-        // ombro (fora da tela) -> punho. Mão vazia: braço curto subindo pelo canto; com item/bloco: punho mais baixo e mais pra direita
-        val hx = if (empty) 0.589f else 0.752f; val hy = if (empty) -0.534f else -0.756f; val hz = if (empty) -0.982f else -1.125f
-        val sx0 = hx - 0.223f; val sy0 = hy - 0.138f; val sz0 = hz + 0.458f
-        armBasis(restM, sx0, sy0, sz0, hx, hy, hz)
-        val len = armBasis(fp, sx0 + ox, sy0 + oy, sz0, hx + ox, hy + oy, hz)
-        Matrix.rotateM(fp, 0, armDelta, 1f, 0f, 0f)
-        if (game.swing < 1f) Matrix.rotateM(fp, 0, yawSw, 0f, 1f, 0f)
-        drawArm(fp, len, armW)
+        Matrix.setIdentityM(fp, 0)
+        Matrix.translateM(fp, 0, 0.34f + bobX + swayX, -0.38f + bobY + swayY + breath - (1f - e) * 0.55f, -0.42f)
+        Matrix.rotateM(fp, 0, 180f, 0f, 1f, 0f)
+        val rest = if (id in 1..13) -12f else -20f
+        Matrix.rotateM(fp, 0, rest + swingDelta(id, game.swing), 1f, 0f, 0f)
+        if (game.swing < 1f) Matrix.rotateM(fp, 0, -sin(game.swing * 3.1416f) * 14f, 0f, 1f, 0f)
+        val tool = id !in 1..13
+        drawArm(fp, tool)
         System.arraycopy(fp, 0, itemM, 0, 16)
-        if (id > 0 && id !in 1..13) {
-            // ferramenta: em pé, virada de frente (lado chato pra câmera), ponta pra cima e levemente pra direita, cabo no punho
-            val sc = when (id) { Items.SWORD -> 1.09f; Items.AXE -> 1.1f; Items.PICK -> 1.0f; else -> 1.0f }
-            Matrix.translateM(itemM, 0, 0f, 0f, len + 0.01f)
-            Matrix.rotateM(itemM, 0, extra - 20.4f - 90f, 1f, 0f, 0f)
-            Matrix.rotateM(itemM, 0, 120.9f, 0f, 0f, 1f)
+        if (!tool) {
+            // ferramenta atravessa o punho (cabo perpendicular ao antebraço), inclinada pra frente e girada pra mostrar o lado
+            Matrix.translateM(itemM, 0, 0f, 0f, 0.65f)
+            val lean = if (id == Items.STAFF) 22f else 32f
+            val yaw = when (id) { Items.AXE -> 68f; Items.PICK -> 62f; Items.SWORD -> 42f; else -> 0f }
+            Matrix.rotateM(itemM, 0, -(90f - lean), 1f, 0f, 0f)
+            Matrix.rotateM(itemM, 0, yaw, 0f, 0f, 1f)
+            val sc = when (id) { Items.SWORD -> 0.72f; Items.AXE -> 0.74f; Items.PICK -> 0.74f; else -> 0.66f }
             Matrix.scaleM(itemM, 0, sc, sc, sc)
-            Matrix.translateM(itemM, 0, 0f, 0f, -0.06f)
             drawItem(itemM, id, game.time)
-        } else if (id in 1..13) {
-            // bloco grande no canto inferior direito, topo e lateral aparecendo (posição fixa no espaço da câmera, presa ao braço no golpe)
-            Matrix.setIdentityM(camBlk, 0)
-            Matrix.translateM(camBlk, 0, 0.786f, -0.773f, -1.068f)
-            Matrix.rotateM(camBlk, 0, 5.4f, 1f, 0f, 0f)
-            Matrix.rotateM(camBlk, 0, 26.7f, 0f, 1f, 0f)
-            Matrix.invertM(restInv, 0, restM, 0)
-            Matrix.multiplyMM(itemM, 0, fp, 0, restInv, 0)
-            Matrix.multiplyMM(tmp2, 0, itemM, 0, camBlk, 0)
-            box(tmp2, 0f, 0f, 0f, 0f, 0f, 0.569f, 0.569f, 0.569f, 0f, 0xFFFFFF, 1f, 1f, null, id)
+        } else {
+            Matrix.translateM(itemM, 0, 0f, 0f, 0.64f)
+            Matrix.rotateM(itemM, 0, 30f, 0f, 1f, 0f)
+            drawItem(itemM, id, game.time)
         }
-        // mão esquerda: as referências só mostram a direita
+        // ---- mão esquerda (vazia) ----
         if (showLeftHand) {
-            val lx = -bobX * 0.8f - swayX
-            val ly = abs(sin(wp + 1.57f)) * 0.03f * wa + swayY + breath - (1f - e) * 0.55f
-            val ll = armBasis(fp, -0.76f + lx, -1.05f + ly, -0.36f, -0.44f + lx, -0.68f + ly, -0.88f)
-            drawArm(fp, ll)
+            Matrix.setIdentityM(fp, 0)
+            Matrix.translateM(fp, 0, -0.36f - bobX * 0.8f - swayX, -0.47f + abs(sin(wp + 1.57f)) * 0.03f * wa + swayY + breath - (1f - e) * 0.55f, -0.42f)
+            Matrix.rotateM(fp, 0, 180f, 0f, 1f, 0f)
+            Matrix.rotateM(fp, 0, -16f, 1f, 0f, 0f)
+            Matrix.rotateM(fp, 0, -12f, 0f, 1f, 0f)
+            drawArm(fp)
         }
     }
 
