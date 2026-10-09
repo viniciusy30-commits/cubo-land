@@ -399,14 +399,8 @@ class World {
                     if (q == B.AIR || q == B.WATER) { open = true; break }
                 }
                 if (!open) continue
-                val sd = x * 73 + y * 31 + z * 17
-                val jx = (hash(sd, y, 321) - 0.5f) * 0.22f; val jy = (hash(sd, z, 322) - 0.5f) * 0.18f; val jz = (hash(x, sd, 323) - 0.5f) * 0.22f
-                puff(o, x + 0.5f + jx, y + 0.5f + jy, z + 0.5f + jz, 0.74f + 0.1f * hash(sd, x, 324), 6, 3, hash(sd, y, 325) * 6.28f, vr, sd)
-                for (f in 0 until 6) {
-                    val aa = f shr 1; val ss = if ((f and 1) == 0) 1 else -1
-                    if (get(x + if (aa == 0) ss else 0, y + if (aa == 1) ss else 0, z + if (aa == 2) ss else 0) == B.AIR && hash(sd, f, 326) > 0.45f && o.vc < 56000)
-                        addCards(o, x, y, z, aa, ss, vr * 0.95f)
-                }
+                leafFaces(o, x, y, z, 0f, 1f, true, vr, 1f)        // casca externa (só faces expostas)
+                leafFaces(o, x, y, z, 0.16f, 0.84f, false, vr, 0.72f)   // cubo interno: dá profundidade pelos buracos
                 continue
             }
             if (id == B.GRASS && get(x, y + 1, z) == B.AIR) {
@@ -479,6 +473,32 @@ class World {
                 buf.vc += 4
                 if (id == B.LEAVES && nid == B.AIR && o.vc < 56000) addCards(o, x, y, z, a, s, shade * vr)
             }
+        }
+    }
+
+    /** faces de folha recortada (tile 8). outer = só faces voltadas pra ar/água; senão todas (cubo interno menor) */
+    private fun leafFaces(o: MeshBuf, x: Int, y: Int, z: Int, lo: Float, hi: Float, outer: Boolean, vr: Float, tone: Float) {
+        val pos = FloatArray(3)
+        for (face in 0 until 6) {
+            val a = face shr 1; val s = if ((face and 1) == 0) 1 else -1
+            if (outer) {
+                val nid = get(x + if (a == 0) s else 0, y + if (a == 1) s else 0, z + if (a == 2) s else 0)
+                if (nid != B.AIR && nid != B.WATER) continue
+            }
+            val u = (a + 1) % 3; val v = (a + 2) % 3
+            val sh = (if (a == 1) (if (s > 0) 1f else 0.8f) else if (a == 0) 0.92f else 0.86f) * vr * tone
+            for (q in 0 until 4) {
+                val cu = QU[q]; val cv = QV[q]
+                pos[0] = x.toFloat(); pos[1] = y.toFloat(); pos[2] = z.toFloat()
+                pos[a] += if (s > 0) hi else lo
+                pos[u] += if (cu == 1) hi else lo
+                pos[v] += if (cv == 1) hi else lo
+                var tu = cu.toFloat(); var tv = cv.toFloat()
+                if (a == 0) { tu = cv.toFloat(); tv = 1f - cu } else if (a == 2) { tv = 1f - cv }
+                o.vert(pos[0], pos[1], pos[2], sh, sh, sh, (8 + 0.01f + tu * 0.98f) / Atlas.NT.toFloat(), 0.01f + tv * 0.98f)
+            }
+            if (s > 0) { o.tri(0, 1, 2); o.tri(0, 2, 3) } else { o.tri(0, 2, 1); o.tri(0, 3, 2) }
+            o.vc += 4
         }
     }
 

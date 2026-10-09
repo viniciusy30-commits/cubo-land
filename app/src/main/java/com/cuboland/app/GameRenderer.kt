@@ -543,6 +543,54 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         out[12] = px; out[13] = py; out[14] = pz; out[15] = 1f
     }
 
+    private fun tb(m: FloatArray, x: Float, y: Float, z: Float, sx: Float, sy: Float, sz: Float, col: Int, rx: Float = 0f, shine: Float = 1f) =
+        box(m, x, y, z, rx, 0f, sx, sy, sz, 0f, col, 1f, shine)
+
+    /** Ferramentas 3D na mão. Origem = punho; Y = cabo pra cima; frente = -Z (a parte que corta/ponta fica virada pra frente). */
+    private fun drawTool3D(m: FloatArray, id: Int, t: Float) {
+        val iron = 0xC5CEDA; val ironD = 0x8B96A6; val ironL = 0xEEF3FA
+        val wood = 0x9A6A3E; val woodD = 0x6F4A29; val gold = 0xFFD060
+        val glint = 0.5f + 0.5f * sin(t * 3f)
+        if (id != Items.SWORD && id != Items.STAFF) {
+            tb(m, 0f, 0.28f, 0f, 0.08f, 1.0f, 0.08f, wood)                       // cabo de madeira
+            tb(m, 0f, -0.06f, 0f, 0.095f, 0.07f, 0.095f, woodD); tb(m, 0f, 0.08f, 0f, 0.095f, 0.07f, 0.095f, woodD)   // empunhadura
+        }
+        when (id) {
+            Items.PICK -> {
+                tb(m, 0f, 0.72f, 0f, 0.11f, 0.11f, 0.11f, ironD)                  // encaixe no cabo
+                for (sg in intArrayOf(-1, 1)) {                                   // -1 = ponta pra frente, +1 = pra trás
+                    val s = sg.toFloat()
+                    tb(m, 0f, 0.73f, s * 0.14f, 0.085f, 0.09f, 0.16f, iron)
+                    tb(m, 0f, 0.715f, s * 0.29f, 0.075f, 0.075f, 0.17f, iron, rx = s * 25f)
+                    tb(m, 0f, 0.635f, s * 0.40f, 0.06f, 0.06f, 0.13f, ironL, rx = s * 50f)
+                }
+            }
+            Items.AXE -> {
+                tb(m, 0f, 0.68f, 0.08f, 0.085f, 0.17f, 0.08f, ironD)              // nuca
+                tb(m, 0f, 0.68f, 0f, 0.09f, 0.22f, 0.11f, iron)                   // cabeça
+                tb(m, 0f, 0.68f, -0.10f, 0.075f, 0.28f, 0.10f, iron)              // lâmina
+                tb(m, 0f, 0.68f, -0.17f, 0.06f, 0.36f, 0.05f, ironL)              // gume
+                tb(m, 0f, 0.68f, -0.205f, 0.04f, 0.40f, 0.02f, 0xFFFFFF)          // fio virado pra frente
+            }
+            Items.SWORD -> {
+                tb(m, 0f, -0.04f, 0f, 0.07f, 0.28f, 0.07f, woodD)                 // cabo
+                tb(m, 0f, -0.2f, 0f, 0.09f, 0.07f, 0.09f, gold)                   // pomo
+                tb(m, 0f, 0.12f, 0f, 0.08f, 0.05f, 0.30f, gold)                   // guarda
+                tb(m, 0f, 0.55f, 0f, 0.03f, 0.84f, 0.12f, 0xC6E4FA, shine = 0.95f + 0.05f * glint)   // lâmina (lado chato nos lados, fio pra frente)
+                tb(m, 0f, 0.55f, 0f, 0.045f, 0.78f, 0.04f, 0x7FC8F5)              // nervura central
+                tb(m, 0f, 0.55f, -0.065f, 0.02f, 0.84f, 0.02f, 0xFFFFFF)          // fio da frente
+                tb(m, 0f, 1.0f, 0f, 0.03f, 0.08f, 0.08f, 0xC6E4FA)                // ponta
+                tb(m, 0f, 1.06f, 0f, 0.03f, 0.05f, 0.04f, 0xFFFFFF)
+            }
+            Items.STAFF -> {
+                tb(m, 0f, 0.4f, 0f, 0.07f, 1.3f, 0.07f, 0x7B54C4)                 // haste
+                tb(m, 0f, 1.05f, 0f, 0.11f, 0.06f, 0.11f, gold)                   // anel
+                box(m, 0f, 1.2f, 0f, 45f, 45f, 0.2f, 0.2f, 0.2f, 0f, 0x7FE8FF, 1f, 0.9f + 0.1f * glint)   // gema
+                box(m, 0f, 1.2f, 0f, 0f, 0f, 0.3f, 0.3f, 0.3f, 0f, 0xBFF6FF, 0.3f, 1f)                   // brilho
+            }
+        }
+    }
+
     /** desenha o sprite 16x16 como cubinhos: cada "run" horizontal vira uma caixa. Origem = célula de empunhadura. */
     private fun drawSprite(m: FloatArray, sp: ToolSprites.Sprite, t: Float) {
         val glint = 0.5f + 0.5f * sin(t * 3f)
@@ -591,21 +639,17 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         drawArm(fp, len, armW)
         System.arraycopy(fp, 0, itemM, 0, 16)
         if (id > 0 && id !in 1..13) {
-            // ferramenta pixel-art: em pé, face chata virada pra câmera, ponta pra cima/direita (como o item na mão do Minecraft)
-            val sp = ToolSprites.get(id)
-            if (sp != null) {
-                val cell = when (id) { Items.SWORD -> 0.066f; Items.AXE -> 0.066f; Items.PICK -> 0.064f; else -> 0.066f }
-                Matrix.setIdentityM(camBlk, 0)
-                Matrix.translateM(camBlk, 0, 0.74f, -0.66f, -1.08f)
-                Matrix.rotateM(camBlk, 0, extra * 0.8f, 1f, 0f, 0f)   // golpe: inclina pra frente
-                Matrix.rotateM(camBlk, 0, -14f, 0f, 1f, 0f)           // mostra um pouco do lado
-                Matrix.rotateM(camBlk, 0, 18f, 0f, 0f, 1f)            // endireita a diagonal do sprite (ponta mais pra cima)
-                Matrix.invertM(restInv, 0, restM, 0)
-                Matrix.multiplyMM(itemM, 0, fp, 0, restInv, 0)
-                Matrix.multiplyMM(tmp2, 0, itemM, 0, camBlk, 0)
-                Matrix.scaleM(tmp2, 0, cell, cell, cell)
-                drawSprite(tmp2, sp, game.time)
-            }
+            // ferramenta 3D (ferro + madeira): em pé, inclinada pra frente; a parte que corta/ponta aponta pra frente (-Z)
+            Matrix.setIdentityM(camBlk, 0)
+            Matrix.translateM(camBlk, 0, 0.76f, -0.74f, -1.1f)
+            Matrix.rotateM(camBlk, 0, extra * 0.8f, 1f, 0f, 0f)   // golpe: inclina pra frente
+            Matrix.rotateM(camBlk, 0, 22f, 0f, 1f, 0f)            // mostra a lateral
+            Matrix.rotateM(camBlk, 0, -22f, 1f, 0f, 0f)           // topo pra frente
+            Matrix.rotateM(camBlk, 0, 10f, 0f, 0f, 1f)            // topo levemente pro centro
+            Matrix.invertM(restInv, 0, restM, 0)
+            Matrix.multiplyMM(itemM, 0, fp, 0, restInv, 0)
+            Matrix.multiplyMM(tmp2, 0, itemM, 0, camBlk, 0)
+            drawTool3D(tmp2, id, game.time)
         } else if (id in 1..13) {
             // bloco grande no canto inferior direito, topo e lateral aparecendo (posição fixa no espaço da câmera, presa ao braço no golpe)
             Matrix.setIdentityM(camBlk, 0)

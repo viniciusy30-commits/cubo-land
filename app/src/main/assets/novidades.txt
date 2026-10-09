@@ -1,3 +1,9 @@
+#id 2026-10-09-q
+#titulo Ferramentas 3D e folha nova!
+- Espada, machado, picareta e cajado agora são modelos 3D de ferro e madeira, sem pixel-art
+- Picareta com uma ponta virada pra frente, machado e espada com o fio virado pra frente
+- Bloco de folha novo, igual ao print: cubo de pixels verdes com buracos e profundidade
+
 #id 2026-10-09-p
 #titulo Ferramentas em pé e folhas iguais à referência!
 - Espada, machado, picareta e cajado agora aparecem em pé, de frente pra câmera, em pixel-art
