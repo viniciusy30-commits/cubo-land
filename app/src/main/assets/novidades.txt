@@ -1,3 +1,9 @@
+#id 2026-10-10-b
+#titulo Ícones 3D de verdade e rachaduras detalhadas!
+- Ícones das ferramentas agora são o MESMO modelo 3D que você segura na mão (espada, machado, picareta e cajado), renderizado em alta qualidade
+- Rachaduras do bloco refeitas: galhos pontiagudos com sombra e brilho de borda, buracos e lascas, crescendo suave a cada batida
+- Bloco escurece e dá um pulso de luz a cada golpe
+
 #id 2026-10-10-a
 #titulo Quebra cinematográfica, HUD novo e ícones de verdade!
 - Quebra de blocos refeita: rachaduras ramificadas que crescem do impacto, pulso de luz a cada batida, lascas, pedaços grandes, poeira e faíscas ao estourar

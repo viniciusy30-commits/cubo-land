@@ -1,5 +1,6 @@
 package com.cuboland.app
 
+import android.graphics.Bitmap
 import android.opengl.GLES20 as G
 import android.opengl.GLSurfaceView
 import android.opengl.GLUtils
@@ -30,6 +31,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     private var skyProg = 0; private var skyP = 0; private var skyInv = 0; private var skyCam = 0; private var skyHor = 0; private var skyTime = 0
     private val inv = FloatArray(16)
     private val quad = ByteBuffer.allocateDirect(32).order(ByteOrder.nativeOrder()).asFloatBuffer().apply { put(floatArrayOf(-1f, -1f, 1f, -1f, -1f, 1f, 1f, 1f)); position(0) }
+    private var atlasTex = 0; private var iconsBaked = false; private var vw = 1; private var vh = 1; private var crackP = 0f; private var crackT = 0L
     private var lastId = -1; private var equip = 1f
     private var prevYaw = 0f; private var prevPitch = 0f; private var swayX = 0f; private var swayY = 0f
 
@@ -196,7 +198,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         G.glEnable(G.GL_DEPTH_TEST); G.glEnable(G.GL_CULL_FACE); G.glCullFace(G.GL_BACK); G.glFrontFace(G.GL_CCW)
         G.glBlendFunc(G.GL_SRC_ALPHA, G.GL_ONE_MINUS_SRC_ALPHA)
         // textura (atlas)
-        val tex = IntArray(1); G.glGenTextures(1, tex, 0)
+        val tex = IntArray(1); G.glGenTextures(1, tex, 0); atlasTex = tex[0]; iconsBaked = false
         G.glActiveTexture(G.GL_TEXTURE0); G.glBindTexture(G.GL_TEXTURE_2D, tex[0])
         G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_MIN_FILTER, G.GL_LINEAR_MIPMAP_NEAREST)
         G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_MAG_FILTER, G.GL_LINEAR)
@@ -209,11 +211,11 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         java.util.Arrays.fill(world.dirty, true)
         // cubos unitários: 0 = branco (entidades), 1..13 = blocos com textura
         val cb = MeshBuf(); val p = FloatArray(3)
-        for (id in 0..13) for (face in 0 until 6) {
+        for (id in 0..22) for (face in 0 until 6) {
             val a = face shr 1; val s = if ((face and 1) == 0) 1 else -1
             val u = (a + 1) % 3; val v = (a + 2) % 3
             val sh = when { a == 1 -> if (s > 0) 1f else 0.55f; a == 0 -> 0.82f; else -> 0.7f }
-            val tile = if (id == 0) 0 else if (a == 1) (if (s > 0) B.tTop[id] else B.tBot[id]) else B.tSide[id]
+            val tile = if (id == 0) 0 else if (id >= 14) 9 + id else if (a == 1) (if (s > 0) B.tTop[id] else B.tBot[id]) else B.tSide[id]
             for (q in 0 until 4) {
                 val cu = World.QU[q]; val cv = World.QV[q]
                 p[a] = 0.5f * s; p[u] = cu - 0.5f; p[v] = cv - 0.5f
@@ -242,6 +244,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     }
 
     override fun onSurfaceChanged(gl: GL10?, w: Int, h: Int) {
+        vw = w; vh = h
         G.glViewport(0, 0, w, h)
         Matrix.perspectiveM(proj, 0, 70f, w.toFloat() / h, 0.05f, 200f)
     }
@@ -302,28 +305,73 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     }
 
     private fun drawCracks(bx: Int, by: Int, bz: Int, prog: Float) {
-        val total = crackCells.size / 2
-        val n = (sqrt(prog) * total).toInt().coerceIn(4, total)
+        val nw = System.nanoTime(); val dtc = ((nw - crackT) / 1e9f).coerceIn(0f, 0.1f); crackT = nw
+        if (prog < crackP - 0.001f || crackP > prog + 0.5f) crackP = 0f
+        crackP += (prog - crackP) * min(1f, dtc * 14f)
         val pulse = game.hitPulse
         setBase(bx + 0.5f, by + 0.5f, bz + 0.5f, 0f)
         G.glDepthMask(false)
-        val k = 1.004f + 0.035f * pulse
-        box(base, 0f, 0f, 0f, 0f, 0f, k, k, k, 0f, 0x000000, 0.06f + 0.30f * prog)
-        if (pulse > 0f) box(base, 0f, 0f, 0f, 0f, 0f, k + 0.004f, k + 0.004f, k + 0.004f, 0f, 0xFFFFFF, 0.22f * pulse)
-        val cc = floatArrayOf(game.camX - (bx + 0.5f), game.camY - (by + 0.5f), game.camZ - (bz + 0.5f))
-        val pos = FloatArray(3); val sc = FloatArray(3)
-        for (a in 0 until 3) {
-            val s = if (cc[a] >= 0f) 1f else -1f
-            val u = (a + 1) % 3; val v = (a + 2) % 3
-            for (i in 0 until n) {
-                pos[a] = s * (0.506f + 0.01f * pulse); pos[u] = (crackCells[i * 2] - 7.5f) / 16f; pos[v] = (crackCells[i * 2 + 1] - 7.5f) / 16f
-                sc[a] = 0.01f; sc[u] = 0.0625f; sc[v] = 0.0625f
-                box(base, pos[0], pos[1], pos[2], 0f, 0f, sc[0], sc[1], sc[2], 0f, 0x140B05, 0.85f)
-                // brilho claro nas rachaduras mais novas
-                if (i > n - 6) { pos[a] = s * 0.5065f; box(base, pos[0], pos[1], pos[2], 0f, 0f, sc[0] * 0.5f, sc[1] * 0.45f, sc[2] * 0.45f, 0f, 0xFFE7B0, 0.5f) }
+        val kd = 1.006f
+        box(base, 0f, 0f, 0f, 0f, 0f, kd, kd, kd, 0f, 0x000000, 0.04f + 0.30f * crackP)
+        val x = (crackP * 9f - 0.5f).coerceIn(0f, 8f)
+        val s0 = x.toInt().coerceIn(0, 8); val s1 = min(8, s0 + 1); val fr = x - s0
+        val k = 1.012f + 0.03f * pulse
+        box(base, 0f, 0f, 0f, 0f, 0f, k, k, k, 0f, 0xFFFFFF, 0.97f, 1f, null, 14 + s0)
+        if (s1 != s0 && fr > 0.02f) box(base, 0f, 0f, 0f, 0f, 0f, k + 0.002f, k + 0.002f, k + 0.002f, 0f, 0xFFFFFF, fr, 1f, null, 14 + s1)
+        if (pulse > 0f) box(base, 0f, 0f, 0f, 0f, 0f, k + 0.004f, k + 0.004f, k + 0.004f, 0f, 0xFFFFFF, 0.2f * pulse)
+        G.glDepthMask(true)
+    }
+
+    /** renderiza as ferramentas 3D da mão (mesmo modelo) em texturas para os ícones do HUD */
+    private fun bakeIcons() {
+        iconsBaked = true
+        val S = 256
+        val fbo = IntArray(1); val tx = IntArray(1); val rb = IntArray(1)
+        G.glGenFramebuffers(1, fbo, 0); G.glGenTextures(1, tx, 0); G.glGenRenderbuffers(1, rb, 0)
+        G.glBindTexture(G.GL_TEXTURE_2D, tx[0])
+        G.glTexImage2D(G.GL_TEXTURE_2D, 0, G.GL_RGBA, S, S, 0, G.GL_RGBA, G.GL_UNSIGNED_BYTE, null as java.nio.Buffer?)
+        G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_MIN_FILTER, G.GL_LINEAR); G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_MAG_FILTER, G.GL_LINEAR)
+        G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_WRAP_S, G.GL_CLAMP_TO_EDGE); G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_WRAP_T, G.GL_CLAMP_TO_EDGE)
+        G.glBindRenderbuffer(G.GL_RENDERBUFFER, rb[0]); G.glRenderbufferStorage(G.GL_RENDERBUFFER, G.GL_DEPTH_COMPONENT16, S, S)
+        G.glBindFramebuffer(G.GL_FRAMEBUFFER, fbo[0])
+        G.glFramebufferTexture2D(G.GL_FRAMEBUFFER, G.GL_COLOR_ATTACHMENT0, G.GL_TEXTURE_2D, tx[0], 0)
+        G.glFramebufferRenderbuffer(G.GL_FRAMEBUFFER, G.GL_DEPTH_ATTACHMENT, G.GL_RENDERBUFFER, rb[0])
+        if (G.glCheckFramebufferStatus(G.GL_FRAMEBUFFER) == G.GL_FRAMEBUFFER_COMPLETE) {
+            G.glUseProgram(prog)
+            G.glActiveTexture(G.GL_TEXTURE0); G.glBindTexture(G.GL_TEXTURE_2D, atlasTex); G.glUniform1i(uTex, 0)
+            G.glViewport(0, 0, S, S)
+            G.glEnable(G.GL_DEPTH_TEST); G.glEnable(G.GL_CULL_FACE); G.glEnable(G.GL_BLEND)
+            G.glBlendFuncSeparate(G.GL_SRC_ALPHA, G.GL_ONE_MINUS_SRC_ALPHA, G.GL_ONE, G.GL_ONE_MINUS_SRC_ALPHA)
+            val ipj = FloatArray(16)
+            G.glUniform3f(uCam, 0f, 0f, 0f); G.glUniform3f(uFog, 1f, 1f, 1f)
+            G.glUniform1f(uTime, 0f); G.glUniform1f(uWind, 0f); G.glUniform1f(uUnder, 0f)
+            bindMesh(cubeVb, cubeIb)
+            val ids = intArrayOf(Items.SWORD, Items.AXE, Items.PICK, Items.STAFF)
+            val cy = floatArrayOf(0.42f, 0.38f, 0.40f, 0.55f)
+            val hf = floatArrayOf(0.74f, 0.62f, 0.66f, 0.92f)
+            val mm = FloatArray(16)
+            val px = ByteBuffer.allocateDirect(S * S * 4).order(ByteOrder.nativeOrder())
+            for ((i, id) in ids.withIndex()) {
+                G.glClearColor(0f, 0f, 0f, 0f); G.glClear(G.GL_COLOR_BUFFER_BIT or G.GL_DEPTH_BUFFER_BIT)
+                Matrix.orthoM(ipj, 0, -hf[i], hf[i], -hf[i], hf[i], -6f, 6f)
+                G.glUniformMatrix4fv(uVP, 1, false, ipj, 0)
+                Matrix.setIdentityM(mm, 0)
+                Matrix.rotateM(mm, 0, -42f, 0f, 0f, 1f)
+                Matrix.rotateM(mm, 0, -72f, 0f, 1f, 0f)
+                Matrix.translateM(mm, 0, 0f, -cy[i], 0f)
+                drawTool3D(mm, id, 0.5f, 0f)
+                px.clear(); G.glReadPixels(0, 0, S, S, G.GL_RGBA, G.GL_UNSIGNED_BYTE, px); px.position(0)
+                val raw = Bitmap.createBitmap(S, S, Bitmap.Config.ARGB_8888); raw.copyPixelsFromBuffer(px)
+                val fm = android.graphics.Matrix(); fm.preScale(1f, -1f)
+                ToolIcons.map[id] = Bitmap.createBitmap(raw, 0, 0, S, S, fm, true)
             }
         }
-        G.glDepthMask(true)
+        G.glBindFramebuffer(G.GL_FRAMEBUFFER, 0)
+        G.glBlendFunc(G.GL_SRC_ALPHA, G.GL_ONE_MINUS_SRC_ALPHA)
+        G.glClearColor(fogR, fogG, fogB, 1f)
+        G.glBindTexture(G.GL_TEXTURE_2D, atlasTex)
+        G.glViewport(0, 0, vw, vh)
+        G.glDeleteFramebuffers(1, fbo, 0); G.glDeleteRenderbuffers(1, rb, 0); G.glDeleteTextures(1, tx, 0)
     }
 
     private fun groundY(x: Float, y: Float, z: Float): Float {
@@ -963,6 +1011,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     }
 
     override fun onDrawFrame(gl: GL10?) {
+        if (!iconsBaked) bakeIcons()
         val now = System.nanoTime()
         val dt = ((now - last) / 1e9f).coerceIn(0.001f, 0.05f); last = now
         game.update(dt)

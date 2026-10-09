@@ -153,9 +153,16 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
     }
 
     private fun icon(c: Canvas, cx: Float, cy: Float, size: Float, id: Int) {
-        val sp = ToolSprites.get(id)
-        if (sp != null) spriteIcon(c, cx, cy, size, sp)
-        else {
+        val bm = ToolIcons.get(id)
+        if (bm != null) {
+            val s2 = size * 0.92f
+            rf.set(cx - s2 / 2, cy - s2 / 2, cx + s2 / 2, cy + s2 / 2)
+            ip.colorFilter = shadowF; ip.alpha = 90
+            val so = size * 0.035f
+            c.save(); c.translate(so, so * 1.4f); c.drawBitmap(bm, null, rf, ip); c.restore()
+            ip.colorFilter = null; ip.alpha = 255
+            c.drawBitmap(bm, null, rf, ip)
+        } else if (Items.isBlock(id)) {
             pt.style = Paint.Style.FILL; pt.color = Color.argb(60, 0, 0, 0)
             c.drawOval(cx - size * 0.28f, cy + size * 0.22f, cx + size * 0.28f, cy + size * 0.34f, pt)
             blockIcon(c, cx, cy - size * 0.02f, size * 0.3f, id)
@@ -164,6 +171,8 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
 
     private fun accent(i: Int) = when (i) { 0 -> Color.rgb(255, 120, 100); 1, 6 -> Color.rgb(120, 195, 255); 2 -> Color.rgb(130, 230, 130); else -> Color.rgb(200, 210, 235) }
     private val rf = RectF()
+    private val ip = Paint(Paint.ANTI_ALIAS_FLAG).apply { isFilterBitmap = true }
+    private val shadowF = LightingColorFilter(0x000000, 0x000000)
     private val gold = Color.rgb(255, 214, 90)
 
     private fun circle(c: Canvas, i: Int, active: Boolean) {
