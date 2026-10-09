@@ -1,3 +1,9 @@
+#id 2026-10-10-d
+#titulo Bloco quebrando de verdade e rachaduras variadas!
+- O bloco não some mais de uma vez: ele treme, incha um pouquinho, brilha, encolhe girando e desaparece soltando as partículas
+- Rachaduras agora se espalham pelo bloco todo, crescendo do impacto até as bordas
+- 5 padrões diferentes de rachadura, sorteados a cada bloco
+
 #id 2026-10-10-c
 #titulo Quebra leve e fofinha!
 - Rachaduras agora são finas e delicadas, crescendo devagarinho a cada batida

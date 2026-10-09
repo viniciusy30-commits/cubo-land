@@ -31,7 +31,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     private var skyProg = 0; private var skyP = 0; private var skyInv = 0; private var skyCam = 0; private var skyHor = 0; private var skyTime = 0
     private val inv = FloatArray(16)
     private val quad = ByteBuffer.allocateDirect(32).order(ByteOrder.nativeOrder()).asFloatBuffer().apply { put(floatArrayOf(-1f, -1f, 1f, -1f, -1f, 1f, 1f, 1f)); position(0) }
-    private var atlasTex = 0; private var iconsBaked = false; private var vw = 1; private var vh = 1; private var crackP = 0f; private var crackT = 0L
+    private var atlasTex = 0; private var crackTex = 0; private var crackVb = 0; private var crackIb = 0; private var iconsBaked = false; private var vw = 1; private var vh = 1; private var crackP = 0f; private var crackT = 0L
     private var lastId = -1; private var equip = 1f
     private var prevYaw = 0f; private var prevPitch = 0f; private var swayX = 0f; private var swayY = 0f
 
@@ -211,7 +211,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         java.util.Arrays.fill(world.dirty, true)
         // cubos unitários: 0 = branco (entidades), 1..13 = blocos com textura
         val cb = MeshBuf(); val p = FloatArray(3)
-        for (id in 0..22) for (face in 0 until 6) {
+        for (id in 0..13) for (face in 0 until 6) {
             val a = face shr 1; val s = if ((face and 1) == 0) 1 else -1
             val u = (a + 1) % 3; val v = (a + 2) % 3
             val sh = when { a == 1 -> if (s > 0) 1f else 0.55f; a == 0 -> 0.82f; else -> 0.7f }
@@ -230,6 +230,35 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         }
         val ids2 = IntArray(2); G.glGenBuffers(2, ids2, 0); cubeVb = ids2[0]; cubeIb = ids2[1]
         upload(cb, cubeVb, cubeIb)
+        // cubos de rachadura (5 padrões x 9 estágios) com atlas próprio
+        val kb = MeshBuf(); val kp = FloatArray(3)
+        for (idx in 0 until Atlas.CK_PAT * Atlas.CK_ST) {
+            val col = Atlas.crackCols[idx % Atlas.crackCols.size]; val row = idx / Atlas.crackCols.size
+            for (face in 0 until 6) {
+                val a = face shr 1; val s = if ((face and 1) == 0) 1 else -1
+                val u = (a + 1) % 3; val v = (a + 2) % 3
+                val sh = when { a == 1 -> if (s > 0) 1f else 0.55f; a == 0 -> 0.82f; else -> 0.7f }
+                for (q in 0 until 4) {
+                    val cu = World.QU[q]; val cv = World.QV[q]
+                    kp[a] = 0.5f * s; kp[u] = cu - 0.5f; kp[v] = cv - 0.5f
+                    val tu: Float; val tv: Float
+                    if (a == 0) { tu = cv.toFloat(); tv = 1f - cu } else if (a == 1) { tu = cu.toFloat(); tv = cv.toFloat() } else { tu = cu.toFloat(); tv = 1f - cv }
+                    kb.vert(kp[0], kp[1], kp[2], sh, sh, sh, (col + 0.01f + tu * 0.98f) / Atlas.NT.toFloat(), (row + 0.01f + tv * 0.98f) * 0.5f)
+                }
+                if (s > 0) { kb.tri(0, 1, 2); kb.tri(0, 2, 3) } else { kb.tri(0, 2, 1); kb.tri(0, 3, 2) }
+                kb.vc += 4
+            }
+        }
+        val ids3 = IntArray(2); G.glGenBuffers(2, ids3, 0); crackVb = ids3[0]; crackIb = ids3[1]
+        upload(kb, crackVb, crackIb)
+        val ct = IntArray(1); G.glGenTextures(1, ct, 0); crackTex = ct[0]
+        G.glBindTexture(G.GL_TEXTURE_2D, crackTex)
+        G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_MIN_FILTER, G.GL_LINEAR_MIPMAP_NEAREST)
+        G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_MAG_FILTER, G.GL_LINEAR)
+        G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_WRAP_S, G.GL_CLAMP_TO_EDGE)
+        G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_WRAP_T, G.GL_CLAMP_TO_EDGE)
+        GLUtils.texImage2D(G.GL_TEXTURE_2D, 0, Atlas.crackBmp, 0); G.glGenerateMipmap(G.GL_TEXTURE_2D)
+        G.glBindTexture(G.GL_TEXTURE_2D, atlasTex)
         last = System.nanoTime()
     }
 
@@ -304,6 +333,11 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         out
     }
 
+    private fun useCrack(on: Boolean) {
+        if (on) { G.glBindTexture(G.GL_TEXTURE_2D, crackTex); bindMesh(crackVb, crackIb) }
+        else { G.glBindTexture(G.GL_TEXTURE_2D, atlasTex); bindMesh(cubeVb, cubeIb) }
+    }
+
     private fun drawCracks(bx: Int, by: Int, bz: Int, prog: Float) {
         val nw = System.nanoTime(); val dtc = ((nw - crackT) / 1e9f).coerceIn(0f, 0.1f); crackT = nw
         if (prog < crackP - 0.001f || crackP > prog + 0.5f) crackP = 0f
@@ -313,12 +347,32 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         G.glDepthMask(false)
         val kd = 1.006f
         box(base, 0f, 0f, 0f, 0f, 0f, kd, kd, kd, 0f, 0x000000, 0.02f + 0.14f * crackP)
+        if (pulse > 0f) { val kp = 1.016f + 0.03f * pulse; box(base, 0f, 0f, 0f, 0f, 0f, kp, kp, kp, 0f, 0xFFFFFF, 0.1f * pulse) }
         val x = (crackP * 9f - 0.5f).coerceIn(0f, 8f)
         val s0 = x.toInt().coerceIn(0, 8); val s1 = min(8, s0 + 1); val fr = x - s0
         val k = 1.012f + 0.03f * pulse
-        box(base, 0f, 0f, 0f, 0f, 0f, k, k, k, 0f, 0xFFFFFF, 0.85f, 1f, null, 14 + s0)
-        if (s1 != s0 && fr > 0.02f) box(base, 0f, 0f, 0f, 0f, 0f, k + 0.002f, k + 0.002f, k + 0.002f, 0f, 0xFFFFFF, fr, 1f, null, 14 + s1)
-        if (pulse > 0f) box(base, 0f, 0f, 0f, 0f, 0f, k + 0.004f, k + 0.004f, k + 0.004f, 0f, 0xFFFFFF, 0.1f * pulse)
+        val pb = game.brPat.coerceIn(0, Atlas.CK_PAT - 1) * Atlas.CK_ST
+        useCrack(true)
+        box(base, 0f, 0f, 0f, 0f, 0f, k, k, k, 0f, 0xFFFFFF, 0.85f, 1f, null, pb + s0)
+        if (s1 != s0 && fr > 0.02f) box(base, 0f, 0f, 0f, 0f, 0f, k + 0.002f, k + 0.002f, k + 0.002f, 0f, 0xFFFFFF, 0.85f * fr, 1f, null, pb + s1)
+        useCrack(false)
+        G.glDepthMask(true)
+    }
+
+    /** bloco destruído: treme, incha de leve, depois encolhe girando e some (partículas saem no meio) */
+    private fun drawBreakAnim(a: BreakAnim) {
+        val t = a.t
+        var sc: Float; var al: Float; var yo = 0f; var yaw = 0f; var fl: Float
+        if (t < 0.1f) { val u = t / 0.1f; sc = 1f + 0.12f * u; al = 1f; yaw = sin(t * 140f) * 4f; fl = 0.3f * u }
+        else { val u = ((t - 0.1f) / 0.32f).coerceIn(0f, 1f); sc = 1.12f * (1f - u * u); al = 1f - u * u; yo = 0.12f * u; yaw = u * 40f; fl = 0.3f * (1f - u) }
+        if (sc < 0.02f || al < 0.02f) return
+        setBase(a.x + 0.5f, a.y + 0.5f + yo, a.z + 0.5f, yaw)
+        G.glDepthMask(false)
+        box(base, 0f, 0f, 0f, 0f, 0f, sc, sc, sc, 0f, 0xFFFFFF, al, 1f, null, a.id)
+        if (fl > 0.01f) box(base, 0f, 0f, 0f, 0f, 0f, sc * 1.006f, sc * 1.006f, sc * 1.006f, 0f, 0xFFFFFF, fl)
+        useCrack(true)
+        box(base, 0f, 0f, 0f, 0f, 0f, sc * 1.012f, sc * 1.012f, sc * 1.012f, 0f, 0xFFFFFF, al * 0.85f, 1f, null, a.pat * Atlas.CK_ST + 8)
+        useCrack(false)
         G.glDepthMask(true)
     }
 
@@ -1096,6 +1150,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             G.glDepthMask(true)
         }
         if (game.brProg > 0f && game.brY > 0 && game.deadTimer <= 0f && world.get(game.brX, game.brY, game.brZ) != 0) drawCracks(game.brX, game.brY, game.brZ, game.brProg)
+        for (an in game.anims) drawBreakAnim(an)
         G.glUniform1f(uWind, 1f)
         G.glUniformMatrix4fv(uModel, 1, false, ident, 0)
         G.glDisable(G.GL_CULL_FACE)

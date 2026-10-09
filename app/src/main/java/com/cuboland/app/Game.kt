@@ -17,6 +17,8 @@ class Particle(var x: Float, var y: Float, var z: Float, var vx: Float, var vy: 
 
 class LeafP(var x: Float, var y: Float, var z: Float, var vx: Float, var vz: Float, val ph: Float, val color: Int, val size: Float, var life: Float, var landed: Boolean = false, var age: Float = 0f)
 
+class BreakAnim(val x: Int, val y: Int, val z: Int, val id: Int, val pat: Int) { var t = 0f; var fx = false }
+
 class Bolt(var x: Float, var y: Float, var z: Float, val vx: Float, val vy: Float, val vz: Float, var life: Float)
 
 class Game(val world: World) {
@@ -33,7 +35,7 @@ class Game(val world: World) {
     @Volatile var charging = false; @Volatile var charge = 0f
     private var pressT = 0f; private var pressing = false; var swingDur = 0.46f; @Volatile var powerSwing = false
     @Volatile var creative = false; @Volatile var flying = false; @Volatile var downHeld = false; private var lastJumpT = -9f
-    var brX = 0; var brY = -1; var brZ = 0; @Volatile var brProg = 0f; private var brT = 0f; @Volatile var hitPulse = 0f
+    var brX = 0; var brY = -1; var brZ = 0; @Volatile var brProg = 0f; private var brT = 0f; @Volatile var hitPulse = 0f; @Volatile var brPat = 0; val anims = ArrayList<BreakAnim>()
     private var hitT = -1f; private var hitItem = 0; private var hitStab = false
     private var pendingT = -1f; private var pendingPower = 0f
     val leafFall = ArrayList<LeafP>(); private var leafT = 0f; var comboT = 0f
@@ -226,11 +228,11 @@ class Game(val world: World) {
         raycast(camX, camY, camZ, dirX(), dirY(), dirZ(), camDist, camDist + 5.5f)
         if (!hasHit || hy <= 0) return
         val id = world.get(hx, hy, hz)
-        if (brY != hy || brX != hx || brZ != hz || brT <= 0f) { brX = hx; brY = hy; brZ = hz; brProg = 0f }
+        if (brY != hy || brX != hx || brZ != hz || brT <= 0f) { brX = hx; brY = hy; brZ = hz; brProg = 0f; brPat = rnd.nextInt(Atlas.CK_PAT) }
         brT = 3f
         brProg += if (creative) 1f else efficiency(item, id) * mult / hardness(id)
         if (brProg >= 1f) {
-            breakFx(hx, hy, hz, id, true)
+            anims.add(BreakAnim(hx, hy, hz, id, brPat))
             world.set(hx, hy, hz, B.AIR); brProg = 0f; brY = -1; brT = 0f
         } else {
             breakFx(hx, hy, hz, id, false); hitPulse = 1f
@@ -391,6 +393,12 @@ class Game(val world: World) {
                 if (dx * dx + dy * dy + dz * dz < 0.6f) { hitSlime(s, 2, b.vx, b.vz, 7f); gone = true; break }
             }
             if (gone) { burst(b.x, b.y, b.z, 0x7FE8FF, 14, 5f); bi.remove() }
+        }
+        val ai = anims.iterator()
+        while (ai.hasNext()) {
+            val a = ai.next(); a.t += dt
+            if (!a.fx && a.t >= 0.1f) { a.fx = true; breakFx(a.x, a.y, a.z, a.id, true) }
+            if (a.t > 0.42f) ai.remove()
         }
         val pi = parts.iterator()
         while (pi.hasNext()) {
