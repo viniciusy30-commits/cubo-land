@@ -278,7 +278,6 @@ class World {
                     if (!flip) { buf.tri(0, 2, 1); buf.tri(0, 3, 2) } else { buf.tri(1, 3, 2); buf.tri(1, 0, 3) }
                 }
                 buf.vc += 4
-                if (id == B.LEAVES && nid == B.AIR && o.vc < 60000) addCards(o, x, y, z, a, s, shade * vr)
             }
         }
     }

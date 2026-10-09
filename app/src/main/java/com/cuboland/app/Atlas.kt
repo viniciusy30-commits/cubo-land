@@ -122,15 +122,18 @@ object Atlas {
         return lerp(c, 0xB07F55, sm(0.40f, 0.44f, max(abs(dx), abs(dy))))
     }
 
-    /** folhas: várias folhinhas pontudas (com nervura) sobrepostas, em tons pastel, pixel fino 32x32 */
+    /** folhas pixel-art 16x16: base verde pastel com buraquinhos, folhinhas claras com nervura por cima, florzinhas rosa */
     private fun leaves(u: Float, v: Float): Int {
-        val g = 32
-        val qu = (floor(u * g) + 0.5f) / g; val qv = (floor(v * g) + 0.5f) / g
-        var out = CLEAR
-        for (i in 0 until 54) {
+        val g = 16
+        val gx = floor(u * g).toInt(); val gy = floor(v * g).toInt()
+        val qu = (gx + 0.5f) / g; val qv = (gy + 0.5f) / g
+        val n = h(gx, gy, 91) * 0.5f + vn(qu, qv, 4, 4, 90) * 0.5f
+        if (n < 0.27f) return CLEAR
+        var c = lerp(0x4FA066, 0x68BA76, h(gx, gy, 92))
+        for (i in 0 until 20) {
             val cx = h(i, 0, 100); val cy = h(i, 1, 100)
             val ang = h(i, 2, 100) * 3.1416f
-            val len = 0.14f + 0.07f * h(i, 3, 100); val wid = len * 0.45f
+            val len = 0.14f + 0.06f * h(i, 3, 100); val wid = len * 0.5f
             val light = h(i, 4, 100)
             val ca = cos(ang); val sa = sin(ang)
             for (ox in -1..1) for (oy in -1..1) {
@@ -141,18 +144,14 @@ object Atlas {
                 val half = wid * (1f - t * t)
                 if (abs(b) >= half) continue
                 val side = b / max(half, 0.001f)
-                var c = lerp(0x74C47E, 0xC9F6A4, (light * 0.65f + (0.5f - side * 0.5f) * 0.35f).coerceIn(0f, 1f))
-                if (side > 0.6f) c = lerp(c, 0x5FB070, 0.45f)
-                if (abs(b) < 0.02f && t > -0.85f) c = lerp(c, 0xEEFFD6, 0.55f)
-                out = op(c)
+                var lc = lerp(0x74C67E, 0xB9EE9C, (light * 0.6f + (0.5f - side * 0.5f) * 0.4f).coerceIn(0f, 1f))
+                if (side > 0.55f) lc = lerp(lc, 0x4FA066, 0.5f)
+                if (abs(b) < 0.03f && t > -0.8f) lc = lerp(lc, 0xE2FFC4, 0.5f)
+                c = lc
             }
         }
-        for (j in 0 until 3) for (ox in -1..1) for (oy in -1..1) {
-            val dx = qu - h(j, 0, 110) - ox; val dy = qv - h(j, 1, 110) - oy
-            val d = sqrt(dx * dx + dy * dy)
-            if (d < 0.045f) out = if (d < 0.02f) op(0xFFEFA0) else op(0xFFC2DA)
-        }
-        return out
+        if (h(gx, gy, 95) > 0.978f) c = 0xFFC2DA
+        return op(c)
     }
 
     private fun plank(u: Float, v: Float): Int {

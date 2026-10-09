@@ -81,18 +81,13 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             vec2 uv = vUV;
             bool isWater = vTile > 9.5 && vTile < 10.5;
             bool isLeaf = vTile > 7.5 && vTile < 8.5;
-            if (isLeaf) {   // pixel-art nítido (16x16 por bloco)
-                float lu = clamp(vUV.x * 32.0 - 8.0, 0.0, 0.9999);
-                float lv = clamp(vUV.y, 0.0, 0.9999);
-                uv = vec2((8.0 + (floor(lu * 32.0) + 0.5) / 32.0) / 32.0, (floor(lv * 32.0) + 0.5) / 32.0);
-            }
             vec4 t = texture2D(uTex, uv);
             if (t.a < 0.4) discard;
             float l = clamp((vCol.r - 0.3) / 0.7, 0.0, 1.0);
             vec3 light = mix(vec3(0.80, 0.84, 1.0), vec3(1.05, 1.02, 0.95), l);
             vec3 c = t.rgb * vCol * uTint * light * 1.06;
             float alpha = uAlpha * t.a;
-            if (isLeaf) c *= 1.06 + 0.08 * sin(vWP.x * 0.7 + vWP.z * 0.5 + uTime * 0.8);
+            if (isLeaf) c *= 1.0 + 0.05 * sin(vWP.x * 0.7 + vWP.z * 0.5 + uTime * 0.8);
             if (isWater) {
                 float tm = uTime;
                 vec2 P = vWP.xz;
@@ -309,7 +304,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val glint = 0.5f + 0.5f * sin(t * 3f)
         when {
             id in 1..13 -> {
-                box(m, 0f, 0.22f, 0.2f, 0f, 30f, 0.3f, 0.3f, 0.3f, 0f, 0xFFFFFF, 1f, 1f, null, id)
+                box(m, 0f, 0.2f, 0.18f, 0f, 30f, 0.34f, 0.34f, 0.34f, 0f, 0xFFFFFF, 1f, 1f, null, id)
             }
             id == Items.SWORD -> {
                 box(m, 0f, 0f, 0.55f, 0f, 0f, 0.115f, 0.03f, 0.78f, 0f, 0xD7E4F4)        // lâmina
@@ -448,6 +443,17 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         box(m, 0f, 0f, 0.63f, 0f, 0f, 0.2f, 0.2f, 0.22f, 0f, SKIN)       // mão (ponta do braço)
     }
 
+    /** ferramenta em pixel-art extrudada, de frente pra câmera; o pixel (gx,gy) = empunhadura fica na mão */
+    private fun drawSprite(m: FloatArray, id: Int) {
+        val sp = ToolSprites.get(id) ?: return
+        val px = 0.052f; val th = 0.07f
+        for (r in sp.runs) {
+            val cx = -(((r.x0 + r.x1 + 1) / 2f) - (sp.gx + 0.5f)) * px
+            val cy = -(r.y - sp.gy) * px
+            box(m, cx, cy, 0f, 0f, 0f, (r.x1 - r.x0 + 1) * px, px, th, 0f, r.c and 0xFFFFFF, 1f, 1.35f)
+        }
+    }
+
     private fun drawHand(dt: Float) {
         G.glClear(G.GL_DEPTH_BUFFER_BIT)
         G.glUniformMatrix4fv(uVP, 1, false, proj, 0); G.glUniform3f(uCam, 0f, 0f, 0f)
@@ -473,12 +479,14 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         drawArm(fp)
         System.arraycopy(fp, 0, itemM, 0, 16)
         Matrix.translateM(itemM, 0, 0f, 0f, 0.64f)
-        Matrix.rotateM(itemM, 0, 30f, 0f, 1f, 0f)
-        val ir = if (id in 1..13) 0f else if (id == Items.STAFF) -28f else -40f
-        if (ir != 0f) Matrix.rotateM(itemM, 0, ir, 1f, 0f, 0f)
-        if (id == Items.AXE) Matrix.rotateM(itemM, 0, 180f, 0f, 0f, 1f)
-        else if (id == Items.SWORD || id == Items.PICK) Matrix.rotateM(itemM, 0, 90f, 0f, 0f, 1f)
-        drawItem(itemM, id, game.time)
+        if (id in 1..13) {
+            Matrix.rotateM(itemM, 0, 30f, 0f, 1f, 0f)
+            drawItem(itemM, id, game.time)
+        } else {
+            Matrix.translateM(itemM, 0, 0f, 0f, 0.02f)
+            Matrix.rotateM(itemM, 0, -rest, 1f, 0f, 0f)
+            drawSprite(itemM, id)
+        }
         // ---- mão esquerda (vazia) ----
         if (showLeftHand) {
             Matrix.setIdentityM(fp, 0)
