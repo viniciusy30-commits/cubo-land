@@ -1,3 +1,11 @@
+#id 2026-10-09-o
+#titulo Mão e folhas copiadas das fotos!
+- Mão vazia, mão com item e mão com bloco seguem as posições e ângulos das fotos de referência
+- Ferramentas grandes, em pé, de frente, com a ponta pra cima e levemente pra direita
+- Bloco segurado grande no canto de baixo, mostrando topo e lateral
+- Só a mão direita aparece, como nas fotos
+- Folhas novas: dezenas de folhinhas pontudas sobrepostas, com contorno escuro, nervura clara e sombra por baixo, bem mais detalhadas
+
 #id 2026-10-09-m
 #titulo Visual mais confortável e ferramentas pra frente!
 - Jogo um pouco mais escuro e com cores mais vivas, mais agradável aos olhos

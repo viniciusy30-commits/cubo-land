@@ -6,6 +6,7 @@ import kotlin.math.cos
 import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.math.sqrt
 
@@ -122,35 +123,37 @@ object Atlas {
         return lerp(c, 0xB07F55, sm(0.40f, 0.44f, max(abs(dx), abs(dy))))
     }
 
-    /** folhas pixel-art 16x16: base verde pastel com buraquinhos, folhinhas claras com nervura por cima, florzinhas rosa */
+    /** folhas detalhadas (referência "depois"): dezenas de folhinhas pontudas sobrepostas em diagonal, cada uma com contorno escuro,
+     *  nervura clara e lado de baixo sombreado, sobre fundo escuro (dá profundidade) e com poucos buraquinhos. Sem bordas: repete certinho. */
     private fun leaves(u: Float, v: Float): Int {
         val g = 32
         val gx = floor(u * g).toInt(); val gy = floor(v * g).toInt()
         val qu = (gx + 0.5f) / g; val qv = (gy + 0.5f) / g
-        val n = h(gx, gy, 91) * 0.45f + vn(qu, qv, 6, 6, 90) * 0.55f
-        if (n < 0.27f) return CLEAR
-        var c = lerp(0x469A60, 0x62B672, h(gx, gy, 92) * 0.5f + vn(qu, qv, 8, 8, 96) * 0.5f)
-        for (i in 0 until 48) {
+        if (h(gx, gy, 91) < 0.07f) return CLEAR
+        var c = lerp(0x1E5A38, 0x2C7444, h(gx, gy, 92))
+        for (i in 0 until 70) {
             val cx = h(i, 0, 100); val cy = h(i, 1, 100)
-            val ang = h(i, 2, 100) * 3.1416f
-            val len = 0.085f + 0.045f * h(i, 3, 100); val wid = len * 0.5f
+            val base = if (h(i, 5, 100) < 0.5f) 0.75f else 2.35f
+            val ang = base + (h(i, 2, 100) - 0.5f) * 0.9f
+            val len = 0.115f + 0.05f * h(i, 3, 100); val wid = len * 0.5f
             val light = h(i, 4, 100)
             val ca = cos(ang); val sa = sin(ang)
             for (ox in -1..1) for (oy in -1..1) {
                 val dx = qu - cx - ox; val dy = qv - cy - oy
-                if (dx * dx + dy * dy > len * len) continue
+                if (dx * dx + dy * dy > len * len * 1.05f) continue
                 val al = dx * ca + dy * sa; val b = -dx * sa + dy * ca
                 val t = al / len
-                val half = wid * (1f - t * t)
+                if (abs(t) >= 1f) continue
+                val half = wid * (1f - t * t).pow(0.8f)
                 if (abs(b) >= half) continue
                 val side = b / max(half, 0.001f)
-                var lc = lerp(0x72C47C, 0xC4F2A6, (light * 0.6f + (0.5f - side * 0.5f) * 0.4f).coerceIn(0f, 1f))
-                if (side > 0.5f) lc = lerp(lc, 0x469A60, 0.5f)
-                if (abs(b) < 0.014f && t > -0.8f) lc = lerp(lc, 0xE6FFC8, 0.5f)
+                var lc = lerp(0x4FA85E, 0xA8E58A, light * 0.55f + (0.5f - side * 0.5f) * 0.5f)
+                if (side > 0.45f) lc = lerp(lc, 0x2F7A4A, 0.6f)                              // lado de baixo da folha
+                if (abs(b) < 0.55f / g && t > -0.8f && t < 0.75f) lc = lerp(lc, 0xD6FAB4, 0.55f)  // nervura central
+                if (abs(side) > 0.78f || t > 0.86f || t < -0.9f) lc = lerp(lc, 0x1B5233, 0.75f)   // contorno escuro
                 c = lc
             }
         }
-        if (h(gx, gy, 95) > 0.99f) c = 0xFFC2DA
         return op(c)
     }
 

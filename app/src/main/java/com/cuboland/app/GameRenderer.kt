@@ -490,7 +490,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     }
 
     private val SKIN = 0xF2C29B; private val SKIN_D = 0xD9A07A
-    private val showLeftHand = true   // mão esquerda vazia no canto, como no Minecraft (false = esconde)
+    private val showLeftHand = false   // mão esquerda vazia no canto, como no Minecraft (false = esconde)
 
     /** Base do braço: origem no ombro (sx,sy,sz), eixo Z apontando pra mão (hx,hy,hz), Y pra cima. Retorna o comprimento. */
     private fun armBasis(out: FloatArray, sx: Float, sy: Float, sz: Float, hx: Float, hy: Float, hz: Float): Float {
@@ -507,11 +507,13 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     }
 
     /** braço estilo Minecraft: manga + punho de pele (cubo, sem dedos). Origem = ombro, Z = direção da mão; len = distância até o punho */
-    private fun drawArm(m: FloatArray, len: Float) {
-        box(m, 0f, 0f, (len - 0.04f) / 2f, 0f, 0f, 0.13f, 0.13f, len - 0.04f, 0f, 0x7FD9C8)   // manga
-        box(m, 0f, 0f, len - 0.1f, 0f, 0f, 0.145f, 0.145f, 0.04f, 0f, 0xA6EBDD)              // barra da manga
-        box(m, 0f, 0f, len + 0.01f, 0f, 0f, 0.13f, 0.13f, 0.15f, 0f, SKIN)                   // punho: continuação do braço, mesma largura
+    private fun drawArm(m: FloatArray, len: Float, w: Float = 0.15f) {
+        box(m, 0f, 0f, (len - 0.04f) / 2f, 0f, 0f, w, w, len - 0.04f, 0f, 0x7FD9C8)              // manga
+        box(m, 0f, 0f, len - 0.1f, 0f, 0f, w * 1.1f, w * 1.1f, 0.04f, 0f, 0xA6EBDD)             // barra da manga
+        box(m, 0f, 0f, len + 0.01f, 0f, 0f, w, w, 0.15f, 0f, SKIN)                               // punho: continuação do braço
     }
+
+    private val tmp2 = FloatArray(16); private val restM = FloatArray(16); private val restInv = FloatArray(16); private val camBlk = FloatArray(16)
 
     private val hp = FloatArray(4)
     private val va = FloatArray(3); private val ve = FloatArray(3)
@@ -563,31 +565,39 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val armDelta = if (delta < 0f) delta * 0.15f else delta * 0.4f   // braço inteiro (manga + punho + item) gira junto
         val extra = if (delta < 0f) delta * 0.2f else delta * 0.55f      // o item ainda inclina um pouco mais no golpe
         val yawSw = if (game.swing < 1f) -sin(game.swing * 3.1416f) * 14f else 0f
-        val len = armBasis(fp, 0.66f + ox, -0.85f + oy, -0.36f, 0.30f + ox, -0.30f + oy, -0.85f)
+        // poses copiadas das fotos de referência (câmera: X direita, Y cima, -Z frente; FOV 70°)
+        val empty = id <= 0
+        val armW = if (empty) 0.182f else 0.15f
+        // ombro (fora da tela) -> punho. Mão vazia: braço curto subindo pelo canto; com item/bloco: punho mais baixo e mais pra direita
+        val hx = if (empty) 0.589f else 0.752f; val hy = if (empty) -0.534f else -0.756f; val hz = if (empty) -0.982f else -1.125f
+        val sx0 = hx - 0.223f; val sy0 = hy - 0.138f; val sz0 = hz + 0.458f
+        armBasis(restM, sx0, sy0, sz0, hx, hy, hz)
+        val len = armBasis(fp, sx0 + ox, sy0 + oy, sz0, hx + ox, hy + oy, hz)
         Matrix.rotateM(fp, 0, armDelta, 1f, 0f, 0f)
         if (game.swing < 1f) Matrix.rotateM(fp, 0, yawSw, 0f, 1f, 0f)
-        drawArm(fp, len)
-        // o item sai do centro do punho, preso ao eixo do braço: cabo cruza o punho a ~60° do antebraço
+        drawArm(fp, len, armW)
         System.arraycopy(fp, 0, itemM, 0, 16)
-        Matrix.translateM(itemM, 0, 0f, 0f, len + 0.01f)
-        if (id !in 1..13) {
-            val heavy = id == Items.AXE || id == Items.PICK     // machado e picareta: cabo mais deitado pra trás, cabeça fica sobre a mão
-            val lean = if (heavy) 24f else 30f
-            val phi = if (heavy) -35f else -36f                // gira o cabo pra o fio/pontas apontarem pra frente
-            val sc = when (id) { Items.SWORD -> 0.62f; Items.AXE -> 0.64f; Items.PICK -> 0.64f; else -> 0.58f }
-            Matrix.rotateM(itemM, 0, extra + lean - 90f, 1f, 0f, 0f)
-            Matrix.rotateM(itemM, 0, phi, 0f, 0f, 1f)
+        if (id > 0 && id !in 1..13) {
+            // ferramenta: em pé, virada de frente (lado chato pra câmera), ponta pra cima e levemente pra direita, cabo no punho
+            val sc = when (id) { Items.SWORD -> 1.09f; Items.AXE -> 1.1f; Items.PICK -> 1.0f; else -> 1.0f }
+            Matrix.translateM(itemM, 0, 0f, 0f, len + 0.01f)
+            Matrix.rotateM(itemM, 0, extra - 20.4f - 90f, 1f, 0f, 0f)
+            Matrix.rotateM(itemM, 0, 120.9f, 0f, 0f, 1f)
             Matrix.scaleM(itemM, 0, sc, sc, sc)
             Matrix.translateM(itemM, 0, 0f, 0f, -0.06f)
             drawItem(itemM, id, game.time)
-        } else {
-            // bloco apoiado em cima do punho, girado pra mostrar topo e laterais
-            Matrix.translateM(itemM, 0, 0f, 0.09f, 0.08f)
-            Matrix.rotateM(itemM, 0, 40f, 0f, 1f, 0f)
-            Matrix.rotateM(itemM, 0, 10f, 1f, 0f, 0f)
-            box(itemM, 0f, 0f, 0f, 0f, 0f, 0.14f, 0.14f, 0.14f, 0f, 0xFFFFFF, 1f, 1f, null, id)
+        } else if (id in 1..13) {
+            // bloco grande no canto inferior direito, topo e lateral aparecendo (posição fixa no espaço da câmera, presa ao braço no golpe)
+            Matrix.setIdentityM(camBlk, 0)
+            Matrix.translateM(camBlk, 0, 0.786f, -0.773f, -1.068f)
+            Matrix.rotateM(camBlk, 0, 5.4f, 1f, 0f, 0f)
+            Matrix.rotateM(camBlk, 0, 26.7f, 0f, 1f, 0f)
+            Matrix.invertM(restInv, 0, restM, 0)
+            Matrix.multiplyMM(itemM, 0, fp, 0, restInv, 0)
+            Matrix.multiplyMM(tmp2, 0, itemM, 0, camBlk, 0)
+            box(tmp2, 0f, 0f, 0f, 0f, 0f, 0.569f, 0.569f, 0.569f, 0f, 0xFFFFFF, 1f, 1f, null, id)
         }
-        // ---- mão esquerda (vazia) ----
+        // mão esquerda: as referências só mostram a direita
         if (showLeftHand) {
             val lx = -bobX * 0.8f - swayX
             val ly = abs(sin(wp + 1.57f)) * 0.03f * wa + swayY + breath - (1f - e) * 0.55f
