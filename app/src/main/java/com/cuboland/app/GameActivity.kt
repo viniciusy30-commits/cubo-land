@@ -13,6 +13,7 @@ import java.io.File
 class GameActivity : AppCompatActivity() {
     private lateinit var gl: GLSurfaceView
     private lateinit var world: World
+    private lateinit var game: Game
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -24,7 +25,9 @@ class GameActivity : AppCompatActivity() {
         }
         world = World()
         if (!world.load(File(filesDir, "mundo.bin"))) world.generate(1234)
-        val game = Game(world)
+        game = Game(world)
+        getSharedPreferences("cfg", 0).getString("hb", null)?.split(",")?.mapNotNull { it.toIntOrNull() }
+            ?.takeIf { it.size == 8 }?.forEachIndexed { i, v -> if (Items.valid(v)) game.hotbar[i] = v }
         game.sens = getSharedPreferences("cfg", 0).getFloat("sens", 1f)
         gl = GLSurfaceView(this)
         gl.setEGLContextClientVersion(2)
@@ -40,6 +43,7 @@ class GameActivity : AppCompatActivity() {
         super.onPause()
         gl.onPause()
         world.save(File(filesDir, "mundo.bin"))
+        getSharedPreferences("cfg", 0).edit().putString("hb", game.hotbar.joinToString(",")).apply()
     }
 
     override fun onResume() {

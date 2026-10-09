@@ -26,15 +26,22 @@ object B {
         s(LANTERN, 0xFFF2A8, 0xFFF2A8, 0xFFF2A8)
     }
     fun solid(id: Int) = id != AIR && id != WATER
+    val tTop = IntArray(14); val tSide = IntArray(14); val tBot = IntArray(14)
+    private fun t(id: Int, a: Int, b: Int, c: Int) { tTop[id] = a; tSide[id] = b; tBot[id] = c }
+    init {
+        t(GRASS, 1, 2, 3); t(DIRT, 3, 3, 3); t(STONE, 4, 4, 4); t(SAND, 5, 5, 5); t(WOOD, 7, 6, 7); t(LEAVES, 8, 8, 8)
+        t(PLANK, 9, 9, 9); t(WATER, 10, 10, 10); t(BRICK, 11, 11, 11); t(PINK, 12, 12, 12); t(BLUE, 13, 13, 13)
+        t(YELLOW, 14, 14, 14); t(LANTERN, 15, 15, 15)
+    }
 }
 
 class MeshBuf {
-    var v = FloatArray(8192); var vn = 0
+    var v = FloatArray(16384); var vn = 0
     var ix = ShortArray(4096); var inn = 0; var vc = 0
     fun clear() { vn = 0; inn = 0; vc = 0 }
-    fun vert(x: Float, y: Float, z: Float, r: Float, g: Float, b: Float) {
-        if (vn + 6 > v.size) v = v.copyOf(v.size * 2)
-        v[vn++] = x; v[vn++] = y; v[vn++] = z; v[vn++] = r; v[vn++] = g; v[vn++] = b
+    fun vert(x: Float, y: Float, z: Float, r: Float, g: Float, b: Float, u: Float, w: Float) {
+        if (vn + 8 > v.size) v = v.copyOf(v.size * 2)
+        v[vn++] = x; v[vn++] = y; v[vn++] = z; v[vn++] = r; v[vn++] = g; v[vn++] = b; v[vn++] = u; v[vn++] = w
     }
     fun tri(a: Int, b: Int, c: Int) {
         if (inn + 3 > ix.size) ix = ix.copyOf(ix.size * 2)
@@ -200,10 +207,11 @@ class World {
                         val lvl = if (a1 == 1 && a2 == 1) 0 else 3 - (a1 + a2 + a3)
                         ao[q] = AOB[lvl]; aob = ao[q]
                     } else ao[q] = 1f
-                    val cbase = if (a == 1) (if (s > 0) B.top[id] else B.bot[id]) else B.side[id]
-                    val cfin = if (id == B.GRASS && a != 1 && p[1] > y) B.top[id] else cbase
-                    hcol(cfin, shade * vr * aob, col)
-                    buf.vert(p[0], p[1], p[2], col[0], col[1], col[2])
+                    val tile = if (a == 1) (if (s > 0) B.tTop[id] else B.tBot[id]) else B.tSide[id]
+                    var tu = cu.toFloat(); var tv = cv.toFloat()
+                    if (a == 0) { tu = cv.toFloat(); tv = 1f - cu } else if (a == 2) { tv = 1f - cv }
+                    val gr = shade * vr * aob
+                    buf.vert(p[0], p[1], p[2], gr, gr, gr, (tile + 0.01f + tu * 0.98f) / 16f, 0.01f + tv * 0.98f)
                 }
                 val flip = ao[0] + ao[2] < ao[1] + ao[3]
                 if (s > 0) {

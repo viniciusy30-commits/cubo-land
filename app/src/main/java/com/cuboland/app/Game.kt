@@ -9,13 +9,20 @@ open class Ent(var x: Float, var y: Float, var z: Float, val hw: Float, val h: F
 }
 
 class Slime(x: Float, y: Float, z: Float) : Ent(x, y, z, 0.42f, 0.85f) {
-    var hp = 3; var timer = 1f; var flash = 0f; var squash = 0f; var t = 0f; var dead = false
+    var hp = 6; var timer = 1f; var flash = 0f; var squash = 0f; var t = 0f; var dead = false
 }
 
 class Particle(var x: Float, var y: Float, var z: Float, var vx: Float, var vy: Float, var vz: Float,
                val color: Int, val size: Float, var life: Float)
 
+class Bolt(var x: Float, var y: Float, var z: Float, val vx: Float, val vy: Float, val vz: Float, var life: Float)
+
 class Game(val world: World) {
+    val hotbar = intArrayOf(Items.SWORD, Items.STAFF, Items.PICK, B.GRASS, B.PLANK, B.BRICK, B.PINK, B.LANTERN)
+    val bolts = ArrayList<Bolt>()
+    @Volatile var shake = 0f
+    fun cur() = hotbar[sel.coerceIn(0, 7)]
+
     val rnd = Random()
     val player = Ent(World.SX / 2f + 0.5f, 20f, World.SZ / 2f + 0.5f, 0.3f, 1.8f)
     val slimes = ArrayList<Slime>()
@@ -117,29 +124,44 @@ class Game(val world: World) {
         camX = ex + dx * d; camY = ey + 0.3f + dy * d; camZ = ez + dz * d
     }
 
+    private fun hitSlime(s: Slime, dmg: Int, dx: Float, dz: Float, knock: Float) {
+        s.hp -= dmg; s.flash = 0.25f
+        val l = max(0.01f, sqrt(dx * dx + dz * dz))
+        s.vx = dx / l * knock; s.vz = dz / l * knock; s.vy = 5f; s.squash = 0.4f
+        burst(s.x, s.y + 0.5f, s.z, 0xFFFFFF, 6, 4f); shake = 0.25f
+        if (s.hp <= 0 && !s.dead) { s.dead = true; kills++; burst(s.x, s.y + 0.4f, s.z, 0x6FD65A, 26, 6f) }
+    }
+
+    private fun shoot() {
+        raycast(camX, camY, camZ, dirX(), dirY(), dirZ(), camDist, camDist + 40f)
+        val tx: Float; val ty: Float; val tz: Float
+        if (hasHit) { tx = hx + 0.5f; ty = hy + 0.5f; tz = hz + 0.5f }
+        else { tx = camX + dirX() * (camDist + 40f); ty = camY + dirY() * (camDist + 40f); tz = camZ + dirZ() * (camDist + 40f) }
+        val sx = player.x + sin(yaw) * 0.7f; val sy = player.y + 1.3f; val sz = player.z + cos(yaw) * 0.7f
+        var dx = tx - sx; var dy = ty - sy; var dz = tz - sz
+        val l = max(0.1f, sqrt(dx * dx + dy * dy + dz * dz)); dx /= l; dy /= l; dz /= l
+        bolts.add(Bolt(sx, sy, sz, dx * 18f, dy * 18f, dz * 18f, 2f))
+        burst(sx, sy, sz, 0x7FE8FF, 8, 3f)
+    }
+
     private fun attack() {
+        val item = cur()
         if (atkCd > 0f) return
-        atkCd = 0.4f; swing = 0f; bodyYaw = yaw
+        atkCd = Items.cooldown(item); swing = 0f; bodyYaw = yaw
         updateCamera()
+        if (item == Items.STAFF) { shoot(); return }
+        val reach = Items.reach(item)
         var best: Slime? = null; var bd = 9999f
         for (s in slimes) {
+            if (s.dead) continue
             val dx = s.x - player.x; val dy = s.y + 0.4f - (player.y + 1f); val dz = s.z - player.z
             val dist = sqrt(dx * dx + dy * dy + dz * dz)
-            if (dist > 3.4f) continue
+            if (dist > reach) continue
             val dot = (dx * sin(yaw) + dz * cos(yaw)) / max(0.001f, sqrt(dx * dx + dz * dz))
             if (dot > 0.5f && dist < bd) { bd = dist; best = s }
         }
-        if (best != null) {
-            best.hp--; best.flash = 0.25f
-            val dx = best.x - player.x; val dz = best.z - player.z; val l = max(0.01f, sqrt(dx * dx + dz * dz))
-            best.vx = dx / l * 6f; best.vz = dz / l * 6f; best.vy = 5f; best.squash = 0.4f
-            burst(best.x, best.y + 0.5f, best.z, 0xFFFFFF, 6, 4f)
-            if (best.hp <= 0) {
-                best.dead = true; kills++
-                burst(best.x, best.y + 0.4f, best.z, 0x6FD65A, 26, 6f)
-            }
-            return
-        }
+        if (best != null) { hitSlime(best, Items.damage(item), best.x - player.x, best.z - player.z, Items.knock(item)); return }
+        if (!Items.breaks(item)) return
         raycast(camX, camY, camZ, dirX(), dirY(), dirZ(), camDist, camDist + 5.5f)
         if (hasHit && hy > 0) {
             val id = world.get(hx, hy, hz)
@@ -149,6 +171,7 @@ class Game(val world: World) {
     }
 
     private fun place() {
+        if (!Items.isBlock(cur())) return
         updateCamera()
         raycast(camX, camY, camZ, dirX(), dirY(), dirZ(), camDist, camDist + 5.5f)
         if (!hasHit) return
@@ -156,7 +179,7 @@ class Game(val world: World) {
         val overlap = px + 1 > p.x - p.hw && px < p.x + p.hw && pz + 1 > p.z - p.hw && pz < p.z + p.hw &&
             py + 1 > p.y && py < p.y + p.h
         if (overlap) return
-        world.set(px, py, pz, B.hotbar[sel])
+        world.set(px, py, pz, cur())
         swing = 0.3f
     }
 
@@ -172,7 +195,7 @@ class Game(val world: World) {
 
     private fun hurt(dx: Float, dz: Float) {
         if (hurtCd > 0f) return
-        hp--; hurtCd = 1f; hurtFlash = 1f; regen = 0f
+        hp--; hurtCd = 1f; hurtFlash = 1f; regen = 0f; shake = 0.5f
         val l = max(0.01f, sqrt(dx * dx + dz * dz))
         player.vx = dx / l * 7f; player.vz = dz / l * 7f; player.vy = 6f
         burst(player.x, player.y + 1f, player.z, 0xFF5050, 8, 3f)
@@ -184,7 +207,7 @@ class Game(val world: World) {
         synchronized(this) { ddx = lookDx; ddy = lookDy; lookDx = 0f; lookDy = 0f }
         yaw -= ddx * 0.0045f * sens; pitch = (pitch - ddy * 0.0045f * sens).coerceIn(-1.45f, 1.45f)
         if (wantCam) { wantCam = false; thirdPerson = !thirdPerson }
-        atkCd -= dt; hurtCd -= dt; hurtFlash = max(0f, hurtFlash - dt * 2f)
+        atkCd -= dt; hurtCd -= dt; shake = max(0f, shake - dt * 1.5f); hurtFlash = max(0f, hurtFlash - dt * 2f)
         if (swing < 1f) swing = min(1f, swing + dt / 0.35f)
         if (deadTimer > 0f) { deadTimer -= dt; if (deadTimer <= 0f) respawn(); updateCamera(); return }
 
@@ -237,6 +260,20 @@ class Game(val world: World) {
         if (hp <= 0 && deadTimer <= 0f) deadTimer = 2.5f
         regen += dt; if (regen > 6f && hp < 10) { hp++; regen = 0f }
 
+        val bi = bolts.iterator()
+        while (bi.hasNext()) {
+            val b = bi.next()
+            b.life -= dt; b.x += b.vx * dt; b.y += b.vy * dt; b.z += b.vz * dt
+            parts.add(Particle(b.x, b.y, b.z, rnd.nextFloat() - 0.5f, rnd.nextFloat() - 0.5f, rnd.nextFloat() - 0.5f,
+                if (rnd.nextBoolean()) 0x7FE8FF else 0xFF9AE8, 0.07f, 0.35f))
+            var gone = b.life <= 0f || world.solid(floor(b.x).toInt(), floor(b.y).toInt(), floor(b.z).toInt())
+            if (!gone) for (s in slimes) {
+                if (s.dead) continue
+                val dx = s.x - b.x; val dy = s.y + 0.4f - b.y; val dz = s.z - b.z
+                if (dx * dx + dy * dy + dz * dz < 0.6f) { hitSlime(s, 2, b.vx, b.vz, 7f); gone = true; break }
+            }
+            if (gone) { burst(b.x, b.y, b.z, 0x7FE8FF, 14, 5f); bi.remove() }
+        }
         val pi = parts.iterator()
         while (pi.hasNext()) {
             val q = pi.next()

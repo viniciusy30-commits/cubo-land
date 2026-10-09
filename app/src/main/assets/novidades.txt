@@ -1,3 +1,11 @@
+#id 2026-10-09-b
+#titulo Texturas, mochila e armas!
+- Todos os blocos agora têm textura própria
+- Braço em 1ª pessoa segurando o item, com balanço e animações
+- Mochila com armas: espada, machado, cajado de estrelas e picareta
+- Personagem mais fofinho, com carinha e cachecol
+- Tremor de tela, partículas e estrelas mágicas
+
 #id 2026-10-09-a
 #titulo Primeira versão 3D!
 - Mundo de blocos 3D com ilha, praia, árvores e água
