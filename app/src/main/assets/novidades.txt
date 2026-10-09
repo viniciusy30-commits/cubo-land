@@ -1,3 +1,11 @@
+#id 2026-10-09-k
+#titulo Mão e ferramentas bem seguradas!
+- Braço agora entra pelo canto da tela e termina num punho cúbico, sem dedos
+- Ferramentas ficam em pé, um pouco mais pra cima e pra trás, com o cabo atravessando o punho
+- A ponta de baixo do cabo aparece embaixo da mão, parece que está segurando de verdade
+- Bloco apoiado em cima do punho, mostrando topo e laterais, sem ficar cortado
+- Golpe mais suave: a mão não vai mais pra cima da câmera
+
 #id 2026-10-09-j
 #titulo Árvores lindas e ferramentas pra frente!
 - Espada, machado e picareta agora apontam o fio e a ponta pra frente
