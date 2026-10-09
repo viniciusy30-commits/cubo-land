@@ -278,30 +278,31 @@ class World {
                     if (!flip) { buf.tri(0, 2, 1); buf.tri(0, 3, 2) } else { buf.tri(1, 3, 2); buf.tri(1, 0, 3) }
                 }
                 buf.vc += 4
+                if (id == B.LEAVES && nid == B.AIR && o.vc < 56000) addCards(o, x, y, z, a, s, shade * vr)
             }
         }
     }
 
-    /** cartões de folhinhas saindo da face exposta: dão o contorno fofo/peludo das copas */
+    /** muitas folhinhas pequenas, em ângulos variados, saindo da face exposta: dão o aspecto cheio/peludo da copa */
     private fun addCards(o: MeshBuf, x: Int, y: Int, z: Int, a: Int, s: Int, sh: Float) {
         val u = (a + 1) % 3; val v = (a + 2) % 3
-        for (k in 0 until 3) {
+        val uu = floatArrayOf(0.01f, 0.99f, 0.99f, 0.01f); val vv = floatArrayOf(0.99f, 0.99f, 0.01f, 0.01f)
+        val sg1 = floatArrayOf(-1f, 1f, 1f, -1f); val sg2 = floatArrayOf(-1f, -1f, 1f, 1f)
+        for (k in 0 until 5) {
             val sd = x * 31 + y * 17 + z * 13 + a * 7 + (if (s > 0) 1 else 0) * 5 + k * 101
-            val r1 = hash(sd, y, 201 + k); val r2 = hash(sd, z, 202 + k); val r3 = hash(x, sd, 203 + k); val r4 = hash(z, sd, 204 + k)
+            val r1 = hash(sd, y, 201 + k); val r2 = hash(sd, z, 202 + k); val r3 = hash(x, sd, 203 + k)
+            val r4 = hash(z, sd, 204 + k); val r5 = hash(sd, x, 205 + k)
             val c = floatArrayOf(x + 0.5f, y + 0.5f, z + 0.5f)
-            c[a] += s * (0.54f + 0.2f * r1)
-            c[u] += (r2 - 0.5f) * 0.5f; c[v] += (r3 - 0.5f) * 0.5f
-            val ang = r4 * 6.2832f
-            val cs = cos(ang) * 0.47f; val sn = sin(ang) * 0.47f
-            val tilt = (r1 - 0.5f) * 0.5f
-            val sg1 = floatArrayOf(-1f, 1f, 1f, -1f); val sg2 = floatArrayOf(-1f, -1f, 1f, 1f)
-            val uu = floatArrayOf(0.01f, 0.99f, 0.99f, 0.01f); val vv = floatArrayOf(0.99f, 0.99f, 0.01f, 0.01f)
+            c[a] += s * (0.5f + 0.16f * r1)
+            c[u] += (r2 - 0.5f) * 1.0f; c[v] += (r3 - 0.5f) * 1.0f
+            val ang = r4 * 6.2832f; val hs = 0.2f + 0.08f * r5
+            val ph = (r5 - 0.5f) * 2.2f; val cph = cos(ph); val sph = sin(ph)
+            val e1 = FloatArray(3); e1[u] = cos(ang) * hs; e1[v] = sin(ang) * hs
+            val e2 = FloatArray(3); e2[u] = -sin(ang) * hs * cph; e2[v] = cos(ang) * hs * cph; e2[a] = s * hs * sph
+            val k2 = sh * (0.88f + 0.22f * r1)
             for (q in 0 until 4) {
-                val p = floatArrayOf(c[0], c[1], c[2])
-                p[u] += sg1[q] * cs - sg2[q] * sn
-                p[v] += sg1[q] * sn + sg2[q] * cs
-                p[a] += s * tilt * sg2[q]
-                o.vert(p[0], p[1], p[2], sh, sh, sh, (8f + uu[q]) / Atlas.NT.toFloat(), vv[q])
+                o.vert(c[0] + sg1[q] * e1[0] + sg2[q] * e2[0], c[1] + sg1[q] * e1[1] + sg2[q] * e2[1], c[2] + sg1[q] * e1[2] + sg2[q] * e2[2],
+                    k2, k2, k2, (20f + uu[q]) / Atlas.NT.toFloat(), vv[q])
             }
             o.tri(0, 1, 2); o.tri(0, 2, 3); o.tri(0, 2, 1); o.tri(0, 3, 2); o.vc += 4
         }

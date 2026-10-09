@@ -154,6 +154,31 @@ object Atlas {
         return op(c)
     }
 
+    /** cartão com 3 folhinhas pontudas (fundo transparente) que saem do bloco de folha */
+    private fun leafCard(u: Float, v: Float): Int {
+        val g = 16
+        val qu = (floor(u * g) + 0.5f) / g; val qv = (floor(v * g) + 0.5f) / g
+        val cxs = floatArrayOf(0.5f, 0.36f, 0.64f); val cys = floatArrayOf(0.5f, 0.58f, 0.58f)
+        val angs = floatArrayOf(1.5708f, 2.25f, 0.89f); val lights = floatArrayOf(0.35f, 0.6f, 0.9f)
+        var out = CLEAR
+        for (i in 0 until 3) {
+            val len = 0.3f; val wid = len * 0.46f
+            val dx = qu - cxs[i]; val dy = qv - cys[i]
+            val ca = cos(angs[i]); val sa = sin(angs[i])
+            val al = dx * ca + dy * sa; val b = -dx * sa + dy * ca
+            val t = al / len
+            if (abs(t) >= 1f) continue
+            val half = wid * (1f - t * t)
+            if (abs(b) >= half) continue
+            val side = b / max(half, 0.001f)
+            var c = lerp(0x74C67E, 0xB9EE9C, (lights[i] * 0.6f + (0.5f - side * 0.5f) * 0.4f).coerceIn(0f, 1f))
+            if (side > 0.55f) c = lerp(c, 0x4FA066, 0.5f)
+            if (abs(b) < 0.03f && t > -0.8f) c = lerp(c, 0xE2FFC4, 0.5f)
+            out = op(c)
+        }
+        return out
+    }
+
     private fun plank(u: Float, v: Float): Int {
         val row = floor(v * 4f).toInt(); val fy = fr(v * 4f)
         var c = lerp(0xEFCB93, 0xF8DDB0, h(row, 0, 40))
@@ -245,13 +270,14 @@ object Atlas {
         17 -> flower(u, v, 0xFF9DC6)
         18 -> flower(u, v, 0xFFE170)
         19 -> flower(u, v, 0xFFFFFF)
+        20 -> leafCard(u, v)
         else -> -1
     }
 
     private fun build(): Bitmap {
         val w = T * NT
         val out = IntArray(w * T)
-        for (t in 0 until 20) for (y in 0 until T) for (x in 0 until T) {
+        for (t in 0 until 21) for (y in 0 until T) for (x in 0 until T) {
             var a = 0; var r = 0f; var g = 0f; var bl = 0f
             for (sy in 0..1) for (sx in 0..1) {      // antialias 2x2
                 val c = sample(t, (x + 0.25f + sx * 0.5f) / T, (y + 0.25f + sy * 0.5f) / T)
