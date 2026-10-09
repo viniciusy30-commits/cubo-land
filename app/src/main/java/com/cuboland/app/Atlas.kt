@@ -128,7 +128,7 @@ object Atlas {
         val px = floor(u * 16f).toInt().coerceIn(0, 15); val py = floor(v * 16f).toInt().coerceIn(0, 15)
         if (h(px, py, 91) < 0.3f && h(px, py / 2, 92) < 0.7f) return CLEAR
         val k = h(px / 2, py, 93) * 0.6f + h(px, py, 94) * 0.4f
-        val c = when { k < 0.25f -> 0x25500F; k < 0.5f -> 0x3A7519; k < 0.78f -> 0x56A02A; else -> 0x7CC43F }
+        val c = when { k < 0.25f -> 0x3F8F2A; k < 0.5f -> 0x5CB336; k < 0.78f -> 0x7FD14C; else -> 0xA8EC72 }
         return op(c)
     }
 

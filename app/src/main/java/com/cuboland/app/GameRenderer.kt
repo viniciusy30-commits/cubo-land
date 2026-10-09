@@ -635,17 +635,19 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     
     private val KF_SWORD = arrayOf(
             floatArrayOf(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f),
-            floatArrayOf(0.14f, 2f, 0.01f, 0.03f, 0.04f, 10f, -4f, -6f, 30f, -22f, 0f, 0f),
-            floatArrayOf(0.28f, 0f, 0.02f, 0.05f, 0.06f, 16f, -6f, -8f, 62f, -38f, 0f, 0f),
-            floatArrayOf(0.44f, 1f, 0.0f, 0.0f, -0.12f, 4f, 2f, 0f, -6f, 8f, 0f, 0f),
-            floatArrayOf(0.56f, 2f, -0.03f, -0.04f, -0.16f, -6f, 10f, 6f, -48f, 52f, 0f, 0f),
-            floatArrayOf(0.74f, 0f, -0.03f, -0.04f, -0.14f, -7f, 12f, 8f, -44f, 56f, 0f, 0f),
+            floatArrayOf(0.1f, 2f, 0.02f, -0.03f, 0.05f, -4f, -4f, -4f, 8f, -8f, 0f, 0f),
+            floatArrayOf(0.3f, 0f, 0.05f, 0.14f, 0.08f, 42f, -14f, -22f, 40f, -36f, 0f, 0f),
+            floatArrayOf(0.36f, 0f, 0.05f, 0.15f, 0.08f, 46f, -15f, -24f, 46f, -40f, 0f, 0f),
+            floatArrayOf(0.5f, 1f, 0.0f, 0.0f, -0.22f, 8f, 8f, 2f, -20f, 14f, 0f, 0f),
+            floatArrayOf(0.6f, 2f, -0.08f, -0.12f, -0.24f, -26f, 30f, 20f, -42f, 54f, 0f, 0f),
+            floatArrayOf(0.68f, 0f, -0.08f, -0.11f, -0.21f, -25f, 32f, 22f, -41f, 55f, 0f, 0f),
+            floatArrayOf(0.8f, 0f, -0.08f, -0.11f, -0.2f, -24f, 32f, 22f, -40f, 56f, 0f, 0f),
             floatArrayOf(1f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
         )
 
     private val KF_SWORD2 = arrayOf(
-            floatArrayOf(0f, 0f, -0.03f, -0.04f, -0.14f, -7f, 12f, 8f, -44f, 56f, 0f, 0f),
-            floatArrayOf(0.12f, 0f, -0.05f, -0.03f, -0.08f, -6f, 22f, 6f, -52f, 36f, 0f, 0f),
+            floatArrayOf(0f, 0f, -0.08f, -0.11f, -0.2f, -24f, 32f, 22f, -40f, 56f, 0f, 0f),
+            floatArrayOf(0.12f, 0f, -0.07f, -0.05f, -0.1f, -10f, 28f, 10f, -52f, 36f, 0f, 0f),
             floatArrayOf(0.4f, 1f, 0.0f, 0.0f, -0.3f, -4f, 0f, -2f, -66f, 0f, 0f, 0f),
             floatArrayOf(0.55f, 2f, 0.12f, 0.0f, -0.18f, -2f, -34f, -14f, -62f, -26f, 0f, 0f),
             floatArrayOf(0.7f, 0f, 0.13f, 0.0f, -0.12f, -2f, -38f, -16f, -58f, -30f, 0f, 0f),
