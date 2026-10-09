@@ -522,6 +522,12 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         box(m, 0f, fh * 0.5f - 0.01f, len + 0.02f, 0f, 0f, fw * 0.92f, 0.02f, 0.18f, 0f, 0xF8D9BC) // luz em cima
     }
 
+    /** antebraço saindo da base do punho, inclinado pra trás/baixo/direita (como o braço do Minecraft), no mesmo sistema da ferramenta: nunca desconecta do punho */
+    private fun drawToolArm(m: FloatArray) {
+        box(m, 0f, -0.05f, 0f, -35f, 25f, 0.19f, 0.06f, 0.19f, -0.07f, 0xA6EBDD)     // barra da manga, colada na base do punho
+        box(m, 0f, -0.05f, 0f, -35f, 25f, 0.17f, 0.95f, 0.17f, -0.55f, 0x7FD9C8)     // manga
+    }
+
     /** punho no sistema da ferramenta: Y = direção do cabo. O cabo sai do centro da face de cima do punho. */
     private fun drawToolFist(m: FloatArray) {
         box(m, 0f, 0f, 0f, 0f, 0f, 0.21f, 0.17f, 0.21f, 0f, SKIN)
@@ -749,8 +755,8 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val isTool = id > 0 && id !in 1..13
         val armW = if (empty) 0.2f else 0.17f
         // punho (centro do punho = onde o cabo passa). Ferramenta: punho mais alto, inteiro na tela; mão vazia/bloco: poses das referências
-        val hx = if (empty) 0.589f else if (isTool) 0.70f else 0.752f
-        val hy = if (empty) -0.534f else if (isTool) -0.63f else -0.756f
+        val hx = if (empty) 0.589f else if (isTool) 0.66f else 0.752f
+        val hy = if (empty) -0.534f else if (isTool) -0.52f else -0.756f
         val hz = if (empty) -0.982f else if (isTool) -1.12f else -1.125f
         val sx0 = hx - 0.223f; val sy0 = hy - 0.138f; val sz0 = hz + 0.458f
 
@@ -768,7 +774,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         poseMatrix(poseM, p, ox, oy, sx0, sy0, sz0)
         val len = armBasis(fp, sx0, sy0, sz0, hx, hy, hz)
         Matrix.multiplyMM(armM, 0, poseM, 0, fp, 0)
-        drawArm(armM, len, armW, !isTool)
+        if (!isTool) drawArm(armM, len, armW, true)
 
         if (isTool) {
             // rastro do golpe: cópias translúcidas da parte que corta nos instantes anteriores (só aparece quando o golpe é rápido)
@@ -789,6 +795,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             toolBase(toolM, p, hx, hy, hz)
             Matrix.multiplyMM(tmp2, 0, poseM, 0, toolM, 0)
             drawToolFist(tmp2)
+            drawToolArm(tmp2)
             drawTool3D(tmp2, id, tt, p[9])
         } else if (id in 1..13) {
             // bloco grande no canto inferior direito, topo e lateral aparecendo (preso ao braço no golpe)
