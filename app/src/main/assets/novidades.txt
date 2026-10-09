@@ -1,6 +1,7 @@
 #id 2026-10-09-p
 #titulo Ferramentas em pé e folhas iguais à referência!
 - Espada, machado, picareta e cajado agora aparecem em pé, de frente pra câmera, em pixel-art
+- Copas arredondadas e fofas: o bloco quadrado de folha virou bolotas de folhas, sem faces retas, como no "depois" da referência
 - Folhas refeitas: folhinhas pontudas e serrilhadas, verde vivo, nervura clara e sombra entre elas, como no "depois" da referência
 
 #id 2026-10-09-o

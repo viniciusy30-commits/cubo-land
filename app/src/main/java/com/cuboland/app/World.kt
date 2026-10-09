@@ -355,23 +355,22 @@ class World {
         out[0] = ((c shr 16) and 255) / 255f * sh; out[1] = ((c shr 8) and 255) / 255f * sh; out[2] = (c and 255) / 255f * sh
     }
 
-    /** bolota de folhas (esfera lowpoly com normal p/ luz): dá volume 3D à copa */
-    private fun puff(o: MeshBuf, cx: Float, cy: Float, cz: Float, r: Float, n: Int, m: Int, rot: Float, vr: Float) {
-        for (j in 0..m) {
-            val th = 3.14159f * j / m
-            for (i in 0..n) {
-                val ph = rot + 6.28318f * i / n
-                val nx = sin(th) * cos(ph); val ny = cos(th); val nz = sin(th) * sin(ph)
-                val sh = (0.68f + 0.32f * (0.5f + 0.5f * ny)) * vr
-                o.vert(cx + r * nx, cy + r * 0.92f * ny, cz + r * nz, sh, sh, sh, (8 + 0.01f + 0.98f * i / n) / Atlas.NT, 0.01f + 0.98f * j / m)
-            }
-        }
-        val w = n + 1
+    /** bolota de folhas (esfera lowpoly arredondada): cada quadradinho mostra um pedaço do tile de folha, dando a copa fofa da referência */
+    private fun puff(o: MeshBuf, cx: Float, cy: Float, cz: Float, r: Float, n: Int, m: Int, rot: Float, vr: Float, seed: Int) {
         for (j in 0 until m) for (i in 0 until n) {
-            val a = j * w + i; val b = a + 1; val c = a + w; val d = c + 1
-            o.tri(a, b, c); o.tri(b, d, c)
+            val ou = if (hash(seed, i * 7 + j, 311) > 0.5f) 0.5f else 0f
+            val ov = if (hash(seed, i * 5 + j * 3, 312) > 0.5f) 0.5f else 0f
+            for (q in 0 until 4) {
+                val ii = i + (if (q == 1 || q == 2) 1 else 0); val jj = j + (if (q >= 2) 1 else 0)
+                val th = 3.14159f * jj / m; val ph = rot + 6.28318f * ii / n
+                val nx = sin(th) * cos(ph); val ny = cos(th); val nz = sin(th) * sin(ph)
+                val sh = (0.62f + 0.38f * (0.5f + 0.5f * ny)) * vr
+                val fu = if (q == 1 || q == 2) 1f else 0f; val fv = if (q >= 2) 1f else 0f
+                o.vert(cx + r * nx, cy + r * 0.92f * ny, cz + r * nz, sh, sh, sh,
+                    (8 + ou + 0.01f + 0.48f * fu) / Atlas.NT, ov + 0.01f + 0.48f * fv)
+            }
+            o.tri(0, 1, 2); o.tri(0, 2, 3); o.tri(0, 2, 1); o.tri(0, 3, 2); o.vc += 4
         }
-        o.vc += (m + 1) * w
     }
 
     private fun colDepth(x: Int, z: Int): Int {
@@ -391,7 +390,25 @@ class World {
             val lowered = isW && get(x, y + 1, z) == B.AIR
             val vr = 0.94f + 0.06f * hash(x, z, y)
             c[0] = x; c[1] = y; c[2] = z
-            if (id == B.LEAVES && o.vc > 60000) continue
+            if (id == B.LEAVES) {
+                if (o.vc > 55000) continue
+                var open = false
+                for (f in 0 until 6) {
+                    val aa = f shr 1; val ss = if ((f and 1) == 0) 1 else -1
+                    val q = get(x + if (aa == 0) ss else 0, y + if (aa == 1) ss else 0, z + if (aa == 2) ss else 0)
+                    if (q == B.AIR || q == B.WATER) { open = true; break }
+                }
+                if (!open) continue
+                val sd = x * 73 + y * 31 + z * 17
+                val jx = (hash(sd, y, 321) - 0.5f) * 0.22f; val jy = (hash(sd, z, 322) - 0.5f) * 0.18f; val jz = (hash(x, sd, 323) - 0.5f) * 0.22f
+                puff(o, x + 0.5f + jx, y + 0.5f + jy, z + 0.5f + jz, 0.74f + 0.1f * hash(sd, x, 324), 6, 3, hash(sd, y, 325) * 6.28f, vr, sd)
+                for (f in 0 until 6) {
+                    val aa = f shr 1; val ss = if ((f and 1) == 0) 1 else -1
+                    if (get(x + if (aa == 0) ss else 0, y + if (aa == 1) ss else 0, z + if (aa == 2) ss else 0) == B.AIR && hash(sd, f, 326) > 0.45f && o.vc < 56000)
+                        addCards(o, x, y, z, aa, ss, vr * 0.95f)
+                }
+                continue
+            }
             if (id == B.GRASS && get(x, y + 1, z) == B.AIR) {
                 val r = hash(x, z, 3)
                 if (r > 0.55f) {
@@ -470,7 +487,7 @@ class World {
         val u = (a + 1) % 3; val v = (a + 2) % 3
         val uu = floatArrayOf(0.01f, 0.99f, 0.99f, 0.01f); val vv = floatArrayOf(0.99f, 0.99f, 0.01f, 0.01f)
         val sg1 = floatArrayOf(-1f, 1f, 1f, -1f); val sg2 = floatArrayOf(-1f, -1f, 1f, 1f)
-        for (k in 0 until 9) {
+        for (k in 0 until 2) {
             val sd = x * 31 + y * 17 + z * 13 + a * 7 + (if (s > 0) 1 else 0) * 5 + k * 101
             val r1 = hash(sd, y, 201 + k); val r2 = hash(sd, z, 202 + k); val r3 = hash(x, sd, 203 + k)
             val r4 = hash(z, sd, 204 + k); val r5 = hash(sd, x, 205 + k)
