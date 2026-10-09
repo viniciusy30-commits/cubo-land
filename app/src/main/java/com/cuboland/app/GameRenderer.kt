@@ -46,7 +46,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                     float w = clamp((0.99 - aUV.y) / 0.98, 0.0, 1.0); w = w * w;
                     wp.x += (sin(uTime * 2.3 + wp.x * 0.9 + wp.z * 0.6) * 0.07 + 0.04) * w * gust * 1.4;
                     wp.z += cos(uTime * 1.8 + wp.x * 0.5 + wp.z * 0.9) * 0.05 * w * gust * 1.4;
-                } else if (tile == 8.0 || tile == 20.0) {
+                } else if (tile == 8.0 || tile == 20.0 || tile == 21.0) {
                     wp.x += sin(uTime * 1.7 + wp.y * 1.3 + wp.z * 0.8) * 0.04 * gust;
                     wp.z += cos(uTime * 1.4 + wp.y * 1.1 + wp.x * 0.8) * 0.04 * gust;
                     wp.y += sin(uTime * 2.1 + wp.x * 1.2 + wp.z) * 0.018;
