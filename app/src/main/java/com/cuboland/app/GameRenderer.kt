@@ -26,7 +26,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     private val ob = MeshBuf(); private val wb = MeshBuf()
     private var last = 0L
     private val rnd = java.util.Random()
-    private val fogR = 0.82f; private val fogG = 0.92f; private val fogB = 1.0f
+    private val fogR = 0.70f; private val fogG = 0.83f; private val fogB = 0.97f
     private var skyProg = 0; private var skyP = 0; private var skyInv = 0; private var skyCam = 0; private var skyHor = 0; private var skyTime = 0
     private val inv = FloatArray(16)
     private val quad = ByteBuffer.allocateDirect(32).order(ByteOrder.nativeOrder()).asFloatBuffer().apply { put(floatArrayOf(-1f, -1f, 1f, -1f, -1f, 1f, 1f, 1f)); position(0) }
@@ -85,7 +85,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             if (t.a < 0.4) discard;
             float l = clamp((vCol.r - 0.3) / 0.7, 0.0, 1.0);
             vec3 light = mix(vec3(0.80, 0.84, 1.0), vec3(1.05, 1.02, 0.95), l);
-            vec3 c = t.rgb * vCol * uTint * light * 1.06;
+            vec3 c = t.rgb * vCol * uTint * light * 0.9;
             float alpha = uAlpha * t.a;
             if (isLeaf) c *= 1.0 + 0.05 * sin(vWP.x * 0.7 + vWP.z * 0.5 + uTime * 0.8);
             if (isWater) {
@@ -101,13 +101,13 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                 if (dot(n, V) < 0.0) n = -n;
                 vec3 L = normalize(vec3(0.55, 0.5, 0.65));
                 float depth = clamp(vCol.g, 0.0, 1.0);
-                vec3 shallow = vec3(0.38, 0.90, 0.85);
+                vec3 shallow = vec3(0.30, 0.76, 0.76);
                 vec3 deep = vec3(0.03, 0.20, 0.58);
                 vec3 base = shallow;   // cor única: toda a água igual à parte clara
                 float ndv = max(dot(n, V), 0.0);
                 float fres = 0.02 + 0.98 * pow(1.0 - ndv, 5.0);
                 vec3 R = reflect(-V, n);
-                vec3 sky = mix(uFog, vec3(0.42, 0.66, 1.0), pow(clamp(R.y, 0.0, 1.0), 0.45));
+                vec3 sky = mix(uFog, vec3(0.34, 0.56, 0.94), pow(clamp(R.y, 0.0, 1.0), 0.45));
                 float rl = max(dot(R, L), 0.0);
                 float spec = pow(rl, 30.0) * 0.16;
                 vec3 wc = base * (0.84 + 0.26 * dot(n, L));
@@ -137,7 +137,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                 c += vec3(0.6, 0.9, 1.0) * pow(max(0.0, k1 * 0.33), 3.0) * 0.5;
             }
             float g2 = dot(c, vec3(0.299, 0.587, 0.114));
-            c = mix(vec3(g2), c, 1.04); c = mix(c, vec3(1.0, 0.98, 0.97), 0.05);
+            c = mix(vec3(g2), c, 1.12); c = mix(c, smoothstep(0.0, 1.0, c), 0.3);
             c = mix(c, uFog, vFog);
             gl_FragColor = vec4(c, alpha);
         }"""
@@ -157,7 +157,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         void main() {
             vec3 d = normalize(vF.xyz / vF.w - uCam);
             float h = clamp(d.y, 0.0, 1.0);
-            vec3 c = mix(uHor, vec3(0.50, 0.72, 1.0), pow(h, 0.55));
+            vec3 c = mix(uHor, vec3(0.36, 0.60, 0.92), pow(h, 0.55));
             vec3 sd = normalize(vec3(0.55, 0.5, 0.65));
             float s = max(dot(d, sd), 0.0);
             c += vec3(1.0, 0.85, 0.55) * pow(s, 6.0) * 0.25 + vec3(1.0, 0.95, 0.8) * pow(s, 300.0) * 2.0;
@@ -165,7 +165,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                 vec2 q = d.xz / (d.y + 0.25) * 1.4 + vec2(uTime * 0.012, 0.0);
                 float n = ns(q * 1.5) * 0.55 + ns(q * 3.1) * 0.3 + ns(q * 6.5) * 0.15;
                 float cl = smoothstep(0.52, 0.78, n) * smoothstep(0.02, 0.25, d.y);
-                c = mix(c, vec3(1.0, 0.99, 0.97) * (0.86 + 0.14 * ns(q * 2.0)), cl * 0.85);
+                c = mix(c, vec3(0.93, 0.93, 0.93) * (0.84 + 0.14 * ns(q * 2.0)), cl * 0.85);
             }
             gl_FragColor = vec4(c, 1.0);
         }"""
@@ -571,7 +571,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         System.arraycopy(fp, 0, itemM, 0, 16)
         Matrix.translateM(itemM, 0, 0f, 0f, len + 0.01f)
         if (id !in 1..13) {
-            val phi = when (id) { Items.AXE -> 32f; Items.PICK -> 28f; Items.SWORD -> 22f; else -> 0f }
+            val phi = -36f   // gira o cabo pra o fio/pontas apontarem pra frente (compensa a inclinação lateral do braço)
             val sc = when (id) { Items.SWORD -> 0.62f; Items.AXE -> 0.64f; Items.PICK -> 0.64f; else -> 0.58f }
             Matrix.rotateM(itemM, 0, extra + 30f - 90f, 1f, 0f, 0f)
             Matrix.rotateM(itemM, 0, phi, 0f, 0f, 1f)
@@ -580,10 +580,10 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             drawItem(itemM, id, game.time)
         } else {
             // bloco apoiado em cima do punho, girado pra mostrar topo e laterais
-            Matrix.translateM(itemM, 0, 0f, 0.16f, 0f)
+            Matrix.translateM(itemM, 0, 0f, 0.09f, 0.08f)
             Matrix.rotateM(itemM, 0, 40f, 0f, 1f, 0f)
             Matrix.rotateM(itemM, 0, 10f, 1f, 0f, 0f)
-            box(itemM, 0f, 0f, 0f, 0f, 0f, 0.2f, 0.2f, 0.2f, 0f, 0xFFFFFF, 1f, 1f, null, id)
+            box(itemM, 0f, 0f, 0f, 0f, 0f, 0.14f, 0.14f, 0.14f, 0f, 0xFFFFFF, 1f, 1f, null, id)
         }
         // ---- mão esquerda (vazia) ----
         if (showLeftHand) {

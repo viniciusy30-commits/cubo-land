@@ -1,3 +1,9 @@
+#id 2026-10-09-m
+#titulo Visual mais confortável e ferramentas pra frente!
+- Jogo um pouco mais escuro e com cores mais vivas, mais agradável aos olhos
+- Picareta, machado e espada agora apontam pra frente, como deve ser
+- Bloco segurado menor, na ponta da mão
+
 #id 2026-10-09-l
 #titulo Árvores mais bonitas e mão menor!
 - Troncos com curvas leves e raízes aparentes
