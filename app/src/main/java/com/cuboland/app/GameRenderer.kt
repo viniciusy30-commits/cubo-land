@@ -571,9 +571,11 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         System.arraycopy(fp, 0, itemM, 0, 16)
         Matrix.translateM(itemM, 0, 0f, 0f, len + 0.01f)
         if (id !in 1..13) {
-            val phi = -36f   // gira o cabo pra o fio/pontas apontarem pra frente (compensa a inclinação lateral do braço)
+            val heavy = id == Items.AXE || id == Items.PICK     // machado e picareta: cabo mais deitado pra trás, cabeça fica sobre a mão
+            val lean = if (heavy) 24f else 30f
+            val phi = if (heavy) -35f else -36f                // gira o cabo pra o fio/pontas apontarem pra frente
             val sc = when (id) { Items.SWORD -> 0.62f; Items.AXE -> 0.64f; Items.PICK -> 0.64f; else -> 0.58f }
-            Matrix.rotateM(itemM, 0, extra + 30f - 90f, 1f, 0f, 0f)
+            Matrix.rotateM(itemM, 0, extra + lean - 90f, 1f, 0f, 0f)
             Matrix.rotateM(itemM, 0, phi, 0f, 0f, 1f)
             Matrix.scaleM(itemM, 0, sc, sc, sc)
             Matrix.translateM(itemM, 0, 0f, 0f, -0.06f)
