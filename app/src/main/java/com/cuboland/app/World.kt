@@ -192,6 +192,13 @@ class World {
         o.vc += (m + 1) * w
     }
 
+    private fun colDepth(x: Int, z: Int): Int {
+        val xx = x.coerceIn(0, SX - 1); val zz = z.coerceIn(0, SZ - 1)
+        var y = WATER_Y; var n = 0
+        while (y >= 0 && get(xx, y, zz) == B.WATER) { n++; y-- }
+        return n
+    }
+
     fun buildChunk(cx: Int, cz: Int, o: MeshBuf, w: MeshBuf) {
         o.clear(); w.clear()
         val c = IntArray(3); val p = FloatArray(3); val col = FloatArray(3); val ao = FloatArray(4)
@@ -202,21 +209,7 @@ class World {
             val lowered = isW && get(x, y + 1, z) == B.AIR
             val vr = 0.94f + 0.06f * hash(x, z, y)
             c[0] = x; c[1] = y; c[2] = z
-            if (id == B.LEAVES) {
-                val ddx = intArrayOf(1, -1, 0, 0, 0, 0); val ddy = intArrayOf(0, 0, 1, -1, 0, 0); val ddz = intArrayOf(0, 0, 0, 0, 1, -1)
-                var open = false
-                for (k in 0 until 6) { val nn = get(x + ddx[k], y + ddy[k], z + ddz[k]); if (nn == B.AIR || nn == B.WATER) open = true }
-                if (open && o.vc < 56000) {
-                    val jx = (hash(x, z, y + 21) - 0.5f) * 0.2f; val jy = (hash(x, z, y + 22) - 0.5f) * 0.2f; val jz = (hash(x, z, y + 23) - 0.5f) * 0.2f
-                    puff(o, x + 0.5f + jx, y + 0.5f + jy, z + 0.5f + jz, 0.68f, 10, 6, hash(x, z, y + 24) * 6.28f, vr)
-                    for (k in 0 until 6) {
-                        val nn = get(x + ddx[k], y + ddy[k], z + ddz[k])
-                        if (nn == B.AIR || nn == B.WATER)
-                            puff(o, x + 0.5f + ddx[k] * 0.4f + jx, y + 0.5f + ddy[k] * 0.4f + jy, z + 0.5f + ddz[k] * 0.4f + jz, 0.4f, 7, 5, hash(x, z, y + 30 + k) * 6.28f, vr)
-                    }
-                }
-                continue
-            }
+            if (id == B.LEAVES && o.vc > 60000) continue
             if (id == B.GRASS && get(x, y + 1, z) == B.AIR) {
                 val r = hash(x, z, 3)
                 if (r > 0.55f) {
@@ -243,7 +236,9 @@ class World {
                 val a = face shr 1; val s = if ((face and 1) == 0) 1 else -1
                 val nx = x + if (a == 0) s else 0; val ny = y + if (a == 1) s else 0; val nz = z + if (a == 2) s else 0
                 val nid = get(nx, ny, nz)
-                if (isW) { if (nid != B.AIR) continue } else if (nid != B.AIR && nid != B.WATER) continue
+                if (isW) { if (nid != B.AIR) continue }
+                else if (id == B.LEAVES) { if (nid != B.AIR && nid != B.WATER && nid != B.LEAVES) continue }
+                else if (nid != B.AIR && nid != B.WATER) continue
                 val u = (a + 1) % 3; val v = (a + 2) % 3
                 val shade = when { id == B.LANTERN -> 1f; a == 1 -> if (s > 0) 1f else 0.55f; a == 0 -> 0.82f; else -> 0.7f }
                 val buf = if (isW) w else o
@@ -253,7 +248,7 @@ class World {
                     p[a] += if (s > 0) 1f else 0f; p[u] += cu.toFloat(); p[v] += cv.toFloat()
                     if (lowered && p[1] > y) p[1] = y + 0.88f
                     var aob = 1f
-                    if (!isW && id != B.LANTERN) {
+                    if (!isW && id != B.LANTERN && id != B.LEAVES) {
                         val du = if (cu == 1) 1 else -1; val dv = if (cv == 1) 1 else -1
                         val bx = IntArray(3); bx[0] = c[0]; bx[1] = c[1]; bx[2] = c[2]; bx[a] += s
                         val s1 = bx.clone(); s1[u] += du
@@ -269,7 +264,12 @@ class World {
                     var tu = cu.toFloat(); var tv = cv.toFloat()
                     if (a == 0) { tu = cv.toFloat(); tv = 1f - cu } else if (a == 2) { tv = 1f - cv }
                     val gr = shade * vr * aob
-                    buf.vert(p[0], p[1], p[2], gr, gr, gr, (tile + 0.01f + tu * 0.98f) / Atlas.NT.toFloat(), 0.01f + tv * 0.98f)
+                    var cg = gr
+                    if (isW) {   // canal G da água = profundidade suave (média das 4 colunas ao redor do vértice)
+                        val kx = p[0].toInt(); val kz = p[2].toInt()
+                        cg = ((colDepth(kx - 1, kz - 1) + colDepth(kx, kz - 1) + colDepth(kx - 1, kz) + colDepth(kx, kz)) / 20f).coerceIn(0f, 1f)
+                    }
+                    buf.vert(p[0], p[1], p[2], gr, cg, gr, (tile + 0.01f + tu * 0.98f) / Atlas.NT.toFloat(), 0.01f + tv * 0.98f)
                 }
                 val flip = ao[0] + ao[2] < ao[1] + ao[3]
                 if (s > 0) {

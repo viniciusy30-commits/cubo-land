@@ -1,3 +1,12 @@
+#id 2026-10-09-g
+#titulo Água, folhas e mãos estilo shader!
+- Água nova: azul turquesa na beirada e azul profundo no fundo, transparente de verdade
+- Ondas suaves, reflexo do céu, brilho do sol e espuma na praia
+- Luz dançando no fundo do mar (cáusticas) e fundo escurecendo com a profundidade
+- Folhas novas em cubos de pixel-art com buracos e tons de verde, bem realistas
+- Mãos novas estilo Minecraft: braço grosso, mão cúbica com dedos e polegar
+- Blocos seguros de frente, e mão esquerda aparecendo no canto
+
 #id 2026-10-09-f
 #titulo Árvores fofas e água viva!
 - Copas das árvores em tufos 3D redondinhos, com volume e florzinhas

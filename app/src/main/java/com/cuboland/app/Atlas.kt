@@ -122,26 +122,28 @@ object Atlas {
         return lerp(c, 0xB07F55, sm(0.40f, 0.44f, max(abs(dx), abs(dy))))
     }
 
-    /** folhagem fofa: bolotas sobrepostas, luz de cima, volume, e florzinhas rosa */
+    /** folhas estilo Minecraft realista: pixel-art 16x16 com buracos, tons variados e luz nas bordas */
     private fun leaves(u: Float, v: Float): Int {
-        var c = 0x58A85F
-        for (i in 0 until 18) {
-            val cx = h(i, 0, 100); val cy = h(i, 1, 100); val r = 0.12f + 0.07f * h(i, 2, 100)
-            for (ox in -1..1) for (oy in -1..1) {
-                val dx = u - cx - ox; val dy = v - cy - oy
-                val d = sqrt(dx * dx + dy * dy)
-                if (d < r) {
-                    val lit = (0.5f - (dx + dy) / (r * 2.2f)).coerceIn(0f, 1f)
-                    val col = lerp(0x69BB6A, 0xBDF29A, lit * (0.7f + 0.3f * h(i, 3, 100)))
-                    c = lerp(col, 0x4E9E58, sm(r * 0.78f, r, d) * 0.55f)
-                }
-            }
+        val g = 16
+        val gx = floor(u * g).toInt(); val gy = floor(v * g).toInt()
+        fun filled(x: Int, y: Int): Boolean {
+            val xx = wrap(x, g); val yy = wrap(y, g)
+            val n = vn((xx + 0.5f) / g, (yy + 0.5f) / g, 4, 4, 90) * 0.5f + h(xx, yy, 91) * 0.5f
+            return n > 0.31f
         }
-        for (j in 0 until 4) for (ox in -1..1) for (oy in -1..1) {
-            val dx = u - h(j, 0, 110) - ox; val dy = v - h(j, 1, 110) - oy
-            val d = sqrt(dx * dx + dy * dy)
-            if (d < 0.05f) c = if (d < 0.018f) 0xFFE27A else lerp(0xFFB9D5, 0xFFD8E8, d / 0.05f)
+        if (!filled(gx, gy)) return CLEAR
+        val up = filled(gx, gy - 1); val lf = filled(gx - 1, gy)
+        val dn = filled(gx, gy + 1); val rt = filled(gx + 1, gy)
+        val tone = h(gx, gy, 92) * 0.6f + vn((gx + 0.5f) / g, (gy + 0.5f) / g, 8, 8, 93) * 0.4f
+        var c = when {
+            tone < 0.25f -> 0x2B6A2A
+            tone < 0.48f -> 0x3C8832
+            tone < 0.72f -> 0x56A843
+            else -> 0x7DCB57
         }
+        if (!up || !lf) c = lerp(c, 0xB4EC84, 0.38f)      // luz batendo na borda de cima/esquerda
+        if (!dn || !rt) c = mul(c, 0.7f)                  // sombra na borda de baixo/direita
+        if (h(gx, gy, 94) > 0.93f) c = mul(c, 0.62f)      // pontinhos escuros (nervuras)
         return op(c)
     }
 

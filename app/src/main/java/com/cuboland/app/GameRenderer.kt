@@ -36,7 +36,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     private val VS = """
         uniform mat4 uVP; uniform mat4 uModel; uniform vec3 uCam; uniform float uTime; uniform float uWind; uniform float uUnder;
         attribute vec3 aPos; attribute vec3 aCol; attribute vec2 aUV;
-        varying vec3 vCol; varying float vFog; varying vec2 vUV; varying vec3 vWP; varying float vTile;
+        varying vec3 vCol; varying float vFog; varying vec2 vUV; varying vec3 vWP; varying float vTile; varying vec3 vView;
         void main() {
             vec4 wp = uModel * vec4(aPos, 1.0);
             float tile = floor(aUV.x * 32.0);
@@ -51,47 +51,100 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                     wp.z += cos(uTime * 1.4 + wp.y * 1.1 + wp.x * 0.8) * 0.04 * gust;
                     wp.y += sin(uTime * 2.1 + wp.x * 1.2 + wp.z) * 0.018;
                 } else if (tile == 10.0) {
-                    wp.y += sin(uTime * 1.8 + wp.x * 1.3 + wp.z * 0.7) * 0.05 + cos(uTime * 1.4 + wp.z * 1.5 - wp.x * 0.6) * 0.04;
+                    wp.y += sin(uTime * 1.8 + wp.x * 1.3 + wp.z * 0.7) * 0.03 + cos(uTime * 1.4 + wp.z * 1.5 - wp.x * 0.6) * 0.025;
                 }
             }
             gl_Position = uVP * wp;
-            vCol = aCol; vUV = aUV; vWP = wp.xyz; vTile = tile;
+            vCol = aCol; vUV = aUV; vWP = wp.xyz; vTile = tile; vView = uCam - wp.xyz;
             vFog = clamp((length(wp.xyz - uCam) - mix(38.0, 1.0, uUnder)) / mix(52.0, 22.0, uUnder), 0.0, 1.0);
             vFog = vFog * vFog * (3.0 - 2.0 * vFog);
         }"""
     private val FS = """
+        #ifdef GL_FRAGMENT_PRECISION_HIGH
+        precision highp float;
+        #else
         precision mediump float;
-        uniform vec3 uTint; uniform vec3 uFog; uniform float uAlpha; uniform sampler2D uTex; uniform float uTime; uniform float uUnder;
-        varying vec3 vCol; varying float vFog; varying vec2 vUV; varying vec3 vWP; varying float vTile;
+        #endif
+        uniform vec3 uTint; uniform vec3 uFog; uniform float uAlpha; uniform sampler2D uTex; uniform float uTime; uniform float uUnder; uniform float uWind;
+        varying vec3 vCol; varying float vFog; varying vec2 vUV; varying vec3 vWP; varying float vTile; varying vec3 vView;
+
+        // brilho de luz no fundo (cáusticas): rede de linhas que dançam
+        float caus(vec3 p, float t) {
+            float a = sin(p.x * 1.7 + p.y * 0.9 + t * 0.9 + sin(p.z * 1.3 - t * 0.6) * 1.4);
+            float b = sin(p.z * 1.9 - p.y * 0.7 - t * 0.8 + sin(p.x * 1.1 + t * 0.5) * 1.4);
+            float c = sin((p.x + p.z) * 1.2 + p.y * 0.5 + t * 0.7 + sin((p.x - p.z) * 1.5 - t * 0.4) * 1.2);
+            float k = abs(a + b + c) / 3.0;
+            return pow(1.0 - k, 6.0);
+        }
+
         void main() {
             vec2 uv = vUV;
-            if (vTile > 9.5 && vTile < 10.5) {
-                uv += vec2(sin(vWP.z * 2.0 + uTime * 1.2), cos(vWP.x * 2.0 + uTime)) * 0.006;
-                uv = vec2(clamp(uv.x, 10.012 / 32.0, 10.988 / 32.0), clamp(uv.y, 0.012, 0.988));
+            bool isWater = vTile > 9.5 && vTile < 10.5;
+            bool isLeaf = vTile > 7.5 && vTile < 8.5;
+            if (isLeaf) {   // pixel-art nítido (16x16 por bloco)
+                float lu = clamp(vUV.x * 32.0 - 8.0, 0.0, 0.9999);
+                float lv = clamp(vUV.y, 0.0, 0.9999);
+                uv = vec2((8.0 + (floor(lu * 16.0) + 0.5) / 16.0) / 32.0, (floor(lv * 16.0) + 0.5) / 16.0);
             }
             vec4 t = texture2D(uTex, uv);
             if (t.a < 0.4) discard;
             float l = clamp((vCol.r - 0.3) / 0.7, 0.0, 1.0);
             vec3 light = mix(vec3(0.80, 0.84, 1.0), vec3(1.05, 1.02, 0.95), l);
             vec3 c = t.rgb * vCol * uTint * light * 1.06;
-            if (vTile > 7.5 && vTile < 8.5) c *= 1.1 + 0.1 * sin(vWP.x * 0.7 + vWP.z * 0.5 + uTime * 0.8);
-            if (vTile > 9.5 && vTile < 10.5) {
-                float a = sin(vWP.x * 4.0 + uTime * 1.6 + sin(vWP.z * 1.7 + uTime * 0.8) * 1.5);
-                float b = sin(vWP.z * 3.7 - uTime * 1.3 + sin(vWP.x * 1.9 + uTime * 0.7) * 1.5);
-                float gl = smoothstep(0.62, 0.9, a * b);
-                float sw = 0.5 + 0.5 * sin(vWP.x * 0.9 + vWP.z * 0.7 + uTime * 0.9);
-                c = mix(c, vec3(0.62, 0.9, 1.0), 0.16 + 0.12 * sw) + vec3(1.0) * gl * 0.3;
+            float alpha = uAlpha * t.a;
+            if (isLeaf) c *= 1.06 + 0.08 * sin(vWP.x * 0.7 + vWP.z * 0.5 + uTime * 0.8);
+            if (isWater) {
+                float tm = uTime;
+                vec2 P = vWP.xz;
+                vec2 g = vec2(0.0);
+                g += vec2(0.80, 0.60) * cos(dot(P, vec2(0.80, 0.60)) * 1.9 + tm * 1.3) * 0.040 * 1.9;
+                g += vec2(-0.50, 0.87) * cos(dot(P, vec2(-0.50, 0.87)) * 2.7 + tm * 1.6) * 0.030 * 2.7;
+                g += vec2(0.95, -0.31) * cos(dot(P, vec2(0.95, -0.31)) * 4.3 + tm * 2.1) * 0.020 * 4.3;
+                g += vec2(-0.20, -0.98) * cos(dot(P, vec2(-0.20, -0.98)) * 6.1 + tm * 2.6) * 0.012 * 6.1;
+                vec3 n = normalize(vec3(-g.x * 1.6, 1.0, -g.y * 1.6));
+                vec3 V = normalize(vView);
+                if (dot(n, V) < 0.0) n = -n;
+                vec3 L = normalize(vec3(0.55, 0.5, 0.65));
+                float depth = clamp(vCol.g, 0.0, 1.0);
+                vec3 shallow = vec3(0.38, 0.90, 0.85);
+                vec3 deep = vec3(0.03, 0.20, 0.58);
+                vec3 base = mix(shallow, deep, smoothstep(0.0, 0.75, depth));
+                float ndv = max(dot(n, V), 0.0);
+                float fres = 0.02 + 0.98 * pow(1.0 - ndv, 5.0);
+                vec3 R = reflect(-V, n);
+                vec3 sky = mix(uFog, vec3(0.42, 0.66, 1.0), pow(clamp(R.y, 0.0, 1.0), 0.45));
+                float rl = max(dot(R, L), 0.0);
+                float spec = pow(rl, 220.0) * 3.0 + pow(rl, 18.0) * 0.12;
+                vec3 wc = base * (0.84 + 0.26 * dot(n, L));
+                wc = mix(wc, sky, clamp(fres * 1.1 + 0.06, 0.0, 0.9));
+                // cintilados do sol nas ondinhas
+                float sp = max(0.0, sin(P.x * 9.0 + tm * 2.2) * sin(P.y * 8.0 - tm * 1.9));
+                wc += vec3(1.0, 0.97, 0.88) * (spec + pow(sp, 22.0) * 0.45 * smoothstep(0.2, 0.9, rl + 0.25));
+                // espuma na beirada
+                float foam = smoothstep(0.17, 0.0, depth) * (0.55 + 0.45 * sin(P.x * 5.0 + P.y * 4.0 + tm * 1.8 + sin(P.y * 3.0 - tm) * 2.0));
+                wc = mix(wc, vec3(1.0), clamp(foam, 0.0, 1.0) * 0.5);
+                float wa = mix(0.42, 0.97, smoothstep(0.0, 0.7, depth));
+                wa = clamp(wa + fres * 0.35 + foam * 0.3, 0.0, 1.0);
+                if (uUnder > 0.5) {   // vendo a superfície por baixo
+                    wc = mix(vec3(0.30, 0.68, 0.92), sky * 0.9, 0.4) + vec3(1.0) * spec * 0.4;
+                    wa = 0.55;
+                }
+                c = wc; alpha = wa;
+            } else if (uWind > 0.5 && vWP.y < 9.86) {   // tudo que está debaixo d'água: azulado, escuro com a profundidade e luz dançando
+                float dep = clamp((9.88 - vWP.y) / 6.0, 0.0, 1.0);
+                c *= mix(vec3(0.92, 1.0, 1.0), vec3(0.42, 0.68, 0.95), dep * 0.9);
+                c += vec3(0.55, 0.95, 1.0) * caus(vWP * 1.1, uTime) * 0.5 * (1.0 - dep * 0.6);
             }
             if (vTile > 14.5 && vTile < 15.5) c = t.rgb * 1.25;
-            if (uUnder > 0.5) {
+            if (uUnder > 0.5 && !isWater) {
                 c *= vec3(0.78, 0.95, 1.05);
                 float k1 = sin(vWP.x * 3.0 + uTime * 1.5) + sin(vWP.z * 3.3 - uTime * 1.2) + sin((vWP.x + vWP.z) * 2.0 + uTime);
                 c += vec3(0.6, 0.9, 1.0) * pow(max(0.0, k1 * 0.33), 3.0) * 0.5;
             }
-            float g = dot(c, vec3(0.299, 0.587, 0.114));
-            c = mix(vec3(g), c, 1.04); c = mix(c, vec3(1.0, 0.98, 0.97), 0.05);
+            float g2 = dot(c, vec3(0.299, 0.587, 0.114));
+            c = mix(vec3(g2), c, 1.04); c = mix(c, vec3(1.0, 0.98, 0.97), 0.05);
             c = mix(c, uFog, vFog);
-            gl_FragColor = vec4(c, uAlpha * t.a);
+            gl_FragColor = vec4(c, alpha);
         }"""
     private val SVS = """
         attribute vec2 aP; uniform mat4 uInv; varying vec4 vF;
@@ -256,7 +309,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val glint = 0.5f + 0.5f * sin(t * 3f)
         when {
             id in 1..13 -> {
-                box(m, 0f, 0.1f, 0.2f, 0f, 30f, 0.28f, 0.28f, 0.28f, 0f, 0xFFFFFF, 1f, 1f, null, id)
+                box(m, 0f, 0.13f, 0.18f, 0f, 30f, 0.3f, 0.3f, 0.3f, 0f, 0xFFFFFF, 1f, 1f, null, id)
             }
             id == Items.SWORD -> {
                 box(m, 0f, 0f, 0.55f, 0f, 0f, 0.115f, 0.03f, 0.78f, 0f, 0xD7E4F4)        // lâmina
@@ -386,21 +439,24 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         box(base, 0.3f * sxz, y - 0.1f * sy, 0.4f * sxz, 0f, 0f, 0.1f, 0.05f, 0.03f, 0f, 0xFF8FA8, 0.8f)
     }
 
-    /** punho fechado: palma + 4 dedos enrolados no cabo + polegar por cima (cabo em +Z passa por dentro) */
-    private fun drawFist(m: FloatArray) {
-        val skin = 0xF2C29B; val skinD = 0xE2AE86
-        box(m, 0f, -0.02f, -0.045f, 0f, 0f, 0.15f, 0.12f, 0.19f, 0f, skinD)
-        for (k in 0 until 4) box(m, 0f, 0.05f, -0.115f + k * 0.05f, 0f, 0f, 0.17f, 0.09f, 0.046f, 0f, if (k % 2 == 0) skin else 0xEDB78F)
-        box(m, 0.025f, 0.108f, -0.02f, 0f, 0f, 0.055f, 0.05f, 0.15f, 0f, skin)
-        box(m, 0.025f, 0.108f, 0.06f, 0f, 0f, 0.05f, 0.045f, 0.03f, 0f, 0xF8D2B2)
+    private val SKIN = 0xF2C29B; private val SKIN_D = 0xD9A07A
+    private val showLeftHand = true   // mão esquerda vazia no canto, como no Minecraft (false = esconde)
+
+    /** braço estilo Minecraft: manga grossa + punho rosa + antebraço de pele. Origem = ombro, estende em +Z */
+    private fun drawArm(m: FloatArray) {
+        box(m, 0f, 0f, 0.1f, 0f, 0f, 0.2f, 0.2f, 0.8f, 0f, 0x7FD9C8)         // manga
+        box(m, 0f, 0f, 0.53f, 0f, 0f, 0.215f, 0.215f, 0.07f, 0f, 0xFFA3C8)   // punho da manga
+        box(m, 0f, 0f, 0.62f, 0f, 0f, 0.16f, 0.16f, 0.12f, 0f, SKIN)         // pulso
     }
 
-    /** mão segurando bloco: palma por baixo, dedos subindo pela parte de trás e polegar do lado */
-    private fun drawBlockHand(m: FloatArray) {
-        val skin = 0xF2C29B
-        box(m, 0f, -0.08f, 0.16f, 0f, 0f, 0.17f, 0.07f, 0.19f, 0f, skin)
-        for (k in 0 until 4) box(m, -0.06f + k * 0.04f, -0.01f, 0.05f, 0f, 0f, 0.034f, 0.13f, 0.042f, 0f, if (k % 2 == 0) skin else 0xEDB78F)
-        box(m, 0.17f, -0.01f, 0.2f, 0f, 0f, 0.045f, 0.045f, 0.13f, 0f, skin)
+    /** mão cúbica fechada: bloco de pele, divisões dos dedos enrolados e polegar por cima (cabo passa por dentro) */
+    private fun drawFist(m: FloatArray, fingers: Boolean) {
+        box(m, 0f, 0f, 0f, 0f, 0f, 0.2f, 0.19f, 0.2f, 0f, SKIN)
+        if (fingers) {
+            for (k in 0 until 3) box(m, 0f, 0f, -0.05f + k * 0.05f, 0f, 0f, 0.207f, 0.197f, 0.012f, 0f, SKIN_D)
+            box(m, 0.045f, 0.105f, 0.075f, 0f, -10f, 0.075f, 0.05f, 0.13f, 0f, SKIN)
+            box(m, 0.045f, 0.105f, 0.14f, 0f, -10f, 0.06f, 0.045f, 0.03f, 0f, 0xF8D2B2)
+        }
     }
 
     private fun drawHand(dt: Float) {
@@ -418,25 +474,37 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val wp = game.walkPhase; val wa = game.walkAmt
         val bobX = sin(wp) * 0.03f * wa; val bobY = abs(sin(wp)) * 0.03f * wa
         val breath = sin(game.time * 1.8f) * 0.006f
+        // ---- mão direita (segura o item) ----
         Matrix.setIdentityM(fp, 0)
         Matrix.translateM(fp, 0, 0.34f + bobX + swayX, -0.38f + bobY + swayY + breath - (1f - e) * 0.55f, -0.42f)
         Matrix.rotateM(fp, 0, 180f, 0f, 1f, 0f)
         val rest = if (id in 1..13) -12f else -20f
         Matrix.rotateM(fp, 0, rest + swingDelta(id, game.swing), 1f, 0f, 0f)
         if (game.swing < 1f) Matrix.rotateM(fp, 0, -sin(game.swing * 3.1416f) * 14f, 0f, 1f, 0f)
-        val skin = 0xF2C29B
-        box(fp, 0f, 0f, 0.22f, 0f, 0f, 0.15f, 0.15f, 0.44f, 0f, 0x7FD9C8)       // manga
-        box(fp, 0f, 0f, 0.45f, 0f, 0f, 0.17f, 0.17f, 0.05f, 0f, 0xFFA3C8)       // punho da manga
-        box(fp, 0f, 0f, 0.52f, 0f, 0f, 0.12f, 0.12f, 0.1f, 0f, skin)            // pulso
+        drawArm(fp)
         System.arraycopy(fp, 0, itemM, 0, 16)
         Matrix.translateM(itemM, 0, 0f, 0f, 0.6f)
         Matrix.rotateM(itemM, 0, 30f, 0f, 1f, 0f)
         val ir = if (id in 1..13) 0f else if (id == Items.STAFF) -28f else -40f
         if (ir != 0f) Matrix.rotateM(itemM, 0, ir, 1f, 0f, 0f)
-        if (id in 1..13) drawBlockHand(itemM) else drawFist(itemM)
+        drawFist(itemM, id !in 1..13)
         if (id == Items.AXE) Matrix.rotateM(itemM, 0, 180f, 0f, 0f, 1f)
         else if (id == Items.SWORD || id == Items.PICK) Matrix.rotateM(itemM, 0, 90f, 0f, 0f, 1f)
         drawItem(itemM, id, game.time)
+        // ---- mão esquerda (vazia) ----
+        if (showLeftHand) {
+            Matrix.setIdentityM(fp, 0)
+            Matrix.translateM(fp, 0, -0.36f - bobX * 0.8f - swayX, -0.47f + abs(sin(wp + 1.57f)) * 0.03f * wa + swayY + breath - (1f - e) * 0.55f, -0.42f)
+            Matrix.rotateM(fp, 0, 180f, 0f, 1f, 0f)
+            Matrix.rotateM(fp, 0, -16f, 1f, 0f, 0f)
+            Matrix.rotateM(fp, 0, -12f, 0f, 1f, 0f)
+            drawArm(fp)
+            System.arraycopy(fp, 0, itemM, 0, 16)
+            Matrix.translateM(itemM, 0, 0f, 0f, 0.6f)
+            Matrix.rotateM(itemM, 0, -30f, 0f, 1f, 0f)
+            Matrix.rotateM(itemM, 0, -40f, 1f, 0f, 0f)
+            drawFist(itemM, true)
+        }
     }
 
     override fun onDrawFrame(gl: GL10?) {
@@ -517,7 +585,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         G.glUniform1f(uWind, 1f)
         G.glUniformMatrix4fv(uModel, 1, false, ident, 0)
         G.glDisable(G.GL_CULL_FACE)
-        tint(0xFFFFFF, 0.8f, 0.94f + 0.06f * sin(game.time * 2f))
+        tint(0xFFFFFF, 1f)
         for (i in 0 until World.CX * World.CZ) {
             if (cnt[i * 2 + 1] == 0) continue
             bindMesh(vbo[i * 2 + 1], ibo[i * 2 + 1]); G.glDrawElements(G.GL_TRIANGLES, cnt[i * 2 + 1], G.GL_UNSIGNED_SHORT, 0)
