@@ -11,7 +11,7 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
     private val pt = Paint(Paint.ANTI_ALIAS_FLAG)
     private val bp = Paint().apply { isFilterBitmap = false; isAntiAlias = false }
     private val mx = Matrix()
-    private val src = floatArrayOf(0f, 0f, 16f, 0f, 0f, 16f)
+    private val src = floatArrayOf(0f, 0f, Atlas.T.toFloat(), 0f, 0f, Atlas.T.toFloat())
     private val dst = FloatArray(6)
     private val fLeft = LightingColorFilter(0xFFCCCCCC.toInt(), 0)
     private val fRight = LightingColorFilter(0xFFA0A0A0.toInt(), 0)

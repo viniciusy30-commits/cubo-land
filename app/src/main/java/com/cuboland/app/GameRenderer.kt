@@ -15,7 +15,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     private var prog = 0
     private var aPos = 0; private var aCol = 0; private var aUV = 0
     private var uVP = 0; private var uModel = 0; private var uCam = 0; private var uTint = 0
-    private var uAlpha = 0; private var uFog = 0; private var uTex = 0
+    private var uTime = 0; private var uWind = 0; private var uAlpha = 0; private var uFog = 0; private var uTex = 0
     private val proj = FloatArray(16); private val view = FloatArray(16); private val vp = FloatArray(16)
     private val ident = FloatArray(16)
     private val tmp = FloatArray(16); private val base = FloatArray(16); private val arm = FloatArray(16)
@@ -31,11 +31,26 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     private var prevYaw = 0f; private var prevPitch = 0f; private var swayX = 0f; private var swayY = 0f
 
     private val VS = """
-        uniform mat4 uVP; uniform mat4 uModel; uniform vec3 uCam;
+        uniform mat4 uVP; uniform mat4 uModel; uniform vec3 uCam; uniform float uTime; uniform float uWind;
         attribute vec3 aPos; attribute vec3 aCol; attribute vec2 aUV;
         varying vec3 vCol; varying float vFog; varying vec2 vUV;
         void main() {
             vec4 wp = uModel * vec4(aPos, 1.0);
+            float tile = floor(aUV.x * 32.0);
+            if (uWind > 0.5) {
+                float gust = 0.6 + 0.4 * sin(wp.x * 0.12 + wp.z * 0.08 + uTime * 0.7);
+                if (tile >= 16.0 && tile < 20.0) {
+                    float w = clamp((0.99 - aUV.y) / 0.98, 0.0, 1.0); w = w * w;
+                    wp.x += (sin(uTime * 2.3 + wp.x * 0.9 + wp.z * 0.6) * 0.10 + 0.07) * w * gust * 1.6;
+                    wp.z += cos(uTime * 1.8 + wp.x * 0.5 + wp.z * 0.9) * 0.07 * w * gust * 1.6;
+                } else if (tile == 8.0) {
+                    wp.x += sin(uTime * 1.7 + wp.y * 1.3 + wp.z * 0.8) * 0.045 * gust;
+                    wp.z += cos(uTime * 1.4 + wp.y * 1.1 + wp.x * 0.8) * 0.045 * gust;
+                    wp.y += sin(uTime * 2.1 + wp.x * 1.2 + wp.z) * 0.02;
+                } else if (tile == 10.0) {
+                    wp.y += sin(uTime * 1.6 + wp.x * 1.1) * 0.03 + cos(uTime * 1.3 + wp.z * 1.4) * 0.03;
+                }
+            }
             gl_Position = uVP * wp;
             vCol = aCol; vUV = aUV;
             vFog = clamp((length(wp.xyz - uCam) - 38.0) / 52.0, 0.0, 1.0);
@@ -46,7 +61,8 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         varying vec3 vCol; varying float vFog; varying vec2 vUV;
         void main() {
             vec4 t = texture2D(uTex, vUV);
-            vec3 c = mix(t.rgb * vCol * uTint, uFog, vFog);
+            if (t.a < 0.5) discard;
+            vec3 c = mix(t.rgb * vCol * uTint * vec3(1.06, 1.02, 0.95), uFog, vFog);
             gl_FragColor = vec4(c, uAlpha * t.a);
         }"""
 
@@ -63,18 +79,18 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         uVP = G.glGetUniformLocation(prog, "uVP"); uModel = G.glGetUniformLocation(prog, "uModel")
         uCam = G.glGetUniformLocation(prog, "uCam"); uTint = G.glGetUniformLocation(prog, "uTint")
         uAlpha = G.glGetUniformLocation(prog, "uAlpha"); uFog = G.glGetUniformLocation(prog, "uFog")
-        uTex = G.glGetUniformLocation(prog, "uTex")
+        uTex = G.glGetUniformLocation(prog, "uTex"); uTime = G.glGetUniformLocation(prog, "uTime"); uWind = G.glGetUniformLocation(prog, "uWind")
         Matrix.setIdentityM(ident, 0)
         G.glEnable(G.GL_DEPTH_TEST); G.glEnable(G.GL_CULL_FACE); G.glCullFace(G.GL_BACK); G.glFrontFace(G.GL_CCW)
         G.glBlendFunc(G.GL_SRC_ALPHA, G.GL_ONE_MINUS_SRC_ALPHA)
         // textura (atlas)
         val tex = IntArray(1); G.glGenTextures(1, tex, 0)
         G.glActiveTexture(G.GL_TEXTURE0); G.glBindTexture(G.GL_TEXTURE_2D, tex[0])
-        G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_MIN_FILTER, G.GL_NEAREST)
-        G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_MAG_FILTER, G.GL_NEAREST)
+        G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_MIN_FILTER, G.GL_LINEAR_MIPMAP_NEAREST)
+        G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_MAG_FILTER, G.GL_LINEAR)
         G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_WRAP_S, G.GL_CLAMP_TO_EDGE)
         G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_WRAP_T, G.GL_CLAMP_TO_EDGE)
-        GLUtils.texImage2D(G.GL_TEXTURE_2D, 0, Atlas.bmp, 0)
+        GLUtils.texImage2D(G.GL_TEXTURE_2D, 0, Atlas.bmp, 0); G.glGenerateMipmap(G.GL_TEXTURE_2D)
         // buffers de chunk
         val ids = IntArray(vbo.size * 2); G.glGenBuffers(ids.size, ids, 0)
         for (i in vbo.indices) { vbo[i] = ids[i * 2]; ibo[i] = ids[i * 2 + 1]; cnt[i] = 0 }
@@ -93,7 +109,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                 if (id != 0) {
                     if (a == 0) { tu = cv.toFloat(); tv = 1f - cu } else if (a == 1) { tu = cu.toFloat(); tv = cv.toFloat() } else { tu = cu.toFloat(); tv = 1f - cv }
                 }
-                cb.vert(p[0], p[1], p[2], sh, sh, sh, (tile + 0.01f + tu * 0.98f) / 16f, 0.01f + tv * 0.98f)
+                cb.vert(p[0], p[1], p[2], sh, sh, sh, (tile + 0.01f + tu * 0.98f) / Atlas.NT.toFloat(), 0.01f + tv * 0.98f)
             }
             if (s > 0) { cb.tri(0, 1, 2); cb.tri(0, 2, 3) } else { cb.tri(0, 2, 1); cb.tri(0, 3, 2) }
             cb.vc += 4
@@ -173,39 +189,66 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         return k * d
     }
 
-    /** Modelo do item. Origem = punho, lâmina/cabo estendem-se em +Z. */
+    /** Modelo do item. Origem = punho, lâmina/cabo estendem-se em +Z. Detalhado: camadas, brilho e runas. */
     private fun drawItem(m: FloatArray, id: Int, t: Float) {
+        val glint = 0.5f + 0.5f * sin(t * 3f)
         when {
-            id in 1..13 -> box(m, 0f, 0.04f, 0.14f, 0f, 30f, 0.3f, 0.3f, 0.3f, 0f, 0xFFFFFF, 1f, 1f, null, id)
+            id in 1..13 -> {
+                box(m, 0f, 0.04f, 0.14f, 0f, 30f, 0.3f, 0.3f, 0.3f, 0f, 0xFFFFFF, 1f, 1f, null, id)
+            }
             id == Items.SWORD -> {
-                box(m, 0f, 0f, 0.52f, 0f, 0f, 0.1f, 0.035f, 0.75f, 0f, 0xE2ECF8)
-                box(m, 0f, 0f, 0.93f, 0f, 0f, 0.06f, 0.03f, 0.1f, 0f, 0xFFFFFF)
-                box(m, 0f, 0f, 0.52f, 0f, 0f, 0.03f, 0.045f, 0.7f, 0f, 0x9FD8FF)
-                box(m, 0f, 0f, 0.1f, 0f, 0f, 0.32f, 0.06f, 0.07f, 0f, 0xFFD060)
-                box(m, 0f, 0f, -0.04f, 0f, 0f, 0.06f, 0.06f, 0.2f, 0f, 0x7A5230)
-                box(m, 0f, 0f, -0.17f, 0f, 0f, 0.1f, 0.1f, 0.1f, 0f, 0xFF6FA5)
+                box(m, 0f, 0f, 0.55f, 0f, 0f, 0.115f, 0.03f, 0.78f, 0f, 0xD7E4F4)        // lâmina
+                box(m, 0f, 0f, 0.55f, 0f, 0f, 0.05f, 0.045f, 0.74f, 0f, 0x8FD0FF)        // veio de cristal
+                box(m, 0f, 0f, 0.55f, 0f, 0f, 0.02f, 0.05f, 0.7f, 0f, 0xFFFFFF, 0.6f + 0.4f * glint)
+                box(m, 0f, 0f, 0.96f, 0f, 0f, 0.075f, 0.028f, 0.1f, 0f, 0xF2F8FF)        // ponta
+                box(m, 0f, 0f, 0.1f, 0f, 0f, 0.36f, 0.06f, 0.07f, 0f, 0xFFD060)          // guarda
+                box(m, 0.19f, 0f, 0.1f, 0f, 0f, 0.07f, 0.075f, 0.12f, 0f, 0xFFE9A0)
+                box(m, -0.19f, 0f, 0.1f, 0f, 0f, 0.07f, 0.075f, 0.12f, 0f, 0xFFE9A0)
+                box(m, 0f, 0.035f, 0.1f, 0f, 0f, 0.08f, 0.04f, 0.08f, 0f, 0xFF5FA0)      // gema
+                box(m, 0f, 0f, -0.04f, 0f, 0f, 0.065f, 0.065f, 0.2f, 0f, 0x7A5230)       // cabo
+                box(m, 0f, 0f, -0.04f, 0f, 0f, 0.075f, 0.055f, 0.03f, 0f, 0xC9A06A)
+                box(m, 0f, 0f, -0.1f, 0f, 0f, 0.075f, 0.055f, 0.03f, 0f, 0xC9A06A)
+                box(m, 0f, 0f, -0.18f, 0f, 0f, 0.11f, 0.11f, 0.1f, 0f, 0xFF6FA5)         // pomo
             }
             id == Items.AXE -> {
-                box(m, 0f, 0f, 0.3f, 0f, 0f, 0.06f, 0.06f, 0.9f, 0f, 0x7A5230)
-                box(m, 0f, 0.1f, 0.68f, 0f, 0f, 0.05f, 0.34f, 0.26f, 0f, 0xC8D2DE)
-                box(m, 0f, 0.28f, 0.68f, 0f, 0f, 0.06f, 0.06f, 0.3f, 0f, 0xFFFFFF)
-                box(m, 0f, 0f, 0.04f, 0f, 0f, 0.09f, 0.09f, 0.08f, 0f, 0xFFD060)
+                box(m, 0f, 0f, 0.32f, 0f, 0f, 0.065f, 0.065f, 0.95f, 0f, 0x7A5230)       // cabo
+                box(m, 0f, 0f, 0.2f, 0f, 0f, 0.075f, 0.075f, 0.04f, 0f, 0xC9A06A)
+                box(m, 0f, 0f, 0.4f, 0f, 0f, 0.075f, 0.075f, 0.04f, 0f, 0xC9A06A)
+                box(m, 0f, 0f, 0.7f, 0f, 0f, 0.09f, 0.12f, 0.2f, 0f, 0x8A94A2)           // soquete
+                box(m, 0f, 0.14f, 0.72f, 0f, 0f, 0.055f, 0.36f, 0.3f, 0f, 0xC8D2DE)       // lâmina
+                box(m, 0f, 0.3f, 0.78f, 0f, 0f, 0.06f, 0.1f, 0.34f, 0f, 0xE8F0FA)
+                box(m, 0f, 0.34f, 0.8f, 0f, 0f, 0.065f, 0.04f, 0.3f, 0f, 0xFFFFFF, 0.7f + 0.3f * glint) // fio
+                box(m, 0f, -0.1f, 0.7f, 0f, 0f, 0.05f, 0.14f, 0.2f, 0f, 0xA9B4C2)
+                box(m, 0f, 0f, 0.0f, 0f, 0f, 0.1f, 0.1f, 0.09f, 0f, 0xFFD060)
             }
             id == Items.STAFF -> {
-                box(m, 0f, 0f, 0.35f, 0f, 0f, 0.06f, 0.06f, 1.1f, 0f, 0x9B6BE0)
-                box(m, 0f, 0f, 0.8f, 0f, 0f, 0.11f, 0.11f, 0.06f, 0f, 0xFFD060)
-                box(m, 0f, 0f, 0.2f, 0f, 0f, 0.09f, 0.09f, 0.05f, 0f, 0xFFD060)
+                box(m, 0f, 0f, 0.38f, 0f, 0f, 0.065f, 0.065f, 1.15f, 0f, 0x8E5FD6)
+                box(m, 0f, 0f, 0.38f, 0f, 0f, 0.03f, 0.07f, 1.1f, 0f, 0xB48CFF)
+                box(m, 0f, 0f, 0.2f, 0f, 0f, 0.1f, 0.1f, 0.05f, 0f, 0xFFD060)
+                box(m, 0f, 0f, 0.82f, 0f, 0f, 0.12f, 0.12f, 0.06f, 0f, 0xFFD060)
+                box(m, 0.09f, 0f, 0.92f, 0f, 0f, 0.04f, 0.04f, 0.2f, 0f, 0xFFD060)       // garras
+                box(m, -0.09f, 0f, 0.92f, 0f, 0f, 0.04f, 0.04f, 0.2f, 0f, 0xFFD060)
+                box(m, 0f, 0.09f, 0.92f, 0f, 0f, 0.04f, 0.04f, 0.2f, 0f, 0xFFD060)
+                box(m, 0f, -0.09f, 0.92f, 0f, 0f, 0.04f, 0.04f, 0.2f, 0f, 0xFFD060)
                 val pulse = 0.5f + 0.5f * sin(t * 4f)
-                box(m, 0f, 0f, 0.98f, t * 120f, t * 80f, 0.2f, 0.2f, 0.2f, 0f, 0x7FE8FF, 0.95f)
-                box(m, 0f, 0f, 0.98f, -t * 90f, t * 60f, 0.11f, 0.11f, 0.11f, 0f, 0xFFFFFF)
-                box(m, 0f, 0f, 0.98f, 0f, 0f, 0.3f + 0.1f * pulse, 0.3f + 0.1f * pulse, 0.3f + 0.1f * pulse, 0f, 0x7FE8FF, 0.28f)
+                box(m, 0f, 0f, 1.0f, t * 120f, t * 80f, 0.2f, 0.2f, 0.2f, 0f, 0x7FE8FF, 0.95f)
+                box(m, 0f, 0f, 1.0f, -t * 90f, t * 60f, 0.11f, 0.11f, 0.11f, 0f, 0xFFFFFF)
+                box(m, 0f, 0f, 1.0f, 0f, 0f, 0.32f + 0.12f * pulse, 0.32f + 0.12f * pulse, 0.32f + 0.12f * pulse, 0f, 0x7FE8FF, 0.26f)
+                for (k in 0 until 3) {   // estrelinhas orbitando
+                    val ang = t * 2.2f + k * 2.0944f
+                    box(m, cos(ang) * 0.2f, sin(ang) * 0.2f, 1.0f + sin(t * 3f + k) * 0.05f, t * 200f, 0f, 0.05f, 0.05f, 0.05f, 0f, 0xFFF2A0)
+                }
             }
             id == Items.PICK -> {
-                box(m, 0f, 0f, 0.3f, 0f, 0f, 0.06f, 0.06f, 0.9f, 0f, 0x7A5230)
-                box(m, 0f, 0f, 0.7f, 0f, 0f, 0.5f, 0.07f, 0.1f, 0f, 0xC8D2DE)
-                box(m, 0.27f, 0f, 0.64f, 0f, 0f, 0.1f, 0.07f, 0.1f, 0f, 0xFFFFFF)
-                box(m, -0.27f, 0f, 0.64f, 0f, 0f, 0.1f, 0.07f, 0.1f, 0f, 0xFFFFFF)
-                box(m, 0f, 0f, 0.04f, 0f, 0f, 0.09f, 0.09f, 0.08f, 0f, 0xFFD060)
+                box(m, 0f, 0f, 0.32f, 0f, 0f, 0.065f, 0.065f, 0.95f, 0f, 0x7A5230)
+                box(m, 0f, 0f, 0.2f, 0f, 0f, 0.075f, 0.075f, 0.04f, 0f, 0xC9A06A)
+                box(m, 0f, 0f, 0.74f, 0f, 0f, 0.1f, 0.1f, 0.12f, 0f, 0x8A94A2)
+                box(m, 0f, 0f, 0.74f, 0f, 0f, 0.46f, 0.075f, 0.1f, 0f, 0xC8D2DE)          // cabeça
+                box(m, 0.26f, 0f, 0.68f, 0f, 20f, 0.18f, 0.07f, 0.08f, 0f, 0xE8F0FA)
+                box(m, -0.26f, 0f, 0.68f, 0f, -20f, 0.18f, 0.07f, 0.08f, 0f, 0xE8F0FA)
+                box(m, 0.36f, 0f, 0.62f, 0f, 35f, 0.12f, 0.06f, 0.07f, 0f, 0xFFFFFF, 0.8f + 0.2f * glint)
+                box(m, -0.36f, 0f, 0.62f, 0f, -35f, 0.12f, 0.06f, 0.07f, 0f, 0xFFFFFF, 0.8f + 0.2f * glint)
+                box(m, 0f, 0f, 0.0f, 0f, 0f, 0.1f, 0.1f, 0.09f, 0f, 0xFFD060)
             }
         }
     }
@@ -214,6 +257,8 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val p = game.player
         val wp = game.walkPhase; val wa = game.walkAmt
         val sw = sin(wp) * 38f * wa
+        val air = if (p.onGround) 0f else 1f
+        val idle = sin(t * 2f) * 3f * (1f - wa)
         val bob = if (wa < 0.1f) sin(t * 2f) * 0.012f else abs(sin(wp)) * 0.05f * wa
         setBase(p.x, p.y + bob, p.z, Math.toDegrees(game.bodyYaw.toDouble()).toFloat())
         val skin = 0xF2C29B; val hair = 0x6B3FA0; val shirt = 0x2FB7A5
@@ -228,11 +273,11 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         box(base, 0f, 1.16f, 0f, 0f, 0f, 0.58f, 0.1f, 0.36f, 0f, 0xFF6FA5)
         box(base, 0.14f, 1.0f, 0.2f, 0f, 0f, 0.1f, 0.3f, 0.06f, 0f, 0xFF6FA5)
         // braço esquerdo
-        box(base, -0.37f, 1.12f, 0f, -sw * 0.9f, 0f, 0.2f, 0.4f, 0.22f, -0.2f, shirt)
-        box(base, -0.37f, 1.12f, 0f, -sw * 0.9f, 0f, 0.19f, 0.15f, 0.21f, -0.47f, skin)
+        box(base, -0.37f, 1.12f, 0f, -sw * 0.9f - 40f * air + idle, 0f, 0.2f, 0.4f, 0.22f, -0.2f, shirt)
+        box(base, -0.37f, 1.12f, 0f, -sw * 0.9f - 40f * air + idle, 0f, 0.19f, 0.15f, 0.21f, -0.47f, skin)
         // braço direito com item
         val id = game.cur()
-        val ang = -28f + sw * 0.5f + swingDelta(id, game.swing)
+        val ang = -28f + sw * 0.5f - 25f * air - idle + swingDelta(id, game.swing)
         box(base, 0.37f, 1.12f, 0f, ang, 0f, 0.2f, 0.4f, 0.22f, -0.2f, shirt, outArm = arm)
         box(base, 0.37f, 1.12f, 0f, ang, 0f, 0.19f, 0.15f, 0.21f, -0.47f, skin)
         System.arraycopy(arm, 0, base2, 0, 16)
@@ -300,9 +345,13 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         if (game.swing < 1f) Matrix.rotateM(fp, 0, -sin(game.swing * 3.1416f) * 14f, 0f, 1f, 0f)
         box(fp, 0f, 0f, 0.3f, 0f, 0f, 0.17f, 0.17f, 0.62f, 0f, 0x2FB7A5)
         box(fp, 0f, 0f, 0.46f, 0f, 0f, 0.19f, 0.19f, 0.1f, 0f, 0xFF6FA5)
-        box(fp, 0f, 0f, 0.62f, 0f, 0f, 0.19f, 0.19f, 0.2f, 0f, 0xF2C29B)
+        box(fp, 0f, 0f, 0.5f, 0f, 0f, 0.2f, 0.2f, 0.04f, 0f, 0xFFFFFF)   // punho da manga
+        box(fp, 0f, 0f, 0.66f, 0f, 0f, 0.185f, 0.17f, 0.2f, 0f, 0xF2C29B)  // palma
+        for (k in 0 until 4) box(fp, -0.066f + k * 0.044f, 0.095f, 0.68f, 0f, 0f, 0.04f, 0.05f, 0.15f, 0f, 0xE9B58C)  // dedos
+        box(fp, -0.11f, 0.02f, 0.62f, 0f, 20f, 0.05f, 0.07f, 0.14f, 0f, 0xF2C29B)  // polegar
+        box(fp, 0f, -0.095f, 0.7f, 0f, 0f, 0.17f, 0.04f, 0.12f, 0f, 0xDDA67C)  // sombra da palma
         System.arraycopy(fp, 0, itemM, 0, 16)
-        Matrix.translateM(itemM, 0, 0f, 0f, 0.62f)
+        Matrix.translateM(itemM, 0, 0f, 0.02f, 0.66f)
         val ir = if (id in 1..13) 0f else if (id == Items.STAFF) -40f else -52f
         if (ir != 0f) Matrix.rotateM(itemM, 0, ir, 1f, 0f, 0f)
         drawItem(itemM, id, game.time)
@@ -333,6 +382,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         G.glUniformMatrix4fv(uVP, 1, false, vp, 0)
         G.glUniform3f(uCam, ex, ey, ez)
         G.glUniform3f(uFog, fogR, fogG, fogB)
+        G.glUniform1f(uTime, game.time); G.glUniform1f(uWind, 1f)
         G.glDisable(G.GL_BLEND)
 
         G.glUniformMatrix4fv(uModel, 1, false, ident, 0)
@@ -341,6 +391,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             if (cnt[i * 2] == 0) continue
             bindMesh(vbo[i * 2], ibo[i * 2]); G.glDrawElements(G.GL_TRIANGLES, cnt[i * 2], G.GL_UNSIGNED_SHORT, 0)
         }
+        G.glUniform1f(uWind, 0f)
         bindMesh(cubeVb, cubeIb)
         if (game.thirdPerson && game.deadTimer <= 0f) drawPlayer(game.time)
         for (i in 0 until 9) {
@@ -372,12 +423,14 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             box(base, 0f, 0f, 0f, 0f, 0f, 1.01f, 1.01f, 1.01f, 0f, 0xFFFFFF, 0.18f + 0.1f * sin(game.time * 6f))
             G.glDepthMask(true)
         }
+        G.glUniform1f(uWind, 1f)
         G.glUniformMatrix4fv(uModel, 1, false, ident, 0)
         tint(0xFFFFFF, 0.7f, 0.94f + 0.06f * sin(game.time * 2f))
         for (i in 0 until World.CX * World.CZ) {
             if (cnt[i * 2 + 1] == 0) continue
             bindMesh(vbo[i * 2 + 1], ibo[i * 2 + 1]); G.glDrawElements(G.GL_TRIANGLES, cnt[i * 2 + 1], G.GL_UNSIGNED_SHORT, 0)
         }
+        G.glUniform1f(uWind, 0f)
         if (!game.thirdPerson && game.deadTimer <= 0f) drawHand(dt)
     }
 }

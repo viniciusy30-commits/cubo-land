@@ -1,3 +1,12 @@
+#id 2026-10-09-c
+#titulo Visual estilo Hytale!
+- Texturas novas, suaves e detalhadas (32x32) em todos os blocos
+- Grama alta e flores balançando ao vento
+- Folhas das árvores e a água em movimento
+- Mão em 1ª pessoa com dedos e polegar segurando os itens
+- Espada, machado, cajado e picareta muito mais detalhados
+- Personagem com pose no ar e respiração parada
+
 #id 2026-10-09-b
 #titulo Texturas, mochila e armas!
 - Todos os blocos agora têm textura própria

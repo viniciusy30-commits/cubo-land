@@ -181,6 +181,24 @@ class World {
             val lowered = isW && get(x, y + 1, z) == B.AIR
             val vr = 0.94f + 0.06f * hash(x, z, y)
             c[0] = x; c[1] = y; c[2] = z
+            if (id == B.GRASS && get(x, y + 1, z) == B.AIR) {
+                val r = hash(x, z, 3)
+                if (r > 0.3f) {
+                    val tile = if (r > 0.96f) 17 + (hash(x, z, 4) * 3f).toInt().coerceIn(0, 2) else 16
+                    val hh = if (tile == 16) 0.9f else 0.75f
+                    val ox = x + 0.5f + (hash(x, z, 5) - 0.5f) * 0.3f; val oz = z + 0.5f + (hash(x, z, 6) - 0.5f) * 0.3f
+                    val u0 = (tile + 0.01f) / Atlas.NT; val u1 = (tile + 0.99f) / Atlas.NT
+                    for (d in 0 until 2) {
+                        val ax = if (d == 0) 0.46f else 0.46f; val az = if (d == 0) 0.46f else -0.46f
+                        val sh = 0.95f + 0.1f * vr
+                        o.vert(ox - ax, y + 1f, oz - az, sh, sh, sh, u0, 0.99f)
+                        o.vert(ox + ax, y + 1f, oz + az, sh, sh, sh, u1, 0.99f)
+                        o.vert(ox + ax, y + 1f + hh, oz + az, sh, sh, sh, u1, 0.01f)
+                        o.vert(ox - ax, y + 1f + hh, oz - az, sh, sh, sh, u0, 0.01f)
+                        o.tri(0, 1, 2); o.tri(0, 2, 3); o.tri(0, 2, 1); o.tri(0, 3, 2); o.vc += 4
+                    }
+                }
+            }
             for (face in 0 until 6) {
                 val a = face shr 1; val s = if ((face and 1) == 0) 1 else -1
                 val nx = x + if (a == 0) s else 0; val ny = y + if (a == 1) s else 0; val nz = z + if (a == 2) s else 0
@@ -211,7 +229,7 @@ class World {
                     var tu = cu.toFloat(); var tv = cv.toFloat()
                     if (a == 0) { tu = cv.toFloat(); tv = 1f - cu } else if (a == 2) { tv = 1f - cv }
                     val gr = shade * vr * aob
-                    buf.vert(p[0], p[1], p[2], gr, gr, gr, (tile + 0.01f + tu * 0.98f) / 16f, 0.01f + tv * 0.98f)
+                    buf.vert(p[0], p[1], p[2], gr, gr, gr, (tile + 0.01f + tu * 0.98f) / Atlas.NT.toFloat(), 0.01f + tv * 0.98f)
                 }
                 val flip = ao[0] + ao[2] < ao[1] + ao[3]
                 if (s > 0) {
