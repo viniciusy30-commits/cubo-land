@@ -524,8 +524,9 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
 
     /** antebraço saindo da base do punho, inclinado pra trás/baixo/direita (como o braço do Minecraft), no mesmo sistema da ferramenta: nunca desconecta do punho */
     private fun drawToolArm(m: FloatArray) {
-        box(m, 0f, -0.05f, 0f, -35f, 25f, 0.19f, 0.06f, 0.19f, -0.07f, 0xA6EBDD)     // barra da manga, colada na base do punho
-        box(m, 0f, -0.05f, 0f, -35f, 25f, 0.17f, 0.95f, 0.17f, -0.55f, 0x7FD9C8)     // manga
+        // o antebraço começa DENTRO do punho (perto do canto de trás/direita) e sai por ali, então a ligação nunca mostra folga
+        box(m, 0.04f, -0.01f, 0.05f, -38f, 32f, 0.19f, 0.07f, 0.19f, -0.17f, 0xA6EBDD)   // barra da manga
+        box(m, 0.04f, -0.01f, 0.05f, -38f, 32f, 0.17f, 1.1f, 0.17f, -0.55f, 0x7FD9C8)    // manga
     }
 
     /** punho no sistema da ferramenta: Y = direção do cabo. O cabo sai do centro da face de cima do punho. */
