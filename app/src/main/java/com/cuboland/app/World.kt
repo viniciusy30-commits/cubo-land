@@ -401,6 +401,7 @@ class World {
                 if (!open) continue
                 leafFaces(o, x, y, z, 0f, 1f, true, vr, 1f)        // casca externa (só faces expostas)
                 leafFaces(o, x, y, z, 0.16f, 0.84f, false, vr, 0.72f)   // cubo interno: dá profundidade pelos buracos
+                if (o.vc < 46000) leafPlates(o, x, y, z, vr)           // cubinhos/placas 3D saindo da superfície (detalhe da referência)
                 continue
             }
             if (id == B.GRASS && get(x, y + 1, z) == B.AIR) {
@@ -499,6 +500,48 @@ class World {
             }
             if (s > 0) { o.tri(0, 1, 2); o.tri(0, 2, 3) } else { o.tri(0, 2, 1); o.tri(0, 3, 2) }
             o.vc += 4
+        }
+    }
+
+    /** caixinha 3D de folha (tile 22): hx,hy,hz = meia-largura em cada eixo; ur/vw = janela do tile (tons diferentes) */
+    private fun voxBox(o: MeshBuf, cx: Float, cy: Float, cz: Float, hx: Float, hy: Float, hz: Float, sh: Float, ur: Float, vw: Float) {
+        val half = floatArrayOf(hx, hy, hz); val pos = FloatArray(3)
+        for (face in 0 until 6) {
+            val a = face shr 1; val s = if ((face and 1) == 0) 1 else -1
+            val u = (a + 1) % 3; val v = (a + 2) % 3
+            val k = (if (a == 1) (if (s > 0) 1f else 0.78f) else if (a == 0) 0.9f else 0.84f) * sh
+            for (q in 0 until 4) {
+                val cu = QU[q]; val cv = QV[q]
+                pos[0] = cx; pos[1] = cy; pos[2] = cz
+                pos[a] += s * half[a]
+                pos[u] += (if (cu == 1) 1f else -1f) * half[u]
+                pos[v] += (if (cv == 1) 1f else -1f) * half[v]
+                o.vert(pos[0], pos[1], pos[2], k, k, k, (22f + 0.01f + ur + cu * 0.23f) / Atlas.NT.toFloat(), 0.01f + vw + cv * 0.23f)
+            }
+            if (s > 0) { o.tri(0, 1, 2); o.tri(0, 2, 3) } else { o.tri(0, 2, 1); o.tri(0, 3, 2) }
+            o.vc += 4
+        }
+    }
+
+    /** placas alongadas de folha, em tamanhos e eixos variados, espetadas pra fora de cada face exposta: silhueta recortada e cheia, como na referência */
+    private fun leafPlates(o: MeshBuf, x: Int, y: Int, z: Int, vr: Float) {
+        for (f in 0 until 6) {
+            val a = f shr 1; val s = if ((f and 1) == 0) 1 else -1
+            val nid = get(x + if (a == 0) s else 0, y + if (a == 1) s else 0, z + if (a == 2) s else 0)
+            if (nid != B.AIR && nid != B.WATER) continue
+            val u = (a + 1) % 3; val v = (a + 2) % 3
+            for (k in 0 until 3) {
+                val sd = x * 37 + y * 19 + z * 29 + f * 11 + k * 53
+                val r1 = hash(sd, y, 301 + k); val r2 = hash(sd, z, 302 + k); val r3 = hash(x, sd, 303 + k)
+                val r4 = hash(z, sd, 304 + k); val r5 = hash(sd, x, 305 + k); val r6 = hash(y, sd, 306 + k)
+                val c = floatArrayOf(x + 0.5f, y + 0.5f, z + 0.5f)
+                c[a] += s * (0.40f + 0.20f * r1)
+                c[u] += (r2 - 0.5f) * 0.85f; c[v] += (r3 - 0.5f) * 0.85f
+                val half = floatArrayOf(0.05f + 0.03f * r4, 0.05f + 0.03f * r5, 0.05f + 0.03f * r6)
+                half[(r6 * 2.99f).toInt()] = 0.16f + 0.12f * r4          // eixo comprido
+                val ur = (r5 * 3.99f).toInt() * 0.25f; val vw = (r2 * 3.99f).toInt() * 0.25f
+                voxBox(o, c[0], c[1], c[2], half[0], half[1], half[2], vr * (0.95f + 0.2f * r6), ur, vw)
+            }
         }
     }
 

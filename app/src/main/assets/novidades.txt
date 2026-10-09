@@ -1,3 +1,9 @@
+#id 2026-10-09-u
+#titulo Folhas com volume 3D!
+- Placas e cubinhos de folha saem da superfície das copas, em tamanhos e ângulos variados, como na referência
+- Quatro tons de verde nos pixels, a copa ganha silhueta recortada e cheia
+- Os cubinhos balançam com o vento junto com as folhas
+
 #id 2026-10-09-t
 #titulo Animações mais fluidas!
 - Golpes com movimento contínuo, sem travar entre as poses, com impulso antes e depois do corte

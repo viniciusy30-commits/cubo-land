@@ -132,6 +132,14 @@ object Atlas {
         return op(c)
     }
 
+    /** placas 3D de folha (cubinhos que saem do bloco, como na referência): pixels grandes em 4 tons de verde, sem buracos */
+    private fun leafVox(u: Float, v: Float): Int {
+        val px = floor(u * 8f).toInt().coerceIn(0, 7); val py = floor(v * 8f).toInt().coerceIn(0, 7)
+        val k = h(px, py, 111) * 0.7f + h(px / 2, py, 112) * 0.3f
+        val c = when { k < 0.22f -> 0x25500F; k < 0.5f -> 0x3A7519; k < 0.78f -> 0x56A02A; else -> 0x7CC43F }
+        return op(c)
+    }
+
     /** cartão com 5 folhinhas pontudas (fundo transparente), 2 variantes, que saem do bloco de folha */
     private fun leafCard(u: Float, v: Float, variant: Int): Int {
         val g = 32
@@ -253,13 +261,14 @@ object Atlas {
         19 -> flower(u, v, 0xFFFFFF)
         20 -> leafCard(u, v, 0)
         21 -> leafCard(u, v, 1)
+        22 -> leafVox(u, v)
         else -> -1
     }
 
     private fun build(): Bitmap {
         val w = T * NT
         val out = IntArray(w * T)
-        for (t in 0 until 22) for (y in 0 until T) for (x in 0 until T) {
+        for (t in 0 until 23) for (y in 0 until T) for (x in 0 until T) {
             var a = 0; var r = 0f; var g = 0f; var bl = 0f
             for (sy in 0..1) for (sx in 0..1) {      // antialias 2x2
                 val c = sample(t, (x + 0.25f + sx * 0.5f) / T, (y + 0.25f + sy * 0.5f) / T)
