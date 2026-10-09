@@ -522,18 +522,18 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         box(m, 0f, fh * 0.5f - 0.01f, len + 0.02f, 0f, 0f, fw * 0.92f, 0.02f, 0.18f, 0f, 0xF8D9BC) // luz em cima
     }
 
-    /** antebraço saindo da base do punho, inclinado pra trás/baixo/direita (como o braço do Minecraft), no mesmo sistema da ferramenta: nunca desconecta do punho */
+    /** antebraço RETO: mesma seção do punho, colado de face com face na parte de trás do cubo (vem em direção à câmera). m = origem no centro do punho, eixos da câmera. */
     private fun drawToolArm(m: FloatArray) {
-        // o antebraço começa DENTRO do punho (perto do canto de trás/direita) e sai por ali, então a ligação nunca mostra folga
-        box(m, 0.04f, -0.01f, 0.05f, -38f, 32f, 0.19f, 0.07f, 0.19f, -0.17f, 0xA6EBDD)   // barra da manga
-        box(m, 0.04f, -0.01f, 0.05f, -38f, 32f, 0.17f, 1.1f, 0.17f, -0.55f, 0x7FD9C8)    // manga
+        val fz = 0.12f                                            // metade da profundidade do punho
+        box(m, 0f, 0f, fz + 0.03f, 0f, 0f, 0.225f, 0.205f, 0.06f, 0f, 0xA6EBDD)      // barra da manga (encosta na face de trás do punho)
+        box(m, 0f, 0f, fz + 0.06f + 0.4f, 0f, 0f, 0.21f, 0.19f, 0.8f, 0f, 0x7FD9C8)  // manga (encosta na barra)
     }
 
-    /** punho no sistema da ferramenta: Y = direção do cabo. O cabo sai do centro da face de cima do punho. */
+    /** punho: cubo reto virado pra frente, eixos alinhados com a câmera. O cabo sai do centro da face de cima. */
     private fun drawToolFist(m: FloatArray) {
-        box(m, 0f, 0f, 0f, 0f, 0f, 0.21f, 0.17f, 0.21f, 0f, SKIN)
-        box(m, 0f, -0.085f + 0.014f, 0f, 0f, 0f, 0.213f, 0.03f, 0.213f, 0f, SKIN_D)   // sombra de baixo
-        box(m, 0f, 0.085f - 0.008f, 0f, 0f, 0f, 0.213f, 0.02f, 0.213f, 0f, 0xF8D9BC)  // luz de cima
+        box(m, 0f, 0f, 0f, 0f, 0f, 0.21f, 0.19f, 0.24f, 0f, SKIN)
+        box(m, 0f, -0.095f + 0.014f, 0f, 0f, 0f, 0.213f, 0.03f, 0.243f, 0f, SKIN_D)   // sombra de baixo
+        box(m, 0f, 0.095f - 0.008f, 0f, 0f, 0f, 0.213f, 0.02f, 0.243f, 0f, 0xF8D9BC)  // luz de cima
     }
 
     private val tmp2 = FloatArray(16); private val restM = FloatArray(16); private val restInv = FloatArray(16); private val camBlk = FloatArray(16)
@@ -575,7 +575,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val wood = 0x9A6A3E; val woodD = 0x6F4A29; val gold = 0xFFD060
         val glint = 0.5f + 0.5f * sin(t * 3f)
         if (id != Items.SWORD && id != Items.STAFF) {
-            tb(m, 0f, 0.33f, 0f, 0.08f, 0.9f, 0.08f, wood)                       // cabo de madeira
+            tb(m, 0f, 0.36f, 0f, 0.08f, 0.84f, 0.08f, wood)                       // cabo de madeira
             tb(m, 0f, -0.06f, 0f, 0.095f, 0.07f, 0.095f, woodD); tb(m, 0f, 0.08f, 0f, 0.095f, 0.07f, 0.095f, woodD)   // empunhadura
         }
         when (id) {
@@ -793,10 +793,12 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                     drawTrail(tmp2, id, al)
                 }
             }
+            // punho + braço: retos, alinhados com a câmera, grudados um no outro (não seguem a inclinação do cabo)
+            Matrix.setIdentityM(camBlk, 0); Matrix.translateM(camBlk, 0, hx, hy, hz)
+            Matrix.multiplyMM(armM, 0, poseM, 0, camBlk, 0)
+            drawToolFist(armM); drawToolArm(armM)
             toolBase(toolM, p, hx, hy, hz)
             Matrix.multiplyMM(tmp2, 0, poseM, 0, toolM, 0)
-            drawToolFist(tmp2)
-            drawToolArm(tmp2)
             drawTool3D(tmp2, id, tt, p[9])
         } else if (id in 1..13) {
             // bloco grande no canto inferior direito, topo e lateral aparecendo (preso ao braço no golpe)
