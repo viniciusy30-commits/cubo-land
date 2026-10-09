@@ -511,10 +511,10 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val sl = len - 0.17f
         box(m, 0f, 0f, sl / 2f, 0f, 0f, w, w, sl, 0f, 0x7FD9C8)                                   // manga
         box(m, 0f, 0f, sl + 0.02f, 0f, 0f, w * 1.14f, w * 1.14f, 0.05f, 0f, 0xA6EBDD)             // barra da manga
-        val fw = w * 1.4f; val fh = w * 1.3f
-        box(m, 0f, 0f, len, 0f, 0f, fw, fh, 0.27f, 0f, SKIN)                                      // punho grande: o cabo passa pelo meio
-        box(m, 0f, -fh * 0.5f + 0.013f, len, 0f, 0f, fw * 1.003f, 0.028f, 0.273f, 0f, SKIN_D)     // sombra por baixo
-        box(m, 0f, fh * 0.5f - 0.01f, len + 0.02f, 0f, 0f, fw * 0.92f, 0.02f, 0.2f, 0f, 0xF8D9BC) // luz em cima
+        val fw = w * 1.25f; val fh = w * 1.15f
+        box(m, 0f, 0f, len, 0f, 0f, fw, fh, 0.24f, 0f, SKIN)                                      // punho grande: o cabo passa pelo meio
+        box(m, 0f, -fh * 0.5f + 0.013f, len, 0f, 0f, fw * 1.003f, 0.028f, 0.243f, 0f, SKIN_D)     // sombra por baixo
+        box(m, 0f, fh * 0.5f - 0.01f, len + 0.02f, 0f, 0f, fw * 0.92f, 0.02f, 0.18f, 0f, 0xF8D9BC) // luz em cima
     }
 
     private val tmp2 = FloatArray(16); private val restM = FloatArray(16); private val restInv = FloatArray(16); private val camBlk = FloatArray(16)
@@ -556,7 +556,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val wood = 0x9A6A3E; val woodD = 0x6F4A29; val gold = 0xFFD060
         val glint = 0.5f + 0.5f * sin(t * 3f)
         if (id != Items.SWORD && id != Items.STAFF) {
-            tb(m, 0f, 0.28f, 0f, 0.08f, 1.0f, 0.08f, wood)                       // cabo de madeira
+            tb(m, 0f, 0.23f, 0f, 0.08f, 1.1f, 0.08f, wood)                       // cabo de madeira
             tb(m, 0f, -0.06f, 0f, 0.095f, 0.07f, 0.095f, woodD); tb(m, 0f, 0.08f, 0f, 0.095f, 0.07f, 0.095f, woodD)   // empunhadura
         }
         when (id) {
@@ -759,6 +759,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         drawArm(armM, len, armW)
 
         if (isTool) {
+            G.glClear(G.GL_DEPTH_BUFFER_BIT)   // o cabo aparece por cima do punho, atravessando a mão
             // rastro do golpe: cópias translúcidas da parte que corta nos instantes anteriores (só aparece quando o golpe é rápido)
             if (game.swing < 0.85f && id != Items.STAFF) {
                 for (i in 1..5) {
@@ -777,6 +778,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             toolBase(toolM, p, hx, hy, hz)
             Matrix.multiplyMM(tmp2, 0, poseM, 0, toolM, 0)
             drawTool3D(tmp2, id, tt, p[9])
+            box(tmp2, 0f, 0.01f, 0f, 0f, 0f, 0.15f, 0.15f, 0.15f, 0f, 0xD9A07A)   // nó dos dedos fechado em volta do cabo (sem dedos separados)
         } else if (id in 1..13) {
             // bloco grande no canto inferior direito, topo e lateral aparecendo (preso ao braço no golpe)
             Matrix.setIdentityM(camBlk, 0)
