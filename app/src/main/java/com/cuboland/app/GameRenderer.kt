@@ -26,7 +26,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     private val ob = MeshBuf(); private val wb = MeshBuf()
     private var last = 0L
     private val rnd = java.util.Random()
-    private val fogR = 0.74f; private val fogG = 0.88f; private val fogB = 0.98f
+    private val fogR = 0.82f; private val fogG = 0.92f; private val fogB = 1.0f
     private var skyProg = 0; private var skyP = 0; private var skyInv = 0; private var skyCam = 0; private var skyHor = 0; private var skyTime = 0
     private val inv = FloatArray(16)
     private val quad = ByteBuffer.allocateDirect(32).order(ByteOrder.nativeOrder()).asFloatBuffer().apply { put(floatArrayOf(-1f, -1f, 1f, -1f, -1f, 1f, 1f, 1f)); position(0) }
@@ -67,16 +67,16 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             vec4 t = texture2D(uTex, vUV);
             if (t.a < 0.4) discard;
             float l = clamp((vCol.r - 0.3) / 0.7, 0.0, 1.0);
-            vec3 light = mix(vec3(0.62, 0.70, 0.98), vec3(1.10, 1.03, 0.86), l);
-            vec3 c = t.rgb * vCol * uTint * light * 1.1;
+            vec3 light = mix(vec3(0.80, 0.84, 1.0), vec3(1.05, 1.02, 0.95), l);
+            vec3 c = t.rgb * vCol * uTint * light * 1.06;
             if (vTile > 7.5 && vTile < 8.5) c *= 1.1 + 0.1 * sin(vWP.x * 0.7 + vWP.z * 0.5 + uTime * 0.8);
             if (vTile > 9.5 && vTile < 10.5) {
-                float sp = pow(max(0.0, sin(vWP.x * 2.7 + uTime * 1.9) * sin(vWP.z * 2.3 - uTime * 1.4)), 8.0);
-                c = mix(c, vec3(0.7, 0.86, 1.0), 0.14) + vec3(0.8, 0.9, 1.0) * sp * 0.6;
+                float sp = pow(0.5 + 0.5 * sin(vWP.x * 1.1 + vWP.z * 0.8 + uTime * 1.3), 14.0);
+                c = mix(c, vec3(0.8, 0.93, 1.0), 0.15) + vec3(1.0) * sp * 0.15;
             }
-            if (vTile > 14.5 && vTile < 15.5) c = t.rgb * 1.5;
+            if (vTile > 14.5 && vTile < 15.5) c = t.rgb * 1.25;
             float g = dot(c, vec3(0.299, 0.587, 0.114));
-            c = mix(vec3(g), c, 1.18);
+            c = mix(vec3(g), c, 1.04); c = mix(c, vec3(1.0, 0.98, 0.97), 0.05);
             c = mix(c, uFog, vFog);
             gl_FragColor = vec4(c, uAlpha * t.a);
         }"""
@@ -96,7 +96,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         void main() {
             vec3 d = normalize(vF.xyz / vF.w - uCam);
             float h = clamp(d.y, 0.0, 1.0);
-            vec3 c = mix(uHor, vec3(0.20, 0.46, 0.92), pow(h, 0.55));
+            vec3 c = mix(uHor, vec3(0.50, 0.72, 1.0), pow(h, 0.55));
             vec3 sd = normalize(vec3(0.55, 0.5, 0.65));
             float s = max(dot(d, sd), 0.0);
             c += vec3(1.0, 0.85, 0.55) * pow(s, 6.0) * 0.25 + vec3(1.0, 0.95, 0.8) * pow(s, 300.0) * 2.0;
@@ -257,7 +257,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                 box(m, 0f, 0f, -0.04f, 0f, 0f, 0.065f, 0.065f, 0.2f, 0f, 0x7A5230)       // cabo
                 box(m, 0f, 0f, -0.04f, 0f, 0f, 0.075f, 0.055f, 0.03f, 0f, 0xC9A06A)
                 box(m, 0f, 0f, -0.1f, 0f, 0f, 0.075f, 0.055f, 0.03f, 0f, 0xC9A06A)
-                box(m, 0f, 0f, -0.18f, 0f, 0f, 0.11f, 0.11f, 0.1f, 0f, 0xFF6FA5)         // pomo
+                box(m, 0f, 0f, -0.18f, 0f, 0f, 0.11f, 0.11f, 0.1f, 0f, 0xFFA3C8)         // pomo
             }
             id == Items.AXE -> {
                 box(m, 0f, 0f, 0.32f, 0f, 0f, 0.065f, 0.065f, 0.95f, 0f, 0x7A5230)       // cabo
@@ -310,7 +310,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val idle = sin(t * 2f) * 3f * (1f - wa)
         val bob = if (wa < 0.1f) sin(t * 2f) * 0.012f else abs(sin(wp)) * 0.05f * wa
         setBase(p.x, p.y + bob, p.z, Math.toDegrees(game.bodyYaw.toDouble()).toFloat())
-        val skin = 0xF2C29B; val hair = 0x6B3FA0; val shirt = 0x2FB7A5
+        val skin = 0xF2C29B; val hair = 0x6B3FA0; val shirt = 0x7FD9C8
         // pernas e botas
         box(base, -0.13f, 0.55f, 0f, sw, 0f, 0.24f, 0.55f, 0.26f, -0.275f, 0x4A5BB5)
         box(base, 0.13f, 0.55f, 0f, -sw, 0f, 0.24f, 0.55f, 0.26f, -0.275f, 0x4A5BB5)
@@ -319,8 +319,8 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         // corpo, cinto, cachecol
         box(base, 0f, 0.86f, 0f, 0f, 0f, 0.54f, 0.62f, 0.32f, 0f, shirt)
         box(base, 0f, 0.6f, 0f, 0f, 0f, 0.56f, 0.07f, 0.34f, 0f, 0xFFD060)
-        box(base, 0f, 1.16f, 0f, 0f, 0f, 0.58f, 0.1f, 0.36f, 0f, 0xFF6FA5)
-        box(base, 0.14f, 1.0f, 0.2f, 0f, 0f, 0.1f, 0.3f, 0.06f, 0f, 0xFF6FA5)
+        box(base, 0f, 1.16f, 0f, 0f, 0f, 0.58f, 0.1f, 0.36f, 0f, 0xFFA3C8)
+        box(base, 0.14f, 1.0f, 0.2f, 0f, 0f, 0.1f, 0.3f, 0.06f, 0f, 0xFFA3C8)
         // braço esquerdo
         box(base, -0.37f, 1.12f, 0f, -sw * 0.9f - 40f * air + idle, 0f, 0.2f, 0.4f, 0.22f, -0.2f, shirt)
         box(base, -0.37f, 1.12f, 0f, -sw * 0.9f - 40f * air + idle, 0f, 0.19f, 0.15f, 0.21f, -0.47f, skin)
@@ -332,6 +332,8 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         System.arraycopy(arm, 0, base2, 0, 16)
         Matrix.translateM(base2, 0, 0f, -0.5f, 0f)
         if (id !in 1..13) Matrix.rotateM(base2, 0, -35f, 1f, 0f, 0f)
+        if (id == Items.AXE) Matrix.rotateM(base2, 0, 180f, 0f, 0f, 1f)
+        else if (id == Items.SWORD || id == Items.PICK) Matrix.rotateM(base2, 0, 90f, 0f, 0f, 1f)
         drawItem(base2, id, t)
         // cabeça grandinha e fofa
         box(base, 0f, 1.17f, 0f, 0f, 0f, 0.58f, 0.58f, 0.58f, 0.29f, skin)
@@ -349,7 +351,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         box(base, 0.24f, 1.4f, 0.295f, 0f, 0f, 0.1f, 0.05f, 0.02f, 0f, 0xFF9AA8)
         box(base, 0f, 1.37f, 0.295f, 0f, 0f, 0.08f, 0.025f, 0.02f, 0f, 0x8A3A3A)
         // lacinho
-        box(base, 0.26f, 1.72f, 0.1f, 0f, 0f, 0.14f, 0.14f, 0.1f, 0f, 0xFF6FA5)
+        box(base, 0.26f, 1.72f, 0.1f, 0f, 0f, 0.14f, 0.14f, 0.1f, 0f, 0xFFA3C8)
     }
 
     private fun drawSlime(s: Slime) {
@@ -393,16 +395,18 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         Matrix.rotateM(fp, 0, rest + swingDelta(id, game.swing), 1f, 0f, 0f)
         if (game.swing < 1f) Matrix.rotateM(fp, 0, -sin(game.swing * 3.1416f) * 14f, 0f, 1f, 0f)
         val skin = 0xF2C29B; val skinD = 0xD9A27A
-        box(fp, 0f, 0f, 0.22f, 0f, 0f, 0.15f, 0.15f, 0.44f, 0f, 0x2FB7A5)       // manga
-        box(fp, 0f, 0f, 0.45f, 0f, 0f, 0.17f, 0.17f, 0.05f, 0f, 0xFF6FA5)       // punho da manga
+        box(fp, 0f, 0f, 0.22f, 0f, 0f, 0.15f, 0.15f, 0.44f, 0f, 0x7FD9C8)       // manga
+        box(fp, 0f, 0f, 0.45f, 0f, 0f, 0.17f, 0.17f, 0.05f, 0f, 0xFFA3C8)       // punho da manga
         box(fp, 0f, 0f, 0.57f, 0f, 0f, 0.15f, 0.15f, 0.2f, 0f, skin)            // mão fechada
         for (k in -1..1) box(fp, 0f, k * 0.045f, 0.6f, 0f, 0f, 0.158f, 0.012f, 0.13f, 0f, skinD) // dedos
         box(fp, 0.085f, 0.03f, 0.52f, 0f, 0f, 0.045f, 0.06f, 0.12f, 0f, skin)   // polegar
         System.arraycopy(fp, 0, itemM, 0, 16)
         Matrix.translateM(itemM, 0, 0f, 0f, 0.58f)
-        Matrix.rotateM(itemM, 0, 12f, 0f, 1f, 0f)
-        val ir = if (id in 1..13) 0f else if (id == Items.STAFF) -28f else -32f
+        Matrix.rotateM(itemM, 0, 30f, 0f, 1f, 0f)
+        val ir = if (id in 1..13) 0f else if (id == Items.STAFF) -28f else -40f
         if (ir != 0f) Matrix.rotateM(itemM, 0, ir, 1f, 0f, 0f)
+        if (id == Items.AXE) Matrix.rotateM(itemM, 0, 180f, 0f, 0f, 1f)
+        else if (id == Items.SWORD || id == Items.PICK) Matrix.rotateM(itemM, 0, 90f, 0f, 0f, 1f)
         drawItem(itemM, id, game.time)
     }
 

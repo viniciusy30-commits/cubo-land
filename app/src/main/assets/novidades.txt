@@ -1,3 +1,12 @@
+#id 2026-10-09-e
+#titulo Mundo fofinho e pastel!
+- Visual novo todo em tons pastel, liso e sem granulado
+- Texturas pintadas à mão em 64x64: grama com florzinhas, tijolo, tábua, pedra...
+- Árvores com folhagem fofa e flores rosinhas
+- Blocos coloridos brilhosos, estilo docinho
+- Espada, machado e picareta seguradas com o fio e a ponta pra frente
+- Sombras e cores mais suaves
+
 #id 2026-10-09-d
 #titulo Shaders e visual lindão!
 - Texturas novas, suaves e detalhadas (32x32) em todos os blocos

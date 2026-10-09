@@ -55,7 +55,7 @@ class World {
         const val CX = SX / CH; const val CZ = SZ / CH; const val WATER_Y = 9
         val CU = intArrayOf(0, 1); val CV = intArrayOf(0, 1)
         val QU = intArrayOf(0, 1, 1, 0); val QV = intArrayOf(0, 0, 1, 1)
-        val AOB = floatArrayOf(0.5f, 0.68f, 0.84f, 1f)
+        val AOB = floatArrayOf(0.74f, 0.83f, 0.92f, 1f)
     }
 
     val blocks = ByteArray(SX * SY * SZ)
@@ -183,15 +183,15 @@ class World {
             c[0] = x; c[1] = y; c[2] = z
             if (id == B.GRASS && get(x, y + 1, z) == B.AIR) {
                 val r = hash(x, z, 3)
-                if (r > 0.38f) {
-                    val fl = r > 0.965f
+                if (r > 0.55f) {
+                    val fl = r > 0.94f
                     val tile = if (fl) 17 + (hash(x, z, 4) * 3f).toInt().coerceIn(0, 2) else 16
-                    val hh = if (fl) 0.62f else 0.4f + 0.4f * hash(x, z, 9)
-                    val ww = if (fl) 0.55f else 0.75f + 0.25f * hash(x, z, 10)
+                    val hh = if (fl) 0.62f else 0.28f + 0.3f * hash(x, z, 9)
+                    val ww = if (fl) 0.55f else 0.6f + 0.25f * hash(x, z, 10)
                     val ox = x + 0.5f + (hash(x, z, 5) - 0.5f) * 0.4f; val oz = z + 0.5f + (hash(x, z, 6) - 0.5f) * 0.4f
                     val ang = hash(x, z, 11) * 3.1416f
                     val u0 = (tile + 0.01f) / Atlas.NT; val u1 = (tile + 0.99f) / Atlas.NT
-                    val top = 0.98f + 0.1f * vr; val bot = 0.7f
+                    val top = 1.0f; val bot = 0.92f
                     for (d in 0 until 2) {
                         val a2 = ang + d * 1.5708f
                         val ax = kotlin.math.cos(a2) * 0.5f * ww; val az = kotlin.math.sin(a2) * 0.5f * ww
