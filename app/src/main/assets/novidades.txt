@@ -1,3 +1,10 @@
+#id 2026-10-09-t
+#titulo Animações mais fluidas!
+- Golpes com movimento contínuo, sem travar entre as poses, com impulso antes e depois do corte
+- A ferramenta chicoteia e arrasta atrás do braço ao balançar
+- Braço preso fora da tela: a parte de trás nunca mais aparece
+- Rastro brilhante só na espada, mais discreto
+
 #id 2026-10-09-s
 #titulo Espada com combo!
 - A espada agora corta em ângulos diferentes a cada ataque: diagonal, horizontal, diagonal invertida, vertical por cima e estocada
