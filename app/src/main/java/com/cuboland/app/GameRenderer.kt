@@ -179,6 +179,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     }
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
+        for (d in voxOwned) { d.vb = 0; d.ib = 0; d.vdirty = true }; voxOwned.clear()
         G.glClearColor(fogR, fogG, fogB, 1f)
         prog = G.glCreateProgram()
         G.glAttachShader(prog, shader(G.GL_VERTEX_SHADER, VS)); G.glAttachShader(prog, shader(G.GL_FRAGMENT_SHADER, FS))
@@ -332,7 +333,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val gs = (1f + 0.6f * d.prog.coerceIn(0f, 1f)) * kk
         val dark = mixCol(B.top[d.id], 0x000000, 0.5f); val deep = mixCol(B.top[d.id], 0x000000, 0.75f)
         var bi = 0
-        while (bi < m.blobs.size) {
+        while (bi < m.blobs.size && d.vox == null) {
             val bu = (m.u + m.blobs[bi]).coerceIn(0.04f, 0.96f); val bv = (m.v + m.blobs[bi + 1]).coerceIn(0.04f, 0.96f); val ba = m.blobs[bi + 2]; val sz = m.blobs[bi + 3] * gs
             decal(bx, by, bz, a, s, bu, bv, ba, sz * 1.3f, sz * 1.05f, 0x120904, 0.28f)
             decal(bx, by, bz, a, s, bu, bv, ba, sz, sz * 0.8f, dark, 0.92f)
@@ -346,14 +347,18 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             if (r <= 0f) continue
             val x2 = sg.x1 + (sg.x2 - sg.x1) * r; val y2 = sg.y1 + (sg.y2 - sg.y1) * r
             val ddx = x2 - sg.x1; val ddy = y2 - sg.y1; val l = hypot(ddx, ddy)
-            if (l < 0.004f) continue
-            val an = atan2(ddy, ddx); val cx = (sg.x1 + x2) * 0.5f; val cy = (sg.y1 + y2) * 0.5f; val w = sg.w * (1f + 0.4f * pop)
+            if (l < 0.004f || !surfaceHas(d, a, s, (sg.x1 + x2) * 0.5f, (sg.y1 + y2) * 0.5f)) continue
+            val an = atan2(ddy, ddx); val cx = (sg.x1 + x2) * 0.5f; val cy = (sg.y1 + y2) * 0.5f; val w = sg.w * 0.6f * (1f + 0.4f * pop)
             decal(bx, by, bz, a, s, cx, cy, an, l + w * 0.9f, w * 2.4f, 0x120904, 0.2f)
-            decal(bx, by, bz, a, s, cx - sin(an) * w * 0.85f, cy + cos(an) * w * 0.85f, an, l, w * 0.5f, pale, 0.4f)
+            decal(bx, by, bz, a, s, cx - sin(an) * w * 0.85f, cy + cos(an) * w * 0.85f, an, l, w * 0.5f, pale, 0.25f)
             decal(bx, by, bz, a, s, cx, cy, an, l + w * 0.8f, w, 0x2B1B12, 0.88f)
         }
         val u = m.u; val v = m.v; val c = cos(m.ang); val sn = sin(m.ang)
-        when (m.kind) {
+        if (d.vox != null) {   // bloco esculpido: o próprio formato já mostra o golpe; sobra só o brilhinho da espada
+            if (m.kind == 2 && pop > 0f) for (e in 0 until 3) { val t = (e - 1) * m.len * 0.4f
+                decal(bx, by, bz, a, s, u + c * t, v + sn * t, 0.785f, 0.045f * pop, 0.045f * pop, 0xCFF6FF, pop)
+                decal(bx, by, bz, a, s, u + c * t, v + sn * t, 0f, 0.07f * pop, 0.01f, 0xFFFFFF, pop * 0.8f) }
+        } else when (m.kind) {
             0 -> {   // machado: corte em cunha com lábios claros e lascas
                 val L = m.len
                 decal(bx, by, bz, a, s, u, v, m.ang, L * 1.14f, 0.09f * kk, 0x120904, 0.22f)
@@ -390,15 +395,80 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         }
     }
 
+    private val voxOwned = ArrayList<Dmg>(); private val voxBuf = MeshBuf()
+
+    private fun surfaceHas(d: Dmg, a: Int, s: Int, u: Float, v: Float): Boolean {
+        val vx = d.vox ?: return true; val n = VN
+        val i1 = (u * n).toInt().coerceIn(0, n - 1); val i2 = (v * n).toInt().coerceIn(0, n - 1); val io = if (s > 0) n - 1 else 0
+        val x: Int; val y: Int; val z: Int
+        when (a) { 0 -> { x = io; z = i1; y = i2 } 1 -> { x = i1; y = io; z = i2 } else -> { x = i1; y = i2; z = io } }
+        return vx[(z * n + y) * n + x]
+    }
+
+    /** monta a malha do bloco esculpido: só as faces expostas dos mini-voxels que sobraram, com a textura do bloco */
+    private fun buildVox(d: Dmg) {
+        val v = d.vox ?: return
+        val n = VN; val mb = voxBuf; mb.clear()
+        val c = IntArray(3); val nb = IntArray(3); val p = FloatArray(3)
+        for (k in 0 until n) for (j in 0 until n) for (i in 0 until n) {
+            if (!v[(k * n + j) * n + i]) continue
+            c[0] = i; c[1] = j; c[2] = k
+            for (face in 0 until 6) {
+                val a = face shr 1; val s = if ((face and 1) == 0) 1 else -1
+                nb[0] = i; nb[1] = j; nb[2] = k; nb[a] += s
+                val boundary = nb[a] < 0 || nb[a] >= n
+                if (!boundary && v[(nb[2] * n + nb[1]) * n + nb[0]]) continue
+                val u = (a + 1) % 3; val w = (a + 2) % 3
+                var sh = when { a == 1 -> if (s > 0) 1f else 0.55f; a == 0 -> 0.82f; else -> 0.7f }
+                if (!boundary) sh *= 0.8f
+                val tile = if (a == 1) (if (s > 0) B.tTop[d.id] else B.tBot[d.id]) else B.tSide[d.id]
+                for (q in 0 until 4) {
+                    val cu = World.QU[q]; val cv = World.QV[q]
+                    p[a] = (if (s > 0) c[a] + 1 else c[a]).toFloat() / n - 0.5f
+                    p[u] = (c[u] + cu).toFloat() / n - 0.5f; p[w] = (c[w] + cv).toFloat() / n - 0.5f
+                    val fu = (c[u] + cu).toFloat() / n; val fv = (c[w] + cv).toFloat() / n
+                    val tu: Float; val tv: Float
+                    if (a == 0) { tu = fv; tv = 1f - fu } else if (a == 1) { tu = fu; tv = fv } else { tu = fu; tv = 1f - fv }
+                    mb.vert(p[0], p[1], p[2], sh, sh, sh, (tile + 0.01f + tu * 0.98f) / Atlas.NT.toFloat(), 0.01f + tv * 0.98f)
+                }
+                if (s > 0) { mb.tri(0, 1, 2); mb.tri(0, 2, 3) } else { mb.tri(0, 2, 1); mb.tri(0, 3, 2) }
+                mb.vc += 4
+            }
+        }
+        if (d.vb == 0) { val ids = IntArray(2); G.glGenBuffers(2, ids, 0); d.vb = ids[0]; d.ib = ids[1]; voxOwned.add(d) }
+        d.icnt = upload(mb, d.vb, d.ib); d.vdirty = false
+    }
+
+    private fun drawVox(d: Dmg) {
+        if (d.vdirty || d.vb == 0) buildVox(d)
+        if (d.icnt == 0) return
+        bindMesh(d.vb, d.ib)
+        setBase(d.x + 0.5f, d.y + 0.5f, d.z + 0.5f, 0f)
+        G.glUniformMatrix4fv(uModel, 1, false, base, 0); tint(0xFFFFFF, 1f)
+        G.glDrawElements(G.GL_TRIANGLES, d.icnt, G.GL_UNSIGNED_SHORT, 0)
+        bindMesh(cubeVb, cubeIb)
+    }
+
     private fun drawDamage(dt: Float) {
+        if (voxOwned.isNotEmpty()) {
+            val it = voxOwned.iterator()
+            while (it.hasNext()) { val d = it.next(); if (d.dead) { G.glDeleteBuffers(2, intArrayOf(d.vb, d.ib), 0); d.vb = 0; d.ib = 0; it.remove() } }
+        }
         if (game.dmg.isEmpty()) return
+        for (d in game.dmg.values) {
+            if (!d.carved) continue
+            val dx = d.x + 0.5f - game.camX; val dy = d.y + 0.5f - game.camY; val dz = d.z + 0.5f - game.camZ
+            if (dx * dx + dy * dy + dz * dz < 40f * 40f) drawVox(d)
+        }
         G.glDepthMask(false)
         for (d in game.dmg.values) {
             val dx = d.x + 0.5f - game.camX; val dy = d.y + 0.5f - game.camY; val dz = d.z + 0.5f - game.camZ
             if (dx * dx + dy * dy + dz * dz > 18f * 18f) continue
-            setBase(d.x + 0.5f, d.y + 0.5f, d.z + 0.5f, 0f)
-            box(base, 0f, 0f, 0f, 0f, 0f, 1.004f, 1.004f, 1.004f, 0f, 0x000000, 0.02f + 0.13f * d.prog.coerceIn(0f, 1f))
-            if (d.x == game.brX && d.y == game.brY && d.z == game.brZ && game.hitPulse > 0f) { val kp = 1.012f + 0.03f * game.hitPulse; box(base, 0f, 0f, 0f, 0f, 0f, kp, kp, kp, 0f, 0xFFFFFF, 0.1f * game.hitPulse) }
+            if (!d.carved) {
+                setBase(d.x + 0.5f, d.y + 0.5f, d.z + 0.5f, 0f)
+                box(base, 0f, 0f, 0f, 0f, 0f, 1.004f, 1.004f, 1.004f, 0f, 0x000000, 0.02f + 0.13f * d.prog.coerceIn(0f, 1f))
+                if (d.x == game.brX && d.y == game.brY && d.z == game.brZ && game.hitPulse > 0f) { val kp = 1.012f + 0.03f * game.hitPulse; box(base, 0f, 0f, 0f, 0f, 0f, kp, kp, kp, 0f, 0xFFFFFF, 0.1f * game.hitPulse) }
+            }
             for (m in d.marks) drawMark(d, m, dt)
         }
         G.glDepthMask(true)

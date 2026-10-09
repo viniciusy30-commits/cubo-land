@@ -1,7 +1,8 @@
 #id 2026-10-10-f
 #titulo Pedaços arrancados e tronco que cede!
 - A espada agora também deixa marca nos blocos (sem quebrar eles)
-- Cada batida arranca um pedaço do bloco, bem na área atingida, junto das rachaduras, e uns pedacinhos voam
+- Cada batida arranca pedaços de verdade do bloco, bem na área atingida: o formato do bloco muda a cada golpe (picareta abre cratera, machado corta uma cunha, espada faz um talho) e pedacinhos voam
+- Rachaduras mais finas e delicadas
 - Quando o tronco está quase destruído, a parte de cima da árvore já tomba, sem ficar flutuando
 
 #id 2026-10-10-e

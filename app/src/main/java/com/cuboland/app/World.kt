@@ -62,6 +62,8 @@ class World {
 
     val blocks = ByteArray(SX * SY * SZ)
     val dirty = BooleanArray(CX * CZ) { true }
+    /** blocos desenhados à parte (esculpidos pelos golpes): o mesher do chunk pula eles */
+    val hidden = HashSet<Int>()
 
     fun get(x: Int, y: Int, z: Int): Int {
         if (y >= SY) return 0
@@ -386,6 +388,7 @@ class World {
         for (y in 0 until SY) for (z in cz * CH until cz * CH + CH) for (x in cx * CH until cx * CH + CH) {
             val id = get(x, y, z)
             if (id == B.AIR) continue
+            if (hidden.isNotEmpty() && hidden.contains((y * SZ + z) * SX + x)) continue
             val isW = id == B.WATER
             val lowered = isW && get(x, y + 1, z) == B.AIR
             val vr = 0.94f + 0.06f * hash(x, z, y)

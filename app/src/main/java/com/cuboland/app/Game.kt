@@ -26,7 +26,11 @@ class Mark(val a: Int, val s: Int, val u: Float, val v: Float, val kind: Int, va
 }
 
 /** dano acumulado de um bloco: todas as marcas + progresso de quebra */
-class Dmg(val x: Int, val y: Int, val z: Int, val id: Int) { var felled = false; var prog = 0f; var idle = 0f; val marks = ArrayList<Mark>() }
+const val VN = 8   // resolução do bloco esculpido (VN x VN x VN mini-voxels)
+
+class Dmg(val x: Int, val y: Int, val z: Int, val id: Int) {
+    var vox: BooleanArray? = null; var carved = false; var vdirty = false; var vb = 0; var ib = 0; var icnt = 0; var dead = false
+    var felled = false; var prog = 0f; var idle = 0f; val marks = ArrayList<Mark>() }
 
 /** mini-bloco que voa e quica quando algo quebra */
 class Debris(var x: Float, var y: Float, var z: Float, var vx: Float, var vy: Float, var vz: Float, val id: Int, val size: Float, var life: Float) {
@@ -266,10 +270,12 @@ class Game(val world: World) {
         d.prog += if (creative) 1f else efficiency(item, id) * mult / hardness(id)
         if (item == Items.SWORD && !creative) d.prog = min(d.prog, 0.5f)   // espada marca o bloco, mas não chega a quebrar
         hitPulse = 1f
-        if (d.prog >= 1f) { dmg.remove(key); breakBlock(hx, hy, hz, id); return }
+        if (d.prog >= 1f) { dmg.remove(key); d.dead = true; breakBlock(hx, hy, hz, id); return }
         if (id == B.WOOD && !d.felled && d.prog >= 0.65f) { d.felled = true; fellTree(hx, hy, hz) }   // tronco quase destruído: a parte de cima já tomba
         if (d.marks.size >= 7) d.marks.removeAt(0)
-        d.marks.add(makeMark(a, s, fu, fv, item, mult > 1.5f, hitStab))
+        val mk = makeMark(a, s, fu, fv, item, mult > 1.5f, hitStab)
+        d.marks.add(mk)
+        carve(d, a, s, qx, qy, qz, mk, item, mult > 1.5f)
         hitChips(hx + 0.5f + qx, hy + 0.5f + qy, hz + 0.5f + qz, a, s, id, item, mult > 1.5f)
         shake = max(shake, 0.06f * mult)
     }
@@ -354,6 +360,58 @@ class Game(val world: World) {
         return m
     }
 
+
+    private fun carvable(id: Int) = id in 1..13 && id != B.LEAVES && id != B.WATER && id != B.LANTERN
+
+    /** arranca de verdade pedaços do bloco (mini-voxels) na área do golpe; o formato depende da ferramenta e do progresso */
+    private fun carve(d: Dmg, a: Int, s: Int, qx: Float, qy: Float, qz: Float, m: Mark, item: Int, big: Boolean) {
+        if (!carvable(d.id)) return
+        var v = d.vox
+        if (v == null) { v = BooleanArray(VN * VN * VN) { true }; d.vox = v }
+        val t1 = if (a == 0) 2 else 0; val t2 = if (a == 1) 2 else 1
+        val ca = cos(m.ang); val sa = sin(m.ang)
+        val pr = d.prog.coerceIn(0f, 1f)
+        val hw = max(0.5f, 2f - 1.6f * pr)                       // núcleo protegido: encolhe conforme o bloco vai cedendo
+        val kb = if (big) 1.3f else 1f; val kd = 1f + 0.9f * pr
+        val half = (VN - 1) / 2f
+        fun prot(i: Int, j: Int, k: Int) = abs(i - half) <= hw && abs(j - half) <= hw && abs(k - half) <= hw
+        val rm = BooleanArray(v.size); var any = false
+        for (k in 0 until VN) for (j in 0 until VN) for (i in 0 until VN) {
+            val idx = (k * VN + j) * VN + i
+            if (!v[idx] || prot(i, j, k)) continue
+            val rx = (i + 0.5f) / VN - 0.5f - qx; val ry = (j + 0.5f) / VN - 0.5f - qy; val rz = (k + 0.5f) / VN - 0.5f - qz
+            val ra = if (a == 0) rx else if (a == 1) ry else rz
+            val r1 = if (t1 == 0) rx else if (t1 == 1) ry else rz; val r2 = if (t2 == 0) rx else if (t2 == 1) ry else rz
+            val dd = -s * ra
+            val t = r1 * ca + r2 * sa; val w = -r1 * sa + r2 * ca
+            val jit = 0.85f + rnd.nextFloat() * 0.3f
+            val hit = when (item) {
+                Items.AXE -> abs(t) <= m.len * 0.5f * jit && dd >= -0.05f && dd <= 0.27f * kb * kd && abs(w) <= 0.1f * kb * (1f - dd / (0.4f * kb * kd)) * jit
+                Items.PICK -> { val e = dd - 0.04f; val rr = 0.17f * kb * (1f + 0.4f * pr) * jit
+                    (t * t + w * w + e * e <= rr * rr) || (t * t + w * w <= 0.0049f * jit && dd <= 0.34f * kd) }
+                Items.SWORD -> if (m.kind == 3) (t * t + w * w <= 0.003f && dd >= -0.05f && dd <= 0.27f * kd)
+                    else (abs(t) <= m.len * 0.5f * jit && abs(w) <= 0.06f && dd >= -0.05f && dd <= 0.15f * kd)
+                else -> { val rr = 0.13f * jit; t * t + w * w + dd * dd <= rr * rr }
+            }
+            if (hit) { rm[idx] = true; any = true }
+        }
+        if (!any) return
+        // lascas extras: bordas vizinhas do buraco também se soltam
+        val extra = BooleanArray(v.size)
+        for (k in 0 until VN) for (j in 0 until VN) for (i in 0 until VN) {
+            if (!rm[(k * VN + j) * VN + i]) continue
+            for (f in 0 until 6) {
+                val ni = i + (if (f == 0) 1 else if (f == 1) -1 else 0); val nj = j + (if (f == 2) 1 else if (f == 3) -1 else 0); val nk = k + (if (f == 4) 1 else if (f == 5) -1 else 0)
+                if (ni !in 0 until VN || nj !in 0 until VN || nk !in 0 until VN) continue
+                val ni2 = (nk * VN + nj) * VN + ni
+                if (v[ni2] && !rm[ni2] && !prot(ni, nj, nk) && rnd.nextFloat() < 0.3f) extra[ni2] = true
+            }
+        }
+        for (i in v.indices) if (rm[i] || extra[i]) v[i] = false
+        d.vdirty = true
+        if (!d.carved) { d.carved = true; world.hidden.add((d.y * World.SZ + d.z) * World.SX + d.x); world.set(d.x, d.y, d.z, d.id) }
+    }
+
     /** lascas e faíscas saindo do ponto exato do impacto, de acordo com a ferramenta */
     private fun hitChips(x: Float, y: Float, z: Float, a: Int, s: Int, id: Int, item: Int, big: Boolean) {
         val nx = if (a == 0) s.toFloat() else 0f; val ny = if (a == 1) s.toFloat() else 0f; val nz = if (a == 2) s.toFloat() else 0f
@@ -388,6 +446,7 @@ class Game(val world: World) {
     }
 
     private fun breakBlock(x: Int, y: Int, z: Int, id: Int) {
+        world.hidden.remove((y * World.SZ + z) * World.SX + x)
         world.set(x, y, z, B.AIR)
         val away = player.x - (x + 0.5f); val awz = player.z - (z + 0.5f); val l = max(0.1f, hypot(away, awz))
         spawnPieces(x + 0.5f, y + 0.5f, z + 0.5f, id, if (id == B.LEAVES) 3 else 6, 0.27f, 0.6f, away / l * 0.8f, 1f, awz / l * 0.8f)
@@ -597,7 +656,11 @@ class Game(val world: World) {
         if (!attackHeld && charging) { charging = false; charge = 0f }
         hitPulse = max(0f, hitPulse - dt * 4.5f)
         val dI = dmg.values.iterator()
-        while (dI.hasNext()) { val d = dI.next(); d.idle += dt; if (d.idle > 4f) d.prog -= dt * 0.2f; if (d.prog <= 0f || !world.solid(d.x, d.y, d.z)) dI.remove() }
+        while (dI.hasNext()) {
+            val d = dI.next(); d.idle += dt
+            if (!world.solid(d.x, d.y, d.z)) { world.hidden.remove((d.y * World.SZ + d.z) * World.SX + d.x); d.dead = true; dI.remove(); continue }
+            if (!d.carved) { if (d.idle > 4f) d.prog -= dt * 0.2f; if (d.prog <= 0f) { d.dead = true; dI.remove() } }   // bloco esculpido não se cura
+        }
         if (hitT > 0f) { hitT -= dt; if (hitT <= 0f) strikeHit(hitItem, hitStab) }
         if (pendingT > 0f) { pendingT -= dt; if (pendingT <= 0f) powerHit(pendingPower) }
         if (wantPlace) { wantPlace = false; place() }
