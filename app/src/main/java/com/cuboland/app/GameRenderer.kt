@@ -715,8 +715,8 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         Matrix.rotateM(out, 0, p[7], 0f, 0f, 1f)
         Matrix.rotateM(out, 0, p[8], 0f, 1f, 0f)
         Matrix.rotateM(out, 0, 22f, 0f, 1f, 0f)            // mostra a lateral
-        Matrix.rotateM(out, 0, -22f, 1f, 0f, 0f)           // topo pra frente
-        Matrix.rotateM(out, 0, 10f, 0f, 0f, 1f)            // topo levemente pro centro
+        Matrix.rotateM(out, 0, 5f, 1f, 0f, 0f)             // topo levemente pra trás: ferramenta em pé, sem cortar o punho
+        Matrix.rotateM(out, 0, 3f, 0f, 0f, 1f)             // quase reta
     }
 
     private val poseP = FloatArray(10); private val ghostP = FloatArray(10)
