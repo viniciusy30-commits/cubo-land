@@ -401,7 +401,6 @@ class World {
                 if (!open) continue
                 leafFaces(o, x, y, z, 0f, 1f, true, vr, 1f)        // casca externa (só faces expostas)
                 leafFaces(o, x, y, z, 0.16f, 0.84f, false, vr, 0.72f)   // cubo interno: dá profundidade pelos buracos
-                if (o.vc < 46000) leafPlates(o, x, y, z, vr)           // cubinhos/placas 3D saindo da superfície (detalhe da referência)
                 continue
             }
             if (id == B.GRASS && get(x, y + 1, z) == B.AIR) {
@@ -472,7 +471,6 @@ class World {
                     if (!flip) { buf.tri(0, 2, 1); buf.tri(0, 3, 2) } else { buf.tri(1, 3, 2); buf.tri(1, 0, 3) }
                 }
                 buf.vc += 4
-                if (id == B.LEAVES && nid == B.AIR && o.vc < 56000) addCards(o, x, y, z, a, s, shade * vr)
             }
         }
     }

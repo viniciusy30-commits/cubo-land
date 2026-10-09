@@ -15,6 +15,8 @@ class Slime(x: Float, y: Float, z: Float) : Ent(x, y, z, 0.42f, 0.85f) {
 class Particle(var x: Float, var y: Float, var z: Float, var vx: Float, var vy: Float, var vz: Float,
                val color: Int, val size: Float, var life: Float)
 
+class LeafP(var x: Float, var y: Float, var z: Float, var vx: Float, var vz: Float, val ph: Float, val color: Int, val size: Float, var life: Float, var landed: Boolean = false, var age: Float = 0f)
+
 class Bolt(var x: Float, var y: Float, var z: Float, val vx: Float, val vy: Float, val vz: Float, var life: Float)
 
 class Game(val world: World) {
@@ -27,6 +29,7 @@ class Game(val world: World) {
     val player = Ent(World.SX / 2f + 0.5f, 20f, World.SZ / 2f + 0.5f, 0.3f, 1.8f)
     val slimes = ArrayList<Slime>()
     val parts = ArrayList<Particle>()
+    val leafFall = ArrayList<LeafP>(); private var leafT = 0f; var comboT = 0f
     // entrada (escrita pela UI)
     @Volatile var stickX = 0f; @Volatile var stickY = 0f
     @Volatile var jumpHeld = false; @Volatile var wantAttack = false; @Volatile var wantPlace = false
@@ -148,10 +151,11 @@ class Game(val world: World) {
         val item = cur()
         if (atkCd > 0f) return
         atkCd = Items.cooldown(item); swing = 0f; bodyYaw = yaw
-        if (item == Items.SWORD) combo = (combo + 1) % 5   // cada ataque da espada muda o ângulo do corte
+        if (item == Items.SWORD) { combo = if (comboT > 0f) (combo + 1) % 3 else 0; comboT = 1.1f }   // combo: corte diagonal -> corte horizontal -> estocada
         updateCamera()
         if (item == Items.STAFF) { shoot(); return }
-        val reach = Items.reach(item)
+        val stab = item == Items.SWORD && combo == 2
+        val reach = Items.reach(item) + (if (stab) 0.8f else 0f)
         var best: Slime? = null; var bd = 9999f
         for (s in slimes) {
             if (s.dead) continue
@@ -161,7 +165,7 @@ class Game(val world: World) {
             val dot = (dx * sin(yaw) + dz * cos(yaw)) / max(0.001f, sqrt(dx * dx + dz * dz))
             if (dot > 0.5f && dist < bd) { bd = dist; best = s }
         }
-        if (best != null) { hitSlime(best, Items.damage(item), best.x - player.x, best.z - player.z, Items.knock(item)); return }
+        if (best != null) { hitSlime(best, Items.damage(item) + (if (stab) 1 else 0), best.x - player.x, best.z - player.z, Items.knock(item) * (if (stab) 1.4f else 1f)); return }
         if (!Items.breaks(item)) return
         raycast(camX, camY, camZ, dirX(), dirY(), dirZ(), camDist, camDist + 5.5f)
         if (hasHit && hy > 0) {
@@ -208,7 +212,7 @@ class Game(val world: World) {
         synchronized(this) { ddx = lookDx; ddy = lookDy; lookDx = 0f; lookDy = 0f }
         yaw -= ddx * 0.0045f * sens; pitch = (pitch - ddy * 0.0045f * sens).coerceIn(-1.45f, 1.45f)
         if (wantCam) { wantCam = false; thirdPerson = !thirdPerson }
-        atkCd -= dt; hurtCd -= dt; shake = max(0f, shake - dt * 1.5f); hurtFlash = max(0f, hurtFlash - dt * 2f)
+        atkCd -= dt; comboT -= dt; hurtCd -= dt; shake = max(0f, shake - dt * 1.5f); hurtFlash = max(0f, hurtFlash - dt * 2f)
         if (swing < 1f) swing = min(1f, swing + dt / Items.swingTime(cur()))
         if (deadTimer > 0f) { deadTimer -= dt; if (deadTimer <= 0f) respawn(); updateCamera(); return }
 
@@ -283,6 +287,33 @@ class Game(val world: World) {
             if (world.solid(floor(nx).toInt(), floor(ny).toInt(), floor(nz).toInt())) { q.vx *= 0.3f; q.vz *= 0.3f; q.vy = 0f }
             else { q.x = nx; q.y = ny; q.z = nz }
             if (q.life <= 0f) pi.remove()
+        }
+        // folhas caindo das árvores perto do jogador (quantidade moderada)
+        leafT -= dt
+        if (leafT <= 0f && leafFall.size < 26) {
+            leafT = 0.2f + rnd.nextFloat() * 0.3f
+            for (t in 0 until 28) {
+                val x = (player.x + (rnd.nextFloat() - 0.5f) * 30f).toInt(); val z = (player.z + (rnd.nextFloat() - 0.5f) * 30f).toInt()
+                val y = (player.y + (rnd.nextFloat() - 0.4f) * 18f).toInt()
+                if (x < 1 || z < 1 || x >= World.SX - 1 || z >= World.SZ - 1 || y < 2 || y >= World.SY) continue
+                if (world.get(x, y, z) != B.LEAVES || world.get(x, y - 1, z) != B.AIR) continue
+                val cols = intArrayOf(0x4FA52E, 0x6CBF3C, 0x8AD453, 0x3E8A25, 0xA3DF6A)
+                leafFall.add(LeafP(x + rnd.nextFloat(), y - 0.05f, z + rnd.nextFloat(), (rnd.nextFloat() - 0.5f) * 0.5f, (rnd.nextFloat() - 0.5f) * 0.5f,
+                    rnd.nextFloat() * 6.28f, cols[rnd.nextInt(cols.size)], 0.07f + rnd.nextFloat() * 0.05f, 9f))
+                break
+            }
+        }
+        val li = leafFall.iterator()
+        while (li.hasNext()) {
+            val l = li.next()
+            l.age += dt; l.life -= dt
+            if (!l.landed) {
+                val sway = sin(l.age * 2.2f + l.ph)
+                l.x += (l.vx + sway * 0.55f) * dt; l.z += (l.vz + cos(l.age * 1.7f + l.ph) * 0.45f) * dt
+                l.y -= (0.75f + 0.25f * sin(l.age * 3.1f + l.ph)) * dt
+                if (world.solid(floor(l.x).toInt(), floor(l.y).toInt(), floor(l.z).toInt())) { l.landed = true; l.life = min(l.life, 1.4f) }
+            }
+            if (l.life <= 0f || l.y < 0f) li.remove()
         }
         updateCamera()
         raycast(camX, camY, camZ, dirX(), dirY(), dirZ(), camDist, camDist + 5.5f)

@@ -1,3 +1,10 @@
+#id 2026-10-09-v
+#titulo Folhas fofinhas e combo novo!
+- Bloco de folha limpo e detalhado, sem folhas saindo pra fora
+- Folhas caem das árvores balançando (quantidade moderada)
+- Combo da espada refeito: corte diagonal, corte horizontal e estocada, um ligado no outro
+- A estocada alcança mais longe e machuca mais
+
 #id 2026-10-09-u
 #titulo Folhas com volume 3D!
 - Placas e cubinhos de folha saem da superfície das copas, em tamanhos e ângulos variados, como na referência

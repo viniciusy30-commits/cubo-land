@@ -23,10 +23,10 @@ object Items {
     }
 
     fun damage(id: Int) = when (id) { SWORD -> 2; AXE -> 3; STAFF -> 2; else -> 1 }
-    fun cooldown(id: Int) = when (id) { SWORD -> 0.35f; AXE -> 0.65f; STAFF -> 0.55f; PICK -> 0.25f; else -> 0.3f }
+    fun cooldown(id: Int) = when (id) { SWORD -> 0.34f; AXE -> 0.65f; STAFF -> 0.55f; PICK -> 0.25f; else -> 0.3f }
     fun reach(id: Int) = when (id) { SWORD -> 3.5f; AXE -> 3.3f; else -> 3f }
     fun knock(id: Int) = when (id) { AXE -> 10f; SWORD -> 6f; else -> 4f }
     /** duração da animação de golpe (s) */
-    fun swingTime(id: Int) = when (id) { SWORD -> 0.38f; AXE -> 0.66f; PICK -> 0.36f; STAFF -> 0.55f; else -> 0.3f }
+    fun swingTime(id: Int) = when (id) { SWORD -> 0.46f; AXE -> 0.66f; PICK -> 0.36f; STAFF -> 0.55f; else -> 0.3f }
     fun breaks(id: Int) = id == PICK || isBlock(id)
 }

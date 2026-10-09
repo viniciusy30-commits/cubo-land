@@ -123,13 +123,20 @@ object Atlas {
         return lerp(c, 0xB07F55, sm(0.40f, 0.44f, max(abs(dx), abs(dy))))
     }
 
-    /** folha do print de referência: bloco de pixels 16x16 em 4 tons de verde, com buracos transparentes (dá pra ver o interior) */
+    /** folha fofinha: 16x16 em 5 tons de verde, tufos de 2x2 com luz no canto de cima e sombra embaixo, bordinha mais escura e pouquíssimos buracos */
     private fun leaves(u: Float, v: Float): Int {
         val px = floor(u * 16f).toInt().coerceIn(0, 15); val py = floor(v * 16f).toInt().coerceIn(0, 15)
-        if (h(px, py, 91) < 0.3f && h(px, py / 2, 92) < 0.7f) return CLEAR
-        val k = h(px / 2, py, 93) * 0.6f + h(px, py, 94) * 0.4f
-        val c = when { k < 0.25f -> 0x25500F; k < 0.5f -> 0x3A7519; k < 0.78f -> 0x56A02A; else -> 0x7CC43F }
-        return op(c)
+        if (h(px, py, 91) < 0.05f && px in 2..13 && py in 2..13) return CLEAR
+        fun hf(x: Int, y: Int) = h(x / 2, y / 2, 95) * 0.62f + h(x, y, 96) * 0.38f
+        val k = hf(px, py)
+        val up = hf(px, py - 1); val lf = hf(px - 1, py)
+        var t = when { k < 0.2f -> 0; k < 0.42f -> 1; k < 0.66f -> 2; k < 0.86f -> 3; else -> 4 }
+        if (k > up + 0.12f || k > lf + 0.12f) t += 1          // luz nos tufos que sobem
+        if (k < up - 0.12f && k < lf - 0.12f) t -= 1          // sombra embaixo dos tufos
+        val edge = (if (px == 0 || px == 15) 1 else 0) + (if (py == 0 || py == 15) 1 else 0)
+        t -= edge
+        val pal = intArrayOf(0x24541A, 0x2F6B1E, 0x3F8A27, 0x57A835, 0x72C247, 0x93DB63, 0xA9E87A)
+        return op(pal[(t + 1).coerceIn(0, 6)])
     }
 
     /** placas 3D de folha (cubinhos que saem do bloco, como na referência): pixels grandes em 4 tons de verde, sem buracos */

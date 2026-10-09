@@ -619,7 +619,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     private fun drawTrail(m: FloatArray, id: Int, a: Float) {
         G.glDepthMask(false)
         when (id) {
-            Items.SWORD -> box(m, 0f, 0.55f, 0f, 0f, 0f, 0.03f, 0.9f, 0.14f, 0f, 0xDDF3FF, a)
+            Items.SWORD -> box(m, 0f, 0.55f, 0f, 0f, 0f, 0.03f, 0.9f, 0.18f, 0f, 0xCFEFFF, a)
             Items.AXE -> box(m, 0f, 0.68f, -0.12f, 0f, 0f, 0.05f, 0.4f, 0.22f, 0f, 0xFFFFFF, a)
             Items.PICK -> box(m, 0f, 0.72f, 0f, 0f, 0f, 0.06f, 0.07f, 0.95f, 0f, 0xFFFFFF, a)
         }
@@ -635,51 +635,30 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     
     private val KF_SWORD = arrayOf(
             floatArrayOf(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f),
-            floatArrayOf(0.07f, 0f, -0.0054f, -0.0072f, -0.009f, -1.62f, 2.52f, 1.44f, -1.44f, 3.96f, -0f, 0f),
-            floatArrayOf(0.2f, 2f, 0.03f, 0.04f, 0.05f, 9f, -14f, -8f, 8f, -22f, 0f, 0f),
-            floatArrayOf(0.26f, 0f, 0.035f, 0.05f, 0.06f, 10f, -16f, -9f, 9f, -26f, 0f, 0f),
-            floatArrayOf(0.48f, 1f, -0.08f, -0.1f, -0.2f, -18f, 32f, 10f, -20f, 30f, 0f, 0f),
-            floatArrayOf(0.64f, 2f, -0.1f, -0.12f, -0.15f, -14f, 38f, 13f, -12f, 38f, 0f, 0f),
+            floatArrayOf(0.13f, 2f, 0.03f, 0.05f, 0.05f, 18f, -14f, -20f, 16f, -30f, 0f, 0f),
+            floatArrayOf(0.26f, 0f, 0.05f, 0.08f, 0.07f, 27f, -23f, -30f, 24f, -50f, 0f, 0f),
+            floatArrayOf(0.43f, 1f, -0.02f, -0.02f, -0.2f, 2f, 12f, 4f, -20f, 8f, 0f, 0f),
+            floatArrayOf(0.55f, 2f, -0.1f, -0.1f, -0.2f, -20f, 38f, 22f, -34f, 62f, 0f, 0f),
+            floatArrayOf(0.72f, 0f, -0.11f, -0.1f, -0.16f, -22f, 42f, 24f, -30f, 66f, 0f, 0f),
             floatArrayOf(1f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
         )
 
     private val KF_SWORD2 = arrayOf(
-            floatArrayOf(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f),
-            floatArrayOf(0.07f, 0f, -0.009f, -0f, -0.009f, -0.72f, 3.24f, 5.4f, -0.72f, 8.64f, -0f, 0f),
-            floatArrayOf(0.22f, 2f, 0.05f, 0f, 0.05f, 4f, -18f, -30f, 4f, -48f, 0f, 0f),
-            floatArrayOf(0.28f, 0f, 0.055f, 0f, 0.06f, 4f, -20f, -34f, 4f, -56f, 0f, 0f),
-            floatArrayOf(0.5f, 1f, -0.09f, -0.04f, -0.18f, -6f, 36f, 34f, -26f, 52f, 0f, 0f),
-            floatArrayOf(0.66f, 2f, -0.11f, -0.05f, -0.13f, -4f, 42f, 38f, -16f, 58f, 0f, 0f),
+            floatArrayOf(0f, 0f, -0.11f, -0.1f, -0.16f, -22f, 42f, 24f, -30f, 66f, 0f, 0f),
+            floatArrayOf(0.12f, 0f, -0.12f, -0.06f, -0.08f, -12f, 46f, 10f, -50f, 30f, 0f, 0f),
+            floatArrayOf(0.4f, 1f, 0.0f, 0.0f, -0.3f, -4f, 0f, -2f, -66f, 0f, 0f, 0f),
+            floatArrayOf(0.55f, 2f, 0.12f, 0.0f, -0.18f, -2f, -34f, -14f, -62f, -26f, 0f, 0f),
+            floatArrayOf(0.7f, 0f, 0.13f, 0.0f, -0.12f, -2f, -38f, -16f, -58f, -30f, 0f, 0f),
             floatArrayOf(1f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
         )
 
     private val KF_SWORD3 = arrayOf(
-            floatArrayOf(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f),
-            floatArrayOf(0.07f, 0f, 0.0072f, 0.009f, -0.009f, 0.72f, -2.88f, -2.88f, -0.36f, -5.04f, -0f, 0f),
-            floatArrayOf(0.22f, 2f, -0.04f, -0.05f, 0.05f, -4f, 16f, 16f, 2f, 28f, 0f, 0f),
-            floatArrayOf(0.28f, 0f, -0.045f, -0.055f, 0.06f, -5f, 18f, 18f, 2f, 32f, 0f, 0f),
-            floatArrayOf(0.5f, 1f, 0.09f, 0.07f, -0.2f, 12f, -26f, -20f, -22f, -34f, 0f, 0f),
-            floatArrayOf(0.66f, 2f, 0.11f, 0.08f, -0.15f, 14f, -32f, -24f, -14f, -42f, 0f, 0f),
-            floatArrayOf(1f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
-        )
-
-    private val KF_SWORD4 = arrayOf(
-            floatArrayOf(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f),
-            floatArrayOf(0.07f, 0f, -0f, -0.009f, -0.0072f, -2.34f, 0.54f, 0.72f, -2.16f, 0.54f, -0f, 0f),
-            floatArrayOf(0.3f, 2f, 0f, 0.05f, 0.04f, 13f, -3f, -4f, 12f, -3f, 0f, 0f),
-            floatArrayOf(0.36f, 0f, 0f, 0.05f, 0.04f, 14f, -3f, -5f, 13f, -4f, 0f, 0f),
-            floatArrayOf(0.54f, 1f, -0.02f, -0.12f, -0.28f, -28f, 3f, 3f, -26f, 4f, 0f, 0f),
-            floatArrayOf(0.68f, 2f, -0.02f, -0.09f, -0.22f, -22f, 2f, 2f, -16f, 3f, 0f, 0f),
-            floatArrayOf(1f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
-        )
-
-    private val KF_SWORD5 = arrayOf(
-            floatArrayOf(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f),
-            floatArrayOf(0.07f, 0f, -0.0054f, 0.0054f, -0.0252f, -1.08f, 0.72f, 1.08f, -2.52f, 1.08f, -0f, 0f),
-            floatArrayOf(0.3f, 2f, 0.03f, -0.03f, 0.14f, 6f, -4f, -6f, 14f, -6f, 0f, 0f),
-            floatArrayOf(0.38f, 0f, 0.03f, -0.03f, 0.15f, 6f, -4f, -6f, 16f, -7f, 0f, 0f),
-            floatArrayOf(0.52f, 1f, -0.03f, 0.02f, -0.4f, -4f, 4f, 3f, -46f, 6f, 0f, 0f),
-            floatArrayOf(0.72f, 2f, -0.03f, 0.02f, -0.32f, -3f, 3f, 2f, -36f, 4f, 0f, 0f),
+            floatArrayOf(0f, 0f, 0.13f, 0.0f, -0.12f, -2f, -38f, -16f, -58f, -30f, 0f, 0f),
+            floatArrayOf(0.22f, 0f, 0.06f, -0.05f, 0.16f, 6f, -12f, -4f, -72f, -6f, 0f, 0f),
+            floatArrayOf(0.34f, 0f, 0.06f, -0.06f, 0.21f, 8f, -10f, -4f, -76f, -4f, 0f, 0f),
+            floatArrayOf(0.46f, 1f, 0.0f, -0.02f, -0.5f, 0f, 4f, 0f, -72f, 8f, 0f, 0f),
+            floatArrayOf(0.56f, 2f, 0.0f, -0.02f, -0.56f, 0f, 4f, 0f, -72f, 8f, 0f, 0f),
+            floatArrayOf(0.72f, 0f, 0.0f, -0.02f, -0.5f, 0f, 3f, 0f, -70f, 6f, 0f, 0f),
             floatArrayOf(1f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
         )
 
@@ -727,7 +706,17 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             floatArrayOf(1f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
         )
 
-    private val SWORD_COMBO = arrayOf(KF_SWORD, KF_SWORD2, KF_SWORD3, KF_SWORD4, KF_SWORD5)
+    private val SWORD_COMBO = arrayOf(KF_SWORD, KF_SWORD2, KF_SWORD3)
+    private val lastRaw = FloatArray(10); private val blendFrom = FloatArray(10); private var prevSwingR = 1f
+
+    /** pose da espada com transição suave a partir da pose em que o golpe anterior parou (conecta os cortes do combo) */
+    private fun evalSword(out: FloatArray, k: Array<FloatArray>, sp: Float) {
+        evalPose(out, k, sp)
+        if (sp < 0.16f) {
+            val t = (sp / 0.16f).coerceIn(0f, 1f); val w = 1f - t * t * (3f - 2f * t)
+            for (j in 0 until 10) out[j] += (blendFrom[j] - out[j]) * w
+        }
+    }
 
     private fun kfFor(id: Int) = when {
         id == Items.SWORD -> SWORD_COMBO[game.combo % SWORD_COMBO.size]; id == Items.AXE -> KF_AXE; id == Items.PICK -> KF_PICK; id == Items.STAFF -> KF_STAFF
@@ -820,7 +809,10 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
 
         // ---- pose animada: golpe (keyframes da ferramenta) + respiração + andar + trocar de item ----
         val kfs = kfFor(id)
-        evalPose(poseP, kfs, game.swing)
+        if (game.swing < prevSwingR) System.arraycopy(lastRaw, 0, blendFrom, 0, 10)   // novo golpe: guarda de onde a espada vinha
+        prevSwingR = game.swing
+        if (id == Items.SWORD) evalSword(poseP, kfs, game.swing) else evalPose(poseP, kfs, game.swing)
+        System.arraycopy(poseP, 0, lastRaw, 0, 10)
         val p = poseP
         val flow = sin(tt * 1.5f)
         val idleRoll = when (id) { Items.SWORD -> flow * 1.8f; Items.STAFF -> sin(tt * 1.3f) * 2.2f; else -> flow * 0.9f }
@@ -844,12 +836,12 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         if (isTool) {
             // rastro do golpe: cópias translúcidas da parte que corta nos instantes anteriores (só aparece quando o golpe é rápido)
             if (game.swing < 0.85f && id == Items.SWORD) {
-                for (i in 1..5) {
-                    val gs = game.swing - i * 0.028f
+                for (i in 1..8) {
+                    val gs = game.swing - i * 0.02f
                     if (gs <= 0f) break
-                    evalPose(ghostP, kfs, gs)
+                    evalSword(ghostP, kfs, gs)
                     val diff = abs(ghostP[3] - p[3]) + abs(ghostP[4] - p[4]) + abs(ghostP[5] - p[5]) + abs(ghostP[6] - p[6]) + abs(ghostP[7] - p[7])
-                    val al = min(1f, diff / 30f) * 0.24f * (1f - i / 6f)
+                    val al = min(1f, diff / 30f) * 0.3f * (1f - i / 9f)
                     if (al < 0.02f) continue
                     poseMatrix(ghostM, ghostP, ox, oy, sx0, sy0, sz0)
                     toolBase(toolM, ghostP, hx, hy, hz)
@@ -945,6 +937,11 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         for (q in game.parts) {
             setBase(q.x, q.y, q.z, game.time * 200f)
             box(base, 0f, 0f, 0f, 0f, 0f, q.size, q.size, q.size, 0f, q.color, min(1f, q.life * 2f))
+        }
+        for (l in game.leafFall) {
+            setBase(l.x, l.y, l.z, l.age * 70f + l.ph * 57f)
+            val tl = if (l.landed) 0f else sin(l.age * 3f + l.ph) * 55f; val rl = if (l.landed) 0f else cos(l.age * 2.3f + l.ph) * 45f
+            box(base, 0f, 0f, 0f, tl, 0f, l.size, 0.012f, l.size * 1.4f, 0f, l.color, min(1f, l.life * 1.2f), 1f, null, 0, rl)
         }
         for (b in game.bolts) {
             setBase(b.x, b.y, b.z, 0f)
