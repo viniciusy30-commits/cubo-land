@@ -1,7 +1,8 @@
 #id 2026-10-09-v
 #titulo Folhas fofinhas e combo novo!
-- Bloco de folha limpo e detalhado, sem folhas saindo pra fora
+- Textura da folha de volta ao visual com buraquinhos, sem folhas saindo pra fora
 - Folhas caem das árvores balançando (quantidade moderada)
+- Primeiro golpe: levanta o braço e só a espada desce cortando
 - Combo da espada refeito: corte diagonal, corte horizontal e estocada, um ligado no outro
 - A estocada alcança mais longe e machuca mais
 

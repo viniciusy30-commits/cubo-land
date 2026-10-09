@@ -635,17 +635,17 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     
     private val KF_SWORD = arrayOf(
             floatArrayOf(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f),
-            floatArrayOf(0.13f, 2f, 0.03f, 0.05f, 0.05f, 18f, -14f, -20f, 16f, -30f, 0f, 0f),
-            floatArrayOf(0.26f, 0f, 0.05f, 0.08f, 0.07f, 27f, -23f, -30f, 24f, -50f, 0f, 0f),
-            floatArrayOf(0.43f, 1f, -0.02f, -0.02f, -0.2f, 2f, 12f, 4f, -20f, 8f, 0f, 0f),
-            floatArrayOf(0.55f, 2f, -0.1f, -0.1f, -0.2f, -20f, 38f, 22f, -34f, 62f, 0f, 0f),
-            floatArrayOf(0.72f, 0f, -0.11f, -0.1f, -0.16f, -22f, 42f, 24f, -30f, 66f, 0f, 0f),
+            floatArrayOf(0.14f, 2f, 0.01f, 0.03f, 0.04f, 10f, -4f, -6f, 30f, -22f, 0f, 0f),
+            floatArrayOf(0.28f, 0f, 0.02f, 0.05f, 0.06f, 16f, -6f, -8f, 62f, -38f, 0f, 0f),
+            floatArrayOf(0.44f, 1f, 0.0f, 0.0f, -0.12f, 4f, 2f, 0f, -6f, 8f, 0f, 0f),
+            floatArrayOf(0.56f, 2f, -0.03f, -0.04f, -0.16f, -6f, 10f, 6f, -48f, 52f, 0f, 0f),
+            floatArrayOf(0.74f, 0f, -0.03f, -0.04f, -0.14f, -7f, 12f, 8f, -44f, 56f, 0f, 0f),
             floatArrayOf(1f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
         )
 
     private val KF_SWORD2 = arrayOf(
-            floatArrayOf(0f, 0f, -0.11f, -0.1f, -0.16f, -22f, 42f, 24f, -30f, 66f, 0f, 0f),
-            floatArrayOf(0.12f, 0f, -0.12f, -0.06f, -0.08f, -12f, 46f, 10f, -50f, 30f, 0f, 0f),
+            floatArrayOf(0f, 0f, -0.03f, -0.04f, -0.14f, -7f, 12f, 8f, -44f, 56f, 0f, 0f),
+            floatArrayOf(0.12f, 0f, -0.05f, -0.03f, -0.08f, -6f, 22f, 6f, -52f, 36f, 0f, 0f),
             floatArrayOf(0.4f, 1f, 0.0f, 0.0f, -0.3f, -4f, 0f, -2f, -66f, 0f, 0f, 0f),
             floatArrayOf(0.55f, 2f, 0.12f, 0.0f, -0.18f, -2f, -34f, -14f, -62f, -26f, 0f, 0f),
             floatArrayOf(0.7f, 0f, 0.13f, 0.0f, -0.12f, -2f, -38f, -16f, -58f, -30f, 0f, 0f),
