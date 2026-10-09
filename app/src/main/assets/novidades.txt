@@ -1,0 +1,7 @@
+#id 2026-10-09-a
+#titulo Primeira versão 3D!
+- Mundo de blocos 3D com ilha, praia, árvores e água
+- Personagem animado com espada e câmera 1ª/3ª pessoa
+- Slimes inimigos para lutar
+- Quebre e coloque blocos de decoração
+- Atualização pelo próprio app
