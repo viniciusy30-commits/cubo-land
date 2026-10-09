@@ -638,8 +638,8 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     private val KF_SWORD = arrayOf(
             floatArrayOf(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f),
             floatArrayOf(0.1f, 2f, 0.02f, -0.03f, 0.05f, -4f, -1f, -1f, 10f, -2f, 0f, 0f),
-            floatArrayOf(0.3f, 0f, 0.04f, 0.14f, 0.08f, 44f, -4f, -5f, 55f, -8f, 0f, 0f),
-            floatArrayOf(0.37f, 0f, 0.04f, 0.15f, 0.09f, 48f, -4f, -5f, 62f, -8f, 0f, 0f),
+            floatArrayOf(0.3f, 0f, 0.04f, 0.14f, 0.08f, 44f, -4f, -5f, -18f, -8f, 0f, 0f),
+            floatArrayOf(0.37f, 0f, 0.04f, 0.15f, 0.09f, 48f, -4f, -5f, -22f, -8f, 0f, 0f),
             floatArrayOf(0.5f, 1f, 0.0f, 0.0f, -0.2f, 10f, 4f, 3f, -5f, 10f, 0f, 0f),
             floatArrayOf(0.6f, 2f, -0.07f, -0.12f, -0.24f, -26f, 14f, 10f, -50f, 30f, 0f, 0f),
             floatArrayOf(0.68f, 0f, -0.07f, -0.11f, -0.21f, -25f, 15f, 10f, -49f, 30f, 0f, 0f),
@@ -711,8 +711,8 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         )
 
     private val KF_SWORD_POWER = arrayOf(
-            floatArrayOf(0f, 0f, 0.05f, 0.17f, 0.1f, 54f, -5f, -6f, 70f, -10f, 0f, 0f),
-            floatArrayOf(0.06f, 0f, 0.05f, 0.19f, 0.11f, 58f, -5f, -6f, 76f, -10f, 0f, 0f),
+            floatArrayOf(0f, 0f, 0.05f, 0.17f, 0.1f, 54f, -5f, -6f, -28f, -4f, 0f, 0f),
+            floatArrayOf(0.06f, 0f, 0.05f, 0.19f, 0.11f, 58f, -5f, -6f, -22f, -4f, 0f, 0f),
             floatArrayOf(0.26f, 1f, 0.0f, 0.0f, -0.28f, 6f, 6f, 2f, -10f, 10f, 0f, 0f),
             floatArrayOf(0.36f, 2f, -0.09f, -0.18f, -0.36f, -34f, 16f, 10f, -62f, 32f, 0f, 0f),
             floatArrayOf(0.44f, 0f, -0.09f, -0.16f, -0.32f, -31f, 17f, 11f, -58f, 32f, 0f, 0f),
@@ -721,8 +721,8 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         )
 
     private val KF_AXE_POWER = arrayOf(
-            floatArrayOf(0f, 0f, 0.05f, 0.18f, 0.11f, 56f, -4f, -5f, 60f, -8f, 0f, 0f),
-            floatArrayOf(0.07f, 0f, 0.05f, 0.2f, 0.12f, 60f, -4f, -5f, 66f, -8f, 0f, 0f),
+            floatArrayOf(0f, 0f, 0.05f, 0.18f, 0.11f, 56f, -4f, -5f, -30f, -4f, 0f, 0f),
+            floatArrayOf(0.07f, 0f, 0.05f, 0.2f, 0.12f, 60f, -4f, -5f, -26f, -4f, 0f, 0f),
             floatArrayOf(0.3f, 1f, 0.0f, 0.0f, -0.3f, 6f, 3f, 2f, -12f, 6f, 0f, 0f),
             floatArrayOf(0.4f, 2f, -0.07f, -0.2f, -0.42f, -38f, 10f, 8f, -60f, 20f, 0f, 0f),
             floatArrayOf(0.5f, 0f, -0.07f, -0.17f, -0.38f, -35f, 11f, 9f, -56f, 20f, 0f, 0f),
@@ -731,10 +731,10 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         )
 
     private fun sm01(x: Float): Float { val t = x.coerceIn(0f, 1f); return t * t * (3f - 2f * t) }
-    private val CH_MID_S = floatArrayOf(0.04f, 0.15f, 0.09f, 48f, -4f, -5f, 62f, -8f, 0f, 0f)
-    private val CH_FULL_S = floatArrayOf(0.05f, 0.17f, 0.10f, 54f, -5f, -6f, 70f, -10f, 0f, 0f)
-    private val CH_MID_A = floatArrayOf(0.04f, 0.15f, 0.09f, 50f, -3f, -4f, 52f, -6f, 0f, 0f)
-    private val CH_FULL_A = floatArrayOf(0.05f, 0.18f, 0.11f, 56f, -4f, -5f, 60f, -8f, 0f, 0f)
+    private val CH_MID_S = floatArrayOf(0.04f, 0.15f, 0.09f, 48f, -4f, -5f, -24f, -4f, 0f, 0f)
+    private val CH_FULL_S = floatArrayOf(0.05f, 0.17f, 0.10f, 54f, -5f, -6f, -28f, -4f, 0f, 0f)
+    private val CH_MID_A = floatArrayOf(0.04f, 0.15f, 0.09f, 50f, -3f, -4f, -26f, -4f, 0f, 0f)
+    private val CH_FULL_A = floatArrayOf(0.05f, 0.18f, 0.11f, 56f, -4f, -5f, -30f, -4f, 0f, 0f)
 
     /** segurando o ataque: braço sobe e a ferramenta fica pra trás; perto do máximo, treme de tanta força */
     private fun chargePose(out: FloatArray, id: Int, ch: Float, tt: Float) {
