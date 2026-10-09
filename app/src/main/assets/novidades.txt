@@ -1,3 +1,10 @@
+#id 2026-10-10-g
+#titulo Destruição detalhada e tronco com fenda de corte!
+- Blocos agora têm 16x16x16 de detalhe: cada golpe arranca lascas bem menores e mais realistas
+- As rachaduras viraram sulcos de verdade, escavados no bloco e crescendo a partir do ponto batido, combinando com a destruição
+- O miolo exposto aparece escurecido e com textura própria (madeira mostra os anéis, grama mostra terra)
+- Tronco: os golpes abrem um entalhe em cunha atravessando o tronco, cada vez mais fundo. Quando só sobra a dobradiça, o toco é cortado na altura da fenda, solta serragem e a árvore tomba assentada nele
+
 #id 2026-10-10-f
 #titulo Pedaços arrancados e tronco que cede!
 - A espada agora também deixa marca nos blocos (sem quebrar eles)

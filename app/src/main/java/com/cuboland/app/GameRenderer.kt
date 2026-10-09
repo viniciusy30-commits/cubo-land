@@ -342,7 +342,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             bi += 4
         }
         // rachaduras: sombra suave, brilho de borda e miolo escuro
-        for (sg in m.segs) {
+        if (d.vox == null) for (sg in m.segs) {
             val r = ((m.g - sg.t0) / (sg.t1 - sg.t0)).coerceIn(0f, 1f)
             if (r <= 0f) continue
             val x2 = sg.x1 + (sg.x2 - sg.x1) * r; val y2 = sg.y1 + (sg.y2 - sg.y1) * r
@@ -420,8 +420,14 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                 if (!boundary && v[(nb[2] * n + nb[1]) * n + nb[0]]) continue
                 val u = (a + 1) % 3; val w = (a + 2) % 3
                 var sh = when { a == 1 -> if (s > 0) 1f else 0.55f; a == 0 -> 0.82f; else -> 0.7f }
-                if (!boundary) sh *= 0.8f
-                val tile = if (a == 1) (if (s > 0) B.tTop[d.id] else B.tBot[d.id]) else B.tSide[d.id]
+                var tile = if (a == 1) (if (s > 0) B.tTop[d.id] else B.tBot[d.id]) else B.tSide[d.id]
+                var hh = (i * 73856093) xor (j * 19349663) xor (k * 83492791) xor (face * 2654435); hh = (hh xor (hh ushr 13)) * 1274126177; hh = hh xor (hh ushr 16)
+                sh *= 0.95f + 0.1f * ((hh and 255) / 255f)
+                if (!boundary) {   // miolo exposto: madeira mostra os anéis, grama mostra terra; escurece conforme afunda
+                    val shell = min(min(i, n - 1 - i), min(min(j, n - 1 - j), min(k, n - 1 - k)))
+                    sh *= (0.9f - 0.07f * min(shell, 6)).coerceAtLeast(0.45f)
+                    if (d.id == B.WOOD) tile = B.tTop[B.WOOD] else if (d.id == B.GRASS) tile = B.tTop[B.DIRT]
+                }
                 for (q in 0 until 4) {
                     val cu = World.QU[q]; val cv = World.QV[q]
                     p[a] = (if (s > 0) c[a] + 1 else c[a]).toFloat() / n - 0.5f
@@ -488,7 +494,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         for (f in game.trees) {
             Matrix.setIdentityM(base2, 0); Matrix.translateM(base2, 0, f.px, f.py, f.pz)
             Matrix.rotateM(base2, 0, f.ang * 57.29578f, f.kx, 0f, f.kz)
-            for (i in 0 until f.n) box(base2, f.bl[i * 4].toFloat(), f.bl[i * 4 + 1].toFloat(), f.bl[i * 4 + 2].toFloat(), 0f, 0f, 1f, 1f, 1f, 0f, 0xFFFFFF, 1f, 1f, null, f.bl[i * 4 + 3])
+            for (i in 0 until f.n) box(base2, f.bl[i * 4].toFloat(), f.bl[i * 4 + 1] + f.yo, f.bl[i * 4 + 2].toFloat(), 0f, 0f, 1f, 1f, 1f, 0f, 0xFFFFFF, 1f, 1f, null, f.bl[i * 4 + 3])
         }
     }
 

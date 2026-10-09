@@ -26,11 +26,11 @@ class Mark(val a: Int, val s: Int, val u: Float, val v: Float, val kind: Int, va
 }
 
 /** dano acumulado de um bloco: todas as marcas + progresso de quebra */
-const val VN = 8   // resolução do bloco esculpido (VN x VN x VN mini-voxels)
+const val VN = 16   // resolução do bloco esculpido (VN x VN x VN mini-voxels)
 
 class Dmg(val x: Int, val y: Int, val z: Int, val id: Int) {
     var vox: BooleanArray? = null; var carved = false; var vdirty = false; var vb = 0; var ib = 0; var icnt = 0; var dead = false
-    var felled = false; var prog = 0f; var idle = 0f; val marks = ArrayList<Mark>() }
+    var felled = false; var cutY = Float.NaN; var prog = 0f; var idle = 0f; val marks = ArrayList<Mark>() }
 
 /** mini-bloco que voa e quica quando algo quebra */
 class Debris(var x: Float, var y: Float, var z: Float, var vx: Float, var vy: Float, var vz: Float, val id: Int, val size: Float, var life: Float) {
@@ -38,7 +38,7 @@ class Debris(var x: Float, var y: Float, var z: Float, var vx: Float, var vy: Fl
 }
 
 /** parte de cima de uma árvore caindo inteira. bl = (dx,dy,dz,id) por bloco, relativo ao bloco cortado */
-class FallTree(val px: Float, val py: Float, val pz: Float, val dx: Float, val dz: Float, val bl: IntArray) {
+class FallTree(val px: Float, val py: Float, val pz: Float, val dx: Float, val dz: Float, val bl: IntArray, val yo: Float = 0f) {
     var ang = 0.03f; var vel = 0.25f; var t = 0f; val n = bl.size / 4
     val kx get() = dz; val kz get() = -dx     // eixo de rotação (horizontal, perpendicular à queda)
 }
@@ -271,7 +271,11 @@ class Game(val world: World) {
         if (item == Items.SWORD && !creative) d.prog = min(d.prog, 0.5f)   // espada marca o bloco, mas não chega a quebrar
         hitPulse = 1f
         if (d.prog >= 1f) { dmg.remove(key); d.dead = true; breakBlock(hx, hy, hz, id); return }
-        if (id == B.WOOD && !d.felled && d.prog >= 0.65f) { d.felled = true; fellTree(hx, hy, hz) }   // tronco quase destruído: a parte de cima já tomba
+        if (id == B.WOOD && !d.felled && d.prog >= 0.65f) {
+            d.felled = true
+            val cy = if (d.cutY.isNaN()) 0f else d.cutY
+            if (fellTree(hx, hy, hz, cy)) trimStump(d, cy)   // a árvore tomba pela fenda: o toco fica cortado na altura do entalhe
+        }   // tronco quase destruído: a parte de cima já tomba
         if (d.marks.size >= 7) d.marks.removeAt(0)
         val mk = makeMark(a, s, fu, fv, item, mult > 1.5f, hitStab)
         d.marks.add(mk)
@@ -371,10 +375,12 @@ class Game(val world: World) {
         val t1 = if (a == 0) 2 else 0; val t2 = if (a == 1) 2 else 1
         val ca = cos(m.ang); val sa = sin(m.ang)
         val pr = d.prog.coerceIn(0f, 1f)
-        val hw = max(0.5f, 2f - 1.6f * pr)                       // núcleo protegido: encolhe conforme o bloco vai cedendo
+        val hw = max(0.5f, 2f - 1.6f * pr) * (VN / 8f)                       // núcleo protegido: encolhe conforme o bloco vai cedendo
         val kb = if (big) 1.3f else 1f; val kd = 1f + 0.9f * pr
         val half = (VN - 1) / 2f
         fun prot(i: Int, j: Int, k: Int) = abs(i - half) <= hw && abs(j - half) <= hw && abs(k - half) <= hw
+        val trunk = d.id == B.WOOD && a != 1
+        if (trunk && d.cutY.isNaN()) d.cutY = (if (a == 0) qy else qy).coerceIn(-0.25f, 0.25f)   // altura do entalhe de corte, fixada no 1º golpe
         val rm = BooleanArray(v.size); var any = false
         for (k in 0 until VN) for (j in 0 until VN) for (i in 0 until VN) {
             val idx = (k * VN + j) * VN + i
@@ -393,9 +399,17 @@ class Game(val world: World) {
                     else (abs(t) <= m.len * 0.5f * jit && abs(w) <= 0.06f && dd >= -0.05f && dd <= 0.15f * kd)
                 else -> { val rr = 0.13f * jit; t * t + w * w + dd * dd <= rr * rr }
             }
-            if (hit) { rm[idx] = true; any = true }
+            var h2 = hit
+            if (!h2 && trunk) {   // entalhe em cunha atravessando a face inteira, aprofunda a cada golpe
+                val dmax = 0.16f + 0.6f * pr
+                val ryy = (j + 0.5f) / VN - 0.5f - d.cutY
+                val hv = (0.05f + 0.07f * pr) * (1f - dd / dmax) + (rnd.nextFloat() - 0.5f) * 0.03f
+                h2 = dd >= -0.05f && dd <= dmax && abs(ryy) <= hv
+            }
+            if (h2) { rm[idx] = true; any = true }
         }
-        if (!any) return
+        val crk = carveCracks(d, v, pr, ::prot)
+        if (!any && !crk) return
         // lascas extras: bordas vizinhas do buraco também se soltam
         val extra = BooleanArray(v.size)
         for (k in 0 until VN) for (j in 0 until VN) for (i in 0 until VN) {
@@ -410,6 +424,33 @@ class Game(val world: World) {
         for (i in v.indices) if (rm[i] || extra[i]) v[i] = false
         d.vdirty = true
         if (!d.carved) { d.carved = true; world.hidden.add((d.y * World.SZ + d.z) * World.SX + d.x); world.set(d.x, d.y, d.z, d.id) }
+    }
+
+
+    /** as rachaduras viram sulcos de verdade: cada trecho visível é escavado na superfície da face onde o golpe bateu */
+    private fun carveCracks(d: Dmg, v: BooleanArray, pr: Float, prot: (Int, Int, Int) -> Boolean): Boolean {
+        var any = false
+        val tg = (0.3f + 0.85f * pr).coerceAtMost(1f)
+        for (m in d.marks) for (sg in m.segs) {
+            val r = ((tg - sg.t0) / (sg.t1 - sg.t0)).coerceIn(0f, 1f); if (r <= 0f) continue
+            val x2 = sg.x1 + (sg.x2 - sg.x1) * r; val y2 = sg.y1 + (sg.y2 - sg.y1) * r
+            val steps = max(1, (hypot(x2 - sg.x1, y2 - sg.y1) / 0.03f).toInt())
+            val layers = if (sg.w > 0.02f) 3 else 2
+            val io = if (m.s > 0) VN - 1 else 0
+            for (st in 0..steps) {
+                val f = st / steps.toFloat()
+                val i1 = ((sg.x1 + (x2 - sg.x1) * f) * VN).toInt().coerceIn(0, VN - 1); val i2 = ((sg.y1 + (y2 - sg.y1) * f) * VN).toInt().coerceIn(0, VN - 1)
+                for (l in 0 until layers) {
+                    val ia = io - m.s * l
+                    val x: Int; val y: Int; val z: Int
+                    when (m.a) { 0 -> { x = ia; z = i1; y = i2 } 1 -> { x = i1; y = ia; z = i2 } else -> { x = i1; y = i2; z = ia } }
+                    if (prot(x, y, z)) continue
+                    val idx = (z * VN + y) * VN + x
+                    if (v[idx]) { v[idx] = false; any = true }
+                }
+            }
+        }
+        return any
     }
 
     /** lascas e faíscas saindo do ponto exato do impacto, de acordo com a ferramenta */
@@ -455,9 +496,9 @@ class Game(val world: World) {
     }
 
     /** corta o tronco: tudo de madeira/folha conectado acima do corte vira uma árvore que tomba */
-    private fun fellTree(x: Int, y: Int, z: Int) {
+    private fun fellTree(x: Int, y: Int, z: Int, cutY: Float = Float.NaN): Boolean {
         val s0 = world.get(x, y + 1, z)
-        if (s0 != B.WOOD && s0 != B.LEAVES) return
+        if (s0 != B.WOOD && s0 != B.LEAVES) return false
         val seen = HashSet<Int>(); val q = ArrayDeque<Int>(); val out = ArrayList<Int>()
         fun enc(a: Int, b: Int, c: Int) = ((b * World.SZ + c) * World.SX + a)
         seen.add(enc(x, y + 1, z)); q.add(enc(x, y + 1, z))
@@ -473,14 +514,31 @@ class Game(val world: World) {
                 seen.add(k); q.add(k)
             }
         }
-        if (out.isEmpty()) return
+        if (out.isEmpty()) return false
         val arr = out.toIntArray()
         for (i in 0 until arr.size / 4) world.set(x + arr[i * 4], y + arr[i * 4 + 1], z + arr[i * 4 + 2], B.AIR)
         var dx = x + 0.5f - player.x; var dz = z + 0.5f - player.z
         if (hypot(dx, dz) < 0.2f) { dx = sin(yaw); dz = cos(yaw) }
         val an = atan2(dz, dx) + (rnd.nextFloat() - 0.5f) * 0.4f
-        trees.add(FallTree(x + 0.5f, y + 0.5f, z + 0.5f, cos(an), sin(an), arr))
+        if (cutY.isNaN()) trees.add(FallTree(x + 0.5f, y + 0.5f, z + 0.5f, cos(an), sin(an), arr))
+        else trees.add(FallTree(x + 0.5f, y + 0.5f + cutY, z + 0.5f, cos(an), sin(an), arr, -0.5f))   // pivô no plano do corte, base da árvore assenta nele
         shake = max(shake, 0.15f)
+        return true
+    }
+
+    /** o toco perde tudo acima do corte (borda irregular) e solta serragem e lascas */
+    private fun trimStump(d: Dmg, cutY: Float) {
+        var v = d.vox
+        if (v == null) { v = BooleanArray(VN * VN * VN) { true }; d.vox = v }
+        for (k in 0 until VN) for (j in 0 until VN) for (i in 0 until VN) {
+            val yl = (j + 0.5f) / VN - 0.5f
+            if (yl > cutY + (rnd.nextFloat() - 0.5f) * 0.07f) v[(k * VN + j) * VN + i] = false
+        }
+        d.vdirty = true
+        if (!d.carved) { d.carved = true; world.hidden.add((d.y * World.SZ + d.z) * World.SX + d.x); world.set(d.x, d.y, d.z, d.id) }
+        spawnPieces(d.x + 0.5f, d.y + 0.5f + cutY, d.z + 0.5f, d.id, 8, 0.14f, 0.7f, 0f, 2f, 0f, 2.5f)
+        burst(d.x + 0.5f, d.y + 0.5f + cutY, d.z + 0.5f, 0xD9B27A, 14, 3f)
+        shake = max(shake, 0.3f)
     }
 
     /** posição (relativa ao pivô) de um ponto da árvore depois de girar f.ang em volta do eixo horizontal */
@@ -496,7 +554,7 @@ class Game(val world: World) {
     private fun treeHitsGround(f: FallTree): Boolean {
         if (f.ang < 0.12f) return false
         for (i in 0 until f.n) {
-            treeRot(f, f.bl[i * 4].toFloat(), f.bl[i * 4 + 1].toFloat(), f.bl[i * 4 + 2].toFloat(), tmpV)
+            treeRot(f, f.bl[i * 4].toFloat(), f.bl[i * 4 + 1] + f.yo, f.bl[i * 4 + 2].toFloat(), tmpV)
             val id = world.get(floor(f.px + tmpV[0]).toInt(), floor(f.py + tmpV[1]).toInt(), floor(f.pz + tmpV[2]).toInt())
             if (id != B.AIR && id != B.WATER && id != B.LEAVES && id != B.WOOD) return true
         }
@@ -509,7 +567,7 @@ class Game(val world: World) {
         var leaves = 0
         for (i in 0 until f.n) {
             val id = f.bl[i * 4 + 3]
-            treeRot(f, f.bl[i * 4].toFloat(), f.bl[i * 4 + 1].toFloat(), f.bl[i * 4 + 2].toFloat(), tmpV)
+            treeRot(f, f.bl[i * 4].toFloat(), f.bl[i * 4 + 1] + f.yo, f.bl[i * 4 + 2].toFloat(), tmpV)
             val cx = f.px + tmpV[0]; val cy = f.py + tmpV[1]; val cz = f.pz + tmpV[2]
             val vx = f.vel * (-kz * tmpV[1]) * 0.7f; val vy = f.vel * (kz * tmpV[0] - kx * tmpV[2]) * 0.4f; val vz = f.vel * (kx * tmpV[1]) * 0.7f
             if (id == B.WOOD) spawnPieces(cx, cy, cz, id, 3, 0.36f, 0.5f, vx, vy, vz, 4f)
