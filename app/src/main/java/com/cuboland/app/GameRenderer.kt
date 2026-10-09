@@ -312,13 +312,13 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         setBase(bx + 0.5f, by + 0.5f, bz + 0.5f, 0f)
         G.glDepthMask(false)
         val kd = 1.006f
-        box(base, 0f, 0f, 0f, 0f, 0f, kd, kd, kd, 0f, 0x000000, 0.04f + 0.30f * crackP)
+        box(base, 0f, 0f, 0f, 0f, 0f, kd, kd, kd, 0f, 0x000000, 0.02f + 0.14f * crackP)
         val x = (crackP * 9f - 0.5f).coerceIn(0f, 8f)
         val s0 = x.toInt().coerceIn(0, 8); val s1 = min(8, s0 + 1); val fr = x - s0
         val k = 1.012f + 0.03f * pulse
-        box(base, 0f, 0f, 0f, 0f, 0f, k, k, k, 0f, 0xFFFFFF, 0.97f, 1f, null, 14 + s0)
+        box(base, 0f, 0f, 0f, 0f, 0f, k, k, k, 0f, 0xFFFFFF, 0.85f, 1f, null, 14 + s0)
         if (s1 != s0 && fr > 0.02f) box(base, 0f, 0f, 0f, 0f, 0f, k + 0.002f, k + 0.002f, k + 0.002f, 0f, 0xFFFFFF, fr, 1f, null, 14 + s1)
-        if (pulse > 0f) box(base, 0f, 0f, 0f, 0f, 0f, k + 0.004f, k + 0.004f, k + 0.004f, 0f, 0xFFFFFF, 0.2f * pulse)
+        if (pulse > 0f) box(base, 0f, 0f, 0f, 0f, 0f, k + 0.004f, k + 0.004f, k + 0.004f, 0f, 0xFFFFFF, 0.1f * pulse)
         G.glDepthMask(true)
     }
 
@@ -1071,7 +1071,8 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         for (s in game.slimes) drawSlime(s)
         for (q in game.parts) {
             setBase(q.x, q.y, q.z, game.time * 200f)
-            box(base, 0f, 0f, 0f, 0f, 0f, q.size, q.size, q.size, 0f, q.color, min(1f, q.life * 2f))
+            val ps = q.size * min(1f, 0.35f + q.life * 1.6f)
+            box(base, 0f, 0f, 0f, 0f, 0f, ps, ps, ps, 0f, q.color, min(1f, q.life * 2.2f))
         }
         for (l in game.leafFall) {
             setBase(l.x, l.y, l.z, l.age * 50f + l.ph * 57f)

@@ -280,13 +280,13 @@ object Atlas {
             var x = x0; var y = y0; var an = ang0
             xs[0] = x; ys[0] = y
             for (i in 1..n) {
-                an += (rd.nextFloat() - 0.5f) * 0.9f
+                an += (rd.nextFloat() - 0.5f) * 0.65f
                 val st = len / n * (0.8f + rd.nextFloat() * 0.5f)
                 x += cos(an) * st; y += sin(an) * st; xs[i] = x; ys[i] = y
             }
             brs.add(Br(xs, ys, t0, t1, w0, w1))
             if (depth < 2) {
-                val k = if (depth == 0) 3 else 1
+                val k = if (depth == 0) 2 else 1
                 for (q in 0 until k) {
                     val i = (n * (0.3f + rd.nextFloat() * 0.45f)).toInt().coerceIn(1, n - 1)
                     val side = if (rd.nextBoolean()) 1f else -1f
@@ -296,11 +296,11 @@ object Atlas {
                 }
             }
         }
-        val nMain = 6
-        for (k in 0 until nMain) branch(ox, oy, k * TAU / nMain + rd.nextFloat() * 0.6f, 22f + rd.nextFloat() * 14f, 0f, 0.62f + rd.nextFloat() * 0.3f, 3.6f, 1.1f, 0)
+        val nMain = 5
+        for (k in 0 until nMain) branch(ox, oy, k * TAU / nMain + rd.nextFloat() * 0.6f, 13f + rd.nextFloat() * 11f, 0f, 0.7f + rd.nextFloat() * 0.25f, 1.7f, 0.55f, 0)
         // lascas / buracos perto das rachaduras
         val chips = ArrayList<FloatArray>()
-        for (i in 0 until 9) { val br = brs[rd.nextInt(brs.size)]; val j = rd.nextInt(br.xs.size)
+        for (i in 0 until 0) { val br = brs[rd.nextInt(brs.size)]; val j = rd.nextInt(br.xs.size)
             chips.add(floatArrayOf(br.xs[j] + (rd.nextFloat() - 0.5f) * 4f, br.ys[j] + (rd.nextFloat() - 0.5f) * 4f, 1.4f + rd.nextFloat() * 1.8f, br.t0 + 0.1f + rd.nextFloat() * 0.3f)) }
         val core = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { strokeCap = android.graphics.Paint.Cap.ROUND; style = android.graphics.Paint.Style.STROKE }
         val cv = android.graphics.Canvas(b)
@@ -318,16 +318,14 @@ object Atlas {
                     val wv = br.w0 + (br.w1 - br.w0) * (i.toFloat() / n)
                     val x1 = br.xs[i] + (br.xs[i + 1] - br.xs[i]) * fe; val y1 = br.ys[i] + (br.ys[i + 1] - br.ys[i]) * fe
                     when (pass) {
-                        0 -> { core.color = 0x70000000; core.strokeWidth = wv + 2.6f; cv.drawLine(br.xs[i], br.ys[i], x1, y1, core) }
-                        1 -> { core.color = 0x78FFEBC8; core.strokeWidth = wv + 0.8f; cv.drawLine(br.xs[i] - 0.9f, br.ys[i] - 0.9f, x1 - 0.9f, y1 - 0.9f, core) }
-                        else -> { core.color = 0xFF1C0F08.toInt(); core.strokeWidth = wv; cv.drawLine(br.xs[i], br.ys[i], x1, y1, core) }
+                        0 -> { core.color = 0x66201008; core.strokeWidth = wv + 1.3f; cv.drawLine(br.xs[i], br.ys[i], x1, y1, core) }
+                        1 -> { core.color = 0x80FFF3DC.toInt(); core.strokeWidth = wv * 0.8f; cv.drawLine(br.xs[i] - 0.7f, br.ys[i] - 0.7f, x1 - 0.7f, y1 - 0.7f, core) }
+                        else -> { core.color = 0xF0463226.toInt(); core.strokeWidth = wv; cv.drawLine(br.xs[i], br.ys[i], x1, y1, core) }
                     }
                 }
             }
             core.style = android.graphics.Paint.Style.FILL
-            core.color = 0xFF150B06.toInt(); cv.drawCircle(ox, oy, 2.2f + 3.2f * f, core)
-            core.color = 0x78FFEBC8; cv.drawCircle(ox - 0.9f, oy - 0.9f, 1.2f + 1.5f * f, core)
-            core.color = 0xFF0E0704.toInt(); cv.drawCircle(ox, oy, 1.4f + 2.2f * f, core)
+            core.color = 0xF0463226.toInt(); cv.drawCircle(ox, oy, 1.0f + 1.2f * f, core)
             for (c in chips) if (f >= c[3]) { core.color = 0xFF180D07.toInt(); cv.drawCircle(c[0], c[1], c[2], core)
                 core.color = 0x78FFEBC8; cv.drawCircle(c[0] - 0.7f, c[1] - 0.7f, c[2] * 0.45f, core) }
             core.style = android.graphics.Paint.Style.STROKE

@@ -113,25 +113,20 @@ class Game(val world: World) {
             (rnd.nextFloat() - 0.5f) * speed, color, 0.08f + rnd.nextFloat() * 0.1f, 0.6f + rnd.nextFloat() * 0.5f))
     }
 
-    /** lascas, pedaços e poeira saindo do bloco; big = quebra final */
+    /** partículas fofinhas, só na cor do bloco (com leves variações de tom) */
     fun breakFx(bx: Int, by: Int, bz: Int, id: Int, big: Boolean) {
-        val n = if (big) 30 else 8
+        val n = if (big) 22 else 6
+        val base = B.top[id]
         for (i in 0 until n) {
-            val c = if (i % 3 == 0) B.side[id] else B.top[id]
-            val px = bx + 0.1f + rnd.nextFloat() * 0.8f; val py = by + 0.1f + rnd.nextFloat() * 0.8f; val pz = bz + 0.1f + rnd.nextFloat() * 0.8f
-            val sp = if (big) 4.8f else 2.8f
-            parts.add(Particle(px, py, pz, (px - bx - 0.5f) * sp * 1.6f + (rnd.nextFloat() - 0.5f), rnd.nextFloat() * sp * 0.9f + 1.2f,
-                (pz - bz - 0.5f) * sp * 1.6f + (rnd.nextFloat() - 0.5f), c, 0.06f + rnd.nextFloat() * 0.1f, 0.6f + rnd.nextFloat() * 0.6f))
+            val k = 0.82f + rnd.nextFloat() * 0.36f
+            val r = ((base shr 16 and 255) * k).toInt().coerceIn(0, 255); val gg = ((base shr 8 and 255) * k).toInt().coerceIn(0, 255); val b = ((base and 255) * k).toInt().coerceIn(0, 255)
+            val px = bx + 0.15f + rnd.nextFloat() * 0.7f; val py = by + 0.15f + rnd.nextFloat() * 0.7f; val pz = bz + 0.15f + rnd.nextFloat() * 0.7f
+            val sp = if (big) 2.6f else 1.5f
+            parts.add(Particle(px, py, pz, (px - bx - 0.5f) * sp * 2f + (rnd.nextFloat() - 0.5f) * 0.6f, rnd.nextFloat() * sp * 0.8f + 0.9f,
+                (pz - bz - 0.5f) * sp * 2f + (rnd.nextFloat() - 0.5f) * 0.6f, (r shl 16) or (gg shl 8) or b,
+                0.045f + rnd.nextFloat() * (if (big) 0.075f else 0.045f), 0.7f + rnd.nextFloat() * 0.5f))
         }
-        if (big) {
-            for (i in 0 until 7) parts.add(Particle(bx + 0.5f, by + 0.5f, bz + 0.5f, (rnd.nextFloat() - 0.5f) * 5f, 2f + rnd.nextFloat() * 3.5f,
-                (rnd.nextFloat() - 0.5f) * 5f, B.side[id], 0.2f + rnd.nextFloat() * 0.12f, 0.9f + rnd.nextFloat() * 0.4f))
-            for (i in 0 until 9) parts.add(Particle(bx + 0.2f + rnd.nextFloat() * 0.6f, by + 0.3f + rnd.nextFloat() * 0.5f, bz + 0.2f + rnd.nextFloat() * 0.6f,
-                (rnd.nextFloat() - 0.5f) * 1.4f, 0.5f + rnd.nextFloat() * 1.1f, (rnd.nextFloat() - 0.5f) * 1.4f, 0xF1EDE2, 0.26f + rnd.nextFloat() * 0.12f, 0.45f + rnd.nextFloat() * 0.4f))
-            for (i in 0 until 5) parts.add(Particle(bx + 0.5f, by + 0.5f, bz + 0.5f, (rnd.nextFloat() - 0.5f) * 6f, 2f + rnd.nextFloat() * 4f,
-                (rnd.nextFloat() - 0.5f) * 6f, 0xFFF3B0, 0.05f, 0.7f))
-            shake = max(shake, 0.16f)
-        }
+        if (big) shake = max(shake, 0.08f)
     }
 
     fun raycast(ox: Float, oy: Float, oz: Float, dx: Float, dy: Float, dz: Float, t0: Float, t1: Float) {

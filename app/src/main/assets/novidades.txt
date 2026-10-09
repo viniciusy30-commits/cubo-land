@@ -1,3 +1,8 @@
+#id 2026-10-10-c
+#titulo Quebra leve e fofinha!
+- Rachaduras agora são finas e delicadas, crescendo devagarinho a cada batida
+- Ao quebrar, só saem partículas pequeninas na cor do bloco, flutuando e sumindo suave (sem cubos brancos nem pedaços grandes)
+
 #id 2026-10-10-b
 #titulo Ícones 3D de verdade e rachaduras detalhadas!
 - Ícones das ferramentas agora são o MESMO modelo 3D que você segura na mão (espada, machado, picareta e cajado), renderizado em alta qualidade
