@@ -17,7 +17,27 @@ class Particle(var x: Float, var y: Float, var z: Float, var vx: Float, var vy: 
 
 class LeafP(var x: Float, var y: Float, var z: Float, var vx: Float, var vz: Float, val ph: Float, val color: Int, val size: Float, var life: Float, var landed: Boolean = false, var age: Float = 0f)
 
-class BreakAnim(val x: Int, val y: Int, val z: Int, val id: Int, val pat: Int) { var t = 0f; var fx = false }
+/** trecho de rachadura em coordenadas da face (0..1); aparece quando o crescimento g passa de t0 e termina em t1 */
+class Seg(val x1: Float, val y1: Float, val x2: Float, val y2: Float, val w: Float, val t0: Float, val t1: Float)
+
+/** marca de impacto numa face do bloco. kind: 0 corte de machado, 1 furo de picareta, 2 talho de espada, 3 estocada, 4 amassado */
+class Mark(val a: Int, val s: Int, val u: Float, val v: Float, val kind: Int, val ang: Float, val len: Float, val born: Float) {
+    val segs = ArrayList<Seg>(); var g = 0f; var chips = FloatArray(0)
+}
+
+/** dano acumulado de um bloco: todas as marcas + progresso de quebra */
+class Dmg(val x: Int, val y: Int, val z: Int, val id: Int) { var prog = 0f; var idle = 0f; val marks = ArrayList<Mark>() }
+
+/** mini-bloco que voa e quica quando algo quebra */
+class Debris(var x: Float, var y: Float, var z: Float, var vx: Float, var vy: Float, var vz: Float, val id: Int, val size: Float, var life: Float) {
+    var rx = 0f; var ry = 0f; var rz = 0f; var vrx = 0f; var vry = 0f; var vrz = 0f; var ground = false
+}
+
+/** parte de cima de uma árvore caindo inteira. bl = (dx,dy,dz,id) por bloco, relativo ao bloco cortado */
+class FallTree(val px: Float, val py: Float, val pz: Float, val dx: Float, val dz: Float, val bl: IntArray) {
+    var ang = 0.03f; var vel = 0.25f; var t = 0f; val n = bl.size / 4
+    val kx get() = dz; val kz get() = -dx     // eixo de rotação (horizontal, perpendicular à queda)
+}
 
 class Bolt(var x: Float, var y: Float, var z: Float, val vx: Float, val vy: Float, val vz: Float, var life: Float)
 
@@ -35,7 +55,8 @@ class Game(val world: World) {
     @Volatile var charging = false; @Volatile var charge = 0f
     private var pressT = 0f; private var pressing = false; var swingDur = 0.46f; @Volatile var powerSwing = false
     @Volatile var creative = false; @Volatile var flying = false; @Volatile var downHeld = false; private var lastJumpT = -9f
-    var brX = 0; var brY = -1; var brZ = 0; @Volatile var brProg = 0f; private var brT = 0f; @Volatile var hitPulse = 0f; @Volatile var brPat = 0; val anims = ArrayList<BreakAnim>()
+    var brX = 0; var brY = -1; var brZ = 0; @Volatile var hitPulse = 0f; var rT = 0f
+    val dmg = HashMap<Long, Dmg>(); val debris = ArrayList<Debris>(); val trees = ArrayList<FallTree>()
     private var hitT = -1f; private var hitItem = 0; private var hitStab = false
     private var pendingT = -1f; private var pendingPower = 0f
     val leafFall = ArrayList<LeafP>(); private var leafT = 0f; var comboT = 0f
@@ -138,7 +159,7 @@ class Game(val world: World) {
         while (t < t1) {
             val cx = floor(ox + dx * t).toInt(); val cy = floor(oy + dy * t).toInt(); val cz = floor(oz + dz * t).toInt()
             if (world.solid(cx, cy, cz)) {
-                if (lx != Int.MIN_VALUE) { hasHit = true; hx = cx; hy = cy; hz = cz; px = lx; py = ly; pz = lz }
+                if (lx != Int.MIN_VALUE) { hasHit = true; hx = cx; hy = cy; hz = cz; px = lx; py = ly; pz = lz; rT = t }
                 return
             }
             lx = cx; ly = cy; lz = cz
@@ -223,20 +244,231 @@ class Game(val world: World) {
         else -> 0.7f
     }
 
-    /** cada batida avança o estágio de quebra do bloco mirado; mult 2 = golpe carregado */
+    /** cada batida deixa uma marca exatamente onde a ferramenta acertou e avança a quebra; mult 2 = golpe carregado */
     private fun blockHit(item: Int, mult: Float) {
         raycast(camX, camY, camZ, dirX(), dirY(), dirZ(), camDist, camDist + 5.5f)
         if (!hasHit || hy <= 0) return
         val id = world.get(hx, hy, hz)
-        if (brY != hy || brX != hx || brZ != hz || brT <= 0f) { brX = hx; brY = hy; brZ = hz; brProg = 0f; brPat = rnd.nextInt(Atlas.CK_PAT) }
-        brT = 3f
-        brProg += if (creative) 1f else efficiency(item, id) * mult / hardness(id)
-        if (brProg >= 1f) {
-            anims.add(BreakAnim(hx, hy, hz, id, brPat))
-            world.set(hx, hy, hz, B.AIR); brProg = 0f; brY = -1; brT = 0f
-        } else {
-            breakFx(hx, hy, hz, id, false); hitPulse = 1f
-            shake = max(shake, 0.06f * mult)
+        // ponto exato do impacto: refina a entrada do raio no bloco
+        val dx = dirX(); val dy = dirY(); val dz = dirZ()
+        var lo = max(camDist, rT - 0.05f); var hi = rT
+        for (i in 0 until 7) { val m = (lo + hi) * 0.5f; if (world.solid(floor(camX + dx * m).toInt(), floor(camY + dy * m).toInt(), floor(camZ + dz * m).toInt())) hi = m else lo = m }
+        val qx = camX + dx * hi - (hx + 0.5f); val qy = camY + dy * hi - (hy + 0.5f); val qz = camZ + dz * hi - (hz + 0.5f)
+        val ax = abs(qx); val ay = abs(qy); val az = abs(qz)
+        val a = if (ax >= ay && ax >= az) 0 else if (ay >= az) 1 else 2
+        val s = if ((if (a == 0) qx else if (a == 1) qy else qz) >= 0f) 1 else -1
+        // coordenadas na face: a=0 -> (z,y); a=1 -> (x,z); a=2 -> (x,y)
+        val fu = (if (a == 0) qz else qx) + 0.5f; val fv = (if (a == 1) qz else qy) + 0.5f
+
+        val key = ((hy.toLong() * World.SZ + hz) * World.SX + hx)
+        val d = dmg.getOrPut(key) { Dmg(hx, hy, hz, id) }
+        d.idle = 0f; brX = hx; brY = hy; brZ = hz
+        d.prog += if (creative) 1f else efficiency(item, id) * mult / hardness(id)
+        hitPulse = 1f
+        if (d.prog >= 1f) { dmg.remove(key); breakBlock(hx, hy, hz, id); return }
+        if (d.marks.size >= 7) d.marks.removeAt(0)
+        d.marks.add(makeMark(a, s, fu, fv, item, mult > 1.5f, hitStab))
+        hitChips(hx + 0.5f + qx, hy + 0.5f + qy, hz + 0.5f + qz, a, s, id, item, mult > 1.5f)
+        shake = max(shake, 0.06f * mult)
+    }
+
+    // ---------- marcas de impacto ----------
+    private fun crack(m: Mark, x0: Float, y0: Float, ang0: Float, len: Float, t0: Float, t1: Float, w0: Float, depth: Int, jit: Float = 0.9f) {
+        if (m.segs.size > 46) return
+        val n = max(2, (len / 0.06f).toInt())
+        var x = x0; var y = y0; var an = ang0
+        for (i in 0 until n) {
+            an += (rnd.nextFloat() - 0.5f) * jit
+            val st = len / n * (0.8f + rnd.nextFloat() * 0.4f)
+            var nx = x + cos(an) * st; var ny = y + sin(an) * st
+            var stop = false
+            if (nx < 0.012f || nx > 0.988f || ny < 0.012f || ny > 0.988f) { nx = nx.coerceIn(0.012f, 0.988f); ny = ny.coerceIn(0.012f, 0.988f); stop = true }
+            val f0 = i.toFloat() / n; val f1 = (i + 1f) / n
+            m.segs.add(Seg(x, y, nx, ny, w0 * (1f - 0.65f * f0), t0 + (t1 - t0) * f0, t0 + (t1 - t0) * f1))
+            if (stop) return
+            if (depth < 2 && i >= 1 && i < n - 1 && rnd.nextFloat() < 0.26f)
+                crack(m, nx, ny, an + (if (rnd.nextBoolean()) 1f else -1f) * (0.55f + rnd.nextFloat() * 0.6f), len * (0.3f + rnd.nextFloat() * 0.25f),
+                    t0 + (t1 - t0) * f1, min(1f, t0 + (t1 - t0) * f1 + 0.4f), w0 * 0.62f, depth + 1, jit)
+            x = nx; y = ny
+        }
+    }
+
+    private fun makeMark(a: Int, s: Int, u0: Float, v0: Float, item: Int, big: Boolean, stab: Boolean): Mark {
+        val kind = when (item) { Items.PICK -> 1; Items.AXE -> 0; Items.SWORD -> if (stab) 3 else 2; else -> 4 }
+        var ang = when (item) {
+            Items.AXE -> (if (rnd.nextBoolean()) 0.8f else 2.3f) + (rnd.nextFloat() - 0.5f) * 0.5f
+            Items.SWORD -> (if (combo == 0) 0.75f else 3.1f) + (rnd.nextFloat() - 0.5f) * 0.3f
+            else -> rnd.nextFloat() * 6.283f
+        }
+        val len = when (kind) { 0 -> if (big) 0.44f else 0.32f; 2 -> if (big) 0.6f else 0.5f; 1 -> 0.2f; else -> 0.12f }
+        val c = cos(ang); val sn = sin(ang)
+        val mx = if (kind == 0 || kind == 2) abs(c) * len * 0.5f + 0.04f else len * 0.5f + 0.02f
+        val my = if (kind == 0 || kind == 2) abs(sn) * len * 0.5f + 0.04f else len * 0.5f + 0.02f
+        val u = u0.coerceIn(min(mx, 0.5f), max(0.5f, 1f - mx)); val v = v0.coerceIn(min(my, 0.5f), max(0.5f, 1f - my))
+        val m = Mark(a, s, u, v, kind, ang, len, time)
+        val big2 = if (big) 1.25f else 1f
+        when (kind) {
+            0 -> {
+                for (e in 0 until 2) { val sg = if (e == 0) 1f else -1f
+                    crack(m, u + c * len * 0.5f * sg, v + sn * len * 0.5f * sg, ang + (if (e == 0) 0f else 3.1416f) + (rnd.nextFloat() - 0.5f) * 0.7f,
+                        (0.17f + rnd.nextFloat() * 0.13f) * big2, rnd.nextFloat() * 0.1f, 0.6f + rnd.nextFloat() * 0.4f, 0.02f, 0, 0.6f) }
+                for (e in 0 until 2) crack(m, u, v, ang + (if (e == 0) 1f else -1f) * (1.2f + rnd.nextFloat() * 0.6f), (0.14f + rnd.nextFloat() * 0.14f) * big2, 0.15f + rnd.nextFloat() * 0.2f, 0.8f, 0.016f, 1)
+                for (i in 0 until 5) {
+                    val al = (rnd.nextFloat() - 0.5f) * len; val pp = (rnd.nextFloat() - 0.5f) * 0.14f
+                    m.chips = m.chips + floatArrayOf(c * al - sn * pp, sn * al + c * pp, rnd.nextFloat() * 3.14f, 0.022f + rnd.nextFloat() * 0.028f)
+                }
+            }
+            1 -> {
+                val n = 7 + rnd.nextInt(3)
+                for (i in 0 until n) { val an = i * 6.2832f / n + rnd.nextFloat() * 0.5f
+                    crack(m, u + cos(an) * 0.05f, v + sin(an) * 0.05f, an, (0.2f + rnd.nextFloat() * 0.3f) * big2, rnd.nextFloat() * 0.2f, 0.55f + rnd.nextFloat() * 0.45f, 0.026f, 0, 0.55f) }
+                for (i in 0 until 8) { val an = i * 0.7854f + rnd.nextFloat() * 0.4f; val r = 0.085f + rnd.nextFloat() * 0.05f
+                    m.chips = m.chips + floatArrayOf(cos(an) * r, sin(an) * r, rnd.nextFloat() * 3.14f, 0.026f + rnd.nextFloat() * 0.03f) }
+            }
+            2 -> {
+                for (e in 0 until 2) { val sg = if (e == 0) 1f else -1f
+                    crack(m, u + c * len * 0.5f * sg, v + sn * len * 0.5f * sg, ang + (if (e == 0) 0f else 3.1416f) + (rnd.nextFloat() - 0.5f) * 0.4f,
+                        (0.1f + rnd.nextFloat() * 0.12f) * big2, rnd.nextFloat() * 0.15f, 0.55f + rnd.nextFloat() * 0.4f, 0.012f, 0, 0.5f) }
+            }
+            3 -> {
+                for (i in 0 until 5) { val an = i * 1.2566f + rnd.nextFloat() * 0.6f
+                    crack(m, u + cos(an) * 0.03f, v + sin(an) * 0.03f, an, 0.1f + rnd.nextFloat() * 0.12f, rnd.nextFloat() * 0.15f, 0.5f + rnd.nextFloat() * 0.4f, 0.013f, 0, 0.5f) }
+                for (i in 0 until 4) { val an = rnd.nextFloat() * 6.28f; m.chips = m.chips + floatArrayOf(cos(an) * 0.05f, sin(an) * 0.05f, rnd.nextFloat() * 3.14f, 0.016f + rnd.nextFloat() * 0.016f) }
+            }
+            else -> {
+                for (i in 0 until 4) { val an = i * 1.5708f + rnd.nextFloat() * 0.8f
+                    crack(m, u + cos(an) * 0.04f, v + sin(an) * 0.04f, an, 0.08f + rnd.nextFloat() * 0.08f, 0f, 0.7f, 0.012f, 0, 0.5f) }
+            }
+        }
+        return m
+    }
+
+    /** lascas e faíscas saindo do ponto exato do impacto, de acordo com a ferramenta */
+    private fun hitChips(x: Float, y: Float, z: Float, a: Int, s: Int, id: Int, item: Int, big: Boolean) {
+        val nx = if (a == 0) s.toFloat() else 0f; val ny = if (a == 1) s.toFloat() else 0f; val nz = if (a == 2) s.toFloat() else 0f
+        val base = B.top[id]
+        val n = (if (item == Items.PICK) 6 else if (item == Items.AXE) 5 else 3) + (if (big) 4 else 0)
+        for (i in 0 until n) {
+            val k = 0.85f + rnd.nextFloat() * 0.4f
+            val r = ((base shr 16 and 255) * k).toInt().coerceIn(0, 255); val g = ((base shr 8 and 255) * k).toInt().coerceIn(0, 255); val b = ((base and 255) * k).toInt().coerceIn(0, 255)
+            val sp = 1.2f + rnd.nextFloat() * 1.6f
+            parts.add(Particle(x + nx * 0.03f, y + ny * 0.03f, z + nz * 0.03f, nx * sp + (rnd.nextFloat() - 0.5f) * 1.6f, ny * sp + rnd.nextFloat() * 1.5f + 0.6f, nz * sp + (rnd.nextFloat() - 0.5f) * 1.6f,
+                (r shl 16) or (g shl 8) or b, 0.03f + rnd.nextFloat() * (if (item == Items.AXE) 0.06f else 0.04f), 0.45f + rnd.nextFloat() * 0.4f))
+        }
+        val spark = when { item == Items.SWORD -> 0xCFF6FF; item == Items.PICK && (id == B.STONE || id == B.BRICK) -> 0xFFE7A0; else -> 0 }
+        if (spark != 0) for (i in 0 until 3) parts.add(Particle(x, y, z, nx * 2.5f + (rnd.nextFloat() - 0.5f) * 2.5f, ny * 2.5f + rnd.nextFloat() * 2f + 1f, nz * 2.5f + (rnd.nextFloat() - 0.5f) * 2.5f, spark, 0.035f, 0.3f + rnd.nextFloat() * 0.2f))
+    }
+
+    // ---------- quebra: mini-blocos e árvore caindo ----------
+    private fun spawnPieces(cx: Float, cy: Float, cz: Float, id: Int, n: Int, size: Float, spread: Float, vx0: Float = 0f, vy0: Float = 0f, vz0: Float = 0f, life: Float = 3.2f) {
+        if (id <= 0 || id > 13) return
+        for (i in 0 until n) {
+            if (debris.size > 420) debris.removeAt(0)
+            val ox = (rnd.nextFloat() - 0.5f) * spread; val oy = (rnd.nextFloat() - 0.5f) * spread; val oz = (rnd.nextFloat() - 0.5f) * spread
+            var yy = cy + oy; var k = 0
+            while (world.solid(floor(cx + ox).toInt(), floor(yy).toInt(), floor(cz + oz).toInt()) && k < 6) { yy += 0.5f; k++ }
+            val q = Debris(cx + ox, yy, cz + oz, ox * 5f + vx0 + (rnd.nextFloat() - 0.5f) * 2f, 2.5f + rnd.nextFloat() * 3.5f + vy0 * 0.5f, oz * 5f + vz0 + (rnd.nextFloat() - 0.5f) * 2f,
+                id, size * (0.85f + rnd.nextFloat() * 0.3f), life + rnd.nextFloat() * 1.5f)
+            q.vrx = (rnd.nextFloat() - 0.5f) * 500f; q.vry = (rnd.nextFloat() - 0.5f) * 500f; q.vrz = (rnd.nextFloat() - 0.5f) * 500f
+            q.rx = rnd.nextFloat() * 360f; q.ry = rnd.nextFloat() * 360f
+            debris.add(q)
+        }
+    }
+
+    private fun breakBlock(x: Int, y: Int, z: Int, id: Int) {
+        world.set(x, y, z, B.AIR)
+        val away = player.x - (x + 0.5f); val awz = player.z - (z + 0.5f); val l = max(0.1f, hypot(away, awz))
+        spawnPieces(x + 0.5f, y + 0.5f, z + 0.5f, id, if (id == B.LEAVES) 3 else 6, 0.27f, 0.6f, away / l * 0.8f, 1f, awz / l * 0.8f)
+        breakFx(x, y, z, id, true)
+        if (id == B.WOOD) fellTree(x, y, z)
+    }
+
+    /** corta o tronco: tudo de madeira/folha conectado acima do corte vira uma árvore que tomba */
+    private fun fellTree(x: Int, y: Int, z: Int) {
+        val s0 = world.get(x, y + 1, z)
+        if (s0 != B.WOOD && s0 != B.LEAVES) return
+        val seen = HashSet<Int>(); val q = ArrayDeque<Int>(); val out = ArrayList<Int>()
+        fun enc(a: Int, b: Int, c: Int) = ((b * World.SZ + c) * World.SX + a)
+        seen.add(enc(x, y + 1, z)); q.add(enc(x, y + 1, z))
+        while (q.isNotEmpty() && out.size < 4 * 800) {
+            val e = q.removeFirst(); val ex = e % World.SX; val ez = (e / World.SX) % World.SZ; val ey = e / (World.SX * World.SZ)
+            out.add(ex - x); out.add(ey - y); out.add(ez - z); out.add(world.get(ex, ey, ez))
+            for (dx in -1..1) for (dy in -1..1) for (dz in -1..1) {
+                val nx = ex + dx; val ny = ey + dy; val nz = ez + dz
+                if (ny <= y || ny >= World.SY || abs(nx - x) > 5 || abs(nz - z) > 5 || nx < 0 || nz < 0 || nx >= World.SX || nz >= World.SZ) continue
+                val k = enc(nx, ny, nz); if (seen.contains(k)) continue
+                val nid = world.get(nx, ny, nz)
+                if (nid != B.WOOD && nid != B.LEAVES) continue
+                seen.add(k); q.add(k)
+            }
+        }
+        if (out.isEmpty()) return
+        val arr = out.toIntArray()
+        for (i in 0 until arr.size / 4) world.set(x + arr[i * 4], y + arr[i * 4 + 1], z + arr[i * 4 + 2], B.AIR)
+        var dx = x + 0.5f - player.x; var dz = z + 0.5f - player.z
+        if (hypot(dx, dz) < 0.2f) { dx = sin(yaw); dz = cos(yaw) }
+        val an = atan2(dz, dx) + (rnd.nextFloat() - 0.5f) * 0.4f
+        trees.add(FallTree(x + 0.5f, y + 0.5f, z + 0.5f, cos(an), sin(an), arr))
+        shake = max(shake, 0.15f)
+    }
+
+    /** posição (relativa ao pivô) de um ponto da árvore depois de girar f.ang em volta do eixo horizontal */
+    private fun treeRot(f: FallTree, rx: Float, ry: Float, rz: Float, o: FloatArray) {
+        val kx = f.kx; val kz = f.kz; val c = cos(f.ang); val s = sin(f.ang); val kd = kx * rx + kz * rz
+        o[0] = rx * c - kz * ry * s + kx * kd * (1f - c)
+        o[1] = ry * c + (kz * rx - kx * rz) * s
+        o[2] = rz * c + kx * ry * s + kz * kd * (1f - c)
+    }
+
+    private val tmpV = FloatArray(3)
+
+    private fun treeHitsGround(f: FallTree): Boolean {
+        if (f.ang < 0.12f) return false
+        for (i in 0 until f.n) {
+            treeRot(f, f.bl[i * 4].toFloat(), f.bl[i * 4 + 1].toFloat(), f.bl[i * 4 + 2].toFloat(), tmpV)
+            val id = world.get(floor(f.px + tmpV[0]).toInt(), floor(f.py + tmpV[1]).toInt(), floor(f.pz + tmpV[2]).toInt())
+            if (id != B.AIR && id != B.WATER && id != B.LEAVES && id != B.WOOD) return true
+        }
+        return false
+    }
+
+    /** a árvore bate no chão e vira uma chuva de mini-blocos, folhas e poeira */
+    private fun shatterTree(f: FallTree) {
+        val kx = f.kx; val kz = f.kz
+        var leaves = 0
+        for (i in 0 until f.n) {
+            val id = f.bl[i * 4 + 3]
+            treeRot(f, f.bl[i * 4].toFloat(), f.bl[i * 4 + 1].toFloat(), f.bl[i * 4 + 2].toFloat(), tmpV)
+            val cx = f.px + tmpV[0]; val cy = f.py + tmpV[1]; val cz = f.pz + tmpV[2]
+            val vx = f.vel * (-kz * tmpV[1]) * 0.7f; val vy = f.vel * (kz * tmpV[0] - kx * tmpV[2]) * 0.4f; val vz = f.vel * (kx * tmpV[1]) * 0.7f
+            if (id == B.WOOD) spawnPieces(cx, cy, cz, id, 3, 0.36f, 0.5f, vx, vy, vz, 4f)
+            else { spawnPieces(cx, cy, cz, id, 1, 0.34f, 0.5f, vx, vy, vz, 3f); leaves++
+                if (leaves % 3 == 0 && leafFall.size < 140) leafFall.add(LeafP(cx, cy, cz, (rnd.nextFloat() - 0.5f) * 0.8f, (rnd.nextFloat() - 0.5f) * 0.8f, rnd.nextFloat() * 6.28f,
+                    intArrayOf(0x4FA52E, 0x6CBF3C, 0x8AD453, 0x3E8A25, 0xA3DF6A)[rnd.nextInt(5)], 0.08f + rnd.nextFloat() * 0.05f, 7f)) }
+            if (i % 5 == 0) burst(cx, cy, cz, if (id == B.WOOD) 0xC9A06A else 0x7FC84A, 3, 3f)
+        }
+        shake = max(shake, 0.55f)
+        val dist = hypot(player.x - f.px, player.z - f.pz); if (dist > 18f) shake = 0.1f
+    }
+
+    private fun updateTrees(dt: Float) {
+        val it = trees.iterator()
+        while (it.hasNext()) {
+            val f = it.next(); f.t += dt
+            if (f.t < 0.45f) {   // estalo: a árvore treme antes de tombar
+                f.ang = 0.03f + sin(f.t * 45f) * 0.012f
+                if (rnd.nextFloat() < 0.35f && leafFall.size < 140) leafFall.add(LeafP(f.px + (rnd.nextFloat() - 0.5f) * 3f, f.py + 3f + rnd.nextFloat() * 3f, f.pz + (rnd.nextFloat() - 0.5f) * 3f, 0f, 0f, rnd.nextFloat() * 6f, 0x6CBF3C, 0.09f, 5f))
+                continue
+            }
+            var done = false
+            for (st in 0 until 3) {
+                val h = dt / 3f
+                f.vel += (6.5f * sin(f.ang) + 0.5f) * h; f.ang += f.vel * h
+                if (f.ang >= 1.5708f) { f.ang = 1.5708f; done = true }
+                else if (treeHitsGround(f)) done = true
+                if (done) break
+            }
+            if (done) { shatterTree(f); it.remove() }
         }
     }
 
@@ -351,7 +583,9 @@ class Game(val world: World) {
             if (pressing) { pressing = false; if (charging) { val pw = charge; charging = false; charge = 0f; releasePower(pw) } else attack() }
         }
         if (!attackHeld && charging) { charging = false; charge = 0f }
-        brT -= dt; if (brT <= 0f) brProg = 0f; hitPulse = max(0f, hitPulse - dt * 4.5f)
+        hitPulse = max(0f, hitPulse - dt * 4.5f)
+        val dI = dmg.values.iterator()
+        while (dI.hasNext()) { val d = dI.next(); d.idle += dt; if (d.idle > 4f) d.prog -= dt * 0.2f; if (d.prog <= 0f || !world.solid(d.x, d.y, d.z)) dI.remove() }
         if (hitT > 0f) { hitT -= dt; if (hitT <= 0f) strikeHit(hitItem, hitStab) }
         if (pendingT > 0f) { pendingT -= dt; if (pendingT <= 0f) powerHit(pendingPower) }
         if (wantPlace) { wantPlace = false; place() }
@@ -394,11 +628,26 @@ class Game(val world: World) {
             }
             if (gone) { burst(b.x, b.y, b.z, 0x7FE8FF, 14, 5f); bi.remove() }
         }
-        val ai = anims.iterator()
-        while (ai.hasNext()) {
-            val a = ai.next(); a.t += dt
-            if (!a.fx && a.t >= 0.1f) { a.fx = true; breakFx(a.x, a.y, a.z, a.id, true) }
-            if (a.t > 0.42f) ai.remove()
+        updateTrees(dt)
+        val di = debris.iterator()
+        while (di.hasNext()) {
+            val q = di.next(); q.life -= dt
+            if (q.life <= 0f) { burst(q.x, q.y, q.z, B.top[q.id], 3, 1.5f); di.remove(); continue }
+            q.vy -= 22f * dt
+            val h = q.size * 0.5f
+            var nx = q.x + q.vx * dt; var ny = q.y + q.vy * dt; var nz = q.z + q.vz * dt
+            q.ground = false
+            if (q.vy <= 0f && world.solid(floor(q.x).toInt(), floor(ny - h).toInt(), floor(q.z).toInt())) {
+                ny = floor(ny - h) + 1f + h
+                if (q.vy < -2.5f) q.vy = -q.vy * 0.38f else q.vy = 0f
+                q.vx *= 0.7f; q.vz *= 0.7f; q.ground = true
+            } else if (q.vy > 0f && world.solid(floor(q.x).toInt(), floor(ny + h).toInt(), floor(q.z).toInt())) { q.vy = 0f; ny = q.y }
+            if (world.solid(floor(nx + (if (q.vx > 0) h else -h)).toInt(), floor(ny).toInt(), floor(q.z).toInt())) { q.vx = -q.vx * 0.3f; nx = q.x }
+            if (world.solid(floor(q.x).toInt(), floor(ny).toInt(), floor(nz + (if (q.vz > 0) h else -h)).toInt())) { q.vz = -q.vz * 0.3f; nz = q.z }
+            q.x = nx; q.y = ny; q.z = nz
+            val rd = if (q.ground) max(0f, 1f - 7f * dt) else 1f
+            q.vrx *= rd; q.vry *= rd; q.vrz *= rd
+            q.rx += q.vrx * dt; q.ry += q.vry * dt; q.rz += q.vrz * dt
         }
         val pi = parts.iterator()
         while (pi.hasNext()) {

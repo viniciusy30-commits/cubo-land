@@ -31,7 +31,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     private var skyProg = 0; private var skyP = 0; private var skyInv = 0; private var skyCam = 0; private var skyHor = 0; private var skyTime = 0
     private val inv = FloatArray(16)
     private val quad = ByteBuffer.allocateDirect(32).order(ByteOrder.nativeOrder()).asFloatBuffer().apply { put(floatArrayOf(-1f, -1f, 1f, -1f, -1f, 1f, 1f, 1f)); position(0) }
-    private var atlasTex = 0; private var crackTex = 0; private var crackVb = 0; private var crackIb = 0; private var iconsBaked = false; private var vw = 1; private var vh = 1; private var crackP = 0f; private var crackT = 0L
+    private var atlasTex = 0; private var iconsBaked = false; private var vw = 1; private var vh = 1
     private var lastId = -1; private var equip = 1f
     private var prevYaw = 0f; private var prevPitch = 0f; private var swayX = 0f; private var swayY = 0f
 
@@ -230,35 +230,6 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         }
         val ids2 = IntArray(2); G.glGenBuffers(2, ids2, 0); cubeVb = ids2[0]; cubeIb = ids2[1]
         upload(cb, cubeVb, cubeIb)
-        // cubos de rachadura (5 padrões x 9 estágios) com atlas próprio
-        val kb = MeshBuf(); val kp = FloatArray(3)
-        for (idx in 0 until Atlas.CK_PAT * Atlas.CK_ST) {
-            val col = Atlas.crackCols[idx % Atlas.crackCols.size]; val row = idx / Atlas.crackCols.size
-            for (face in 0 until 6) {
-                val a = face shr 1; val s = if ((face and 1) == 0) 1 else -1
-                val u = (a + 1) % 3; val v = (a + 2) % 3
-                val sh = when { a == 1 -> if (s > 0) 1f else 0.55f; a == 0 -> 0.82f; else -> 0.7f }
-                for (q in 0 until 4) {
-                    val cu = World.QU[q]; val cv = World.QV[q]
-                    kp[a] = 0.5f * s; kp[u] = cu - 0.5f; kp[v] = cv - 0.5f
-                    val tu: Float; val tv: Float
-                    if (a == 0) { tu = cv.toFloat(); tv = 1f - cu } else if (a == 1) { tu = cu.toFloat(); tv = cv.toFloat() } else { tu = cu.toFloat(); tv = 1f - cv }
-                    kb.vert(kp[0], kp[1], kp[2], sh, sh, sh, (col + 0.01f + tu * 0.98f) / Atlas.NT.toFloat(), (row + 0.01f + tv * 0.98f) * 0.5f)
-                }
-                if (s > 0) { kb.tri(0, 1, 2); kb.tri(0, 2, 3) } else { kb.tri(0, 2, 1); kb.tri(0, 3, 2) }
-                kb.vc += 4
-            }
-        }
-        val ids3 = IntArray(2); G.glGenBuffers(2, ids3, 0); crackVb = ids3[0]; crackIb = ids3[1]
-        upload(kb, crackVb, crackIb)
-        val ct = IntArray(1); G.glGenTextures(1, ct, 0); crackTex = ct[0]
-        G.glBindTexture(G.GL_TEXTURE_2D, crackTex)
-        G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_MIN_FILTER, G.GL_LINEAR_MIPMAP_NEAREST)
-        G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_MAG_FILTER, G.GL_LINEAR)
-        G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_WRAP_S, G.GL_CLAMP_TO_EDGE)
-        G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_WRAP_T, G.GL_CLAMP_TO_EDGE)
-        GLUtils.texImage2D(G.GL_TEXTURE_2D, 0, Atlas.crackBmp, 0); G.glGenerateMipmap(G.GL_TEXTURE_2D)
-        G.glBindTexture(G.GL_TEXTURE_2D, atlasTex)
         last = System.nanoTime()
     }
 
@@ -313,67 +284,130 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         if (yawDeg != 0f) Matrix.rotateM(base, 0, yawDeg, 0f, 1f, 0f)
     }
 
-    /** rachaduras ramificadas 16x16 que crescem do ponto de impacto a cada batida */
-    private val crackCells: IntArray = run {
-        val rd = java.util.Random(91); val list = ArrayList<IntArray>(); val seen = HashSet<Int>()
-        fun walk(x0: Int, y0: Int, ang0: Float, steps: Int, start: Int) {
-            var x = x0.toFloat(); var y = y0.toFloat(); var a = ang0
-            for (s in 0 until steps) {
-                x += cos(a); y += sin(a); a += (rd.nextFloat() - 0.5f) * 0.9f
-                val ix = x.roundToInt(); val iy = y.roundToInt()
-                if (ix !in 0..15 || iy !in 0..15) break
-                if (seen.add(iy * 16 + ix)) list.add(intArrayOf(ix, iy, start + s))
-                if (s > 2 && start < 6 && rd.nextFloat() < 0.14f) walk(ix, iy, a + (if (rd.nextBoolean()) 1f else -1f), steps - s - 2, start + s + 1)
-            }
+    // ---------- marcas de impacto (decalques desenhados em cima da face do bloco) ----------
+    private val dm = FloatArray(16)
+    private val fT1 = arrayOf(floatArrayOf(0f, 0f, 1f), floatArrayOf(1f, 0f, 0f), floatArrayOf(1f, 0f, 0f))
+    private val fT2 = arrayOf(floatArrayOf(0f, 1f, 0f), floatArrayOf(0f, 0f, 1f), floatArrayOf(0f, 1f, 0f))
+
+    /** retângulo fino colado na face (a = eixo, s = sinal), centrado em (u,v), girado ang, comprimento len x largura wid */
+    private fun decal(bx: Int, by: Int, bz: Int, a: Int, s: Int, u: Float, v: Float, ang: Float, len: Float, wid: Float, col: Int, al: Float) {
+        if (al < 0.02f || len <= 0.001f || wid <= 0.001f) return
+        val t1 = fT1[a]; val t2 = fT2[a]
+        val c = cos(ang); val sn = sin(ang)
+        val e1x = t1[0] * c + t2[0] * sn; val e1y = t1[1] * c + t2[1] * sn; val e1z = t1[2] * c + t2[2] * sn
+        val n3x = if (a == 0) s.toFloat() else 0f; val n3y = if (a == 1) s.toFloat() else 0f; val n3z = if (a == 2) s.toFloat() else 0f
+        val e2x = n3y * e1z - n3z * e1y; val e2y = n3z * e1x - n3x * e1z; val e2z = n3x * e1y - n3y * e1x
+        val lift = 0.5f + 0.006f
+        dm[0] = e1x * len; dm[1] = e1y * len; dm[2] = e1z * len; dm[3] = 0f
+        dm[4] = e2x * wid; dm[5] = e2y * wid; dm[6] = e2z * wid; dm[7] = 0f
+        dm[8] = n3x * 0.008f; dm[9] = n3y * 0.008f; dm[10] = n3z * 0.008f; dm[11] = 0f
+        dm[12] = bx + 0.5f + t1[0] * (u - 0.5f) + t2[0] * (v - 0.5f) + n3x * lift
+        dm[13] = by + 0.5f + t1[1] * (u - 0.5f) + t2[1] * (v - 0.5f) + n3y * lift
+        dm[14] = bz + 0.5f + t1[2] * (u - 0.5f) + t2[2] * (v - 0.5f) + n3z * lift
+        dm[15] = 1f
+        G.glUniformMatrix4fv(uModel, 1, false, dm, 0)
+        tint(col, al)
+        G.glDrawElements(G.GL_TRIANGLES, 36, G.GL_UNSIGNED_SHORT, 0)
+    }
+
+    private fun mixCol(a: Int, b: Int, t: Float): Int {
+        val r = ((a shr 16 and 255) * (1 - t) + (b shr 16 and 255) * t).toInt(); val g = ((a shr 8 and 255) * (1 - t) + (b shr 8 and 255) * t).toInt(); val bl = ((a and 255) * (1 - t) + (b and 255) * t).toInt()
+        return (r shl 16) or (g shl 8) or bl
+    }
+
+    private fun octa(d: Dmg, m: Mark, u: Float, v: Float, size: Float, col: Int, al: Float) {
+        decal(d.x, d.y, d.z, m.a, m.s, u, v, 0.2f, size, size * 0.86f, col, al)
+        decal(d.x, d.y, d.z, m.a, m.s, u, v, 0.2f + 0.7854f, size, size * 0.86f, col, al)
+    }
+
+    private fun drawMark(d: Dmg, m: Mark, dt: Float) {
+        val age = game.time - m.born
+        val pop = max(0f, 1f - age * 3f)            // estufadinha de impacto, dura ~0.33s
+        val kk = 1f + 0.3f * pop
+        val pale = mixCol(B.top[d.id], 0xFFF3DC, 0.55f)
+        val tgt = (0.3f + 0.85f * d.prog).coerceAtMost(1f)
+        m.g += (tgt - m.g) * min(1f, dt * 9f)
+        val a = m.a; val s = m.s; val bx = d.x; val by = d.y; val bz = d.z
+        // rachaduras: sombra suave, brilho de borda e miolo escuro
+        for (sg in m.segs) {
+            val r = ((m.g - sg.t0) / (sg.t1 - sg.t0)).coerceIn(0f, 1f)
+            if (r <= 0f) continue
+            val x2 = sg.x1 + (sg.x2 - sg.x1) * r; val y2 = sg.y1 + (sg.y2 - sg.y1) * r
+            val ddx = x2 - sg.x1; val ddy = y2 - sg.y1; val l = hypot(ddx, ddy)
+            if (l < 0.004f) continue
+            val an = atan2(ddy, ddx); val cx = (sg.x1 + x2) * 0.5f; val cy = (sg.y1 + y2) * 0.5f; val w = sg.w * (1f + 0.4f * pop)
+            decal(bx, by, bz, a, s, cx, cy, an, l + w * 0.9f, w * 2.4f, 0x120904, 0.2f)
+            decal(bx, by, bz, a, s, cx - sin(an) * w * 0.85f, cy + cos(an) * w * 0.85f, an, l, w * 0.5f, pale, 0.4f)
+            decal(bx, by, bz, a, s, cx, cy, an, l + w * 0.8f, w, 0x2B1B12, 0.88f)
         }
-        for (k in 0 until 7) walk(8, 8, k * 6.283f / 7f + rd.nextFloat() * 0.5f, 9 + rd.nextInt(4), 0)
-        list.sortBy { it[2] }
-        val out = IntArray(list.size * 2)
-        for ((i, e) in list.withIndex()) { out[i * 2] = e[0]; out[i * 2 + 1] = e[1] }
-        out
+        val u = m.u; val v = m.v; val c = cos(m.ang); val sn = sin(m.ang)
+        when (m.kind) {
+            0 -> {   // machado: corte em cunha com lábios claros e lascas
+                val L = m.len
+                decal(bx, by, bz, a, s, u, v, m.ang, L * 1.14f, 0.09f * kk, 0x120904, 0.22f)
+                decal(bx, by, bz, a, s, u, v, m.ang, L, 0.05f * kk, 0x24150C, 0.93f)
+                decal(bx, by, bz, a, s, u, v, m.ang, L * 0.86f, 0.02f * kk, 0x050201, 1f)
+                decal(bx, by, bz, a, s, u - sn * 0.033f, v + c * 0.033f, m.ang, L * 0.86f, 0.011f, pale, 0.7f)
+                decal(bx, by, bz, a, s, u + sn * 0.03f, v - c * 0.03f, m.ang, L * 0.8f, 0.008f, 0x000000, 0.3f)
+                var i = 0; while (i < m.chips.size) { decal(bx, by, bz, a, s, u + m.chips[i], v + m.chips[i + 1], m.chips[i + 2], m.chips[i + 3], m.chips[i + 3] * 0.6f, pale, 0.88f); i += 4 }
+            }
+            1 -> {   // picareta: furo fundo e destrutivo, borda esfarelada
+                octa(d, m, u, v, 0.21f * kk, 0x120904, 0.24f)
+                octa(d, m, u, v, 0.13f * kk, 0x2A190F, 0.92f)
+                octa(d, m, u, v, 0.085f * kk, 0x0A0503, 1f)
+                decal(bx, by, bz, a, s, u - 0.03f, v + 0.03f, 2.36f, 0.06f, 0.011f, pale, 0.55f)
+                var i = 0; while (i < m.chips.size) { decal(bx, by, bz, a, s, u + m.chips[i], v + m.chips[i + 1], m.chips[i + 2], m.chips[i + 3], m.chips[i + 3] * 0.7f, pale, 0.9f); i += 4 }
+            }
+            2 -> {   // espada: talho fino e limpo, com brilhinho de cristal
+                val L = m.len
+                decal(bx, by, bz, a, s, u, v, m.ang, L * 1.06f, 0.032f, 0x120904, 0.2f)
+                decal(bx, by, bz, a, s, u, v, m.ang, L, 0.012f * kk, 0x2A190F, 0.9f)
+                decal(bx, by, bz, a, s, u, v, m.ang, L * 0.5f, 0.022f * kk, 0x1A0E08, 0.92f)
+                decal(bx, by, bz, a, s, u - sn * 0.016f, v + c * 0.016f, m.ang, L * 0.9f, 0.006f, pale, 0.55f)
+                if (pop > 0f) for (e in 0 until 3) { val t = (e - 1) * L * 0.4f
+                    decal(bx, by, bz, a, s, u + c * t, v + sn * t, 0.785f, 0.045f * pop, 0.045f * pop, 0xCFF6FF, pop)
+                    decal(bx, by, bz, a, s, u + c * t, v + sn * t, 0f, 0.07f * pop, 0.01f, 0xFFFFFF, pop * 0.8f) }
+            }
+            3 -> {   // estocada: furinho fino
+                octa(d, m, u, v, 0.09f * kk, 0x120904, 0.25f)
+                octa(d, m, u, v, 0.05f * kk, 0x1A0E08, 0.95f)
+                octa(d, m, u, v, 0.025f * kk, 0x050201, 1f)
+                var i = 0; while (i < m.chips.size) { decal(bx, by, bz, a, s, u + m.chips[i], v + m.chips[i + 1], m.chips[i + 2], m.chips[i + 3], m.chips[i + 3] * 0.7f, pale, 0.85f); i += 4 }
+            }
+            else -> { octa(d, m, u, v, 0.16f * kk, 0x000000, 0.16f); octa(d, m, u, v, 0.09f * kk, 0x000000, 0.14f) }
+        }
     }
 
-    private fun useCrack(on: Boolean) {
-        if (on) { G.glBindTexture(G.GL_TEXTURE_2D, crackTex); bindMesh(crackVb, crackIb) }
-        else { G.glBindTexture(G.GL_TEXTURE_2D, atlasTex); bindMesh(cubeVb, cubeIb) }
-    }
-
-    private fun drawCracks(bx: Int, by: Int, bz: Int, prog: Float) {
-        val nw = System.nanoTime(); val dtc = ((nw - crackT) / 1e9f).coerceIn(0f, 0.1f); crackT = nw
-        if (prog < crackP - 0.001f || crackP > prog + 0.5f) crackP = 0f
-        crackP += (prog - crackP) * min(1f, dtc * 14f)
-        val pulse = game.hitPulse
-        setBase(bx + 0.5f, by + 0.5f, bz + 0.5f, 0f)
+    private fun drawDamage(dt: Float) {
+        if (game.dmg.isEmpty()) return
         G.glDepthMask(false)
-        val kd = 1.006f
-        box(base, 0f, 0f, 0f, 0f, 0f, kd, kd, kd, 0f, 0x000000, 0.02f + 0.14f * crackP)
-        if (pulse > 0f) { val kp = 1.016f + 0.03f * pulse; box(base, 0f, 0f, 0f, 0f, 0f, kp, kp, kp, 0f, 0xFFFFFF, 0.1f * pulse) }
-        val x = (crackP * 9f - 0.5f).coerceIn(0f, 8f)
-        val s0 = x.toInt().coerceIn(0, 8); val s1 = min(8, s0 + 1); val fr = x - s0
-        val k = 1.012f + 0.03f * pulse
-        val pb = game.brPat.coerceIn(0, Atlas.CK_PAT - 1) * Atlas.CK_ST
-        useCrack(true)
-        box(base, 0f, 0f, 0f, 0f, 0f, k, k, k, 0f, 0xFFFFFF, 0.85f, 1f, null, pb + s0)
-        if (s1 != s0 && fr > 0.02f) box(base, 0f, 0f, 0f, 0f, 0f, k + 0.002f, k + 0.002f, k + 0.002f, 0f, 0xFFFFFF, 0.85f * fr, 1f, null, pb + s1)
-        useCrack(false)
+        for (d in game.dmg.values) {
+            val dx = d.x + 0.5f - game.camX; val dy = d.y + 0.5f - game.camY; val dz = d.z + 0.5f - game.camZ
+            if (dx * dx + dy * dy + dz * dz > 18f * 18f) continue
+            setBase(d.x + 0.5f, d.y + 0.5f, d.z + 0.5f, 0f)
+            box(base, 0f, 0f, 0f, 0f, 0f, 1.004f, 1.004f, 1.004f, 0f, 0x000000, 0.02f + 0.13f * d.prog.coerceIn(0f, 1f))
+            if (d.x == game.brX && d.y == game.brY && d.z == game.brZ && game.hitPulse > 0f) { val kp = 1.012f + 0.03f * game.hitPulse; box(base, 0f, 0f, 0f, 0f, 0f, kp, kp, kp, 0f, 0xFFFFFF, 0.1f * game.hitPulse) }
+            for (m in d.marks) drawMark(d, m, dt)
+        }
         G.glDepthMask(true)
     }
 
-    /** bloco destruído: treme, incha de leve, depois encolhe girando e some (partículas saem no meio) */
-    private fun drawBreakAnim(a: BreakAnim) {
-        val t = a.t
-        var sc: Float; var al: Float; var yo = 0f; var yaw = 0f; var fl: Float
-        if (t < 0.1f) { val u = t / 0.1f; sc = 1f + 0.12f * u; al = 1f; yaw = sin(t * 140f) * 4f; fl = 0.3f * u }
-        else { val u = ((t - 0.1f) / 0.32f).coerceIn(0f, 1f); sc = 1.12f * (1f - u * u); al = 1f - u * u; yo = 0.12f * u; yaw = u * 40f; fl = 0.3f * (1f - u) }
-        if (sc < 0.02f || al < 0.02f) return
-        setBase(a.x + 0.5f, a.y + 0.5f + yo, a.z + 0.5f, yaw)
-        G.glDepthMask(false)
-        box(base, 0f, 0f, 0f, 0f, 0f, sc, sc, sc, 0f, 0xFFFFFF, al, 1f, null, a.id)
-        if (fl > 0.01f) box(base, 0f, 0f, 0f, 0f, 0f, sc * 1.006f, sc * 1.006f, sc * 1.006f, 0f, 0xFFFFFF, fl)
-        useCrack(true)
-        box(base, 0f, 0f, 0f, 0f, 0f, sc * 1.012f, sc * 1.012f, sc * 1.012f, 0f, 0xFFFFFF, al * 0.85f, 1f, null, a.pat * Atlas.CK_ST + 8)
-        useCrack(false)
-        G.glDepthMask(true)
+    private fun drawDebris() {
+        for (q in game.debris) {
+            val sc = q.size * min(1f, q.life * 2f)
+            if (sc < 0.01f) continue
+            setBase(q.x, q.y, q.z, 0f)
+            box(base, 0f, 0f, 0f, q.rx, q.ry, sc, sc, sc, 0f, 0xFFFFFF, 1f, 1f, null, q.id, q.rz)
+        }
+    }
+
+    /** a árvore inteira (troncos e folhas) girando em volta do ponto de corte */
+    private fun drawTrees() {
+        for (f in game.trees) {
+            Matrix.setIdentityM(base2, 0); Matrix.translateM(base2, 0, f.px, f.py, f.pz)
+            Matrix.rotateM(base2, 0, f.ang * 57.29578f, f.kx, 0f, f.kz)
+            for (i in 0 until f.n) box(base2, f.bl[i * 4].toFloat(), f.bl[i * 4 + 1].toFloat(), f.bl[i * 4 + 2].toFloat(), 0f, 0f, 1f, 1f, 1f, 0f, 0xFFFFFF, 1f, 1f, null, f.bl[i * 4 + 3])
+        }
     }
 
     /** renderiza as ferramentas 3D da mão (mesmo modelo) em texturas para os ícones do HUD */
@@ -1123,6 +1157,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         if (game.thirdPerson) shadow(game.player.x, game.player.y, game.player.z, 0.8f)
         G.glDepthMask(true)
         for (s in game.slimes) drawSlime(s)
+        drawDebris(); drawTrees()
         for (q in game.parts) {
             setBase(q.x, q.y, q.z, game.time * 200f)
             val ps = q.size * min(1f, 0.35f + q.life * 1.6f)
@@ -1149,8 +1184,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             box(base, 0f, 0f, 0f, 0f, 0f, 1.01f, 1.01f, 1.01f, 0f, 0xFFFFFF, 0.18f + 0.1f * sin(game.time * 6f))
             G.glDepthMask(true)
         }
-        if (game.brProg > 0f && game.brY > 0 && game.deadTimer <= 0f && world.get(game.brX, game.brY, game.brZ) != 0) drawCracks(game.brX, game.brY, game.brZ, game.brProg)
-        for (an in game.anims) drawBreakAnim(an)
+        if (game.deadTimer <= 0f) drawDamage(dt)
         G.glUniform1f(uWind, 1f)
         G.glUniformMatrix4fv(uModel, 1, false, ident, 0)
         G.glDisable(G.GL_CULL_FACE)

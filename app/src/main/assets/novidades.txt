@@ -1,3 +1,11 @@
+#id 2026-10-10-e
+#titulo Marcas de golpe, árvores que tombam e blocos que estilhaçam!
+- Acabou a animação de rachadura antiga: agora cada golpe deixa uma marca EXATAMENTE onde a ferramenta bateu
+- Machado deixa um corte em cunha com lascas, picareta faz um furo fundo e esfarelado, espada deixa um talho fino com brilhinho de cristal (e uma estocada deixa um furinho)
+- As rachaduras nascem de cada marca e vão crescendo; bateu em outro ponto do bloco, marca ali também, até quebrar
+- Bloco quebrado vira mini-blocos que voam e quicam
+- Quebrou um tronco? Tudo que está acima dele (tronco e copa) estala, tomba inteiro pro lado oposto e se estilhaça em mini-blocos e folhinhas ao bater no chão
+
 #id 2026-10-10-d
 #titulo Bloco quebrando de verdade e rachaduras variadas!
 - O bloco não some mais de uma vez: ele treme, incha um pouquinho, brilha, encolhe girando e desaparece soltando as partículas
