@@ -103,22 +103,22 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                 float depth = clamp(vCol.g, 0.0, 1.0);
                 vec3 shallow = vec3(0.38, 0.90, 0.85);
                 vec3 deep = vec3(0.03, 0.20, 0.58);
-                vec3 base = mix(shallow, deep, smoothstep(0.0, 0.75, depth));
+                vec3 base = shallow;   // cor única: toda a água igual à parte clara
                 float ndv = max(dot(n, V), 0.0);
                 float fres = 0.02 + 0.98 * pow(1.0 - ndv, 5.0);
                 vec3 R = reflect(-V, n);
                 vec3 sky = mix(uFog, vec3(0.42, 0.66, 1.0), pow(clamp(R.y, 0.0, 1.0), 0.45));
                 float rl = max(dot(R, L), 0.0);
-                float spec = pow(rl, 220.0) * 3.0 + pow(rl, 18.0) * 0.12;
+                float spec = pow(rl, 30.0) * 0.16;
                 vec3 wc = base * (0.84 + 0.26 * dot(n, L));
                 wc = mix(wc, sky, clamp(fres * 1.1 + 0.06, 0.0, 0.9));
                 // cintilados do sol nas ondinhas
                 float sp = max(0.0, sin(P.x * 9.0 + tm * 2.2) * sin(P.y * 8.0 - tm * 1.9));
-                wc += vec3(1.0, 0.97, 0.88) * (spec + pow(sp, 22.0) * 0.45 * smoothstep(0.2, 0.9, rl + 0.25));
+                wc += vec3(1.0, 0.97, 0.88) * spec;
                 // espuma na beirada
                 float foam = smoothstep(0.17, 0.0, depth) * (0.55 + 0.45 * sin(P.x * 5.0 + P.y * 4.0 + tm * 1.8 + sin(P.y * 3.0 - tm) * 2.0));
                 wc = mix(wc, vec3(1.0), clamp(foam, 0.0, 1.0) * 0.5);
-                float wa = mix(0.42, 0.97, smoothstep(0.0, 0.7, depth));
+                float wa = mix(0.46, 0.74, smoothstep(0.0, 0.5, depth));
                 wa = clamp(wa + fres * 0.35 + foam * 0.3, 0.0, 1.0);
                 if (uUnder > 0.5) {   // vendo a superfície por baixo
                     wc = mix(vec3(0.30, 0.68, 0.92), sky * 0.9, 0.4) + vec3(1.0) * spec * 0.4;
@@ -127,7 +127,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                 c = wc; alpha = wa;
             } else if (uWind > 0.5 && vWP.y < 9.86) {   // tudo que está debaixo d'água: azulado, escuro com a profundidade e luz dançando
                 float dep = clamp((9.88 - vWP.y) / 6.0, 0.0, 1.0);
-                c *= mix(vec3(0.92, 1.0, 1.0), vec3(0.42, 0.68, 0.95), dep * 0.9);
+                c *= mix(vec3(0.92, 1.0, 1.0), vec3(0.8, 0.95, 1.0), dep * 0.5);
                 c += vec3(0.55, 0.95, 1.0) * caus(vWP * 1.1, uTime) * 0.5 * (1.0 - dep * 0.6);
             }
             if (vTile > 14.5 && vTile < 15.5) c = t.rgb * 1.25;
@@ -260,9 +260,10 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     /** caixa: parent * T(px,py,pz) * Ry * Rx * T(0,oy,0) * S. cube: 0 = branco, 1..13 = textura do bloco */
     private fun box(parent: FloatArray, px: Float, py: Float, pz: Float, rx: Float, ry: Float,
                     sx: Float, sy: Float, sz: Float, oy: Float, col: Int, a: Float = 1f, mul: Float = 1f,
-                    outArm: FloatArray? = null, cube: Int = 0) {
+                    outArm: FloatArray? = null, cube: Int = 0, rz: Float = 0f) {
         System.arraycopy(parent, 0, tmp, 0, 16)
         Matrix.translateM(tmp, 0, px, py, pz)
+        if (rz != 0f) Matrix.rotateM(tmp, 0, rz, 0f, 0f, 1f)
         if (ry != 0f) Matrix.rotateM(tmp, 0, ry, 0f, 1f, 0f)
         if (rx != 0f) Matrix.rotateM(tmp, 0, rx, 1f, 0f, 0f)
         if (outArm != null) System.arraycopy(tmp, 0, outArm, 0, 16)
@@ -299,7 +300,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         return k * d
     }
 
-    /** Modelo do item. Origem = punho, lâmina/cabo estendem-se em +Z. Detalhado: camadas, brilho e runas. */
+    /** Modelos 3D próprios das ferramentas (pastel, camadas, gemas e brilho). Origem = centro do punho; o eixo da ferramenta é +Z; o fio/cabeça fica em -Y. */
     private fun drawItem(m: FloatArray, id: Int, t: Float) {
         val glint = 0.5f + 0.5f * sin(t * 3f)
         when {
@@ -307,58 +308,112 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                 box(m, 0f, 0.2f, 0.18f, 0f, 30f, 0.34f, 0.34f, 0.34f, 0f, 0xFFFFFF, 1f, 1f, null, id)
             }
             id == Items.SWORD -> {
-                box(m, 0f, 0f, 0.55f, 0f, 0f, 0.115f, 0.03f, 0.78f, 0f, 0xD7E4F4)        // lâmina
-                box(m, 0f, 0f, 0.55f, 0f, 0f, 0.05f, 0.045f, 0.74f, 0f, 0x8FD0FF)        // veio de cristal
-                box(m, 0f, 0f, 0.55f, 0f, 0f, 0.02f, 0.05f, 0.7f, 0f, 0xFFFFFF, 0.6f + 0.4f * glint)
-                box(m, 0f, 0f, 0.96f, 0f, 0f, 0.075f, 0.028f, 0.1f, 0f, 0xF2F8FF)        // ponta
-                box(m, 0f, 0f, 0.1f, 0f, 0f, 0.36f, 0.06f, 0.07f, 0f, 0xFFD060)          // guarda
-                box(m, 0.19f, 0f, 0.1f, 0f, 0f, 0.07f, 0.075f, 0.12f, 0f, 0xFFE9A0)
-                box(m, -0.19f, 0f, 0.1f, 0f, 0f, 0.07f, 0.075f, 0.12f, 0f, 0xFFE9A0)
-                box(m, 0f, 0.035f, 0.1f, 0f, 0f, 0.08f, 0.04f, 0.08f, 0f, 0xFF5FA0)      // gema
-                box(m, 0f, 0f, -0.04f, 0f, 0f, 0.065f, 0.065f, 0.2f, 0f, 0x7A5230)       // cabo
-                box(m, 0f, 0f, -0.04f, 0f, 0f, 0.075f, 0.055f, 0.03f, 0f, 0xC9A06A)
-                box(m, 0f, 0f, -0.1f, 0f, 0f, 0.075f, 0.055f, 0.03f, 0f, 0xC9A06A)
-                box(m, 0f, 0f, -0.18f, 0f, 0f, 0.11f, 0.11f, 0.1f, 0f, 0xFFA3C8)         // pomo
+                box(m, 0f, 0f, -0.17f, 0f, 0f, 0.12f, 0.12f, 0.12f, 0f, 0xFF8CBF, 1f, rz = 0f)
+                box(m, 0f, 0f, -0.17f, 0f, 0f, 0.09f, 0.09f, 0.15f, 0f, 0xFFC2DC, 1f, rz = 0f)
+                box(m, 0f, 0f, -0.2f, 0f, 0f, 0.05f, 0.05f, 0.05f, 0f, 0xFFFFFF, 0.63f + 0.27f * glint, rz = 0f)
+                box(m, 0f, 0f, 0.05f, 0f, 0f, 0.07f, 0.07f, 0.38f, 0f, 0xB892F0, 1f, rz = 0f)
+                box(m, 0f, 0f, 0.05f, 0f, 0f, 0.045f, 0.045f, 0.4f, 0f, 0xD2B8FF, 1f, rz = 0f)
+                box(m, 0f, 0f, -0.07f, 0f, 0f, 0.085f, 0.085f, 0.035f, 0f, 0xFFD66B, 1f, rz = 0f)
+                box(m, 0f, 0f, 0.02f, 0f, 0f, 0.085f, 0.085f, 0.035f, 0f, 0xFFD66B, 1f, rz = 0f)
+                box(m, 0f, 0f, 0.11f, 0f, 0f, 0.085f, 0.085f, 0.035f, 0f, 0xFFD66B, 1f, rz = 0f)
+                box(m, 0f, 0f, 0.255f, 0f, 0f, 0.08f, 0.4f, 0.07f, 0f, 0xFFD66B, 1f, rz = 0f)
+                box(m, 0f, 0f, 0.285f, 0f, 0f, 0.07f, 0.36f, 0.03f, 0f, 0xFFEDA8, 1f, rz = 0f)
+                box(m, 0f, -0.21f, 0.27f, 0f, 0f, 0.1f, 0.1f, 0.13f, 0f, 0xFFEDA8, 1f, rz = 0f)
+                box(m, 0f, 0.21f, 0.27f, 0f, 0f, 0.1f, 0.1f, 0.13f, 0f, 0xFFEDA8, 1f, rz = 0f)
+                box(m, 0f, -0.21f, 0.34f, 0f, 0f, 0.07f, 0.07f, 0.06f, 0f, 0xFFD66B, 1f, rz = 0f)
+                box(m, 0f, 0.21f, 0.34f, 0f, 0f, 0.07f, 0.07f, 0.06f, 0f, 0xFFD66B, 1f, rz = 0f)
+                box(m, 0.045f, 0f, 0.27f, 0f, 0f, 0.05f, 0.11f, 0.11f, 0f, 0xFF8CBF, 1f, rz = 0f)
+                box(m, -0.045f, 0f, 0.27f, 0f, 0f, 0.05f, 0.11f, 0.11f, 0f, 0xFF8CBF, 1f, rz = 0f)
+                box(m, 0.05f, 0f, 0.27f, 0f, 0f, 0.03f, 0.05f, 0.05f, 0f, 0xFFFFFF, 0.63f + 0.27f * glint, rz = 0f)
+                box(m, -0.05f, 0f, 0.27f, 0f, 0f, 0.03f, 0.05f, 0.05f, 0f, 0xFFFFFF, 0.63f + 0.27f * glint, rz = 0f)
+                box(m, 0f, 0f, 0.64f, 0f, 0f, 0.05f, 0.17f, 0.72f, 0f, 0xD6ECFF, 1f, rz = 0f)
+                box(m, 0f, 0f, 0.64f, 0f, 0f, 0.065f, 0.09f, 0.7f, 0f, 0x8FD0FF, 1f, rz = 0f)
+                box(m, 0f, -0.085f, 0.64f, 0f, 0f, 0.052f, 0.03f, 0.7f, 0f, 0xF4FAFF, 1f, rz = 0f)
+                box(m, 0f, 0.085f, 0.64f, 0f, 0f, 0.052f, 0.03f, 0.7f, 0f, 0xF4FAFF, 1f, rz = 0f)
+                box(m, 0f, 0f, 0.64f, 0f, 0f, 0.07f, 0.025f, 0.64f, 0f, 0xFFFFFF, 0.49f + 0.21f * glint, rz = 0f)
+                box(m, 0f, 0f, 1.04f, 0f, 0f, 0.05f, 0.12f, 0.12f, 0f, 0xE2F2FF, 1f, rz = 0f)
+                box(m, 0f, 0f, 1.11f, 0f, 0f, 0.04f, 0.065f, 0.1f, 0f, 0xF4FAFF, 1f, rz = 0f)
+                box(m, 0f, 0f, 1.15f, 0f, 0f, 0.03f, 0.03f, 0.05f, 0f, 0xFFFFFF, 0.63f + 0.27f * glint, rz = 0f)
+                box(m, 0.04f, 0f, 0.45f, 0f, 0f, 0.075f, 0.05f, 0.05f, 0f, 0xFFF2A0, 0.63f + 0.27f * glint, rz = 0f)
+                box(m, -0.04f, 0f, 0.74f, 0f, 0f, 0.075f, 0.05f, 0.05f, 0f, 0xFFF2A0, 0.63f + 0.27f * glint, rz = 0f)
+                box(m, 0.05f, 0f, 0.96f, t * 150f, 0f, 0.05f, 0.05f, 0.05f, 0f, 0xFFF2A0, 0.6f + 0.4f * glint)
             }
             id == Items.AXE -> {
-                box(m, 0f, 0f, 0.32f, 0f, 0f, 0.065f, 0.065f, 0.95f, 0f, 0x7A5230)       // cabo
-                box(m, 0f, 0f, 0.2f, 0f, 0f, 0.075f, 0.075f, 0.04f, 0f, 0xC9A06A)
-                box(m, 0f, 0f, 0.4f, 0f, 0f, 0.075f, 0.075f, 0.04f, 0f, 0xC9A06A)
-                box(m, 0f, 0f, 0.7f, 0f, 0f, 0.09f, 0.12f, 0.2f, 0f, 0x8A94A2)           // soquete
-                box(m, 0f, 0.14f, 0.72f, 0f, 0f, 0.055f, 0.36f, 0.3f, 0f, 0xC8D2DE)       // lâmina
-                box(m, 0f, 0.3f, 0.78f, 0f, 0f, 0.06f, 0.1f, 0.34f, 0f, 0xE8F0FA)
-                box(m, 0f, 0.34f, 0.8f, 0f, 0f, 0.065f, 0.04f, 0.3f, 0f, 0xFFFFFF, 0.7f + 0.3f * glint) // fio
-                box(m, 0f, -0.1f, 0.7f, 0f, 0f, 0.05f, 0.14f, 0.2f, 0f, 0xA9B4C2)
-                box(m, 0f, 0f, 0.0f, 0f, 0f, 0.1f, 0.1f, 0.09f, 0f, 0xFFD060)
-            }
-            id == Items.STAFF -> {
-                box(m, 0f, 0f, 0.38f, 0f, 0f, 0.065f, 0.065f, 1.15f, 0f, 0x8E5FD6)
-                box(m, 0f, 0f, 0.38f, 0f, 0f, 0.03f, 0.07f, 1.1f, 0f, 0xB48CFF)
-                box(m, 0f, 0f, 0.2f, 0f, 0f, 0.1f, 0.1f, 0.05f, 0f, 0xFFD060)
-                box(m, 0f, 0f, 0.82f, 0f, 0f, 0.12f, 0.12f, 0.06f, 0f, 0xFFD060)
-                box(m, 0.09f, 0f, 0.92f, 0f, 0f, 0.04f, 0.04f, 0.2f, 0f, 0xFFD060)       // garras
-                box(m, -0.09f, 0f, 0.92f, 0f, 0f, 0.04f, 0.04f, 0.2f, 0f, 0xFFD060)
-                box(m, 0f, 0.09f, 0.92f, 0f, 0f, 0.04f, 0.04f, 0.2f, 0f, 0xFFD060)
-                box(m, 0f, -0.09f, 0.92f, 0f, 0f, 0.04f, 0.04f, 0.2f, 0f, 0xFFD060)
-                val pulse = 0.5f + 0.5f * sin(t * 4f)
-                box(m, 0f, 0f, 1.0f, t * 120f, t * 80f, 0.2f, 0.2f, 0.2f, 0f, 0x7FE8FF, 0.95f)
-                box(m, 0f, 0f, 1.0f, -t * 90f, t * 60f, 0.11f, 0.11f, 0.11f, 0f, 0xFFFFFF)
-                box(m, 0f, 0f, 1.0f, 0f, 0f, 0.32f + 0.12f * pulse, 0.32f + 0.12f * pulse, 0.32f + 0.12f * pulse, 0f, 0x7FE8FF, 0.26f)
-                for (k in 0 until 3) {   // estrelinhas orbitando
-                    val ang = t * 2.2f + k * 2.0944f
-                    box(m, cos(ang) * 0.2f, sin(ang) * 0.2f, 1.0f + sin(t * 3f + k) * 0.05f, t * 200f, 0f, 0.05f, 0.05f, 0.05f, 0f, 0xFFF2A0)
-                }
+                box(m, 0f, 0f, -0.1f, 0f, 0f, 0.11f, 0.11f, 0.07f, 0f, 0xFFD66B, 1f, rz = 0f)
+                box(m, 0f, 0f, -0.1f, 0f, 0f, 0.085f, 0.085f, 0.09f, 0f, 0xFFEDA8, 1f, rz = 0f)
+                box(m, 0f, 0f, 0.38f, 0f, 0f, 0.075f, 0.075f, 1f, 0f, 0xC99A68, 1f, rz = 0f)
+                box(m, 0f, 0f, 0.38f, 0f, 0f, 0.05f, 0.05f, 1.02f, 0f, 0xE3B987, 1f, rz = 0f)
+                box(m, 0f, 0f, 0f, 0f, 0f, 0.095f, 0.095f, 0.3f, 0f, 0x7FD9C8, 1f, rz = 0f)
+                box(m, 0f, 0f, 0f, 0f, 0f, 0.105f, 0.105f, 0.04f, 0f, 0xA6EBDD, 1f, rz = 0f)
+                box(m, 0f, 0f, 0.1f, 0f, 0f, 0.105f, 0.105f, 0.04f, 0f, 0xA6EBDD, 1f, rz = 0f)
+                box(m, 0f, 0f, -0.1f, 0f, 0f, 0.105f, 0.105f, 0.04f, 0f, 0xA6EBDD, 1f, rz = 0f)
+                box(m, 0f, 0f, 0.46f, 0f, 0f, 0.1f, 0.1f, 0.07f, 0f, 0xFFD66B, 1f, rz = 0f)
+                box(m, 0f, 0f, 0.86f, 0f, 0f, 0.1f, 0.1f, 0.07f, 0f, 0xFFD66B, 1f, rz = 0f)
+                box(m, 0f, 0f, 0.7f, 0f, 0f, 0.11f, 0.13f, 0.24f, 0f, 0x8E9DB8, 1f, rz = 0f)
+                box(m, 0f, 0f, 0.7f, 0f, 0f, 0.12f, 0.09f, 0.2f, 0f, 0xB9C8DE, 1f, rz = 0f)
+                box(m, 0f, -0.1f, 0.7f, 0f, 0f, 0.07f, 0.1f, 0.3f, 0f, 0xB9C8DE, 1f, rz = 0f)
+                box(m, 0f, -0.17f, 0.7f, 0f, 0f, 0.065f, 0.08f, 0.42f, 0f, 0xB9C8DE, 1f, rz = 0f)
+                box(m, 0f, -0.24f, 0.7f, 0f, 0f, 0.055f, 0.08f, 0.52f, 0f, 0xB9C8DE, 1f, rz = 0f)
+                box(m, 0f, -0.31f, 0.7f, 0f, 0f, 0.045f, 0.08f, 0.6f, 0f, 0xB9C8DE, 1f, rz = 0f)
+                box(m, 0f, -0.1f, 0.7f, 0f, 0f, 0.075f, 0.07f, 0.2f, 0f, 0xE7F0FC, 1f, rz = 0f)
+                box(m, 0f, -0.17f, 0.7f, 0f, 0f, 0.07f, 0.07f, 0.28f, 0f, 0xE7F0FC, 1f, rz = 0f)
+                box(m, 0f, -0.24f, 0.7f, 0f, 0f, 0.06f, 0.07f, 0.36f, 0f, 0xE7F0FC, 1f, rz = 0f)
+                box(m, 0f, -0.37f, 0.7f, 0f, 0f, 0.035f, 0.05f, 0.62f, 0f, 0xFFFFFF, 0.595f + 0.255f * glint, rz = 0f)
+                box(m, 0f, -0.34f, 0.7f, 0f, 0f, 0.04f, 0.03f, 0.58f, 0f, 0xFFFFFF, 0.385f + 0.165f * glint, rz = 0f)
+                box(m, 0f, -0.17f, 1f, 0f, 0f, 0.075f, 0.2f, 0.04f, 0f, 0xFFD66B, 1f, rz = 0f)
+                box(m, 0f, -0.17f, 0.4f, 0f, 0f, 0.075f, 0.2f, 0.04f, 0f, 0xFFD66B, 1f, rz = 0f)
+                box(m, 0.035f, -0.14f, 0.7f, 0f, 0f, 0.04f, 0.12f, 0.12f, 0f, 0xFF8CBF, 1f, rz = 0f)
+                box(m, -0.035f, -0.14f, 0.7f, 0f, 0f, 0.04f, 0.12f, 0.12f, 0f, 0xFF8CBF, 1f, rz = 0f)
+                box(m, 0.04f, -0.14f, 0.72f, 0f, 0f, 0.03f, 0.05f, 0.05f, 0f, 0xFFFFFF, 0.63f + 0.27f * glint, rz = 0f)
+                box(m, -0.04f, -0.14f, 0.72f, 0f, 0f, 0.03f, 0.05f, 0.05f, 0f, 0xFFFFFF, 0.63f + 0.27f * glint, rz = 0f)
+                box(m, 0f, 0.1f, 0.7f, 0f, 0f, 0.09f, 0.12f, 0.14f, 0f, 0x8E9DB8, 1f, rz = 0f)
+                box(m, 0f, 0.17f, 0.7f, 0f, 0f, 0.07f, 0.07f, 0.1f, 0f, 0xFFD66B, 1f, rz = 0f)
+                box(m, 0f, 0.17f, 0.7f, 0f, 0f, 0.05f, 0.09f, 0.06f, 0f, 0xFFEDA8, 1f, rz = 0f)
             }
             id == Items.PICK -> {
-                box(m, 0f, 0f, 0.32f, 0f, 0f, 0.065f, 0.065f, 0.95f, 0f, 0x7A5230)
-                box(m, 0f, 0f, 0.2f, 0f, 0f, 0.075f, 0.075f, 0.04f, 0f, 0xC9A06A)
-                box(m, 0f, 0f, 0.74f, 0f, 0f, 0.1f, 0.1f, 0.12f, 0f, 0x8A94A2)
-                box(m, 0f, 0f, 0.74f, 0f, 0f, 0.46f, 0.075f, 0.1f, 0f, 0xC8D2DE)          // cabeça
-                box(m, 0.26f, 0f, 0.68f, 0f, 20f, 0.18f, 0.07f, 0.08f, 0f, 0xE8F0FA)
-                box(m, -0.26f, 0f, 0.68f, 0f, -20f, 0.18f, 0.07f, 0.08f, 0f, 0xE8F0FA)
-                box(m, 0.36f, 0f, 0.62f, 0f, 35f, 0.12f, 0.06f, 0.07f, 0f, 0xFFFFFF, 0.8f + 0.2f * glint)
-                box(m, -0.36f, 0f, 0.62f, 0f, -35f, 0.12f, 0.06f, 0.07f, 0f, 0xFFFFFF, 0.8f + 0.2f * glint)
-                box(m, 0f, 0f, 0.0f, 0f, 0f, 0.1f, 0.1f, 0.09f, 0f, 0xFFD060)
+                box(m, 0f, 0f, -0.1f, 0f, 0f, 0.11f, 0.11f, 0.07f, 0f, 0xFFD66B, 1f, rz = 0f)
+                box(m, 0f, 0f, -0.1f, 0f, 0f, 0.085f, 0.085f, 0.09f, 0f, 0xFFEDA8, 1f, rz = 0f)
+                box(m, 0f, 0f, 0.38f, 0f, 0f, 0.075f, 0.075f, 1f, 0f, 0xC99A68, 1f, rz = 0f)
+                box(m, 0f, 0f, 0.38f, 0f, 0f, 0.05f, 0.05f, 1.02f, 0f, 0xE3B987, 1f, rz = 0f)
+                box(m, 0f, 0f, 0f, 0f, 0f, 0.095f, 0.095f, 0.3f, 0f, 0x7FD9C8, 1f, rz = 0f)
+                box(m, 0f, 0f, 0f, 0f, 0f, 0.105f, 0.105f, 0.04f, 0f, 0xA6EBDD, 1f, rz = 0f)
+                box(m, 0f, 0f, 0.1f, 0f, 0f, 0.105f, 0.105f, 0.04f, 0f, 0xA6EBDD, 1f, rz = 0f)
+                box(m, 0f, 0f, -0.1f, 0f, 0f, 0.105f, 0.105f, 0.04f, 0f, 0xA6EBDD, 1f, rz = 0f)
+                box(m, 0f, 0f, 0.46f, 0f, 0f, 0.1f, 0.1f, 0.07f, 0f, 0xFFD66B, 1f, rz = 0f)
+                box(m, 0f, 0f, 0.84f, 0f, 0f, 0.12f, 0.14f, 0.14f, 0f, 0x8E9DB8, 1f, rz = 0f)
+                box(m, 0f, 0f, 0.86f, 0f, 0f, 0.13f, 0.1f, 0.1f, 0f, 0xFFD66B, 1f, rz = 0f)
+                box(m, 0f, 0f, 0.86f, 0f, 0f, 0.14f, 0.06f, 0.12f, 0f, 0xFFEDA8, 1f, rz = 0f)
+                box(m, 0f, -0.2f, 0.88f, 18f, 0f, 0.075f, 0.34f, 0.1f, 0f, 0xB9C8DE, 1f, rz = 0f)
+                box(m, 0f, 0.2f, 0.88f, -18f, 0f, 0.075f, 0.34f, 0.1f, 0f, 0xB9C8DE, 1f, rz = 0f)
+                box(m, 0f, -0.2f, 0.9f, 18f, 0f, 0.085f, 0.3f, 0.05f, 0f, 0xE7F0FC, 1f, rz = 0f)
+                box(m, 0f, 0.2f, 0.9f, -18f, 0f, 0.085f, 0.3f, 0.05f, 0f, 0xE7F0FC, 1f, rz = 0f)
+                box(m, 0f, -0.42f, 0.8f, 38f, 0f, 0.06f, 0.2f, 0.08f, 0f, 0xB9C8DE, 1f, rz = 0f)
+                box(m, 0f, 0.42f, 0.8f, -38f, 0f, 0.06f, 0.2f, 0.08f, 0f, 0xB9C8DE, 1f, rz = 0f)
+                box(m, 0f, -0.42f, 0.82f, 38f, 0f, 0.07f, 0.17f, 0.04f, 0f, 0xE7F0FC, 1f, rz = 0f)
+                box(m, 0f, 0.42f, 0.82f, -38f, 0f, 0.07f, 0.17f, 0.04f, 0f, 0xE7F0FC, 1f, rz = 0f)
+                box(m, 0f, -0.53f, 0.68f, 60f, 0f, 0.045f, 0.12f, 0.06f, 0f, 0xFFFFFF, 0.63f + 0.27f * glint, rz = 0f)
+                box(m, 0f, 0.53f, 0.68f, -60f, 0f, 0.045f, 0.12f, 0.06f, 0f, 0xFFFFFF, 0.63f + 0.27f * glint, rz = 0f)
+                box(m, 0.045f, 0f, 0.86f, 0f, 0f, 0.04f, 0.07f, 0.07f, 0f, 0xFF8CBF, 1f, rz = 0f)
+                box(m, -0.045f, 0f, 0.86f, 0f, 0f, 0.04f, 0.07f, 0.07f, 0f, 0xFF8CBF, 1f, rz = 0f)
+            }
+            id == Items.STAFF -> {
+                box(m, 0f, 0f, 0.4f, 0f, 0f, 0.075f, 0.075f, 1.15f, 0f, 0xB892F0, 1f, rz = 0f)
+                box(m, 0f, 0f, 0.4f, 0f, 0f, 0.04f, 0.04f, 1.17f, 0f, 0xD8C2FF, 1f, rz = 0f)
+                box(m, 0f, 0f, 0f, 0f, 0f, 0.1f, 0.1f, 0.28f, 0f, 0x7FD9C8, 1f, rz = 0f)
+                box(m, 0f, 0f, -0.12f, 0f, 0f, 0.11f, 0.11f, 0.06f, 0f, 0xFFD66B, 1f, rz = 0f)
+                box(m, 0f, 0f, 0.86f, 0f, 0f, 0.13f, 0.13f, 0.07f, 0f, 0xFFD66B, 1f, rz = 0f)
+                box(m, 0.1f, 0f, 0.96f, 0f, 0f, 0.04f, 0.04f, 0.2f, 0f, 0xFFD66B, 1f, rz = 0f)
+                box(m, -0.1f, 0f, 0.96f, 0f, 0f, 0.04f, 0.04f, 0.2f, 0f, 0xFFD66B, 1f, rz = 0f)
+                box(m, 0f, -0.1f, 0.96f, 0f, 0f, 0.04f, 0.04f, 0.2f, 0f, 0xFFD66B, 1f, rz = 0f)
+                box(m, 0f, 0.1f, 0.96f, 0f, 0f, 0.04f, 0.04f, 0.2f, 0f, 0xFFD66B, 1f, rz = 0f)
+                val pulse = 0.5f + 0.5f * sin(t * 4f)
+                box(m, 0f, 0f, 1.1f, t * 120f, t * 80f, 0.2f, 0.2f, 0.2f, 0f, 0x7FE8FF, 0.95f)
+                box(m, 0f, 0f, 1.1f, -t * 90f, t * 60f, 0.11f, 0.11f, 0.11f, 0f, 0xFFFFFF)
+                box(m, 0f, 0f, 1.1f, 0f, 0f, 0.32f + 0.12f * pulse, 0.32f + 0.12f * pulse, 0.32f + 0.12f * pulse, 0f, 0x7FE8FF, 0.26f)
+                for (k in 0 until 3) {
+                    val ang = t * 2.2f + k * 2.0944f
+                    box(m, cos(ang) * 0.2f, sin(ang) * 0.2f, 1.1f + sin(t * 3f + k) * 0.05f, t * 200f, 0f, 0.05f, 0.05f, 0.05f, 0f, 0xFFF2A0)
+                }
             }
         }
     }
@@ -394,7 +449,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         Matrix.translateM(base2, 0, 0f, -0.5f, 0f)
         if (id !in 1..13) Matrix.rotateM(base2, 0, -35f, 1f, 0f, 0f)
         if (id == Items.AXE) Matrix.rotateM(base2, 0, 180f, 0f, 0f, 1f)
-        else if (id == Items.SWORD || id == Items.PICK) Matrix.rotateM(base2, 0, 90f, 0f, 0f, 1f)
+        if (id !in 1..13) Matrix.scaleM(base2, 0, 0.78f, 0.78f, 0.78f)
         drawItem(base2, id, t)
         // cabeça grandinha e fofa
         box(base, 0f, 1.17f, 0f, 0f, 0f, 0.58f, 0.58f, 0.58f, 0.29f, skin)
@@ -437,20 +492,16 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     private val SKIN = 0xF2C29B; private val SKIN_D = 0xD9A07A
     private val showLeftHand = true   // mão esquerda vazia no canto, como no Minecraft (false = esconde)
 
-    /** braço estilo Minecraft: caixa comprida de manga + mão de pele na ponta (sem dedos soltos). Origem = ombro, estende em +Z */
-    private fun drawArm(m: FloatArray) {
+    /** braço: manga + mão fechada. grip = true desenha dedos e polegar apertando o cabo. Origem = ombro, estende em +Z */
+    private fun drawArm(m: FloatArray, grip: Boolean = false) {
         box(m, 0f, 0f, 0.11f, 0f, 0f, 0.2f, 0.2f, 0.82f, 0f, 0x7FD9C8)   // manga
-        box(m, 0f, 0f, 0.63f, 0f, 0f, 0.2f, 0.2f, 0.22f, 0f, SKIN)       // mão (ponta do braço)
-    }
-
-    /** ferramenta em pixel-art extrudada, de frente pra câmera; o pixel (gx,gy) = empunhadura fica na mão */
-    private fun drawSprite(m: FloatArray, id: Int) {
-        val sp = ToolSprites.get(id) ?: return
-        val px = 0.052f; val th = 0.07f
-        for (r in sp.runs) {
-            val cx = -(((r.x0 + r.x1 + 1) / 2f) - (sp.gx + 0.5f)) * px
-            val cy = -(r.y - sp.gy) * px
-            box(m, cx, cy, 0f, 0f, 0f, (r.x1 - r.x0 + 1) * px, px, th, 0f, r.c and 0xFFFFFF, 1f, 1.35f)
+        box(m, 0f, 0.0f, 0.1f, 0f, 0f, 0.215f, 0.215f, 0.06f, 0f, 0xA6EBDD) // punho da manga
+        box(m, 0f, 0f, 0.65f, 0f, 0f, 0.21f, 0.21f, 0.26f, 0f, SKIN)     // mão (punho fechado)
+        if (grip) {
+            for (k in 0 until 3) box(m, 0f, 0.106f, 0.58f + k * 0.065f, 0f, 0f, 0.212f, 0.014f, 0.012f, 0f, SKIN_D)  // vãos entre os dedos
+            box(m, 0f, 0.0f, 0.79f, 0f, 0f, 0.2f, 0.2f, 0.03f, 0f, SKIN_D)          // pontas dos dedos
+            box(m, 0.0f, 0.13f, 0.6f, 0f, 0f, 0.085f, 0.07f, 0.15f, 0f, SKIN)        // polegar por cima
+            box(m, 0.0f, 0.13f, 0.545f, 0f, 0f, 0.07f, 0.06f, 0.04f, 0f, SKIN_D)
         }
     }
 
@@ -476,16 +527,23 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val rest = if (id in 1..13) -12f else -20f
         Matrix.rotateM(fp, 0, rest + swingDelta(id, game.swing), 1f, 0f, 0f)
         if (game.swing < 1f) Matrix.rotateM(fp, 0, -sin(game.swing * 3.1416f) * 14f, 0f, 1f, 0f)
-        drawArm(fp)
+        val tool = id !in 1..13
+        drawArm(fp, tool)
         System.arraycopy(fp, 0, itemM, 0, 16)
-        Matrix.translateM(itemM, 0, 0f, 0f, 0.64f)
-        if (id in 1..13) {
-            Matrix.rotateM(itemM, 0, 30f, 0f, 1f, 0f)
+        if (!tool) {
+            // ferramenta atravessa o punho (cabo perpendicular ao antebraço), inclinada pra frente e girada pra mostrar o lado
+            Matrix.translateM(itemM, 0, 0f, 0f, 0.65f)
+            val lean = if (id == Items.STAFF) 22f else 32f
+            val yaw = when (id) { Items.AXE -> 68f; Items.PICK -> 62f; Items.SWORD -> 42f; else -> 0f }
+            Matrix.rotateM(itemM, 0, -(90f - lean), 1f, 0f, 0f)
+            Matrix.rotateM(itemM, 0, yaw, 0f, 0f, 1f)
+            val sc = when (id) { Items.SWORD -> 0.72f; Items.AXE -> 0.74f; Items.PICK -> 0.74f; else -> 0.66f }
+            Matrix.scaleM(itemM, 0, sc, sc, sc)
             drawItem(itemM, id, game.time)
         } else {
-            Matrix.translateM(itemM, 0, 0f, 0f, 0.02f)
-            Matrix.rotateM(itemM, 0, -rest, 1f, 0f, 0f)
-            drawSprite(itemM, id)
+            Matrix.translateM(itemM, 0, 0f, 0f, 0.64f)
+            Matrix.rotateM(itemM, 0, 30f, 0f, 1f, 0f)
+            drawItem(itemM, id, game.time)
         }
         // ---- mão esquerda (vazia) ----
         if (showLeftHand) {

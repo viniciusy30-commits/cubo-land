@@ -1,3 +1,11 @@
+#id 2026-10-09-h
+#titulo Ferramentas novas e água limpinha!
+- Espada, machado e picareta redesenhados em 3D, com visual próprio: pastel, gemas, cabo colorido e brilho
+- O personagem agora segura as ferramentas pelo punho, com dedos e polegar, inclinadas pra frente
+- Cada ferramenta aparece num ângulo que mostra o lado bonito dela
+- Água toda na cor clara e turquesa, sem a parte escura do fundo
+- Reflexos do céu mantidos, e os pontinhos brancos foram removidos
+
 #id 2026-10-09-g
 #titulo Água, folhas e mãos estilo shader!
 - Água nova: azul turquesa na beirada e azul profundo no fundo, transparente de verdade
