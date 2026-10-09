@@ -1,10 +1,80 @@
-#id 2026-10-09-n
-#titulo Mão e folhas copiadas das referências!
-- Mão vazia, mão com item e mão com bloco agora seguem as posições e ângulos das fotos de referência
-- Ferramentas bem maiores, em pé, viradas de frente e com a ponta pra cima e levemente pra direita
-- Bloco segurado grande, no canto inferior direito, mostrando topo e lateral
-- Só a mão direita aparece, como nas referências
-- Folhas novas: várias folhinhas pontudas sobrepostas, com contorno escuro, nervura clara e buraquinhos que dão profundidade
+#id 2026-10-10-a
+#titulo Quebra cinematográfica, HUD novo e ícones de verdade!
+- Quebra de blocos refeita: rachaduras ramificadas que crescem do impacto, pulso de luz a cada batida, lascas, pedaços grandes, poeira e faíscas ao estourar
+- HUD novo: botões de vidro com brilho, joystick com bolinha 3D, hotbar com números e destaque dourado pulsante, corações com brilho e contador de slimes em pílula
+- Ícones dos itens agora são o mesmo pixel-art das ferramentas na mão (espada, machado, picareta e cajado)
+- Mochila redesenhada com fundo escurecido, cabeçalho com nome e descrição do item
+- Menu principal novo: sol com raios, colinas, ilha flutuante com árvore, faíscas, título arco-íris animado e botões em estilo bloco 3D
+
+#id 2026-10-09-x
+#titulo Quebra em etapas, criativo e copas completas!
+- Blocos agora racham a cada batida e só quebram no fim; o machado racha madeira bem rápido e o golpe carregado vale 2 batidas
+- Modo criativo (nas configurações): toque duas vezes no pulo pra voar, botão de descer, quebra tudo de uma batida e nada te machuca
+- Corrigido: terra, madeira e outros blocos atrás das folhas agora aparecem pelos buraquinhos
+- Copas ganharam uma segunda camada visível por dentro, sem céu vazando
+
+#id 2026-10-09-w
+#titulo Golpe carregado e folhas mais vivas!
+- Segure o botão de ataque com espada ou machado: o braço sobe e a ferramenta fica pra trás, com anel de carga no botão
+- Ao soltar, vem um golpe poderoso: mais dano, acerta vários slimes à frente, treme a tela e levanta poeira
+- Copas das árvores balançam com o vento de forma mais natural, com brilho de luz passando
+- Folhas caindo mais bonitas: formato de folha com nervura, giram e flutuam em espiral
+
+#id 2026-10-09-v
+#titulo Folhas fofinhas e combo novo!
+- Textura da folha de volta ao visual com buraquinhos, sem folhas saindo pra fora
+- Folhas caem das árvores balançando (quantidade moderada)
+- Primeiro golpe com peso: braço sobe pro alto e desce num corte rápido e pesado
+- Combo da espada refeito: corte diagonal, corte horizontal e estocada, um ligado no outro
+- A estocada alcança mais longe e machuca mais
+
+#id 2026-10-09-u
+#titulo Folhas com volume 3D!
+- Placas e cubinhos de folha saem da superfície das copas, em tamanhos e ângulos variados, como na referência
+- Quatro tons de verde nos pixels, a copa ganha silhueta recortada e cheia
+- Os cubinhos balançam com o vento junto com as folhas
+
+#id 2026-10-09-t
+#titulo Animações mais fluidas!
+- Golpes com movimento contínuo, sem travar entre as poses, com impulso antes e depois do corte
+- A ferramenta chicoteia e arrasta atrás do braço ao balançar
+- Braço preso fora da tela: a parte de trás nunca mais aparece
+- Rastro brilhante só na espada, mais discreto
+
+#id 2026-10-09-s
+#titulo Espada com combo!
+- A espada agora corta em ângulos diferentes a cada ataque: diagonal, horizontal, diagonal invertida, vertical por cima e estocada
+- O rastro brilhante acompanha cada corte
+- Ferramentas agora ficam em pé, com o punho reto e o braço colado nele
+
+#id 2026-10-09-r
+#titulo Mão de verdade e golpes novos!
+- Punho maior e o cabo da ferramenta passa pelo meio dele, agora parece que a mão está segurando de verdade (sem dedos)
+- Espada: golpe em diagonal, de cima pra baixo, com rastro brilhante no ar
+- Machado: levanta devagar e desce pesado, com um quique no impacto
+- Picareta: golpe rápido por cima com batida seca
+- Cajado: puxa pra trás e dispara pra frente, a gema brilha e gira mais rápido
+- Ao trocar de item a ferramenta sobe girando; ao andar a mão balança, e o cajado flutua parado
+
+#id 2026-10-09-q
+#titulo Ferramentas 3D e folha nova!
+- Espada, machado, picareta e cajado agora são modelos 3D de ferro e madeira, sem pixel-art
+- Picareta com uma ponta virada pra frente, machado e espada com o fio virado pra frente
+- Bloco de folha novo, igual ao print: cubo de pixels verdes com buracos e profundidade
+
+#id 2026-10-09-p
+#titulo Ferramentas em pé e folhas iguais à referência!
+- Espada, machado, picareta e cajado agora aparecem em pé, de frente pra câmera, em pixel-art
+- Copas arredondadas e fofas: o bloco quadrado de folha virou bolotas de folhas, sem faces retas, como no "depois" da referência
+- Folhas refeitas: folhinhas pontudas e serrilhadas, verde vivo, nervura clara e sombra entre elas, como no "depois" da referência
+
+#id 2026-10-09-o
+#titulo Mão e folhas copiadas das fotos!
+- Mão vazia, mão com item e mão com bloco seguem as posições e ângulos das fotos de referência
+- Ferramentas grandes, em pé, de frente, com a ponta pra cima e levemente pra direita
+- Bloco segurado grande no canto de baixo, mostrando topo e lateral
+- Só a mão direita aparece, como nas fotos
+- Folhas novas: dezenas de folhinhas pontudas sobrepostas, com contorno escuro, nervura clara e sombra por baixo, bem mais detalhadas
 
 #id 2026-10-09-m
 #titulo Visual mais confortável e ferramentas pra frente!

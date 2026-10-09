@@ -355,23 +355,22 @@ class World {
         out[0] = ((c shr 16) and 255) / 255f * sh; out[1] = ((c shr 8) and 255) / 255f * sh; out[2] = (c and 255) / 255f * sh
     }
 
-    /** bolota de folhas (esfera lowpoly com normal p/ luz): dá volume 3D à copa */
-    private fun puff(o: MeshBuf, cx: Float, cy: Float, cz: Float, r: Float, n: Int, m: Int, rot: Float, vr: Float) {
-        for (j in 0..m) {
-            val th = 3.14159f * j / m
-            for (i in 0..n) {
-                val ph = rot + 6.28318f * i / n
-                val nx = sin(th) * cos(ph); val ny = cos(th); val nz = sin(th) * sin(ph)
-                val sh = (0.68f + 0.32f * (0.5f + 0.5f * ny)) * vr
-                o.vert(cx + r * nx, cy + r * 0.92f * ny, cz + r * nz, sh, sh, sh, (8 + 0.01f + 0.98f * i / n) / Atlas.NT, 0.01f + 0.98f * j / m)
-            }
-        }
-        val w = n + 1
+    /** bolota de folhas (esfera lowpoly arredondada): cada quadradinho mostra um pedaço do tile de folha, dando a copa fofa da referência */
+    private fun puff(o: MeshBuf, cx: Float, cy: Float, cz: Float, r: Float, n: Int, m: Int, rot: Float, vr: Float, seed: Int) {
         for (j in 0 until m) for (i in 0 until n) {
-            val a = j * w + i; val b = a + 1; val c = a + w; val d = c + 1
-            o.tri(a, b, c); o.tri(b, d, c)
+            val ou = if (hash(seed, i * 7 + j, 311) > 0.5f) 0.5f else 0f
+            val ov = if (hash(seed, i * 5 + j * 3, 312) > 0.5f) 0.5f else 0f
+            for (q in 0 until 4) {
+                val ii = i + (if (q == 1 || q == 2) 1 else 0); val jj = j + (if (q >= 2) 1 else 0)
+                val th = 3.14159f * jj / m; val ph = rot + 6.28318f * ii / n
+                val nx = sin(th) * cos(ph); val ny = cos(th); val nz = sin(th) * sin(ph)
+                val sh = (0.62f + 0.38f * (0.5f + 0.5f * ny)) * vr
+                val fu = if (q == 1 || q == 2) 1f else 0f; val fv = if (q >= 2) 1f else 0f
+                o.vert(cx + r * nx, cy + r * 0.92f * ny, cz + r * nz, sh, sh, sh,
+                    (8 + ou + 0.01f + 0.48f * fu) / Atlas.NT, ov + 0.01f + 0.48f * fv)
+            }
+            o.tri(0, 1, 2); o.tri(0, 2, 3); o.tri(0, 2, 1); o.tri(0, 3, 2); o.vc += 4
         }
-        o.vc += (m + 1) * w
     }
 
     private fun colDepth(x: Int, z: Int): Int {
@@ -391,7 +390,23 @@ class World {
             val lowered = isW && get(x, y + 1, z) == B.AIR
             val vr = 0.94f + 0.06f * hash(x, z, y)
             c[0] = x; c[1] = y; c[2] = z
-            if (id == B.LEAVES && o.vc > 60000) continue
+            if (id == B.LEAVES) {
+                if (o.vc > 55000) continue
+                if (!leafOpen(x, y, z)) {
+                    // segunda camada: folha escondida mas vizinha de uma folha exposta desenha só o cubo interno (aparece pelos buraquinhos)
+                    var near = false
+                    for (f in 0 until 6) {
+                        val aa = f shr 1; val ss = if ((f and 1) == 0) 1 else -1
+                        val qx = x + if (aa == 0) ss else 0; val qy = y + if (aa == 1) ss else 0; val qz = z + if (aa == 2) ss else 0
+                        if (get(qx, qy, qz) == B.LEAVES && leafOpen(qx, qy, qz)) { near = true; break }
+                    }
+                    if (near && o.vc < 50000) leafFaces(o, x, y, z, 0.16f, 0.84f, false, vr, 0.72f)
+                    continue
+                }
+                leafFaces(o, x, y, z, 0f, 1f, true, vr, 1f)        // casca externa (só faces expostas)
+                leafFaces(o, x, y, z, 0.16f, 0.84f, false, vr, 0.72f)   // cubo interno: dá profundidade pelos buracos
+                continue
+            }
             if (id == B.GRASS && get(x, y + 1, z) == B.AIR) {
                 val r = hash(x, z, 3)
                 if (r > 0.55f) {
@@ -420,7 +435,7 @@ class World {
                 val nid = get(nx, ny, nz)
                 if (isW) { if (nid != B.AIR) continue }
                 else if (id == B.LEAVES) { if (nid != B.AIR && nid != B.WATER && nid != B.LEAVES) continue }
-                else if (nid != B.AIR && nid != B.WATER) continue
+                else if (nid != B.AIR && nid != B.WATER && nid != B.LEAVES) continue   // folha tem buracos: o que está atrás dela precisa ser desenhado
                 val u = (a + 1) % 3; val v = (a + 2) % 3
                 val shade = when { id == B.LANTERN -> 1f; id == B.LEAVES -> (if (a == 1) (if (s > 0) 1f else 0.8f) else if (a == 0) 0.92f else 0.86f); a == 1 -> if (s > 0) 1f else 0.55f; a == 0 -> 0.82f; else -> 0.7f }
                 val buf = if (isW) w else o
@@ -460,7 +475,83 @@ class World {
                     if (!flip) { buf.tri(0, 2, 1); buf.tri(0, 3, 2) } else { buf.tri(1, 3, 2); buf.tri(1, 0, 3) }
                 }
                 buf.vc += 4
-                if (id == B.LEAVES && nid == B.AIR && o.vc < 56000) addCards(o, x, y, z, a, s, shade * vr)
+            }
+        }
+    }
+
+    private fun leafOpen(x: Int, y: Int, z: Int): Boolean {
+        for (f in 0 until 6) {
+            val aa = f shr 1; val ss = if ((f and 1) == 0) 1 else -1
+            val q = get(x + if (aa == 0) ss else 0, y + if (aa == 1) ss else 0, z + if (aa == 2) ss else 0)
+            if (q == B.AIR || q == B.WATER) return true
+        }
+        return false
+    }
+
+    /** faces de folha recortada (tile 8). outer = só faces voltadas pra ar/água; senão todas (cubo interno menor) */
+    private fun leafFaces(o: MeshBuf, x: Int, y: Int, z: Int, lo: Float, hi: Float, outer: Boolean, vr: Float, tone: Float) {
+        val pos = FloatArray(3)
+        for (face in 0 until 6) {
+            val a = face shr 1; val s = if ((face and 1) == 0) 1 else -1
+            if (outer) {
+                val nid = get(x + if (a == 0) s else 0, y + if (a == 1) s else 0, z + if (a == 2) s else 0)
+                if (nid != B.AIR && nid != B.WATER) continue
+            }
+            val u = (a + 1) % 3; val v = (a + 2) % 3
+            val sh = (if (a == 1) (if (s > 0) 1f else 0.8f) else if (a == 0) 0.92f else 0.86f) * vr * tone
+            for (q in 0 until 4) {
+                val cu = QU[q]; val cv = QV[q]
+                pos[0] = x.toFloat(); pos[1] = y.toFloat(); pos[2] = z.toFloat()
+                pos[a] += if (s > 0) hi else lo
+                pos[u] += if (cu == 1) hi else lo
+                pos[v] += if (cv == 1) hi else lo
+                var tu = cu.toFloat(); var tv = cv.toFloat()
+                if (a == 0) { tu = cv.toFloat(); tv = 1f - cu } else if (a == 2) { tv = 1f - cv }
+                o.vert(pos[0], pos[1], pos[2], sh, sh, sh, (8 + 0.01f + tu * 0.98f) / Atlas.NT.toFloat(), 0.01f + tv * 0.98f)
+            }
+            if (s > 0) { o.tri(0, 1, 2); o.tri(0, 2, 3) } else { o.tri(0, 2, 1); o.tri(0, 3, 2) }
+            o.vc += 4
+        }
+    }
+
+    /** caixinha 3D de folha (tile 22): hx,hy,hz = meia-largura em cada eixo; ur/vw = janela do tile (tons diferentes) */
+    private fun voxBox(o: MeshBuf, cx: Float, cy: Float, cz: Float, hx: Float, hy: Float, hz: Float, sh: Float, ur: Float, vw: Float) {
+        val half = floatArrayOf(hx, hy, hz); val pos = FloatArray(3)
+        for (face in 0 until 6) {
+            val a = face shr 1; val s = if ((face and 1) == 0) 1 else -1
+            val u = (a + 1) % 3; val v = (a + 2) % 3
+            val k = (if (a == 1) (if (s > 0) 1f else 0.78f) else if (a == 0) 0.9f else 0.84f) * sh
+            for (q in 0 until 4) {
+                val cu = QU[q]; val cv = QV[q]
+                pos[0] = cx; pos[1] = cy; pos[2] = cz
+                pos[a] += s * half[a]
+                pos[u] += (if (cu == 1) 1f else -1f) * half[u]
+                pos[v] += (if (cv == 1) 1f else -1f) * half[v]
+                o.vert(pos[0], pos[1], pos[2], k, k, k, (22f + 0.01f + ur + cu * 0.23f) / Atlas.NT.toFloat(), 0.01f + vw + cv * 0.23f)
+            }
+            if (s > 0) { o.tri(0, 1, 2); o.tri(0, 2, 3) } else { o.tri(0, 2, 1); o.tri(0, 3, 2) }
+            o.vc += 4
+        }
+    }
+
+    /** placas alongadas de folha, em tamanhos e eixos variados, espetadas pra fora de cada face exposta: silhueta recortada e cheia, como na referência */
+    private fun leafPlates(o: MeshBuf, x: Int, y: Int, z: Int, vr: Float) {
+        for (f in 0 until 6) {
+            val a = f shr 1; val s = if ((f and 1) == 0) 1 else -1
+            val nid = get(x + if (a == 0) s else 0, y + if (a == 1) s else 0, z + if (a == 2) s else 0)
+            if (nid != B.AIR && nid != B.WATER) continue
+            val u = (a + 1) % 3; val v = (a + 2) % 3
+            for (k in 0 until 3) {
+                val sd = x * 37 + y * 19 + z * 29 + f * 11 + k * 53
+                val r1 = hash(sd, y, 301 + k); val r2 = hash(sd, z, 302 + k); val r3 = hash(x, sd, 303 + k)
+                val r4 = hash(z, sd, 304 + k); val r5 = hash(sd, x, 305 + k); val r6 = hash(y, sd, 306 + k)
+                val c = floatArrayOf(x + 0.5f, y + 0.5f, z + 0.5f)
+                c[a] += s * (0.40f + 0.20f * r1)
+                c[u] += (r2 - 0.5f) * 0.85f; c[v] += (r3 - 0.5f) * 0.85f
+                val half = floatArrayOf(0.05f + 0.03f * r4, 0.05f + 0.03f * r5, 0.05f + 0.03f * r6)
+                half[(r6 * 2.99f).toInt()] = 0.16f + 0.12f * r4          // eixo comprido
+                val ur = (r5 * 3.99f).toInt() * 0.25f; val vw = (r2 * 3.99f).toInt() * 0.25f
+                voxBox(o, c[0], c[1], c[2], half[0], half[1], half[2], vr * (0.95f + 0.2f * r6), ur, vw)
             }
         }
     }
@@ -470,7 +561,7 @@ class World {
         val u = (a + 1) % 3; val v = (a + 2) % 3
         val uu = floatArrayOf(0.01f, 0.99f, 0.99f, 0.01f); val vv = floatArrayOf(0.99f, 0.99f, 0.01f, 0.01f)
         val sg1 = floatArrayOf(-1f, 1f, 1f, -1f); val sg2 = floatArrayOf(-1f, -1f, 1f, 1f)
-        for (k in 0 until 9) {
+        for (k in 0 until 2) {
             val sd = x * 31 + y * 17 + z * 13 + a * 7 + (if (s > 0) 1 else 0) * 5 + k * 101
             val r1 = hash(sd, y, 201 + k); val r2 = hash(sd, z, 202 + k); val r3 = hash(x, sd, 203 + k)
             val r4 = hash(z, sd, 204 + k); val r5 = hash(sd, x, 205 + k)

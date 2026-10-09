@@ -16,15 +16,17 @@ object Items {
 
     fun desc(id: Int) = when (id) {
         SWORD -> "Rápida e leve. Dano 2, golpes velozes."
-        AXE -> "Pesada! Dano 3 e empurra bem longe."
+        AXE -> "Pesada! Dano 3, empurra longe e racha madeira bem rápido."
         STAFF -> "Dispara estrelas mágicas à distância."
         PICK -> "Quebra blocos rápido e dá uma bicada nos slimes."
         else -> "Bloco de construção. Toque em Colocar para usar."
     }
 
     fun damage(id: Int) = when (id) { SWORD -> 2; AXE -> 3; STAFF -> 2; else -> 1 }
-    fun cooldown(id: Int) = when (id) { SWORD -> 0.35f; AXE -> 0.65f; STAFF -> 0.55f; PICK -> 0.25f; else -> 0.3f }
+    fun cooldown(id: Int) = when (id) { SWORD -> 0.4f; AXE -> 0.65f; STAFF -> 0.55f; PICK -> 0.25f; else -> 0.3f }
     fun reach(id: Int) = when (id) { SWORD -> 3.5f; AXE -> 3.3f; else -> 3f }
     fun knock(id: Int) = when (id) { AXE -> 10f; SWORD -> 6f; else -> 4f }
-    fun breaks(id: Int) = id == PICK || isBlock(id)
+    /** duração da animação de golpe (s) */
+    fun swingTime(id: Int) = when (id) { SWORD -> 0.54f; AXE -> 0.66f; PICK -> 0.36f; STAFF -> 0.55f; else -> 0.3f }
+    fun breaks(id: Int) = id == PICK || id == AXE || isBlock(id)
 }

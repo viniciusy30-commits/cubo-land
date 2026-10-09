@@ -46,10 +46,12 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                     float w = clamp((0.99 - aUV.y) / 0.98, 0.0, 1.0); w = w * w;
                     wp.x += (sin(uTime * 2.3 + wp.x * 0.9 + wp.z * 0.6) * 0.07 + 0.04) * w * gust * 1.4;
                     wp.z += cos(uTime * 1.8 + wp.x * 0.5 + wp.z * 0.9) * 0.05 * w * gust * 1.4;
-                } else if (tile == 8.0 || tile == 20.0 || tile == 21.0) {
-                    wp.x += sin(uTime * 1.7 + wp.y * 1.3 + wp.z * 0.8) * 0.04 * gust;
-                    wp.z += cos(uTime * 1.4 + wp.y * 1.1 + wp.x * 0.8) * 0.04 * gust;
-                    wp.y += sin(uTime * 2.1 + wp.x * 1.2 + wp.z) * 0.018;
+                } else if (tile == 8.0 || tile == 20.0 || tile == 21.0 || tile == 22.0) {
+                    float ph = wp.x * 0.8 + wp.z * 0.7;
+                    float dx = (sin(uTime * 1.6 + wp.y * 1.2 + ph) * 0.05 + sin(uTime * 3.1 + ph * 1.7) * 0.015 + 0.02) * gust;
+                    float dz = (cos(uTime * 1.3 + wp.y * 1.0 + ph) * 0.05 + cos(uTime * 2.7 + ph * 1.3) * 0.015) * gust;
+                    float dy = sin(uTime * 2.0 + ph * 1.4 + wp.y) * 0.03;
+                    wp.x += dx; wp.z += dz; wp.y += dy;
                 } else if (tile == 10.0) {
                     wp.y += sin(uTime * 1.8 + wp.x * 1.3 + wp.z * 0.7) * 0.03 + cos(uTime * 1.4 + wp.z * 1.5 - wp.x * 0.6) * 0.025;
                 }
@@ -80,14 +82,14 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         void main() {
             vec2 uv = vUV;
             bool isWater = vTile > 9.5 && vTile < 10.5;
-            bool isLeaf = vTile > 7.5 && vTile < 8.5;
+            bool isLeaf = (vTile > 7.5 && vTile < 8.5) || (vTile > 21.5 && vTile < 22.5);
             vec4 t = texture2D(uTex, uv);
             if (t.a < 0.4) discard;
             float l = clamp((vCol.r - 0.3) / 0.7, 0.0, 1.0);
             vec3 light = mix(vec3(0.80, 0.84, 1.0), vec3(1.05, 1.02, 0.95), l);
             vec3 c = t.rgb * vCol * uTint * light * 0.9;
             float alpha = uAlpha * t.a;
-            if (isLeaf) c *= 1.0 + 0.05 * sin(vWP.x * 0.7 + vWP.z * 0.5 + uTime * 0.8);
+            if (isLeaf) { float shl = sin(vWP.x * 0.9 + vWP.z * 0.8 + uTime * 1.1) * sin(vWP.y * 1.3 + vWP.x * 0.4 - uTime * 0.8); c *= 1.18 + 0.09 * shl; c += vec3(0.03, 0.05, 0.0) * max(shl, 0.0); }
             if (isWater) {
                 float tm = uTime;
                 vec2 P = vWP.xz;
@@ -277,6 +279,51 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     private fun setBase(x: Float, y: Float, z: Float, yawDeg: Float) {
         Matrix.setIdentityM(base, 0); Matrix.translateM(base, 0, x, y, z)
         if (yawDeg != 0f) Matrix.rotateM(base, 0, yawDeg, 0f, 1f, 0f)
+    }
+
+    /** rachaduras ramificadas 16x16 que crescem do ponto de impacto a cada batida */
+    private val crackCells: IntArray = run {
+        val rd = java.util.Random(91); val list = ArrayList<IntArray>(); val seen = HashSet<Int>()
+        fun walk(x0: Int, y0: Int, ang0: Float, steps: Int, start: Int) {
+            var x = x0.toFloat(); var y = y0.toFloat(); var a = ang0
+            for (s in 0 until steps) {
+                x += cos(a); y += sin(a); a += (rd.nextFloat() - 0.5f) * 0.9f
+                val ix = x.roundToInt(); val iy = y.roundToInt()
+                if (ix !in 0..15 || iy !in 0..15) break
+                if (seen.add(iy * 16 + ix)) list.add(intArrayOf(ix, iy, start + s))
+                if (s > 2 && start < 6 && rd.nextFloat() < 0.14f) walk(ix, iy, a + (if (rd.nextBoolean()) 1f else -1f), steps - s - 2, start + s + 1)
+            }
+        }
+        for (k in 0 until 7) walk(8, 8, k * 6.283f / 7f + rd.nextFloat() * 0.5f, 9 + rd.nextInt(4), 0)
+        list.sortBy { it[2] }
+        val out = IntArray(list.size * 2)
+        for ((i, e) in list.withIndex()) { out[i * 2] = e[0]; out[i * 2 + 1] = e[1] }
+        out
+    }
+
+    private fun drawCracks(bx: Int, by: Int, bz: Int, prog: Float) {
+        val total = crackCells.size / 2
+        val n = (sqrt(prog) * total).toInt().coerceIn(4, total)
+        val pulse = game.hitPulse
+        setBase(bx + 0.5f, by + 0.5f, bz + 0.5f, 0f)
+        G.glDepthMask(false)
+        val k = 1.004f + 0.035f * pulse
+        box(base, 0f, 0f, 0f, 0f, 0f, k, k, k, 0f, 0x000000, 0.06f + 0.30f * prog)
+        if (pulse > 0f) box(base, 0f, 0f, 0f, 0f, 0f, k + 0.004f, k + 0.004f, k + 0.004f, 0f, 0xFFFFFF, 0.22f * pulse)
+        val cc = floatArrayOf(game.camX - (bx + 0.5f), game.camY - (by + 0.5f), game.camZ - (bz + 0.5f))
+        val pos = FloatArray(3); val sc = FloatArray(3)
+        for (a in 0 until 3) {
+            val s = if (cc[a] >= 0f) 1f else -1f
+            val u = (a + 1) % 3; val v = (a + 2) % 3
+            for (i in 0 until n) {
+                pos[a] = s * (0.506f + 0.01f * pulse); pos[u] = (crackCells[i * 2] - 7.5f) / 16f; pos[v] = (crackCells[i * 2 + 1] - 7.5f) / 16f
+                sc[a] = 0.01f; sc[u] = 0.0625f; sc[v] = 0.0625f
+                box(base, pos[0], pos[1], pos[2], 0f, 0f, sc[0], sc[1], sc[2], 0f, 0x140B05, 0.85f)
+                // brilho claro nas rachaduras mais novas
+                if (i > n - 6) { pos[a] = s * 0.5065f; box(base, pos[0], pos[1], pos[2], 0f, 0f, sc[0] * 0.5f, sc[1] * 0.45f, sc[2] * 0.45f, 0f, 0xFFE7B0, 0.5f) }
+            }
+        }
+        G.glDepthMask(true)
     }
 
     private fun groundY(x: Float, y: Float, z: Float): Float {
@@ -506,11 +553,31 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         return len
     }
 
-    /** braço estilo Minecraft: manga + punho de pele (cubo, sem dedos). Origem = ombro, Z = direção da mão; len = distância até o punho */
-    private fun drawArm(m: FloatArray, len: Float, w: Float = 0.15f) {
-        box(m, 0f, 0f, (len - 0.04f) / 2f, 0f, 0f, w, w, len - 0.04f, 0f, 0x7FD9C8)              // manga
-        box(m, 0f, 0f, len - 0.1f, 0f, 0f, w * 1.1f, w * 1.1f, 0.04f, 0f, 0xA6EBDD)             // barra da manga
-        box(m, 0f, 0f, len + 0.01f, 0f, 0f, w, w, 0.15f, 0f, SKIN)                               // punho: continuação do braço
+    /** braço estilo Minecraft: manga + punho de pele grande (cubo, sem dedos). Origem = ombro, Z = direção da mão; len = distância até o CENTRO do punho (onde fica o cabo). */
+    private fun drawArm(m: FloatArray, len: Float, w: Float = 0.17f, fist: Boolean = true) {
+        if (!fist) {   // ferramenta: só a manga; o punho é desenhado alinhado com o cabo (drawToolFist)
+            val sl = len - 0.08f
+            box(m, 0f, 0f, sl / 2f, 0f, 0f, w, w, sl, 0f, 0x7FD9C8)
+            return
+        }
+        val sl = len - 0.17f
+        box(m, 0f, 0f, sl / 2f, 0f, 0f, w, w, sl, 0f, 0x7FD9C8)                                   // manga
+        box(m, 0f, 0f, sl + 0.02f, 0f, 0f, w * 1.14f, w * 1.14f, 0.05f, 0f, 0xA6EBDD)             // barra da manga
+        val fw = w * 1.25f; val fh = w * 1.15f
+        box(m, 0f, 0f, len, 0f, 0f, fw, fh, 0.24f, 0f, SKIN)                                      // punho
+        box(m, 0f, -fh * 0.5f + 0.013f, len, 0f, 0f, fw * 1.003f, 0.028f, 0.243f, 0f, SKIN_D)     // sombra por baixo
+        box(m, 0f, fh * 0.5f - 0.01f, len + 0.02f, 0f, 0f, fw * 0.92f, 0.02f, 0.18f, 0f, 0xF8D9BC) // luz em cima
+    }
+
+    /** braço + punho RETOS, mesma seção, face com face. Origem = ponto fixo ATRÁS da câmera (nunca aparece), Z aponta pro punho; len = distância até o centro do punho. */
+    private fun drawToolArm(m: FloatArray, len: Float) {
+        val fz = 0.12f
+        val sl = len - fz - 0.06f
+        box(m, 0f, 0f, sl / 2f, 0f, 0f, 0.21f, 0.19f, sl, 0f, 0x7FD9C8)                  // manga
+        box(m, 0f, 0f, sl + 0.03f, 0f, 0f, 0.225f, 0.205f, 0.06f, 0f, 0xA6EBDD)          // barra da manga
+        box(m, 0f, 0f, len, 0f, 0f, 0.21f, 0.19f, 0.24f, 0f, SKIN)                       // punho
+        box(m, 0f, -0.095f + 0.014f, len, 0f, 0f, 0.213f, 0.03f, 0.243f, 0f, SKIN_D)     // sombra de baixo
+        box(m, 0f, 0.095f - 0.008f, len, 0f, 0f, 0.213f, 0.02f, 0.243f, 0f, 0xF8D9BC)    // luz de cima
     }
 
     private val tmp2 = FloatArray(16); private val restM = FloatArray(16); private val restInv = FloatArray(16); private val camBlk = FloatArray(16)
@@ -543,6 +610,261 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         out[12] = px; out[13] = py; out[14] = pz; out[15] = 1f
     }
 
+    private fun tb(m: FloatArray, x: Float, y: Float, z: Float, sx: Float, sy: Float, sz: Float, col: Int, rx: Float = 0f, shine: Float = 1f) =
+        box(m, x, y, z, rx, 0f, sx, sy, sz, 0f, col, 1f, shine)
+
+    /** Ferramentas 3D na mão. Origem = centro do punho; Y = cabo pra cima; frente = -Z (a parte que corta/ponta fica virada pra frente). glow = brilho mágico (cajado). */
+    private fun drawTool3D(m: FloatArray, id: Int, t: Float, glow: Float = 0f) {
+        val iron = 0xC5CEDA; val ironD = 0x8B96A6; val ironL = 0xEEF3FA
+        val wood = 0x9A6A3E; val woodD = 0x6F4A29; val gold = 0xFFD060
+        val glint = 0.5f + 0.5f * sin(t * 3f)
+        if (id != Items.SWORD && id != Items.STAFF) {
+            tb(m, 0f, 0.36f, 0f, 0.08f, 0.84f, 0.08f, wood)                       // cabo de madeira
+            tb(m, 0f, -0.06f, 0f, 0.095f, 0.07f, 0.095f, woodD); tb(m, 0f, 0.08f, 0f, 0.095f, 0.07f, 0.095f, woodD)   // empunhadura
+        }
+        when (id) {
+            Items.PICK -> {
+                tb(m, 0f, 0.72f, 0f, 0.11f, 0.11f, 0.11f, ironD)                  // encaixe no cabo
+                for (sg in intArrayOf(-1, 1)) {                                   // -1 = ponta pra frente, +1 = pra trás
+                    val s = sg.toFloat()
+                    tb(m, 0f, 0.73f, s * 0.14f, 0.085f, 0.09f, 0.16f, iron)
+                    tb(m, 0f, 0.715f, s * 0.29f, 0.075f, 0.075f, 0.17f, iron, rx = s * 25f)
+                    tb(m, 0f, 0.635f, s * 0.40f, 0.06f, 0.06f, 0.13f, ironL, rx = s * 50f)
+                }
+            }
+            Items.AXE -> {
+                tb(m, 0f, 0.68f, 0.08f, 0.085f, 0.17f, 0.08f, ironD)              // nuca
+                tb(m, 0f, 0.68f, 0f, 0.09f, 0.22f, 0.11f, iron)                   // cabeça
+                tb(m, 0f, 0.68f, -0.10f, 0.075f, 0.28f, 0.10f, iron)              // lâmina
+                tb(m, 0f, 0.68f, -0.17f, 0.06f, 0.36f, 0.05f, ironL)              // gume
+                tb(m, 0f, 0.68f, -0.205f, 0.04f, 0.40f, 0.02f, 0xFFFFFF)          // fio virado pra frente
+            }
+            Items.SWORD -> {
+                tb(m, 0f, -0.04f, 0f, 0.07f, 0.28f, 0.07f, woodD)                 // cabo
+                tb(m, 0f, -0.2f, 0f, 0.09f, 0.07f, 0.09f, gold)                   // pomo
+                tb(m, 0f, 0.12f, 0f, 0.08f, 0.05f, 0.30f, gold)                   // guarda
+                tb(m, 0f, 0.55f, 0f, 0.03f, 0.84f, 0.12f, 0xC6E4FA, shine = 0.95f + 0.05f * glint)   // lâmina
+                tb(m, 0f, 0.55f, 0f, 0.045f, 0.78f, 0.04f, 0x7FC8F5)              // nervura central
+                tb(m, 0f, 0.55f, -0.065f, 0.02f, 0.84f, 0.02f, 0xFFFFFF)          // fio da frente
+                tb(m, 0f, 1.0f, 0f, 0.03f, 0.08f, 0.08f, 0xC6E4FA)                // ponta
+                tb(m, 0f, 1.06f, 0f, 0.03f, 0.05f, 0.04f, 0xFFFFFF)
+            }
+            Items.STAFF -> {
+                tb(m, 0f, 0.4f, 0f, 0.07f, 1.3f, 0.07f, 0x7B54C4)                 // haste
+                tb(m, 0f, 1.05f, 0f, 0.11f, 0.06f, 0.11f, gold)                   // anel
+                val gs = 0.2f * (1f + 0.35f * glow)
+                box(m, 0f, 1.2f, 0f, 45f + game.time * 60f * (0.3f + glow), 45f, gs, gs, gs, 0f, 0x7FE8FF, 1f, 0.9f + 0.1f * glint + 0.3f * glow)   // gema (gira mais rápido ao lançar)
+                val hs = 0.3f * (1f + 0.9f * glow)
+                G.glDepthMask(false)
+                box(m, 0f, 1.2f, 0f, 0f, 0f, hs, hs, hs, 0f, 0xBFF6FF, 0.25f + 0.4f * glow, 1f)   // brilho
+                G.glDepthMask(true)
+            }
+        }
+    }
+
+    /** partes que cortam, usadas no rastro (ghost) do golpe */
+    private fun drawTrail(m: FloatArray, id: Int, a: Float) {
+        G.glDepthMask(false)
+        when (id) {
+            Items.SWORD -> box(m, 0f, 0.55f, 0f, 0f, 0f, 0.03f, 0.9f, 0.18f, 0f, 0xCFEFFF, a)
+            Items.AXE -> box(m, 0f, 0.68f, -0.12f, 0f, 0f, 0.05f, 0.4f, 0.22f, 0f, 0xFFFFFF, a)
+            Items.PICK -> box(m, 0f, 0.72f, 0f, 0f, 0f, 0.06f, 0.07f, 0.95f, 0f, 0xFFFFFF, a)
+        }
+        G.glDepthMask(true)
+    }
+
+    // ---------- animações por ferramenta (keyframes) ----------
+    // linha: [tempo 0..1, easing (0 suave, 1 acelera, 2 desacelera), offX, offY, offZ, pitch, yaw, roll, punhoPitch, punhoRoll, punhoYaw, brilho]
+    
+    
+    
+    
+    
+    private val KF_SWORD = arrayOf(
+            floatArrayOf(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f),
+            floatArrayOf(0.1f, 2f, 0.02f, -0.03f, 0.05f, -4f, -1f, -1f, 10f, -2f, 0f, 0f),
+            floatArrayOf(0.3f, 0f, 0.04f, 0.14f, 0.08f, 44f, -4f, -5f, -18f, -8f, 0f, 0f),
+            floatArrayOf(0.37f, 0f, 0.04f, 0.15f, 0.09f, 48f, -4f, -5f, -22f, -8f, 0f, 0f),
+            floatArrayOf(0.5f, 1f, 0.0f, 0.0f, -0.2f, 10f, 4f, 3f, -5f, 10f, 0f, 0f),
+            floatArrayOf(0.6f, 2f, -0.07f, -0.12f, -0.24f, -26f, 14f, 10f, -50f, 30f, 0f, 0f),
+            floatArrayOf(0.68f, 0f, -0.07f, -0.11f, -0.21f, -25f, 15f, 10f, -49f, 30f, 0f, 0f),
+            floatArrayOf(0.8f, 0f, -0.07f, -0.1f, -0.2f, -24f, 16f, 10f, -48f, 30f, 0f, 0f),
+            floatArrayOf(1f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
+        )
+
+    private val KF_SWORD2 = arrayOf(
+            floatArrayOf(0f, 0f, -0.07f, -0.1f, -0.2f, -24f, 16f, 10f, -48f, 30f, 0f, 0f),
+            floatArrayOf(0.12f, 0f, -0.07f, -0.05f, -0.1f, -10f, 28f, 10f, -52f, 36f, 0f, 0f),
+            floatArrayOf(0.4f, 1f, 0.0f, 0.0f, -0.3f, -4f, 0f, -2f, -66f, 0f, 0f, 0f),
+            floatArrayOf(0.55f, 2f, 0.12f, 0.0f, -0.18f, -2f, -34f, -14f, -62f, -26f, 0f, 0f),
+            floatArrayOf(0.7f, 0f, 0.13f, 0.0f, -0.12f, -2f, -38f, -16f, -58f, -30f, 0f, 0f),
+            floatArrayOf(1f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
+        )
+
+    private val KF_SWORD3 = arrayOf(
+            floatArrayOf(0f, 0f, 0.13f, 0.0f, -0.12f, -2f, -38f, -16f, -58f, -30f, 0f, 0f),
+            floatArrayOf(0.22f, 0f, 0.06f, -0.05f, 0.16f, 6f, -12f, -4f, -72f, -6f, 0f, 0f),
+            floatArrayOf(0.34f, 0f, 0.06f, -0.06f, 0.21f, 8f, -10f, -4f, -76f, -4f, 0f, 0f),
+            floatArrayOf(0.46f, 1f, 0.0f, -0.02f, -0.5f, 0f, 4f, 0f, -72f, 8f, 0f, 0f),
+            floatArrayOf(0.56f, 2f, 0.0f, -0.02f, -0.56f, 0f, 4f, 0f, -72f, 8f, 0f, 0f),
+            floatArrayOf(0.72f, 0f, 0.0f, -0.02f, -0.5f, 0f, 3f, 0f, -70f, 6f, 0f, 0f),
+            floatArrayOf(1f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
+        )
+
+    private val KF_AXE = arrayOf(
+            floatArrayOf(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f),
+            floatArrayOf(0.07f, 0f, -0.0036f, -0.009f, -0.009f, -3.24f, 0.9f, 1.44f, -2.7f, 0.9f, -0f, 0f),
+            floatArrayOf(0.36f, 2f, 0.02f, 0.05f, 0.05f, 18f, -5f, -8f, 15f, -5f, 0f, 0f),
+            floatArrayOf(0.43f, 0f, 0.02f, 0.06f, 0.06f, 20f, -6f, -9f, 17f, -6f, 0f, 0f),
+            floatArrayOf(0.55f, 1f, -0.04f, -0.16f, -0.3f, -32f, 6f, 6f, -20f, 8f, 0f, 0f),
+            floatArrayOf(0.66f, 2f, -0.03f, -0.12f, -0.24f, -26f, 5f, 4f, -12f, 5f, 0f, 0f),
+            floatArrayOf(1f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
+        )
+
+    private val KF_PICK = arrayOf(
+            floatArrayOf(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f),
+            floatArrayOf(0.07f, 0f, -0.0036f, -0.009f, -0.0072f, -2.88f, 0.9f, 1.08f, -2.34f, 0.72f, -0f, 0f),
+            floatArrayOf(0.3f, 2f, 0.02f, 0.05f, 0.04f, 16f, -5f, -6f, 13f, -4f, 0f, 0f),
+            floatArrayOf(0.36f, 0f, 0.02f, 0.06f, 0.05f, 18f, -6f, -7f, 15f, -5f, 0f, 0f),
+            floatArrayOf(0.54f, 1f, -0.02f, -0.14f, -0.26f, -30f, 4f, 5f, -16f, 5f, 0f, 0f),
+            floatArrayOf(0.64f, 2f, -0.02f, -0.11f, -0.2f, -22f, 3f, 3f, -9f, 3f, 0f, 0f),
+            floatArrayOf(1f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
+        )
+
+    private val KF_STAFF = arrayOf(
+            floatArrayOf(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f),
+            floatArrayOf(0.07f, 0f, -0.0054f, 0.0072f, -0.0126f, -1.08f, 0.54f, 0.9f, -1.8f, 0.72f, -0f, 0f),
+            floatArrayOf(0.28f, 2f, 0.03f, -0.04f, 0.07f, 6f, -3f, -5f, 10f, -4f, 0f, 0.4f),
+            floatArrayOf(0.34f, 0f, 0.03f, -0.04f, 0.08f, 7f, -3f, -5f, 12f, -4f, 0f, 0.5f),
+            floatArrayOf(0.5f, 1f, -0.02f, 0.05f, -0.32f, -12f, 0f, 0f, -36f, 2f, 0f, 1f),
+            floatArrayOf(0.74f, 2f, -0.02f, 0.04f, -0.26f, -8f, 0f, 0f, -28f, 2f, 0f, 0.7f),
+            floatArrayOf(1f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
+        )
+
+    private val KF_BLOCK = arrayOf(
+            floatArrayOf(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f),
+            floatArrayOf(0.35f, 2f, 0f, -0.05f, -0.16f, -14f, 0f, 0f, -6f, 0f, 0f, 0f),
+            floatArrayOf(1f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
+        )
+
+    private val KF_FIST = arrayOf(
+            floatArrayOf(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f),
+            floatArrayOf(0.25f, 2f, 0.04f, -0.04f, 0.1f, 8f, -5f, -4f, 0f, 0f, 0f, 0f),
+            floatArrayOf(0.5f, 1f, -0.1f, 0.02f, -0.4f, -6f, 6f, 3f, 0f, 0f, 0f, 0f),
+            floatArrayOf(0.66f, 2f, -0.08f, 0.01f, -0.3f, -4f, 4f, 2f, 0f, 0f, 0f, 0f),
+            floatArrayOf(1f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
+        )
+
+    private val KF_SWORD_POWER = arrayOf(
+            floatArrayOf(0f, 0f, 0.05f, 0.17f, 0.1f, 54f, -5f, -6f, -28f, -4f, 0f, 0f),
+            floatArrayOf(0.06f, 0f, 0.05f, 0.19f, 0.11f, 58f, -5f, -6f, -22f, -4f, 0f, 0f),
+            floatArrayOf(0.26f, 1f, 0.0f, 0.0f, -0.28f, 6f, 6f, 2f, -10f, 10f, 0f, 0f),
+            floatArrayOf(0.36f, 2f, -0.09f, -0.18f, -0.36f, -34f, 16f, 10f, -62f, 32f, 0f, 0f),
+            floatArrayOf(0.44f, 0f, -0.09f, -0.16f, -0.32f, -31f, 17f, 11f, -58f, 32f, 0f, 0f),
+            floatArrayOf(0.62f, 0f, -0.08f, -0.12f, -0.2f, -22f, 15f, 10f, -48f, 30f, 0f, 0f),
+            floatArrayOf(1f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
+        )
+
+    private val KF_AXE_POWER = arrayOf(
+            floatArrayOf(0f, 0f, 0.05f, 0.18f, 0.11f, 56f, -4f, -5f, -30f, -4f, 0f, 0f),
+            floatArrayOf(0.07f, 0f, 0.05f, 0.2f, 0.12f, 60f, -4f, -5f, -26f, -4f, 0f, 0f),
+            floatArrayOf(0.3f, 1f, 0.0f, 0.0f, -0.3f, 6f, 3f, 2f, -12f, 6f, 0f, 0f),
+            floatArrayOf(0.4f, 2f, -0.07f, -0.2f, -0.42f, -38f, 10f, 8f, -60f, 20f, 0f, 0f),
+            floatArrayOf(0.5f, 0f, -0.07f, -0.17f, -0.38f, -35f, 11f, 9f, -56f, 20f, 0f, 0f),
+            floatArrayOf(0.68f, 0f, -0.05f, -0.12f, -0.24f, -24f, 8f, 6f, -44f, 16f, 0f, 0f),
+            floatArrayOf(1f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
+        )
+
+    private fun sm01(x: Float): Float { val t = x.coerceIn(0f, 1f); return t * t * (3f - 2f * t) }
+    private val CH_MID_S = floatArrayOf(0.04f, 0.15f, 0.09f, 48f, -4f, -5f, -24f, -4f, 0f, 0f)
+    private val CH_FULL_S = floatArrayOf(0.05f, 0.17f, 0.10f, 54f, -5f, -6f, -28f, -4f, 0f, 0f)
+    private val CH_MID_A = floatArrayOf(0.04f, 0.15f, 0.09f, 50f, -3f, -4f, -26f, -4f, 0f, 0f)
+    private val CH_FULL_A = floatArrayOf(0.05f, 0.18f, 0.11f, 56f, -4f, -5f, -30f, -4f, 0f, 0f)
+
+    /** segurando o ataque: braço sobe e a ferramenta fica pra trás; perto do máximo, treme de tanta força */
+    private fun chargePose(out: FloatArray, id: Int, ch: Float, tt: Float) {
+        val mid = if (id == Items.AXE) CH_MID_A else CH_MID_S; val full = if (id == Items.AXE) CH_FULL_A else CH_FULL_S
+        val e1 = sm01(ch / 0.3f); val e2 = sm01((ch - 0.3f) / 0.7f)
+        for (j in 0 until 10) out[j] = mid[j] * e1 + (full[j] - mid[j]) * e2
+        val tr = sm01((ch - 0.75f) / 0.25f)
+        out[0] += sin(tt * 70f) * 0.004f * tr; out[5] += sin(tt * 55f + 1f) * 1.2f * tr; out[3] += sin(tt * 63f) * 0.8f * tr
+    }
+
+    private val SWORD_COMBO = arrayOf(KF_SWORD, KF_SWORD2, KF_SWORD3)
+    private val lastRaw = FloatArray(10); private val blendFrom = FloatArray(10); private var prevSwingR = 1f
+
+    /** pose da espada com transição suave a partir da pose em que o golpe anterior parou (conecta os cortes do combo) */
+    private fun evalSword(out: FloatArray, k: Array<FloatArray>, sp: Float) {
+        evalPose(out, k, sp)
+        if (sp < 0.16f) {
+            val t = (sp / 0.16f).coerceIn(0f, 1f); val w = 1f - t * t * (3f - 2f * t)
+            for (j in 0 until 10) out[j] += (blendFrom[j] - out[j]) * w
+        }
+    }
+
+    private fun kfFor(id: Int) = when {
+        id == Items.SWORD -> (if (game.powerSwing) KF_SWORD_POWER else SWORD_COMBO[game.combo % SWORD_COMBO.size]); id == Items.AXE -> (if (game.powerSwing) KF_AXE_POWER else KF_AXE); id == Items.PICK -> KF_PICK; id == Items.STAFF -> KF_STAFF
+        id in 1..13 -> KF_BLOCK; else -> KF_FIST
+    }
+
+    private fun evalPose(out: FloatArray, k: Array<FloatArray>, sp: Float) {
+        var i = 0
+        while (i < k.size - 2 && sp > k[i + 1][0]) i++
+        val a = k[i]; val b = k[i + 1]
+        val h = b[0] - a[0]
+        val u = if (h <= 1e-5f) 1f else ((sp - a[0]) / h).coerceIn(0f, 1f)
+        val u2 = u * u; val u3 = u2 * u
+        val h00 = 2f * u3 - 3f * u2 + 1f; val h10 = u3 - 2f * u2 + u; val h01 = -2f * u3 + 3f * u2; val h11 = u3 - u2
+        val pa = if (i > 0) k[i - 1] else null
+        val nb = if (i + 2 < k.size) k[i + 2] else null
+        for (j in 0 until 10) {
+            val m0 = if (pa != null) (b[2 + j] - pa[2 + j]) / (b[0] - pa[0]) else 0f
+            val m1 = if (nb != null) (nb[2 + j] - a[2 + j]) / (nb[0] - a[0]) else 0f
+            out[j] = h00 * a[2 + j] + h10 * h * m0 + h01 * b[2 + j] + h11 * h * m1
+        }
+    }
+
+    /** braço inteiro gira em volta do ombro (fora da tela) + deslocamento */
+    private fun poseMatrix(out: FloatArray, p: FloatArray, ox: Float, oy: Float, sx: Float, sy: Float, sz: Float) {
+        Matrix.setIdentityM(out, 0)
+        Matrix.translateM(out, 0, ox + p[0], oy + p[1], p[2])
+        Matrix.translateM(out, 0, sx, sy, sz)
+        Matrix.rotateM(out, 0, p[4], 0f, 1f, 0f)
+        Matrix.rotateM(out, 0, p[3], 1f, 0f, 0f)
+        Matrix.rotateM(out, 0, p[5], 0f, 0f, 1f)
+        Matrix.translateM(out, 0, -sx, -sy, -sz)
+    }
+
+    /** ferramenta: origem no centro do punho; o punho ainda gira (flick) em volta dela */
+    private fun toolBase(out: FloatArray, p: FloatArray, hx: Float, hy: Float, hz: Float) {
+        Matrix.setIdentityM(out, 0)
+        Matrix.translateM(out, 0, hx, hy, hz)
+        Matrix.rotateM(out, 0, p[6], 1f, 0f, 0f)
+        Matrix.rotateM(out, 0, p[7], 0f, 0f, 1f)
+        Matrix.rotateM(out, 0, p[8], 0f, 1f, 0f)
+        Matrix.rotateM(out, 0, 22f, 0f, 1f, 0f)            // mostra a lateral
+        Matrix.rotateM(out, 0, 5f, 1f, 0f, 0f)             // topo levemente pra trás: ferramenta em pé, sem cortar o punho
+        Matrix.rotateM(out, 0, 3f, 0f, 0f, 1f)             // quase reta
+    }
+
+    private val fistIn = FloatArray(4); private val fistOut = FloatArray(4)
+    private var lagP = 0f; private var lagR = 0f; private var prvP = 0f; private var prvY = 0f; private var prvR = 0f
+    private val poseP = FloatArray(10); private val ghostP = FloatArray(10)
+    private val poseM = FloatArray(16); private val ghostM = FloatArray(16); private val armM = FloatArray(16); private val toolM = FloatArray(16)
+
+    /** desenha o sprite 16x16 como cubinhos: cada "run" horizontal vira uma caixa. Origem = célula de empunhadura. */
+    private fun drawSprite(m: FloatArray, sp: ToolSprites.Sprite, t: Float) {
+        val glint = 0.5f + 0.5f * sin(t * 3f)
+        for (r in sp.runs) {
+            val w = (r.x1 - r.x0 + 1).toFloat()
+            val cx = (r.x0 + r.x1 + 1) / 2f - (sp.gx + 0.5f)
+            val cy = -((r.y + 0.5f) - (sp.gy + 0.5f))
+            val col = r.c and 0xFFFFFF
+            val shine = if (col == 0xFFFFFF || col == 0xF2F7FF || col == 0x7FE8FF) 0.92f + 0.08f * glint else 1f
+            box(m, cx, cy, 0f, 0f, 0f, w, 1f, 1.3f, 0f, col, 1f, shine)
+        }
+    }
+
     private fun drawHand(dt: Float) {
         G.glClear(G.GL_DEPTH_BUFFER_BIT)
         G.glUniformMatrix4fv(uVP, 1, false, proj, 0); G.glUniform3f(uCam, 0f, 0f, 0f)
@@ -551,56 +873,90 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         if (id != lastId) { lastId = id; equip = 0f }
         equip = min(1f, equip + dt * 3.2f)
         val e = 1f - (1f - equip) * (1f - equip) * (1f - equip)
+        val inv = 1f - e
         val dyaw = game.yaw - prevYaw; val dp = game.pitch - prevPitch; prevYaw = game.yaw; prevPitch = game.pitch
         val k = min(1f, 10f * dt)
         swayX += ((dyaw / dt * 0.02f).coerceIn(-0.1f, 0.1f) - swayX) * k
         swayY += ((-dp / dt * 0.02f).coerceIn(-0.1f, 0.1f) - swayY) * k
-        val wp = game.walkPhase; val wa = game.walkAmt
+        val wp = game.walkPhase; val wa = game.walkAmt; val tt = game.time
         val bobX = sin(wp) * 0.03f * wa; val bobY = abs(sin(wp)) * 0.03f * wa
-        val breath = sin(game.time * 1.8f) * 0.006f
-        // ---- mão direita (segura o item) ----
-        // braço entra pelo canto inferior direito, subindo pra frente; punho fica perto da câmera
-        val ox = bobX + swayX; val oy = bobY + swayY + breath - (1f - e) * 0.55f
-        val delta = swingDelta(id, game.swing)
-        val armDelta = if (delta < 0f) delta * 0.15f else delta * 0.4f   // braço inteiro (manga + punho + item) gira junto
-        val extra = if (delta < 0f) delta * 0.2f else delta * 0.55f      // o item ainda inclina um pouco mais no golpe
-        val yawSw = if (game.swing < 1f) -sin(game.swing * 3.1416f) * 14f else 0f
-        // poses copiadas das fotos de referência (câmera: X direita, Y cima, -Z frente; FOV 70°)
+        val breath = sin(tt * 1.8f) * 0.006f
+        val ox = bobX + swayX; val oy = bobY + swayY + breath - inv * 0.55f
         val empty = id <= 0
-        val armW = if (empty) 0.182f else 0.15f
-        // ombro (fora da tela) -> punho. Mão vazia: braço curto subindo pelo canto; com item/bloco: punho mais baixo e mais pra direita
-        val hx = if (empty) 0.589f else 0.752f; val hy = if (empty) -0.534f else -0.756f; val hz = if (empty) -0.982f else -1.125f
+        val isTool = id > 0 && id !in 1..13
+        val armW = if (empty) 0.2f else 0.17f
+        // punho (centro do punho = onde o cabo passa). Ferramenta: punho mais alto, inteiro na tela; mão vazia/bloco: poses das referências
+        val hx = if (empty) 0.589f else if (isTool) 0.66f else 0.752f
+        val hy = if (empty) -0.534f else if (isTool) -0.52f else -0.756f
+        val hz = if (empty) -0.982f else if (isTool) -1.12f else -1.125f
         val sx0 = hx - 0.223f; val sy0 = hy - 0.138f; val sz0 = hz + 0.458f
-        armBasis(restM, sx0, sy0, sz0, hx, hy, hz)
-        val len = armBasis(fp, sx0 + ox, sy0 + oy, sz0, hx + ox, hy + oy, hz)
-        Matrix.rotateM(fp, 0, armDelta, 1f, 0f, 0f)
-        if (game.swing < 1f) Matrix.rotateM(fp, 0, yawSw, 0f, 1f, 0f)
-        drawArm(fp, len, armW)
-        System.arraycopy(fp, 0, itemM, 0, 16)
-        if (id > 0 && id !in 1..13) {
-            // ferramenta: em pé, virada de frente (lado chato pra câmera), ponta pra cima e levemente pra direita, cabo no punho
-            val sc = when (id) { Items.SWORD -> 1.09f; Items.AXE -> 1.1f; Items.PICK -> 1.0f; else -> 1.0f }
-            Matrix.translateM(itemM, 0, 0f, 0f, len + 0.01f)
-            Matrix.rotateM(itemM, 0, extra - 20.4f - 90f, 1f, 0f, 0f)
-            Matrix.rotateM(itemM, 0, 120.9f, 0f, 0f, 1f)
-            Matrix.scaleM(itemM, 0, sc, sc, sc)
-            Matrix.translateM(itemM, 0, 0f, 0f, -0.06f)
-            drawItem(itemM, id, game.time)
+
+        // ---- pose animada: golpe (keyframes da ferramenta) + respiração + andar + trocar de item ----
+        val kfs = kfFor(id)
+        if (game.charging) chargePose(poseP, id, game.charge, tt) else {
+            if (game.swing < prevSwingR) System.arraycopy(lastRaw, 0, blendFrom, 0, 10)   // novo golpe: guarda de onde a espada vinha
+            prevSwingR = game.swing
+            if (id == Items.SWORD) evalSword(poseP, kfs, game.swing) else evalPose(poseP, kfs, game.swing)
+        }
+        System.arraycopy(poseP, 0, lastRaw, 0, 10)
+        val p = poseP
+        val flow = sin(tt * 1.5f)
+        val idleRoll = when (id) { Items.SWORD -> flow * 1.8f; Items.STAFF -> sin(tt * 1.3f) * 2.2f; else -> flow * 0.9f }
+        p[5] += idleRoll + sin(wp) * 1.8f * wa
+        p[3] += -abs(sin(wp)) * 2f * wa + sin(tt * 1.1f) * 0.6f
+        if (id == Items.STAFF) { p[1] += sin(tt * 2f) * 0.014f; p[7] += sin(tt * 1.7f) * 2.5f; p[9] = max(p[9], 0.25f + 0.2f * sin(tt * 3f)) }
+        p[6] += inv * 42f; p[5] += -inv * 16f; p[3] += -inv * 12f   // ao trocar: a ferramenta sobe girando e se ajeita
+
+        // arrasto: a ferramenta fica um pouco pra trás do braço e chicoteia ao passar (mola)
+        val vP = (p[3] - prvP) / dt; val vY = (p[4] - prvY) / dt; val vR = (p[5] - prvR) / dt
+        prvP = p[3]; prvY = p[4]; prvR = p[5]
+        val kk = min(1f, 14f * dt)
+        lagP += ((-vP * 0.05f).coerceIn(-22f, 22f) - lagP) * kk
+        lagR += ((-vR * 0.05f - vY * 0.03f).coerceIn(-26f, 26f) - lagR) * kk
+        p[6] += lagP; p[7] += lagR
+        poseMatrix(poseM, p, ox, oy, sx0, sy0, sz0)
+        val len = armBasis(fp, sx0, sy0, sz0, hx, hy, hz)
+        Matrix.multiplyMM(armM, 0, poseM, 0, fp, 0)
+        if (!isTool) drawArm(armM, len, armW, true)
+
+        if (isTool) {
+            // rastro do golpe: cópias translúcidas da parte que corta nos instantes anteriores (só aparece quando o golpe é rápido)
+            if (game.swing < 0.85f && (id == Items.SWORD || (id == Items.AXE && game.powerSwing))) {
+                for (i in 1..8) {
+                    val gs = game.swing - i * 0.02f
+                    if (gs <= 0f) break
+                    if (id == Items.SWORD) evalSword(ghostP, kfs, gs) else evalPose(ghostP, kfs, gs)
+                    val diff = abs(ghostP[3] - p[3]) + abs(ghostP[4] - p[4]) + abs(ghostP[5] - p[5]) + abs(ghostP[6] - p[6]) + abs(ghostP[7] - p[7])
+                    val al = min(1f, diff / 30f) * (if (game.powerSwing) 0.5f else 0.3f) * (1f - i / 9f)
+                    if (al < 0.02f) continue
+                    poseMatrix(ghostM, ghostP, ox, oy, sx0, sy0, sz0)
+                    toolBase(toolM, ghostP, hx, hy, hz)
+                    Matrix.multiplyMM(tmp2, 0, ghostM, 0, toolM, 0)
+                    drawTrail(tmp2, id, al)
+                }
+            }
+            // punho + braço: presos num ponto fixo atrás da câmera e esticados até o punho (seguem o golpe sem mostrar a ponta de trás)
+            fistIn[0] = hx; fistIn[1] = hy; fistIn[2] = hz; fistIn[3] = 1f
+            Matrix.multiplyMV(fistOut, 0, poseM, 0, fistIn, 0)
+            val flen = armBasis(fp, hx, hy, hz + 1.9f, fistOut[0], fistOut[1], fistOut[2])
+            drawToolArm(fp, flen)
+            toolBase(toolM, p, hx, hy, hz)
+            Matrix.multiplyMM(tmp2, 0, poseM, 0, toolM, 0)
+            drawTool3D(tmp2, id, tt, p[9])
         } else if (id in 1..13) {
-            // bloco grande no canto inferior direito, topo e lateral aparecendo (posição fixa no espaço da câmera, presa ao braço no golpe)
+            // bloco grande no canto inferior direito, topo e lateral aparecendo (preso ao braço no golpe)
             Matrix.setIdentityM(camBlk, 0)
             Matrix.translateM(camBlk, 0, 0.786f, -0.773f, -1.068f)
+            Matrix.rotateM(camBlk, 0, p[6], 1f, 0f, 0f)
             Matrix.rotateM(camBlk, 0, 5.4f, 1f, 0f, 0f)
             Matrix.rotateM(camBlk, 0, 26.7f, 0f, 1f, 0f)
-            Matrix.invertM(restInv, 0, restM, 0)
-            Matrix.multiplyMM(itemM, 0, fp, 0, restInv, 0)
-            Matrix.multiplyMM(tmp2, 0, itemM, 0, camBlk, 0)
+            Matrix.multiplyMM(tmp2, 0, poseM, 0, camBlk, 0)
             box(tmp2, 0f, 0f, 0f, 0f, 0f, 0.569f, 0.569f, 0.569f, 0f, 0xFFFFFF, 1f, 1f, null, id)
         }
         // mão esquerda: as referências só mostram a direita
         if (showLeftHand) {
             val lx = -bobX * 0.8f - swayX
-            val ly = abs(sin(wp + 1.57f)) * 0.03f * wa + swayY + breath - (1f - e) * 0.55f
+            val ly = abs(sin(wp + 1.57f)) * 0.03f * wa + swayY + breath - inv * 0.55f
             val ll = armBasis(fp, -0.76f + lx, -1.05f + ly, -0.36f, -0.44f + lx, -0.68f + ly, -0.88f)
             drawArm(fp, ll)
         }
@@ -668,6 +1024,14 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             setBase(q.x, q.y, q.z, game.time * 200f)
             box(base, 0f, 0f, 0f, 0f, 0f, q.size, q.size, q.size, 0f, q.color, min(1f, q.life * 2f))
         }
+        for (l in game.leafFall) {
+            setBase(l.x, l.y, l.z, l.age * 50f + l.ph * 57f)
+            val tl = if (l.landed) 0f else sin(l.age * 3f + l.ph) * 50f; val rl = if (l.landed) 0f else cos(l.age * 2.3f + l.ph) * 40f
+            val al = min(1f, min(l.age * 3f, l.life * 1.2f))
+            box(base, 0f, 0f, 0f, tl, 0f, l.size * 0.95f, 0.01f, l.size * 1.05f, 0f, l.color, al, 1f, null, 0, rl)
+            box(base, 0f, 0f, 0f, tl, 0f, l.size * 0.5f, 0.011f, l.size * 1.75f, 0f, l.color, al, 1.08f, null, 0, rl)
+            box(base, 0f, 0.004f, 0f, tl, 0f, l.size * 0.1f, 0.012f, l.size * 1.8f, 0f, 0x2F6B1E, al * 0.8f, 1f, null, 0, rl)
+        }
         for (b in game.bolts) {
             setBase(b.x, b.y, b.z, 0f)
             box(base, 0f, 0f, 0f, game.time * 400f, game.time * 300f, 0.18f, 0.18f, 0.18f, 0f, 0xE8FBFF)
@@ -681,6 +1045,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             box(base, 0f, 0f, 0f, 0f, 0f, 1.01f, 1.01f, 1.01f, 0f, 0xFFFFFF, 0.18f + 0.1f * sin(game.time * 6f))
             G.glDepthMask(true)
         }
+        if (game.brProg > 0f && game.brY > 0 && game.deadTimer <= 0f && world.get(game.brX, game.brY, game.brZ) != 0) drawCracks(game.brX, game.brY, game.brZ, game.brProg)
         G.glUniform1f(uWind, 1f)
         G.glUniformMatrix4fv(uModel, 1, false, ident, 0)
         G.glDisable(G.GL_CULL_FACE)

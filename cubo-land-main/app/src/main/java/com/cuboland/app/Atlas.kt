@@ -6,6 +6,7 @@ import kotlin.math.cos
 import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.math.sqrt
 
@@ -122,37 +123,20 @@ object Atlas {
         return lerp(c, 0xB07F55, sm(0.40f, 0.44f, max(abs(dx), abs(dy))))
     }
 
-    /** folhas pixel-art 16x16 estilo "folhas detalhadas": várias folhas pontudas sobrepostas, cada uma com contorno escuro,
-     *  nervura clara e lado iluminado; fundo escuro com buraquinhos (dá profundidade). Mesmas cores verdes de antes. */
+    /** folha da referência (como na foto 2): pixels em 4 tons de verde, com buraquinhos que mostram o interior da copa */
     private fun leaves(u: Float, v: Float): Int {
-        val g = 16
-        val gx = floor(u * g).toInt(); val gy = floor(v * g).toInt()
-        val qu = (gx + 0.5f) / g; val qv = (gy + 0.5f) / g
-        val n = h(gx, gy, 91) * 0.5f + vn(qu, qv, 4, 4, 90) * 0.5f
-        if (n < 0.2f) return CLEAR
-        var c = lerp(0x2F7448, 0x3E8A55, h(gx, gy, 92) * 0.6f + vn(qu, qv, 6, 6, 96) * 0.4f)   // fundo sombreado
-        for (i in 0 until 17) {
-            val cx = h(i, 0, 100); val cy = h(i, 1, 100)
-            val ang = h(i, 2, 100) * 3.1416f
-            val len = 0.21f + 0.09f * h(i, 3, 100); val wid = len * 0.56f
-            val light = h(i, 4, 100)
-            val ca = cos(ang); val sa = sin(ang)
-            for (ox in -1..1) for (oy in -1..1) {
-                val dx = qu - cx - ox; val dy = qv - cy - oy
-                if (dx * dx + dy * dy > len * len) continue
-                val al = dx * ca + dy * sa; val b = -dx * sa + dy * ca
-                val t = al / len
-                val half = wid * (1f - t * t)
-                if (abs(b) >= half) continue
-                val side = b / max(half, 0.001f)
-                var lc = lerp(0x58AE6A, 0xB6EC98, (light * 0.55f + (0.5f - side * 0.5f) * 0.45f).coerceIn(0f, 1f))
-                if (side > 0.35f) lc = lerp(lc, 0x3A8A54, 0.55f)                      // lado de baixo da folha, mais escuro
-                if (abs(b) < 0.5f / g && t > -0.85f) lc = lerp(lc, 0xE6FFC8, 0.55f)  // nervura central
-                if (abs(side) > 0.72f || t > 0.82f) lc = lerp(lc, 0x276840, 0.7f)    // contorno escuro da folha
-                c = lc
-            }
-        }
-        if (h(gx, gy, 95) > 0.985f) c = 0xFFC2DA
+        val px = floor(u * 16f).toInt().coerceIn(0, 15); val py = floor(v * 16f).toInt().coerceIn(0, 15)
+        if (h(px, py, 91) < 0.3f && h(px, py / 2, 92) < 0.7f) return CLEAR
+        val k = h(px / 2, py, 93) * 0.6f + h(px, py, 94) * 0.4f
+        val c = when { k < 0.25f -> 0x25500F; k < 0.5f -> 0x3A7519; k < 0.78f -> 0x56A02A; else -> 0x7CC43F }
+        return op(c)
+    }
+
+    /** placas 3D de folha (cubinhos que saem do bloco, como na referência): pixels grandes em 4 tons de verde, sem buracos */
+    private fun leafVox(u: Float, v: Float): Int {
+        val px = floor(u * 8f).toInt().coerceIn(0, 7); val py = floor(v * 8f).toInt().coerceIn(0, 7)
+        val k = h(px, py, 111) * 0.7f + h(px / 2, py, 112) * 0.3f
+        val c = when { k < 0.22f -> 0x25500F; k < 0.5f -> 0x3A7519; k < 0.78f -> 0x56A02A; else -> 0x7CC43F }
         return op(c)
     }
 
@@ -277,13 +261,14 @@ object Atlas {
         19 -> flower(u, v, 0xFFFFFF)
         20 -> leafCard(u, v, 0)
         21 -> leafCard(u, v, 1)
+        22 -> leafVox(u, v)
         else -> -1
     }
 
     private fun build(): Bitmap {
         val w = T * NT
         val out = IntArray(w * T)
-        for (t in 0 until 22) for (y in 0 until T) for (x in 0 until T) {
+        for (t in 0 until 23) for (y in 0 until T) for (x in 0 until T) {
             var a = 0; var r = 0f; var g = 0f; var bl = 0f
             for (sy in 0..1) for (sx in 0..1) {      // antialias 2x2
                 val c = sample(t, (x + 0.25f + sx * 0.5f) / T, (y + 0.25f + sy * 0.5f) / T)
