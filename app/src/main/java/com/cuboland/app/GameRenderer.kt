@@ -818,6 +818,10 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         }
     }
 
+    private val cm = CharModel()
+    private val handM = FloatArray(16)
+    private val charBox: BoxFn = { m, px, py, pz, rx, ry, sx, sy, sz, oy, col, a, rz -> box(m, px, py, pz, rx, ry, sx, sy, sz, oy, col, a, 1f, null, 0, rz) }
+
     private fun drawPlayer(t: Float) {
         val p = game.player
         val wp = game.walkPhase; val wa = game.walkAmt
@@ -832,48 +836,22 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             Matrix.rotateM(base, 0, swm * (78f - Math.toDegrees(game.pitch.toDouble()).toFloat() * 0.35f).coerceIn(40f, 110f), 1f, 0f, 0f)
             Matrix.translateM(base, 0, 0f, -0.9f, 0f)
         }
-        val skin = 0xF2C29B; val hair = 0x6B3FA0; val shirt = 0x7FD9C8
-        // pernas e botas
-        box(base, -0.13f, 0.55f, 0f, sw, 0f, 0.24f, 0.55f, 0.26f, -0.275f, 0x4A5BB5)
-        box(base, 0.13f, 0.55f, 0f, -sw, 0f, 0.24f, 0.55f, 0.26f, -0.275f, 0x4A5BB5)
-        box(base, -0.13f, 0.55f, 0f, sw, 0f, 0.25f, 0.13f, 0.29f, -0.49f, 0x5B3A29)
-        box(base, 0.13f, 0.55f, 0f, -sw, 0f, 0.25f, 0.13f, 0.29f, -0.49f, 0x5B3A29)
-        // corpo, cinto, cachecol
-        box(base, 0f, 0.86f, 0f, 0f, 0f, 0.54f, 0.62f, 0.32f, 0f, shirt)
-        box(base, 0f, 0.6f, 0f, 0f, 0f, 0.56f, 0.07f, 0.34f, 0f, 0xFFD060)
-        box(base, 0f, 1.16f, 0f, 0f, 0f, 0.58f, 0.1f, 0.36f, 0f, 0xFFA3C8)
-        box(base, 0.14f, 1.0f, 0.2f, 0f, 0f, 0.1f, 0.3f, 0.06f, 0f, 0xFFA3C8)
-        // braço esquerdo
-        box(base, -0.37f, 1.12f, 0f, -sw * 0.9f - 40f * air + idle, 0f, 0.2f, 0.4f, 0.22f, -0.2f, shirt)
-        box(base, -0.37f, 1.12f, 0f, -sw * 0.9f - 40f * air + idle, 0f, 0.19f, 0.15f, 0.21f, -0.47f, skin)
-        // braço direito com item
         val id = game.cur()
-        val ang = -28f + sw * 0.5f - 25f * air - idle + swingDelta(id, game.swing)
-        box(base, 0.37f, 1.12f, 0f, ang, 0f, 0.2f, 0.4f, 0.22f, -0.2f, shirt, outArm = arm)
-        box(base, 0.37f, 1.12f, 0f, ang, 0f, 0.19f, 0.15f, 0.21f, -0.47f, skin)
-        System.arraycopy(arm, 0, base2, 0, 16)
-        Matrix.translateM(base2, 0, 0f, -0.5f, 0f)
-        if (id !in 1..13) Matrix.rotateM(base2, 0, -35f, 1f, 0f, 0f)
-        if (id == Items.AXE) Matrix.rotateM(base2, 0, 180f, 0f, 0f, 1f)
-        if (id !in 1..13) Matrix.scaleM(base2, 0, 0.78f, 0.78f, 0.78f)
-        drawItem(base2, id, t)
-        // cabeça grandinha e fofa
-        box(base, 0f, 1.17f, 0f, 0f, 0f, 0.58f, 0.58f, 0.58f, 0.29f, skin)
-        box(base, 0f, 1.73f, -0.01f, 0f, 0f, 0.62f, 0.14f, 0.62f, 0f, hair)
-        box(base, 0f, 1.48f, -0.27f, 0f, 0f, 0.62f, 0.5f, 0.14f, 0f, hair)
-        box(base, -0.3f, 1.56f, 0.02f, 0f, 0f, 0.06f, 0.34f, 0.5f, 0f, hair)
-        box(base, 0.3f, 1.56f, 0.02f, 0f, 0f, 0.06f, 0.34f, 0.5f, 0f, hair)
-        box(base, -0.14f, 1.66f, 0.28f, 0f, 0f, 0.3f, 0.08f, 0.06f, 0f, hair)
-        box(base, 0.16f, 1.66f, 0.28f, 0f, 0f, 0.26f, 0.1f, 0.06f, 0f, hair)
-        box(base, -0.14f, 1.5f, 0.295f, 0f, 0f, 0.1f, 0.15f, 0.02f, 0f, 0x20232E)
-        box(base, 0.14f, 1.5f, 0.295f, 0f, 0f, 0.1f, 0.15f, 0.02f, 0f, 0x20232E)
-        box(base, -0.12f, 1.54f, 0.3f, 0f, 0f, 0.045f, 0.045f, 0.02f, 0f, 0xFFFFFF)
-        box(base, 0.16f, 1.54f, 0.3f, 0f, 0f, 0.045f, 0.045f, 0.02f, 0f, 0xFFFFFF)
-        box(base, -0.24f, 1.4f, 0.295f, 0f, 0f, 0.1f, 0.05f, 0.02f, 0f, 0xFF9AA8)
-        box(base, 0.24f, 1.4f, 0.295f, 0f, 0f, 0.1f, 0.05f, 0.02f, 0f, 0xFF9AA8)
-        box(base, 0f, 1.37f, 0.295f, 0f, 0f, 0.08f, 0.025f, 0.02f, 0f, 0x8A3A3A)
-        // lacinho
-        box(base, 0.26f, 1.72f, 0.1f, 0f, 0f, 0.14f, 0.14f, 0.1f, 0f, 0xFFA3C8)
+        val angR = -28f + sw * 0.5f - 25f * air - idle + swingDelta(id, game.swing)
+        val angL = -sw * 0.9f - 40f * air + idle
+        cm.draw(charBox, base, t, sw, angR, angL, handM)
+        if (id > 0) {   // mesmo modelo 3D da 1ª pessoa e dos ícones: cabo pra cima, fio pra frente
+            System.arraycopy(handM, 0, base2, 0, 16)
+            if (id in 1..13) {
+                Matrix.scaleM(base2, 0, 0.8f, 0.8f, 0.8f)
+                drawItem(base2, id, t)
+            } else {
+                Matrix.rotateM(base2, 0, 180f, 0f, 1f, 0f)
+                Matrix.rotateM(base2, 0, -10f, 1f, 0f, 0f)
+                Matrix.scaleM(base2, 0, 0.7f, 0.7f, 0.7f)
+                drawTool3D(base2, id, t, 0f)
+            }
+        }
     }
 
     private fun drawSlime(s: Slime) {

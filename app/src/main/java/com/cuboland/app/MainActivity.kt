@@ -124,9 +124,15 @@ class MainActivity : AppCompatActivity() {
         val title = TitleView(this)
         val gap = View(this)
         val play = btn("Jogar", Color.rgb(72, 190, 84)) { startActivity(Intent(this, GameActivity::class.java)) }
+        val chr = btn("Personagem", Color.rgb(255, 150, 70)) { startActivity(Intent(this, CharacterActivity::class.java)) }
         val cfg = btn("Configurações", Color.rgb(66, 133, 244)) { startActivity(Intent(this, SettingsActivity::class.java)) }
         val news = btn("O que mudou", Color.rgb(171, 71, 188)) { Novidades.showLatest(this) }
-        val items = listOf<View>(title, gap, play, cfg, news)
+        cfg.textSize = 14f; news.textSize = 14f
+        cfg.setPadding(dp(6), dp(10), dp(6), dp(10)); news.setPadding(dp(6), dp(10), dp(6), dp(10))
+        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        row.addView(cfg, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { rightMargin = dp(4) })
+        row.addView(news, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { leftMargin = dp(4) })
+        val items = listOf<View>(title, gap, play, chr, row)
         for ((i, v) in items.withIndex()) {
             val lp = LinearLayout.LayoutParams(if (i >= 2) dp(300) else if (i == 1) 1 else LinearLayout.LayoutParams.WRAP_CONTENT, if (i == 1) dp(10) else LinearLayout.LayoutParams.WRAP_CONTENT)
             if (i >= 3) lp.topMargin = dp(8) else if (i == 2) lp.topMargin = 0

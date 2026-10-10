@@ -1,3 +1,9 @@
+#id 2026-10-10-j
+#titulo Personagem chibi novinho e totalmente personalizável!
+- Novo botão "Personagem" no menu: escolha menino ou menina, pele, 8 cabelos, olhos, bochechas, blusas, saias/calças/shorts, calçados e muitos acessórios (chapéus, óculos, capa, mochila, asinhas, rabinho...), com preview em 3D que gira
+- O personagem em 3ª pessoa foi refeito do zero: cabeção fofo, olhos brilhantes, cabelo que balança e roupas com detalhes
+- As ferramentas na mão em 3ª pessoa agora são as MESMAS dos ícones e da 1ª pessoa, viradas pra frente do jeito certo
+
 #id 2026-10-10-i
 #titulo Pegadas, água viva, espada que corta folhas e blocos que dropam!
 - Pegadas ao andar: areia afunda mais e fica marcada por bastante tempo, terra deixa marca escura, grama só amassa um pouquinho. Cada pegada some sozinha
