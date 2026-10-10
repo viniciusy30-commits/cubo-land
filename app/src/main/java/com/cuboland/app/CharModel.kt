@@ -12,6 +12,9 @@ import kotlin.math.sqrt
 /** (matriz-pai, px,py,pz, rx,ry, sx,sy,sz, oy, cor, alpha, rz) -> desenha uma caixa */
 typealias BoxFn = (FloatArray, Float, Float, Float, Float, Float, Float, Float, Float, Float, Int, Float, Float) -> Unit
 
+/** pedaço de saia/vestido: vira dois painéis, um preso em cada coxa (nunca atravessa as pernas) */
+class SkR(@JvmField val x: Float, @JvmField val py: Float, @JvmField val z: Float, @JvmField val sx: Float, @JvmField val sy: Float, @JvmField val sz: Float, @JvmField val col: Int, @JvmField val split: Boolean)
+
 /** Estado de animação do boneco (preenchido pelo jogo ou pela tela de personagem). */
 class Anim {
     @JvmField var t = 0f          // tempo corrido
@@ -66,7 +69,7 @@ class CharModel {
     private fun lite(c: Int, k: Float) = mixC(c, 0xFFFFFF, k)
 
     companion object {
-        const val HEAD_SCALE = 0.7f
+        const val HEAD_SCALE = 0.64f
         private fun lp(a: Float, b: Float, k: Float) = a + (b - a) * k
         // braçada de peito (nado mergulhado): (yaw pra fora, elevação, cotovelo) em cada instante da volta
         private val STROKE_KF = arrayOf(floatArrayOf(26f, -10f, -6f), floatArrayOf(52f, -18f, -26f), floatArrayOf(84f, -30f, -62f),
@@ -155,10 +158,10 @@ class CharModel {
             kneeL += (80f - kneeL) * land; kneeR += (80f - kneeR) * land
         }
         if (full || overalls.not() && skirtBot) {   // roupa longa/saia: pernas não atravessam o tecido
-            val kk = if (full) 0.3f else 0.5f
-            val cap = if (full) 11f else 17f   // o pé nunca passa da barra do tecido
+            val kk = if (full) 0.7f else 0.85f   // a saia agora acompanha as coxas, então pode balançar bem mais
+            val cap = if (full) 20f else 26f
             hipL = (hipL * kk).coerceIn(-cap, cap); hipR = (hipR * kk).coerceIn(-cap, cap)
-            kneeL = (kneeL * (kk + 0.05f)).coerceIn(0f, cap * 2.2f); kneeR = (kneeR * (kk + 0.05f)).coerceIn(0f, cap * 2.2f)
+            kneeL = (kneeL * kk).coerceIn(0f, if (full) 36f else 60f); kneeR = (kneeR * kk).coerceIn(0f, if (full) 36f else 60f)
         }
         // posturas: agachar (pernas dobradas, tronco inclinado), sentar (pernas à frente, no chão), deitar (de costas)
         val cr = an.crouch.coerceIn(0f, 1f); val si = an.sit.coerceIn(0f, 1f)
@@ -210,7 +213,8 @@ class CharModel {
         val flare = 1f + ab * lp(0.06f, 0.1f, fs) + 0.05f * rn * stride
         piv(sm, bm, 0f, 0.5f, 0f, rx = sin(t * 2.2f) * 1.5f + sin(ph * 2f) * 3f * stride - 62f * an.sit.coerceIn(0f, 1f) - 34f * an.crouch.coerceIn(0f, 1f))
         Matrix.scaleM(sm, 0, flare, 1f, flare)
-        fun sk(py: Float, sx: Float, sy: Float, sz: Float, col: Int) = b(sm, 0f, py - 0.5f, 0f, sx, sy, sz, col)
+        val skRows = ArrayList<SkR>()
+        fun sk(py: Float, sx: Float, sy: Float, sz: Float, col: Int) { skRows.add(SkR(0f, py, 0f, sx, sy, sz, col, true)) }
 
         // ================= PERNAS (coxa + joelho) =================
         var seg = when (bot) { 0 -> 0.40f; 1 -> 0.17f; 2 -> 0f; 3 -> 0.30f; 4 -> 0.40f; 5 -> 0f; 6 -> 0.44f; else -> 0.30f }
@@ -485,7 +489,26 @@ class CharModel {
                 sk(0.36f, 0.62f, 0.1f, 0.46f, bc)
                 sk(0.29f, 0.72f, 0.06f, 0.52f, shadeC(bc, 0.9f))
                 sk(0.255f, 0.73f, 0.015f, 0.53f, lite(bc, 0.5f))
-                for (i in -2..2) b(sm, i * 0.14f, -0.2f, 0.275f, 0.025f, 0.2f, 0.02f, shadeC(bc, 0.72f))
+                for (i in -2..2) skRows.add(SkR(i * 0.14f + (if (i == 0) 0.001f else 0f), 0.3f, 0.275f, 0.025f, 0.2f, 0.02f, shadeC(bc, 0.72f), false))
+            }
+        }
+
+        // ---- saias e vestidos: cintura fixa no corpo; o resto em painéis presos às coxas ----
+        if (skRows.isNotEmpty()) {
+            for (r in skRows) if (r.py > 0.42f) b(base, r.x, r.py, r.z, r.sx, r.sy, r.sz, r.col)
+            for (sd in intArrayOf(-1, 1)) {
+                val s = sd.toFloat()
+                val hip = if (sd < 0) hipL else hipR
+                piv(t1, r2, s * 0.11f, 0.44f, 0f, rx = hip + lean * fl, rz = s * (5f + 7f * (if (sd < 0) qLegL else qLegR)) * li)
+                for (r in skRows) {
+                    if (r.py > 0.42f) continue
+                    if (r.split) {
+                        val w = r.sx / 2f + 0.025f
+                        b(t1, s * (r.sx / 4f - 0.0125f) - s * 0.11f, r.py - 0.44f, r.z, w, r.sy, r.sz, r.col)
+                    } else if ((r.x >= 0f) == (sd > 0)) {
+                        b(t1, r.x - s * 0.11f, r.py - 0.44f, r.z, r.sx, r.sy, r.sz, r.col)
+                    }
+                }
             }
         }
 
