@@ -26,7 +26,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onExit: (
     private var scx = 0f; private var scy = 0f; private var sx = 0f; private var sy = 0f
     private var lx = 0f; private var ly = 0f; private var fx0 = 0f; private var fy0 = 0f
     private val btnId = HashMap<Int, Int>()
-    private val press = FloatArray(8)
+    private val press = FloatArray(10)
     private var invOpen = false; private var invSel = -1
     private var poseDownT = 0L; private var poseFired = false; private var poseTapT = 0L
     private var bounce = 0f; private var lastSel = -1; private var lastItem = -1; private var nameUntil = 0L
