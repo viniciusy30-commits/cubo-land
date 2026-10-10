@@ -963,7 +963,7 @@ class Game(val world: World) {
         val lbi = leafBreaks.iterator()
         while (lbi.hasNext()) {
             val b = lbi.next(); b.t += dt
-            if (!b.fx && b.t >= LB_SHAKE) { b.fx = true; leafCutFx(b.x, b.y, b.z) }
+            if (!b.fx && b.t >= LB_SHAKE) { b.fx = true; leafCutFx(b.x, b.y, b.z, 0) }
             if (b.t >= LB_SHAKE + LB_FLY) lbi.remove()
         }
         val li = leafFall.iterator()
