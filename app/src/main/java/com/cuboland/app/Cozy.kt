@@ -35,9 +35,9 @@ import kotlin.math.sqrt
 /** Paleta "aconchegante": madeira escura, creme, dourado e cores de natureza. */
 object Cz {
     val INK = Color.rgb(36, 28, 48)
-    val PANEL = Color.rgb(48, 46, 84)
-    val PANEL2 = Color.rgb(68, 66, 112)
-    val PANEL3 = Color.rgb(34, 33, 62)
+    val PANEL = Color.rgb(190, 158, 238)
+    val PANEL2 = Color.rgb(164, 130, 218)
+    val PANEL3 = Color.rgb(138, 106, 192)
     val GOLD = Color.rgb(255, 212, 99)
     val CREAM = Color.rgb(255, 243, 219)
     val GREEN = Color.rgb(88, 196, 92)
@@ -113,7 +113,18 @@ class CozyBox(private val ctx: Context, var fill: Int, private val radiusDp: Flo
         }
         val fx = a; val fy = a; val fw = w - 2 * a; val fh = h - 2 * a
         if (fw <= 0 || fh <= 0) return
-        rect(c, fx, fy, fw, fh, face)
+        if (studs) {   // painel: degradê suave de cima pra baixo + pontinhos de brilho
+            val n = max(1, fh / u)
+            for (i in 0 until n) {
+                val f = i / max(1, n - 1).toFloat()
+                rect(c, fx, fy + i * u, fw, if (i == n - 1) fy + fh - (fy + i * u) else u, mixC(shadeC(face, 1.2f), shadeC(face, 0.88f), f))
+                if (i < n * 0.4f) rect(c, fx + u, fy + i * u, fw - 2 * u, u, Color.argb((46 * (1f - i / (n * 0.4f))).toInt(), 255, 255, 255))   // brilho de glaze
+            }
+            var gy = 0
+            while (gy < fh / u) { var gx = (gy % 2) * 2
+                while (gx < fw / u) { if (hash2(gx, gy, fill and 15) > 0.82f) rect(c, fx + gx * u, fy + gy * u, u, u, Color.argb(22, 255, 255, 255)); gx += 2 }
+                gy++ }
+        } else rect(c, fx, fy, fw, fh, face)
         val hu = min(u, fh)
         val wu = min(u, fw)
         rect(c, fx, fy, fw, hu, shadeC(face, if (pressed) 1.0f else 1.22f))
@@ -535,10 +546,11 @@ fun Activity.cozyConfirm(title: String, msg: String, okText: String, okColor: In
 
 /** cabeçalho padrão das telas: botão voltar redondo + título */
 fun Context.cHeader(title: String, sub: String?, onBack: () -> Unit): LinearLayout {
-    val h = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+    val h = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+        background = CozyBox(this@cHeader, Cz.PANEL, 18f, false); setPadding(dp(12), dp(8), dp(12), dp(10)) }
     h.addView(cIconBtn("‹", Cz.ORANGE, 46, onBack).apply { textSize = 28f })
     val tx = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), 0, 0, 0) }
-    tx.addView(cTxt(title, 24f, Color.WHITE))
+    tx.addView(cTxt(title, 24f, Cz.GOLD))
     if (sub != null) tx.addView(cTxt(sub, 12f, Cz.SOFT, false))
     h.addView(tx, lpW(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
     return h
