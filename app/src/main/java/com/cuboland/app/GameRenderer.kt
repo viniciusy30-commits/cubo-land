@@ -105,9 +105,9 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                     if (rp.w > 0.0) {
                         vec2 dd = P - rp.xy; float dl = max(length(dd), 0.001);
                         float xx = dl - rp.z * 1.7;
-                        float env = exp(-xx * xx * 1.6) * rp.w * exp(-rp.z * 0.7);
-                        g += (dd / dl) * cos(xx * 6.0) * env * 0.55;
-                        ripGlow += env * (0.5 + 0.5 * cos(xx * 6.0));
+                        float env = exp(-xx * xx * 2.4) * rp.w * exp(-rp.z * 0.8);
+                        g += (dd / dl) * sin(xx * 3.0) * env * 0.35;
+                        ripGlow += env * 0.5;
                     }
                 }
                 vec3 n = normalize(vec3(-g.x * 1.25, 1.0, -g.y * 1.25));
@@ -123,40 +123,35 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                 vec3 R = reflect(-V, n);
                 vec3 sky = mix(uFog, vec3(0.42, 0.66, 0.97), pow(clamp(R.y, 0.0, 1.0), 0.45));
                 float rl = max(dot(R, L), 0.0);
+                base = mix(base, vec3(0.58, 0.86, 0.86), 0.2);   // água turva, meio leitosa
                 vec3 wc = base * (0.88 + 0.22 * dot(n, L));
-                // luz suave desenhando teia na superfície
-                wc += vec3(0.55, 0.95, 0.95) * caus(vec3(P.x * 0.9, 0.0, P.y * 0.9), tm * 0.7) * 0.10;
                 wc = mix(wc, sky, clamp(fres * 1.05 + 0.05, 0.0, 0.85));
                 wc += vec3(0.6) * ripGlow * 0.16;
                 // brilho do sol: halo suave + cintilado delicado
-                float glit = pow(0.5 + 0.5 * sin(P.x * 11.0 + tm * 1.9 + sin(P.y * 5.0 + tm) * 1.5) * sin(P.y * 10.0 - tm * 1.6), 7.0);
-                wc += vec3(1.0, 0.97, 0.88) * (pow(rl, 48.0) * 0.28 + pow(rl, 10.0) * glit * 0.35);
+                wc += vec3(1.0, 0.97, 0.88) * (pow(rl, 40.0) * 0.20);
                 // espuma macia na beirada
                 float foam = smoothstep(0.17, 0.0, depth) * (0.55 + 0.45 * sin(P.x * 4.0 + P.y * 3.5 + tm * 1.4 + sin(P.y * 2.5 - tm) * 2.0));
                 wc = mix(wc, vec3(1.0), clamp(foam, 0.0, 1.0) * 0.45);
-                float wa = mix(0.50, 0.78, smoothstep(0.0, 0.5, depth));
+                float wa = mix(0.62, 0.88, smoothstep(0.0, 0.45, depth));
                 wa = clamp(wa + fres * 0.30 + foam * 0.3, 0.0, 1.0);
-                if (uUnder > 0.5) {   // vista de baixo: janela de Snell luminosa, borda azul-turquesa clara com luz dançando
-                    float win = smoothstep(0.50, 0.74, ndv);
-                    float sh = 0.5 + 0.5 * sin(P.x * 1.5 + P.y * 1.2 + tm * 0.8 + sin(P.y * 1.1 - tm * 0.5) * 1.6);
-                    vec3 mir = mix(vec3(0.17, 0.54, 0.74), vec3(0.30, 0.72, 0.88), sh);
-                    mir += vec3(0.30, 0.55, 0.60) * caus(vec3(P.x * 1.2, 0.0, P.y * 1.2), tm) * 0.55;
-                    float sun = pow(max(dot(-V, L), 0.0), 10.0);
-                    vec3 winc = vec3(0.72, 0.95, 1.0) + vec3(0.25) * ripGlow + vec3(1.0, 0.98, 0.85) * sun * 0.45;
-                    winc += vec3(0.45, 0.85, 0.95) * caus(vec3(P.x * 1.5, 0.0, P.y * 1.5), tm * 1.1) * 0.35;
+                if (uUnder > 0.5) {   // vista de baixo: lisa, degradê suave com brilho do sol e um balanço bem leve
+                    float win = smoothstep(0.52, 0.80, ndv);
+                    float sh = 0.5 + 0.5 * sin(P.x * 0.45 + P.y * 0.35 + tm * 0.5);
+                    vec3 mir = mix(vec3(0.16, 0.50, 0.72), vec3(0.24, 0.62, 0.82), sh);
+                    float sun = pow(max(dot(-V, L), 0.0), 8.0);
+                    vec3 winc = mix(vec3(0.58, 0.88, 0.98), vec3(0.76, 0.96, 1.0), sh) + vec3(0.18) * ripGlow + vec3(1.0, 0.98, 0.88) * sun * 0.40;
                     wc = mix(mir, winc, win);
-                    wa = mix(0.88, 0.55, win);
+                    wa = mix(0.90, 0.62, win);
                 }
                 c = wc; alpha = wa;
             } else if (uWind > 0.5 && vWP.y < 9.86) {   // tudo que está debaixo d'água: azulado, escuro com a profundidade e luz dançando
                 float dep = clamp((9.88 - vWP.y) / 6.0, 0.0, 1.0);
-                c *= mix(vec3(0.92, 1.0, 1.0), vec3(0.8, 0.95, 1.0), dep * 0.5);
-                c += vec3(0.55, 0.95, 1.0) * caus(vWP * 1.1, uTime) * 0.5 * (1.0 - dep * 0.6);
+                c *= mix(vec3(0.95, 1.0, 1.0), vec3(0.82, 0.95, 1.0), dep * 0.5);
+                c = mix(c, vec3(0.40, 0.76, 0.84), 0.18 + 0.40 * dep);   // turbidez: fundo meio enevoado
             }
             if (vTile > 14.5 && vTile < 15.5) c = t.rgb * 1.25;
             if (uUnder > 0.5 && !isWater) {
-                c *= vec3(0.86, 1.02, 1.10);
-                c += vec3(0.5, 0.85, 1.0) * caus(vWP * 0.9, uTime * 1.2) * 0.35;
+                c *= vec3(0.88, 1.02, 1.10);
             }
             float g2 = dot(c, vec3(0.299, 0.587, 0.114));
             c = mix(vec3(g2), c, 1.12); c = mix(c, smoothstep(0.0, 1.0, c), 0.3);
@@ -518,19 +513,45 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         }
     }
 
-    /** pegadas em forma de sola: calcanhar, arco, peito do pé e dedinhos. side = -1 pé esquerdo, 1 pé direito */
-    private fun shoe(side: Float, y: Float, grow: Float, col: Int, a: Float, toes: Boolean) {
-        box(base, 0f, y, -0.100f, 0f, 0f, 0.080f + grow, 0.012f, 0.075f + grow, 0f, col, a)
-        box(base, 0.004f * side, y, -0.040f, 0f, 0f, 0.058f + grow, 0.012f, 0.060f + grow, 0f, col, a)
-        box(base, 0.006f * side, y, 0.035f, 0f, 0f, 0.108f + grow, 0.012f, 0.085f + grow, 0f, col, a)
-        if (toes) {
-            box(base, -0.034f * side, y, 0.098f, 0f, 0f, 0.038f + grow, 0.012f, 0.040f + grow, 0f, col, a)   // dedão (lado de dentro)
-            box(base, 0.004f * side, y, 0.106f, 0f, 0f, 0.030f + grow, 0.012f, 0.034f + grow, 0f, col, a)
-            box(base, 0.036f * side, y, 0.094f, 0f, 0f, 0.026f + grow, 0.012f, 0.030f + grow, 0f, col, a)
+    /** bloco de folha cortado: treme, racha em 8 cubinhos que se afastam girando e encolhem (as folhinhas saem junto) */
+    private fun drawLeafBreaks() {
+        for (b in game.leafBreaks) {
+            val cx = b.x + 0.5f; val cy = b.y + 0.5f; val cz = b.z + 0.5f
+            if (!seen(cx, cy, cz, 30f)) continue
+            if (b.t < Game.LB_SHAKE) {
+                val u = max(0f, b.t) / Game.LB_SHAKE
+                val j = sin(b.t * 140f) * 0.025f * (0.4f + u)
+                val sc = 1f - 0.12f * u
+                setBase(cx + j, cy + cos(b.t * 120f) * 0.015f, cz - j, 0f)
+                box(base, 0f, 0f, 0f, j * 120f, sin(b.t * 90f) * 6f, sc, sc, sc, 0f, 0xFFFFFF, 1f, 1f + 0.12f * u, null, B.LEAVES)
+            } else {
+                val p = min(1f, (b.t - Game.LB_SHAKE) / Game.LB_FLY); val e = 1f - (1f - p) * (1f - p)
+                val sz = 0.5f * (1f - p * 0.85f) * 0.88f
+                val al = min(1f, (1f - p) * 1.6f)
+                if (al <= 0.02f) continue
+                for (i in 0 until 8) {
+                    val sx = if (i and 1 == 0) -1f else 1f; val sy = if (i and 2 == 0) -1f else 1f; val sz2 = if (i and 4 == 0) -1f else 1f
+                    val out = 0.25f + e * (0.55f + 0.12f * ((i * 5) % 3))
+                    setBase(cx + sx * out, cy + sy * out * 0.8f + 0.25f * e - p * p * 0.9f, cz + sz2 * out, 0f)
+                    box(base, 0f, 0f, 0f, p * (260f + i * 40f) * sx, p * (320f - i * 30f) * sy, sz, sz, sz, 0f, 0xFFFFFF, al, 1.08f, null, B.LEAVES, p * 200f * sz2)
+                }
+            }
         }
     }
 
-    /** pegadas: areia = funda com borda levantada, terra = marca escura, grama = amassadinho */
+    /** pegadinha fofa de patinha: almofada grande + 4 dedinhos redondos (quadrados girados 45 graus parecem círculos) */
+    private fun paw(y: Float, grow: Float, col: Int, a: Float, big: Boolean) {
+        val k = 1f + grow
+        box(base, 0f, y, -0.030f, 0f, 0f, 0.115f * k, 0.012f, 0.085f * k, 0f, col, a)
+        box(base, 0f, y, -0.030f, 0f, 45f, 0.082f * k, 0.012f, 0.082f * k, 0f, col, a)
+        box(base, 0f, y, -0.030f, 0f, 22f, 0.095f * k, 0.012f, 0.095f * k, 0f, col, a * 0.8f)
+        box(base, -0.062f, y, 0.050f, 0f, 45f, 0.040f * k, 0.012f, 0.040f * k, 0f, col, a)
+        box(base, -0.021f, y, 0.075f, 0f, 45f, 0.044f * k, 0.012f, 0.044f * k, 0f, col, a)
+        box(base, 0.021f, y, 0.075f, 0f, 45f, 0.044f * k, 0.012f, 0.044f * k, 0f, col, a)
+        box(base, 0.062f, y, 0.050f, 0f, 45f, 0.040f * k, 0.012f, 0.040f * k, 0f, col, a)
+    }
+
+    /** pegadas fofinhas: areia = patinha funda com borda macia levantada, terra = patinha escura, grama = patinha de folhinha */
     private fun drawPrints() {
         for (q in game.prints) {
             if (!seen(q.x, q.y, q.z, 22f)) continue
@@ -539,19 +560,20 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             setBase(q.x, q.y + 0.012f, q.z, Math.toDegrees(q.ang.toDouble()).toFloat())
             when (q.id) {
                 B.SAND -> {
-                    shoe(q.side, 0.000f, 0.030f, 0xFFF3C8, 0.55f * fade, false)   // borda de areia levantada
-                    shoe(q.side, 0.004f, 0.000f, 0xA8924E, 0.85f * fade, true)    // fundo da pegada
-                    box(base, 0f, 0.010f, -0.07f, 0f, 0f, 0.06f, 0.012f, 0.10f, 0f, 0x8C7840, 0.45f * fade)   // sombra funda no centro do calcanhar
+                    paw(0.000f, 0.32f, 0xFFF5D2, 0.50f * fade, true)    // borda de areia levantada, bem macia
+                    paw(0.004f, 0.00f, 0xB59C58, 0.80f * fade, true)    // fundo da patinha
+                    paw(0.008f, -0.25f, 0x96813F, 0.40f * fade, true)   // sombra funda no meio
                 }
                 B.DIRT -> {
-                    shoe(q.side, 0.003f, 0.012f, 0x6B4A2E, 0.45f * fade, false)
-                    shoe(q.side, 0.006f, 0.000f, 0x45301E, 0.75f * fade, true)
+                    paw(0.003f, 0.20f, 0x7A5634, 0.40f * fade, true)
+                    paw(0.006f, 0.00f, 0x4A3321, 0.78f * fade, true)
                 }
                 else -> {
-                    shoe(q.side, 0.003f, 0.000f, 0x3F8A2E, 0.40f * fade, true)
-                    shoe(q.side, 0.005f, -0.030f, 0x2F6B22, 0.18f * fade, false)
+                    paw(0.003f, 0.15f, 0x7FCB5E, 0.30f * fade, true)
+                    paw(0.005f, -0.05f, 0x3F8A2E, 0.45f * fade, true)
                 }
             }
+            // as patinhas ficam alternadas: lado esquerdo/direito
         }
     }
 
@@ -1385,7 +1407,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         drawPrints()
         G.glDepthMask(true)
         for (s in game.slimes) drawSlime(s)
-        drawDebris(); drawTrees(); drawDrops()
+        drawDebris(); drawTrees(); drawDrops(); drawLeafBreaks()
         for (q in game.parts) {
             if (!seen(q.x, q.y, q.z, 28f)) continue
             setBase(q.x, q.y, q.z, game.time * 200f)
@@ -1426,7 +1448,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             bindMesh(vbo[i * 2 + 1], ibo[i * 2 + 1]); G.glDrawElements(G.GL_TRIANGLES, cnt[i * 2 + 1], G.GL_UNSIGNED_SHORT, 0)
         }
         G.glUniform1f(uWind, 0f); bindMesh(cubeVb, cubeIb)
-        G.glDepthMask(false); drawRipples(); G.glDepthMask(true)
+        
         G.glEnable(G.GL_CULL_FACE)
         G.glUniform1f(uWind, 0f)
         if (!game.thirdPerson && game.deadTimer <= 0f) drawHand(dt)
