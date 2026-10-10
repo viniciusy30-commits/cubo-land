@@ -54,6 +54,9 @@ object Look {
 
     fun applyPreset(i: Int) { v = PRESETS[((i % PRESETS.size) + PRESETS.size) % PRESETS.size].copyOf() }
 
+    fun name(ctx: Context): String = ctx.getSharedPreferences("cfg", 0).getString("charname", "") ?: ""
+    fun saveName(ctx: Context, s: String) { ctx.getSharedPreferences("cfg", 0).edit().putString("charname", s).apply() }
+
     fun skin() = SKINS[v[SKIN]]
     fun hair() = HAIRS[v[HAIRC]]
     fun pal(i: Int) = PAL[v[i].coerceIn(0, PAL.size - 1)]

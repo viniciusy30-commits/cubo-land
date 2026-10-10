@@ -3,7 +3,9 @@
 - Menu refeito do zero em pixel art de fantasia: título dourado no topo, botões no meio e o céu muda com a hora do seu aparelho
 - Seu personagem aparece de um lado entrando no jogo com uma coluna de luz; toque nele pra dar um pulinho ou arraste pra girar
 - Do outro lado fica a silhueta do futuro jogador 2 (online em breve!), toque nela pra ver
-- Ilhas flutuantes, borboletas, vaga-lumes, estrelas cadentes à noite e um slime fofinho de companhia
+- Borboletas, vaga-lumes, estrelas cadentes à noite e um slime fofinho de companhia
+- Mundos, Personagem, Ajustes, avisos e menus agora seguem o mesmo estilo pixel art, com o mesmo céu e campo ao fundo
+- Personagem agora tem nome (aparece no menu principal)
 
 #id 2026-10-11-a
 #titulo Reformulação total: menu novo, mundos, personagem e controles!

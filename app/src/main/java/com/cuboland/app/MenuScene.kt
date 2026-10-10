@@ -7,6 +7,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
+import android.graphics.RectF
 import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.View
@@ -34,6 +35,7 @@ class MenuScene(
     private val versionName: String,
     private var continueText: String,
     private var hasNews: Boolean,
+    private var playerName: String,
     private val onPlay: () -> Unit,
     private val onChar: () -> Unit,
     private val onSettings: () -> Unit,
@@ -153,7 +155,10 @@ class MenuScene(
     private var scrollX = 0
     private var scrollY = 0
 
-    private val me = CharView(ctx, CW, CH).apply { transparentBg = true; sway = true; shadow = false }
+    private lateinit var me: CharView
+    private var cRW = CW
+    private var cRH = CH
+    private val dstF = RectF()
     private val flashF = arrayOfNulls<PorterDuffColorFilter>(17)
 
     private var dragging = false
@@ -191,6 +196,10 @@ class MenuScene(
     fun replay() { introT = 0f }
 
     fun setNews(b: Boolean) { hasNews = b }
+
+    fun setName(s: String) {
+        if (s != playerName) { playerName = s; needUi = true }
+    }
 
     fun setContinue(s: String) {
         if (s != continueText) { continueText = s; needUi = true }
@@ -305,6 +314,12 @@ class MenuScene(
         midX = W / 2
         off = if (W < 360) 96 else min(130, (W * 0.30f).toInt())
         platY = H - 30
+        if (first) {
+            val p = if (sc <= 6) 2 else 3
+            cRW = max(CW, CW * sc / p)
+            cRH = max(CH, CH * sc / p)
+            me = CharView(context, cRW, cRH).apply { transparentBg = true; sway = true; shadow = false }
+        }
         buildSky()
         buildLand()
         buildSprites()
@@ -348,8 +363,7 @@ class MenuScene(
             val lo = pos.toInt()
             val fr = pos - lo
             for (x in 0 until W) {
-                var c = if (fr > bay(x, y)) levels[min(lv, lo + 1)] else levels[lo]
-                if (y < 56 && (1f - y / 56f) * 0.9f > bay(x, y)) c = shadeC(c, 0.82f)
+                val c = if (fr > bay(x, y)) levels[min(lv, lo + 1)] else levels[lo]
                 px[y * W + x] = c
             }
         }
@@ -606,12 +620,6 @@ class MenuScene(
                 disc(c - 1, c + 4, 1, cc(196, 206, 232)); disc(c + 4, c - 4, 1, cc(196, 206, 232))
             }
         }
-        islL = bake(64, 84, true) { island(32, 48, 36); tree(24, 48); house(40, 48) }
-        islR = bake(64, 84, true) {
-            island(32, 48, 36); tower(32, 48)
-            tintOn = false
-            crystal(20, 48, 8, 4, cc(150, 255, 250), cc(60, 200, 220), cc(30, 120, 170))
-        }
     }
 
     // ------------------------------------------------------------------ interface (cache)
@@ -744,48 +752,40 @@ class MenuScene(
         }
         ribbonX = midX - (rw0 + 20) / 2
 
-        val bW = 112
-        val hs = intArrayOf(28, 19, 19)
-        val ys = intArrayOf(blockY, blockY + 46, blockY + 68)
+        val bWs = intArrayOf(112, 96, 96)
+        val hs = intArrayOf(28, 16, 16)
+        val ys = intArrayOf(blockY, blockY + 45, blockY + 64)
         val bases = intArrayOf(cc(70, 196, 110), cc(150, 100, 230), cc(80, 160, 240))
         val labels = arrayOf("JOGAR", "PERSONAGEM", "AJUSTES")
         for (i in 0 until 3) {
+            val bW = bWs[i]
             bx[i] = midX - bW / 2; by[i] = ys[i]; bw[i] = bW; bh[i] = hs[i] + 1
             val ico = if (i == 1) ICO_FACE else if (i == 2) ICO_GEAR else null
             bUp[i] = bakeBtn(bW, hs[i], bases[i], false, labels[i], ico, i == 0)
             bDn[i] = bakeBtn(bW, hs[i], bases[i], true, labels[i], ico, i == 0)
         }
-        bx[3] = W - 22; by[3] = H - 66; bw[3] = 20; bh[3] = 22
-        bx[4] = W - 22; by[4] = H - 44; bw[4] = 20; bh[4] = 22
-        bUp[3] = roundBtn(cc(160, 118, 232), ICO_STAR); bDn[3] = bUp[3]
-        bUp[4] = roundBtn(cc(60, 190, 180), ICO_REFRESH); bDn[4] = bUp[4]
+        bx[3] = W - 25; by[3] = 4; bw[3] = 20; bh[3] = 22
+        bUp[3] = roundBtn(cc(60, 190, 180), ICO_REFRESH); bDn[3] = bUp[3]
+        bx[4] = 0; by[4] = 0; bw[4] = 0; bh[4] = 0
 
         val st = continueText
         val stw = PixFont.width(st, 1)
-        scrollBmp = bake(stw + 22, 13, false) {
-            val ox = 4; val y0 = 1; val w = stw + 14
+        scrollBmp = bake(stw + 20, 11, false) {
+            val ox = 4; val y0 = 1; val w = stw + 10
             val parch = cc(255, 236, 196); val parchD = cc(230, 200, 150); val edge = cc(196, 150, 100)
-            rc(ox, y0, w, 11, INK); rc(ox + 1, y0 + 1, w - 2, 9, parch)
-            rc(ox + 1, y0 + 1, w - 2, 1, cc(255, 250, 226)); rc(ox + 1, y0 + 8, w - 2, 2, parchD)
-            rc(ox - 3, y0 - 1, 4, 13, INK); rc(ox - 2, y0, 2, 11, edge); rc(ox - 2, y0, 1, 11, cc(224, 180, 130))
-            rc(ox + w - 1, y0 - 1, 4, 13, INK); rc(ox + w, y0, 2, 11, edge); rc(ox + w + 1, y0, 1, 11, cc(150, 104, 70))
-            txt(st, ox + 7, y0 + 2, 1, cc(70, 36, 50))
+            rc(ox, y0, w, 9, INK); rc(ox + 1, y0 + 1, w - 2, 7, parch)
+            rc(ox + 1, y0 + 1, w - 2, 1, cc(255, 250, 226)); rc(ox + 1, y0 + 7, w - 2, 1, parchD)
+            rc(ox - 3, y0 - 1, 4, 11, INK); rc(ox - 2, y0, 2, 9, edge); rc(ox - 2, y0, 1, 9, cc(224, 180, 130))
+            rc(ox + w - 1, y0 - 1, 4, 11, INK); rc(ox + w, y0, 2, 9, edge); rc(ox + w + 1, y0, 1, 9, cc(150, 104, 70))
+            txt(st, ox + 5, y0 + 1, 1, cc(70, 36, 50))
         }
-        scrollX = midX - (stw + 22) / 2
-        scrollY = blockY + 32 - 1
+        scrollX = midX - (stw + 20) / 2
+        scrollY = blockY + 33 - 1
 
-        plaqueMe = plaqueBmp("JOGADOR 1", true)
+        val nm = playerName.trim().uppercase().take(12)
+        plaqueMe = plaqueBmp(if (nm.isEmpty()) "JOGADOR" else nm, true)
         plaqueOther = plaqueBmp("AGUARDANDO", false)
 
-        val vs = "CUBOLAND V$versionName"
-        footL = bake(PixFont.width(vs, 1) + 2, 10, false) { txt(vs, 0, 1, 1, INK); txt(vs, 0, 0, 1, WHITE) }
-        val a1 = "FEITO COM"; val a2 = "E CUBOS"
-        val w1 = PixFont.width(a1, 1); val w2 = PixFont.width(a2, 1)
-        footC = bake(w1 + w2 + 16, 10, false) {
-            txt(a1, 0, 1, 1, INK); txt(a1, 0, 0, 1, WHITE)
-            icon(ICO_HEART, w1 + 3, 1, INK, INK); icon(ICO_HEART, w1 + 3, 0, cc(255, 90, 120), cc(255, 190, 205))
-            txt(a2, w1 + 13, 1, 1, INK); txt(a2, w1 + 13, 0, 1, WHITE)
-        }
         bubbleQ = bake(13, 16, false) {
             rc(0, 0, 13, 13, INK); rc(1, 1, 11, 11, WHITE); rc(5, 13, 3, 3, INK); rc(6, 13, 1, 2, WHITE)
             txt("?", 4, 3, 1, cc(110, 100, 200))
@@ -800,7 +800,7 @@ class MenuScene(
     /** silhueta do futuro jogador 2: outro visual do próprio modelo, pintado como fantasma */
     private fun buildGhost() {
         try {
-            val gv = CharView(context, CW, CH).apply { transparentBg = true; sway = false; shadow = false }
+            val gv = CharView(context, cRW, cRH).apply { transparentBg = true; sway = false; shadow = false }
             val saved = Look.v
             try {
                 Look.v = Look.PRESETS[(saved[Look.HAIR] + 3) % Look.PRESETS.size].copyOf()
@@ -809,22 +809,22 @@ class MenuScene(
             } finally {
                 Look.v = saved
             }
-            val src = IntArray(CW * CH)
-            gv.bitmap.getPixels(src, 0, CW, 0, 0, CW, CH)
-            val out = IntArray(CW * CH)
-            for (y in 0 until CH) for (x in 0 until CW) {
-                val c = src[y * CW + x]
+            val src = IntArray(cRW * cRH)
+            gv.bitmap.getPixels(src, 0, cRW, 0, 0, cRW, cRH)
+            val out = IntArray(cRW * cRH)
+            for (y in 0 until cRH) for (x in 0 until cRW) {
+                val c = src[y * cRW + x]
                 if ((c ushr 24) < 40) continue
                 val lum = (Color.red(c) * 0.3f + Color.green(c) * 0.59f + Color.blue(c) * 0.11f) / 255f
-                var edge = x == 0 || y == 0 || x == CW - 1 || y == CH - 1
+                var edge = x == 0 || y == 0 || x == cRW - 1 || y == cRH - 1
                 if (!edge) {
-                    edge = (src[y * CW + x - 1] ushr 24) < 40 || (src[y * CW + x + 1] ushr 24) < 40 ||
-                        (src[(y - 1) * CW + x] ushr 24) < 40 || (src[(y + 1) * CW + x] ushr 24) < 40
+                    edge = (src[y * cRW + x - 1] ushr 24) < 40 || (src[y * cRW + x + 1] ushr 24) < 40 ||
+                        (src[(y - 1) * cRW + x] ushr 24) < 40 || (src[(y + 1) * cRW + x] ushr 24) < 40
                 }
-                out[y * CW + x] = if (edge) cc(150, 230, 255) else mixC(cc(46, 34, 110), cc(150, 130, 235), min(1f, lum * 0.7f))
+                out[y * cRW + x] = if (edge) cc(150, 230, 255) else mixC(cc(46, 34, 110), cc(150, 130, 235), min(1f, lum * 0.7f))
             }
-            val b = Bitmap.createBitmap(CW, CH, Bitmap.Config.ARGB_8888)
-            b.setPixels(out, 0, CW, 0, 0, CW, CH)
+            val b = Bitmap.createBitmap(cRW, cRH, Bitmap.Config.ARGB_8888)
+            b.setPixels(out, 0, cRW, 0, 0, cRW, cRH)
             ghostBmp = b
         } catch (e: Exception) {
             ghostBmp = null
@@ -855,7 +855,6 @@ class MenuScene(
         drawCelestial()
         drawClouds()
         drawShooting()
-        drawIslands()
         c.drawBitmap(land, 0f, 0f, BP)
         drawTufts()
         drawBeams()
@@ -888,12 +887,76 @@ class MenuScene(
     }
 
     private fun drawCelestial() {
-        val b = sunBmp ?: return
-        val isDay = hour >= 6f && hour <= 18f
-        val frac = if (isDay) (hour - 6f) / 12f else ((hour + 24f - 18f) % 24f) / 12f
-        val sx = (W * (0.1f + 0.8f * frac)).toInt()
-        val sy = (H * (0.5f - 0.38f * sin(PI.toFloat() * frac))).toInt()
-        cnv.drawBitmap(b, (sx - 28).toFloat(), (sy - 28).toFloat(), BP)
+        val cx = 27
+        val cy = 27 + (sin(t * 1.2f) * 1.2f).roundToInt()
+        val pulse = 0.5f + 0.5f * sin(t * 2f)
+        val blink = (t % 4f) < 0.15f
+        if (hour >= 6f && hour <= 18f) {
+            val warm = (night / 0.45f).coerceIn(0f, 1f)
+            val core = mixC(cc(255, 252, 215), cc(255, 214, 150), warm)
+            val mid = mixC(cc(255, 236, 130), cc(255, 170, 90), warm)
+            val edge = mixC(cc(255, 196, 70), cc(255, 120, 70), warm)
+            val brown = cc(130, 66, 40)
+            disc(cx, cy, 22 + (pulse * 2f).toInt(), mid, 20)
+            disc(cx, cy, 18, mid, 36)
+            val rot = t * 0.35f
+            for (k in 0 until 12) {
+                val a = rot + k * PI.toFloat() / 6f
+                val long = k % 2 == 0
+                val r1 = if (long) 21 + (pulse * 2f).toInt() else 18
+                var r = 14
+                while (r <= r1) {
+                    rc(cx + (cos(a) * r).roundToInt() - 1, cy + (sin(a) * r).roundToInt() - 1, 2, 2, if (r < 17) edge else mid)
+                    r += 2
+                }
+            }
+            disc(cx, cy, 12, mixC(edge, cc(200, 100, 40), 0.5f))
+            disc(cx, cy, 11, edge)
+            disc(cx, cy, 9, mid)
+            disc(cx, cy, 7, core)
+            disc(cx - 3, cy - 3, 3, WHITE, 140)
+            rc(cx - 6, cy - 6, 2, 2, WHITE)
+            val eh = if (blink) 1 else 3
+            rc(cx - 5, cy - 1 + (3 - eh), 2, eh, brown)
+            rc(cx + 3, cy - 1 + (3 - eh), 2, eh, brown)
+            rc(cx - 8, cy + 3, 3, 2, cc(255, 130, 130), 170)
+            rc(cx + 5, cy + 3, 3, 2, cc(255, 130, 130), 170)
+            rc(cx - 2, cy + 4, 5, 1, brown)
+            rc(cx - 3, cy + 3, 1, 1, brown)
+            rc(cx + 3, cy + 3, 1, 1, brown)
+            for (k in 0 until 3) {
+                val a = t * 0.8f + k * 2.1f
+                val tw = 0.5f + 0.5f * sin(t * 3f + k * 1.7f)
+                sparkle(cx + (cos(a) * 27f).toInt(), cy + (sin(a) * 27f).toInt(), 2, cc(255, 250, 200), (255f * tw).toInt())
+            }
+        } else {
+            val body = cc(232, 238, 252)
+            val shade = cc(205, 214, 240)
+            val dim = cc(196, 206, 232)
+            val face = cc(120, 130, 190)
+            disc(cx, cy, 22 + (pulse * 2f).toInt(), cc(190, 200, 255), 18)
+            disc(cx, cy, 17, cc(190, 200, 255), 34)
+            disc(cx, cy, 12, cc(150, 160, 215))
+            disc(cx, cy, 11, body)
+            disc(cx + 3, cy + 3, 7, shade, 200)
+            disc(cx - 3, cy - 3, 3, WHITE, 150)
+            disc(cx + 6, cy - 4, 2, dim)
+            disc(cx - 6, cy + 5, 1, dim)
+            disc(cx + 5, cy + 7, 1, dim)
+            val eh = if (blink) 1 else 2
+            rc(cx - 5, cy - 1, 3, 1, face)
+            rc(cx + 2, cy - 1, 3, 1, face)
+            if (!blink) { rc(cx - 5, cy, 1, 1, face); rc(cx + 4, cy, 1, 1, face) }
+            rc(cx - 8, cy + 3, 3, 2, cc(255, 150, 170), 160)
+            rc(cx + 5, cy + 3, 3, 2, cc(255, 150, 170), 160)
+            rc(cx - 1, cy + 4, 3, 1, face)
+            for (k in 0 until 5) {
+                val a = k * 1.3f + 0.4f
+                val tw = 0.5f + 0.5f * sin(t * 2.4f + k * 1.9f)
+                sparkle(cx + (cos(a) * (19f + k * 2f)).toInt(), cy + (sin(a) * (19f + k * 2f)).toInt(), 1 + (k % 2), cc(255, 255, 235), (255f * tw).toInt())
+            }
+            if (eh < 0) rc(cx, cy, 1, 1, face)
+        }
     }
 
     private fun drawClouds() {
@@ -917,30 +980,6 @@ class MenuScene(
         for (j in 0 until 8) {
             val a = ((1f - j / 8f) * (1f - p * 0.6f) * 255f).toInt()
             rc(hx + j * 2, hy - j, 2, 1, WHITE, a)
-        }
-    }
-
-    private fun drawIslands() {
-        val bl = islL
-        val br = islR
-        val b0 = (sin(t * 0.8f) * 2f).roundToInt()
-        val b1 = (sin(t * 0.8f + 2f) * 2f).roundToInt()
-        if (bl != null) {
-            val ix = 22 - 32
-            cnv.drawBitmap(bl, ix.toFloat(), (50 - 48 + b0).toFloat(), BP)
-            for (i in 0 until 3) {
-                val ph = (t * 0.35f + i / 3f) % 1f
-                val sy = 50 + b0 - 25 - (ph * 14f).toInt()
-                val sx = ix + 46 + (sin(t + i) * 2f).toInt()
-                rc(sx, sy, 2 + (ph * 2f).toInt(), 2, cc(240, 240, 255), ((1f - ph) * 150f).toInt())
-            }
-        }
-        if (br != null) {
-            val ix = W - 22 - 32
-            cnv.drawBitmap(br, ix.toFloat(), (54 - 48 + b1).toFloat(), BP)
-            val fx = W - 22 + 1
-            val fy = 54 + b1 - 43
-            for (k in 0 until 5) rc(fx + k, fy + (sin(t * 6f - k * 0.9f) * 1f).roundToInt(), 1, 3, cc(255, 90, 120))
         }
     }
 
@@ -1019,7 +1058,8 @@ class MenuScene(
         cnv.clipRect(x0.toFloat(), (y0 + CH - vis).toFloat(), (x0 + CW).toFloat(), (y0 + CH).toFloat())
         val flash = (1f - (introT - 0.5f) / 0.8f).coerceIn(0f, 1f)
         BP.colorFilter = if (flash > 0.04f) flashFilter(flash) else null
-        cnv.drawBitmap(me.bitmap, x0.toFloat(), y0.toFloat(), BP)
+        dstF.set(x0.toFloat(), y0.toFloat(), (x0 + CW).toFloat(), (y0 + CH).toFloat())
+        cnv.drawBitmap(me.bitmap, null, dstF, BP)
         BP.colorFilter = null
         cnv.restore()
         if (rev < 1f) ell(midX - off, y0 + CH - vis, 30, 3, WHITE, 140)
@@ -1036,7 +1076,8 @@ class MenuScene(
         val x0 = rx - CW / 2 + shake
         val y0 = platY - 1 - CFEET + bob - 4
         BP.alpha = (120 + 40 * sin(t * 2.2f)).toInt()
-        cnv.drawBitmap(gb, x0.toFloat(), y0.toFloat(), BP)
+        dstF.set(x0.toFloat(), y0.toFloat(), (x0 + CW).toFloat(), (y0 + CH).toFloat())
+        cnv.drawBitmap(gb, null, dstF, BP)
         BP.alpha = 255
         val sweep = ((t * 0.5f) % 1.6f) * 1.5f
         val by0 = y0 + CH - (sweep * CH).toInt()
@@ -1045,7 +1086,7 @@ class MenuScene(
             cnv.clipRect(x0.toFloat(), by0.toFloat(), (x0 + CW).toFloat(), (by0 + 9).toFloat())
             BP.alpha = 150
             BP.colorFilter = ghostLight
-            cnv.drawBitmap(gb, x0.toFloat(), y0.toFloat(), BP)
+            cnv.drawBitmap(gb, null, dstF, BP)
             BP.colorFilter = null
             BP.alpha = 255
             cnv.restore()
@@ -1089,7 +1130,7 @@ class MenuScene(
     private fun drawPlaques() {
         val pm = plaqueMe
         val po = plaqueOther
-        val y = platY + 3
+        val y = platY + 17
         if (pm != null) {
             val x = midX - off - pm.width / 2
             cnv.drawBitmap(pm, x.toFloat(), y.toFloat(), BP)
@@ -1207,7 +1248,7 @@ class MenuScene(
         val wl = wingL
         val wr = wingR
         if (wl != null) cnv0.drawBitmap(wl, (titleX - 2 - 21).toFloat(), (titleY + 3 + wb).toFloat(), BP)
-        if (wr != null) cnv0.drawBitmap(wr, (titleX + titleW + 2).toFloat(), (titleY + 3 + wb).toFloat(), BP)
+        if (wr != null) cnv0.drawBitmap(wr, (titleX + titleW - 2).toFloat(), (titleY + 3 + wb).toFloat(), BP)
         val tb = titleBmp
         if (tb != null) {
             val ty = titleY - 1 + (sin(t * 1.4f) * 1f).roundToInt()
@@ -1267,19 +1308,6 @@ class MenuScene(
         // pergaminho
         val sb = scrollBmp
         if (sb != null) cnv0.drawBitmap(sb, scrollX.toFloat(), scrollY.toFloat(), BP)
-        // selo de novidades
-        if (hasNews) {
-            val ny = by[3] + (if (pressedBtn == 3) 2 else 0)
-            val pu = (200 + 55 * sin(t * 5f)).toInt()
-            disc(bx[3] + 17, ny + 3, 3, INK)
-            disc(bx[3] + 17, ny + 3, 2, cc(240, 70, 80), pu)
-            rc(bx[3] + 16, ny + 2, 1, 1, cc(255, 200, 200))
-        }
-        // rodapé
-        val fl = footL
-        val fc = footC
-        if (fl != null) cnv0.drawBitmap(fl, 4f, (H - 11).toFloat(), BP)
-        if (fc != null) cnv0.drawBitmap(fc, (midX - fc.width / 2).toFloat(), (H - 11).toFloat(), BP)
     }
 
     // ------------------------------------------------------------------ toque
@@ -1307,8 +1335,7 @@ class MenuScene(
             0 -> onPlay()
             1 -> onChar()
             2 -> onSettings()
-            3 -> onNews()
-            4 -> onUpdate()
+            3 -> onUpdate()
         }
     }
 

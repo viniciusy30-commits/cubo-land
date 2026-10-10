@@ -6,6 +6,10 @@ import android.os.Bundle
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.text.Editable
+import android.text.InputFilter
+import android.text.TextWatcher
+import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
@@ -141,6 +145,19 @@ class CharacterActivity : CozyActivity() {
         pv.addView(cv, FrameLayout.LayoutParams(-1, -1))
         pv.addView(cTxt("Arraste para girar", 11f, Cz.SOFT, false), FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply { bottomMargin = dp(4) })
         leftCol.addView(pv, lpW(MATCH, 0, 1f))
+        val nameBox = EditText(this).apply {
+            setText(Look.name(this@CharacterActivity)); hint = "Nome do personagem"
+            setTextColor(Color.WHITE); setHintTextColor(Cz.SOFT); typeface = uiFont(); textSize = 15f
+            maxLines = 1; isSingleLine = true; filters = arrayOf(InputFilter.LengthFilter(12))
+            background = CozyBox(this@CharacterActivity, Cz.PANEL2, 12f, false)
+            setPadding(dp(12), dp(8), dp(12), dp(8))
+            addTextChangedListener(object : TextWatcher {
+                override fun afterTextChanged(e: Editable?) { Look.saveName(this@CharacterActivity, e?.toString()?.trim() ?: "") }
+                override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+                override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+            })
+        }
+        leftCol.addView(nameBox, lpW(MATCH, WRAP).apply { topMargin = dp(8) })
         val animRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(8), 0, 0) }
         val animChips = ArrayList<TextView>()
         for (k in ANIMS.indices) {

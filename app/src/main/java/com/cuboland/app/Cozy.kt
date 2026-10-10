@@ -28,7 +28,9 @@ import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
 import kotlin.math.sin
+import kotlin.math.sqrt
 
 /** Paleta "aconchegante": madeira escura, creme, dourado e cores de natureza. */
 object Cz {
@@ -48,7 +50,7 @@ object Cz {
     val SOFT = Color.argb(200, 255, 255, 255)
 }
 
-fun Context.uiFont(): Typeface = Typeface.create("sans-serif-rounded", Typeface.BOLD)
+fun Context.uiFont(): Typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
 
 fun Activity.goFullscreen() {
     WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -71,38 +73,73 @@ open class CozyActivity : AppCompatActivity() {
     }
 }
 
-/** Caixa arredondada com contorno escuro, brilho no topo e (opcional) "lábio" 3D embaixo. */
+/** Caixa pixel art: contorno escuro com cantos recortados, moldura, degradê em faixas e "lábio" 3D embaixo. */
 class CozyBox(private val ctx: Context, var fill: Int, private val radiusDp: Float, private val lip: Boolean,
               private val outline: Int = Cz.INK) : Drawable() {
     var pressed = false
-    private val p = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val r = RectF()
+    private val p = Paint()
+
+    private fun rect(c: Canvas, x: Int, y: Int, w: Int, h: Int, col: Int) {
+        if (w <= 0 || h <= 0) return
+        p.color = col
+        c.drawRect(x.toFloat(), y.toFloat(), (x + w).toFloat(), (y + h).toFloat(), p)
+    }
+
+    private fun disc(c: Canvas, cx: Int, cy: Int, r: Int, u: Int, col: Int) {
+        var yy = -r
+        while (yy < r) {
+            val my = yy + u / 2f
+            val hw = sqrt(max(0f, r * r - my * my))
+            val q = ((hw + u / 2f) / u).toInt() * u
+            rect(c, cx - q, cy + yy, 2 * q, u, col)
+            yy += u
+        }
+    }
+
+    private fun block(c: Canvas, x: Int, y: Int, w: Int, h: Int, u: Int, face: Int, rim: Int, ol: Int, big: Boolean) {
+        rect(c, x + u, y, w - 2 * u, h, ol); rect(c, x, y + u, w, h - 2 * u, ol)
+        rect(c, x + u, y + u, w - 2 * u, h - 2 * u, rim)
+        val fx = x + 2 * u; val fy = y + 2 * u; val fw = w - 4 * u; val fh = h - 4 * u
+        if (fw <= 0 || fh <= 0) return
+        val n = max(1, fh / u)
+        val light = shadeC(face, if (pressed) 1.0f else 1.18f)
+        val dark = shadeC(face, if (pressed) 0.84f else 0.92f)
+        for (i in 0 until n) {
+            val ry = fy + i * u
+            val rh = if (i == n - 1) fy + fh - ry else u
+            rect(c, fx, ry, fw, rh, mixC(light, dark, i / max(1, n - 1).toFloat()))
+        }
+        rect(c, fx, fy, u, fh, Color.argb(40, 255, 255, 255))
+        rect(c, fx, fy + fh - u, fw, u, Color.argb(60, 0, 0, 0))
+        rect(c, fx + fw - u, fy, u, fh, Color.argb(35, 0, 0, 0))
+        if (big) {
+            val g = Cz.GOLD
+            rect(c, x + 3 * u, y + 3 * u, u, u, g); rect(c, x + w - 4 * u, y + 3 * u, u, u, g)
+            rect(c, x + 3 * u, y + h - 4 * u, u, u, g); rect(c, x + w - 4 * u, y + h - 4 * u, u, u, g)
+        }
+    }
 
     override fun draw(c: Canvas) {
         val d = ctx.resources.displayMetrics.density
-        val w = bounds.width().toFloat(); val h = bounds.height().toFloat()
-        val rad = radiusDp * d; val st = 2f * d
-        val lh = if (lip) 4f * d else 0f
-        val off = if (pressed) lh * 0.75f else 0f
-        if (lip) {
-            r.set(st / 2, lh + st / 2, w - st / 2, h - st / 2)
-            p.style = Paint.Style.FILL; p.shader = null; p.color = shadeC(fill, 0.58f); c.drawRoundRect(r, rad, rad, p)
-            p.style = Paint.Style.STROKE; p.strokeWidth = st; p.color = outline; c.drawRoundRect(r, rad, rad, p)
+        val u = max(2, (2f * d).roundToInt())
+        val w = bounds.width(); val h = bounds.height()
+        val lh = if (lip) 2 * u else 0
+        val off = if (pressed) u else 0
+        val rim = if (lip) mixC(fill, Cz.GOLD, 0.65f) else if (outline != Cz.INK) shadeC(fill, 1.25f) else mixC(shadeC(fill, 1.45f), Cz.GOLD, 0.2f)
+        val round = radiusDp * d * 2f >= min(w, h) - 1f && abs(w - h) <= 4
+        if (round) {
+            val r = min(w, h) / 2 - lh / 2
+            val cx = w / 2; val cy = r + off
+            if (lip) { disc(c, cx, r + lh, r, u, outline); disc(c, cx, r + lh, r - u, u, shadeC(fill, 0.5f)) }
+            disc(c, cx, cy, r, u, outline)
+            disc(c, cx, cy, r - u, u, rim)
+            disc(c, cx, cy, r - 2 * u, u, shadeC(fill, if (pressed) 0.95f else 1.1f))
+            rect(c, cx - r / 2, cy - r / 2, u, u, Color.argb(120, 255, 255, 255))
+            return
         }
-        val top = off + st / 2; val bot = h - lh + off - st / 2
-        r.set(st / 2, top, w - st / 2, bot)
-        p.style = Paint.Style.FILL
-        p.shader = LinearGradient(0f, top, 0f, bot, shadeC(fill, if (pressed) 1.0f else 1.16f), shadeC(fill, if (pressed) 0.86f else 0.96f), Shader.TileMode.CLAMP)
-        c.drawRoundRect(r, rad, rad, p); p.shader = null
-        // brilho
-        val gh = (bot - top) * 0.42f
-        r.set(st * 2.2f, top + st * 1.6f, w - st * 2.2f, top + st * 1.6f + gh)
-        p.color = Color.argb(if (pressed) 18 else 42, 255, 255, 255); c.drawRoundRect(r, rad * 0.7f, rad * 0.7f, p)
-        r.set(st / 2, top, w - st / 2, bot)
-        p.style = Paint.Style.STROKE; p.strokeWidth = st; p.color = outline; c.drawRoundRect(r, rad, rad, p)
-        // filete interno claro
-        r.set(st * 1.5f, top + st, w - st * 1.5f, bot - st)
-        p.strokeWidth = 1f * d; p.color = Color.argb(46, 255, 255, 255); c.drawRoundRect(r, rad * 0.8f, rad * 0.8f, p)
+        val big = w > 40 * u && h > 20 * u
+        if (lip) block(c, 0, lh, w, h - lh, u, shadeC(fill, 0.5f), mixC(shadeC(fill, 0.6f), Cz.GOLD, 0.35f), outline, false)
+        block(c, 0, off, w, h - lh, u, fill, rim, outline, big)
     }
 
     override fun setAlpha(a: Int) {}
@@ -112,7 +149,8 @@ class CozyBox(private val ctx: Context, var fill: Int, private val radiusDp: Flo
 
 fun Context.cTxt(t: String, sp: Float = 14f, color: Int = Color.WHITE, shadow: Boolean = true): TextView = TextView(this).apply {
     text = t; textSize = sp; setTextColor(color); typeface = uiFont()
-    if (shadow) setShadowLayer(0.6f, dp(1).toFloat(), dp(1).toFloat(), Color.argb(150, 20, 14, 30))
+    paint.isAntiAlias = false
+    if (shadow) setShadowLayer(0.1f, dp(1).toFloat(), dp(1).toFloat(), Color.argb(210, 20, 10, 30))
 }
 
 private fun View.pressFx(box: CozyBox) {
@@ -197,15 +235,17 @@ class PillSwitch(ctx: Context, var on: Boolean, val onChange: (Boolean) -> Unit)
     init { setOnClickListener { on = !on; onChange(on); invalidate() } }
     override fun onMeasure(wm: Int, hm: Int) = setMeasuredDimension(context.dp(58), context.dp(32))
     override fun onDraw(c: Canvas) {
-        val w = width.toFloat(); val h = height.toFloat(); val d = context.dp(1).toFloat()
+        val u = max(2, context.dp(2))
+        val w = width; val h = height
         pos += ((if (on) 1f else 0f) - pos) * 0.3f
-        r.set(d, d, w - d, h - d)
-        p.style = Paint.Style.FILL; p.color = mixC(Color.rgb(90, 90, 120), Cz.GREEN, pos); c.drawRoundRect(r, h / 2, h / 2, p)
-        p.style = Paint.Style.STROKE; p.strokeWidth = 2 * d; p.color = Cz.INK; c.drawRoundRect(r, h / 2, h / 2, p)
-        val kx = h / 2 + (w - h) * pos
-        p.style = Paint.Style.FILL; p.color = Color.argb(60, 0, 0, 0); c.drawCircle(kx, h / 2 + 1.5f * d, h * 0.34f, p)
-        p.color = Cz.CREAM; c.drawCircle(kx, h / 2, h * 0.34f, p)
-        p.style = Paint.Style.STROKE; p.strokeWidth = 1.5f * d; p.color = Cz.INK; c.drawCircle(kx, h / 2, h * 0.34f, p)
+        fun rr(x: Int, y: Int, ww: Int, hh: Int, col: Int) { p.style = Paint.Style.FILL; p.color = col; c.drawRect(x.toFloat(), y.toFloat(), (x + ww).toFloat(), (y + hh).toFloat(), p) }
+        rr(u, 0, w - 2 * u, h, Cz.INK); rr(0, u, w, h - 2 * u, Cz.INK)
+        val tr = mixC(Color.rgb(90, 90, 120), Cz.GREEN, pos)
+        rr(u, u, w - 2 * u, h - 2 * u, shadeC(tr, 0.7f)); rr(2 * u, 2 * u, w - 4 * u, h - 4 * u, tr)
+        val ks = h - 2 * u
+        val kx = u + ((w - 2 * u - ks) * pos).toInt()
+        rr(kx, u, ks, ks, Cz.INK); rr(kx + u, 2 * u, ks - 2 * u, ks - 2 * u, Cz.CREAM)
+        rr(kx + u, u + ks - 2 * u, ks - 2 * u, u, shadeC(Cz.CREAM, 0.78f))
         if (abs((if (on) 1f else 0f) - pos) > 0.01f) postInvalidateOnAnimation()
     }
 }
@@ -261,136 +301,13 @@ fun Context.cHeader(title: String, sub: String?, onBack: () -> Unit): LinearLayo
     return h
 }
 
-/** Cenário animado: o céu muda conforme a hora do aparelho (dia, pôr do sol, noite com lua e estrelas). */
-class SceneBg(ctx: Context, var dim: Float = 0f) : View(ctx) {
-    private val p = Paint()
-    private val t0 = System.nanoTime()
-    private val hour: Float = java.util.Calendar.getInstance().let { it.get(java.util.Calendar.HOUR_OF_DAY) + it.get(java.util.Calendar.MINUTE) / 60f }
-
-    private class Key(val h: Float, val top: Int, val bot: Int, val night: Float)
-    private val keys = arrayOf(
-        Key(0f, Color.rgb(12, 16, 44), Color.rgb(48, 54, 108), 1f),
-        Key(5f, Color.rgb(16, 20, 54), Color.rgb(60, 62, 120), 1f),
-        Key(7f, Color.rgb(112, 110, 196), Color.rgb(255, 196, 150), 0.35f),
-        Key(9.5f, Color.rgb(78, 140, 235), Color.rgb(205, 230, 252), 0f),
-        Key(16f, Color.rgb(78, 140, 235), Color.rgb(205, 230, 252), 0f),
-        Key(18.5f, Color.rgb(96, 84, 178), Color.rgb(255, 156, 112), 0.3f),
-        Key(21f, Color.rgb(16, 20, 54), Color.rgb(60, 62, 120), 1f),
-        Key(24f, Color.rgb(12, 16, 44), Color.rgb(48, 54, 108), 1f))
-
-    private fun sky(): Triple<Int, Int, Float> {
-        for (i in 0 until keys.size - 1) {
-            val a = keys[i]; val b = keys[i + 1]
-            if (hour >= a.h && hour <= b.h) {
-                val t = (hour - a.h) / (b.h - a.h)
-                return Triple(mixC(a.top, b.top, t), mixC(a.bot, b.bot, t), a.night + (b.night - a.night) * t)
-            }
-        }
-        return Triple(keys[3].top, keys[3].bot, 0f)
-    }
-
-    private fun hh(x: Int, y: Int, s: Int = 0) = hash2(x, y, s)
-    private fun ht(wx: Int, far: Boolean): Int {
-        val x = wx.toFloat() + (if (far) 300f else 0f)
-        return if (far) (12 + 4 * sin(x * 0.07f) + 3 * sin(x * 0.19f + 1f)).toInt() else (7 + 3 * sin(x * 0.11f) + 2 * sin(x * 0.27f + 1.3f) + 1.5f * sin(x * 0.05f + 4f)).toInt()
-    }
-    private fun cell(c: Canvas, x: Float, y: Float, s: Float, col: Int) { p.color = col; c.drawRect(x, y, x + s + 1f, y + s + 1f, p) }
-
-    private fun terrain(c: Canvas, w: Float, h: Float, cs: Float, sc: Float, rows: Int, far: Boolean) {
-        val off = sc.toInt(); val fr = (sc - off) * cs
-        val cols = (w / cs).toInt() + 2
-        for (col in 0 until cols) {
-            val wx = col + off; val x = col * cs - fr
-            val gy = rows - ht(wx, far)
-            if (far) { for (r in gy until rows) cell(c, x, r * cs, cs, mixC(Color.rgb(112, 150, 170), Color.rgb(160, 190, 215), (hh(wx, r, 3) * 0.25f + (r - gy) * 0.02f).coerceAtMost(0.6f))); continue }
-            for (r in gy until rows) {
-                val d = r - gy; val n = hh(wx, r)
-                val col2 = when {
-                    d == 0 -> shadeC(Color.rgb(92, 168, 58), 0.88f + 0.24f * n)
-                    d <= 3 -> shadeC(Color.rgb(134, 96, 62), 0.82f + 0.3f * n)
-                    else -> { val st = shadeC(Color.rgb(128, 128, 132), 0.78f + 0.3f * n); if (n > 0.965f) Color.rgb(40, 40, 44) else if (n < 0.012f) Color.rgb(222, 190, 70) else st }
-                }
-                cell(c, x, r * cs, cs, shadeC(col2, (0.55f + 0.45f * (1f - (r.toFloat() / rows) * 0.5f))))
-                if (d == 1 && hh(wx, r, 7) > 0.5f) cell(c, x, r * cs, cs * 0.5f, Color.rgb(92, 168, 58))
-            }
-            if (wx % 7 == 3 && hh(wx, 1, 11) > 0.35f) {
-                val th = 4 + (hh(wx, 2, 12) * 2).toInt(); val base = gy
-                for (k in 1..th) cell(c, x, (base - k) * cs, cs, shadeC(Color.rgb(110, 80, 50), 0.85f + 0.2f * hh(wx, k, 13)))
-                for (ly in 0 until 4) for (lx in -2..2) {
-                    if ((ly == 0 || ly == 3) && (lx == -2 || lx == 2)) continue
-                    if (lx == 0 && ly >= 2) continue
-                    cell(c, x + lx * cs, (base - th - 2 + ly) * cs, cs, shadeC(Color.rgb(54, 142, 52), 0.75f + 0.45f * hh(wx + lx, ly, 14)))
-                }
-            }
-        }
-    }
-
-    override fun onDraw(c: Canvas) {
-        val w = width.toFloat(); val h = height.toFloat()
-        val t = (System.nanoTime() - t0) / 1e9f
-        val rows = 22; val cs = h / rows
-        val (top, bot, night) = sky()
-        p.style = Paint.Style.FILL
-        p.shader = LinearGradient(0f, 0f, 0f, h, intArrayOf(top, mixC(top, bot, 0.7f), bot), floatArrayOf(0f, 0.6f, 1f), Shader.TileMode.CLAMP)
-        c.drawRect(0f, 0f, w, h, p); p.shader = null
-        // estrelas
-        if (night > 0.05f) for (i in 0 until 70) {
-            val sx = hh(i, 1, 21) * w; val sy = hh(i, 2, 22) * h * 0.55f
-            val tw = 0.5f + 0.5f * sin(t * (1f + hh(i, 3, 23) * 2f) + i)
-            p.color = Color.argb((night * 230 * tw).toInt().coerceIn(0, 255), 255, 255, 235)
-            val s = cs * (0.12f + 0.12f * hh(i, 4, 24)); c.drawRect(sx, sy, sx + s, sy + s, p)
-        }
-        // sol ou lua
-        val isDay = hour in 6f..18f
-        val frac = if (isDay) (hour - 6f) / 12f else ((hour + 24f - 18f) % 24f) / 12f
-        val sx = w * (0.12f + 0.76f * frac); val sy = h * (0.62f - 0.5f * sin(PI.toFloat() * frac)); val sr = cs * 1.5f
-        if (isDay) {
-            p.color = Color.argb(40, 255, 250, 200); c.drawRect(sx - sr * 2f, sy - sr * 2f, sx + sr * 2f, sy + sr * 2f, p)
-            p.color = Color.argb(70, 255, 250, 200); c.drawRect(sx - sr * 1.4f, sy - sr * 1.4f, sx + sr * 1.4f, sy + sr * 1.4f, p)
-            p.color = Color.rgb(255, 246, 190); c.drawRect(sx - sr, sy - sr, sx + sr, sy + sr, p)
-        } else {
-            p.color = Color.argb(36, 200, 215, 255); c.drawRect(sx - sr * 1.8f, sy - sr * 1.8f, sx + sr * 1.8f, sy + sr * 1.8f, p)
-            p.color = Color.rgb(232, 238, 252); c.drawRect(sx - sr * 0.9f, sy - sr * 0.9f, sx + sr * 0.9f, sy + sr * 0.9f, p)
-            p.color = Color.rgb(196, 206, 232); c.drawRect(sx + sr * 0.1f, sy - sr * 0.5f, sx + sr * 0.5f, sy - sr * 0.1f, p); c.drawRect(sx - sr * 0.5f, sy + sr * 0.2f, sx - sr * 0.1f, sy + sr * 0.6f, p)
-        }
-        // nuvens de blocos
-        val cloudA = 235 - (night * 150).toInt()
-        for (i in 0 until 7) {
-            val cw = (5 + (i % 3) * 2) * cs; val x = ((i * 9.1f * cs + t * cs * (0.5f + (i % 3) * 0.15f)) % (w + cw * 2f)) - cw
-            val y = cs * (1.5f + (i * 2.3f) % 6f)
-            p.color = Color.argb(cloudA, 255, 255, 255); c.drawRect(x, y, x + cw, y + cs, p); c.drawRect(x + cs, y - cs, x + cw - cs * 2f, y, p)
-            p.color = Color.argb(cloudA, 218, 228, 242); c.drawRect(x, y + cs, x + cw - cs, y + cs * 1.45f, p)
-        }
-        terrain(c, w, h, cs * 1.25f, t * 0.35f, (h / (cs * 1.25f)).toInt() + 1, true)
-        terrain(c, w, h, cs, t * 0.9f, rows, false)
-        // escurecer à noite / entardecer
-        if (night > 0.02f) { p.color = Color.argb((night * 150).toInt(), 8, 10, 40); c.drawRect(0f, 0f, w, h, p) }
-        // partículas: vaga-lumes à noite, pólen de dia
-        for (i in 0 until 26) {
-            val px = ((hh(i, 5, 31) * w + sin(t * 0.4f + i) * cs * 2f) + w) % w
-            val py = h * (0.35f + 0.5f * hh(i, 6, 32)) - ((t * cs * (0.3f + hh(i, 7, 33) * 0.5f)) % (h * 0.4f))
-            val tw = 0.4f + 0.6f * abs(sin(t * 1.3f + i * 1.7f))
-            val col = if (night > 0.5f) Color.argb((220 * tw).toInt(), 255, 240, 130) else Color.argb((150 * tw).toInt(), 255, 255, 230)
-            val s = cs * (night.let { if (it > 0.5f) 0.2f else 0.14f })
-            p.color = Color.argb(Color.alpha(col) / 4, 255, 240, 130); c.drawRect(px - s, py - s, px + s * 2f, py + s * 2f, p)
-            p.color = col; c.drawRect(px, py, px + s, py + s, p)
-        }
-        // vinheta
-        p.color = Color.argb(35, 0, 0, 0); c.drawRect(0f, 0f, w, h, p)
-        p.shader = RadialGradient(w / 2f, h / 2f, w * 0.65f, Color.argb(0, 0, 0, 0), Color.argb(150, 0, 0, 20), Shader.TileMode.CLAMP)
-        c.drawRect(0f, 0f, w, h, p); p.shader = null
-        if (dim > 0f) { p.color = Color.argb((dim * 255).toInt(), 14, 12, 34); c.drawRect(0f, 0f, w, h, p) }
-        postInvalidateOnAnimation()
-    }
-}
-
 /** miniatura pixelada de um mundo (gerada a partir da semente e do tipo) */
 class WorldThumb(ctx: Context, private val seed: Int, private val type: Int) : View(ctx) {
     private val p = Paint()
     private val clip = Path()
     override fun onDraw(c: Canvas) {
         val w = width.toFloat(); val h = height.toFloat(); val d = context.dp(1).toFloat()
-        clip.reset(); clip.addRoundRect(RectF(0f, 0f, w, h), 12 * d, 12 * d, Path.Direction.CW); c.save(); c.clipPath(clip)
+        clip.reset(); clip.addRoundRect(RectF(0f, 0f, w, h), 2 * d, 2 * d, Path.Direction.CW); c.save(); c.clipPath(clip)
         val rows = 14; val cs = h / rows
         p.style = Paint.Style.FILL
         p.shader = LinearGradient(0f, 0f, 0f, h, Color.rgb(96, 160, 240), Color.rgb(206, 232, 252), Shader.TileMode.CLAMP)
@@ -418,5 +335,7 @@ class WorldThumb(ctx: Context, private val seed: Int, private val type: Int) : V
             }
         }
         c.restore()
+        p.style = Paint.Style.STROKE; p.strokeWidth = 3 * d; p.color = Cz.INK
+        c.drawRect(1.5f * d, 1.5f * d, w - 1.5f * d, h - 1.5f * d, p)
     }
 }
