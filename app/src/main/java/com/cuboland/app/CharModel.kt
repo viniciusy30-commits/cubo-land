@@ -251,6 +251,47 @@ class CharModel {
                 }
                 if (bot == 7) b(t1, s * (legW / 2f + 0.006f), -0.12f, 0.02f, 0.025f, 0.12f, 0.12f, shadeC(legCol, 0.82f))
                 if (bot == 4) b(t1, 0f, -0.1f, legD / 2f + 0.004f, 0.02f, 0.2f, 0.01f, shadeC(legCol, 0.75f))
+                run {   // ---- upgrade das partes de baixo ----
+                    val ed = legD / 2f + 0.004f; val ew = legW / 2f + 0.004f
+                    val thC = shadeC(legCol, 0.8f); val liC = lite(legCol, 0.3f); val stitch = lite(legCol, 0.5f)
+                    when (bot) {
+                        0 -> {  // calça: vinco, costura lateral, bolso traseiro, joelho, barra dobrada
+                            b(t1, 0f, -0.11f, ed, 0.016f, 0.2f, 0.01f, thC); b(t2, 0f, -sn / 2f, ed, 0.016f, sn * 0.9f, 0.01f, thC)
+                            b(t1, s * ew, -0.11f, 0f, 0.01f, 0.2f, 0.012f, liC); b(t2, s * ew, -sn / 2f, 0f, 0.01f, sn * 0.9f, 0.012f, liC)
+                            b(t1, 0f, -0.075f, -ed, 0.11f, 0.08f, 0.01f, thC); b(t1, 0f, -0.04f, -ed, 0.11f, 0.012f, 0.012f, stitch)
+                            b(t2, 0f, -0.02f, ed, 0.11f, 0.012f, 0.01f, thC)
+                            if (sn > 0.07f) b(t2, 0f, -sn + 0.055f, 0f, legW + 0.014f, 0.012f, legD + 0.014f, liC)
+                        }
+                        1 -> {  // shorts: barra virada, listra lateral, costura do bolso
+                            b(t1, 0f, -seg + 0.012f, 0f, legW + 0.012f, 0.03f, legD + 0.012f, liC)
+                            b(t1, s * ew, -0.07f, 0f, 0.01f, 0.12f, 0.14f, white); b(t1, 0f, -0.06f, ed, 0.1f, 0.012f, 0.01f, thC)
+                            b(t1, 0f, -0.06f, -ed, 0.1f, 0.06f, 0.01f, thC)
+                        }
+                        3 -> {  // bermuda: bolso lateral com aba e botão, barra com costura
+                            b(t1, s * (ew + 0.008f), -0.1f, 0.01f, 0.012f, 0.13f, 0.13f, thC); b(t1, s * (ew + 0.012f), -0.055f, 0.01f, 0.012f, 0.014f, 0.13f, liC)
+                            b(t1, s * (ew + 0.014f), -0.07f, 0.01f, 0.014f, 0.02f, 0.02f, gold)
+                            b(t1, 0f, -0.09f, ed, 0.014f, 0.16f, 0.01f, thC); b(t2, 0f, -sn + 0.05f, 0f, legW + 0.014f, 0.012f, legD + 0.014f, stitch)
+                            b(t1, 0f, -0.07f, -ed, 0.11f, 0.075f, 0.01f, thC)
+                        }
+                        4 -> {  // hakama: pregas, barra dourada
+                            for (px in intArrayOf(-1, 0, 1)) { b(t1, px * 0.075f, -0.1f, ed, 0.012f, 0.2f, 0.01f, thC); b(t2, px * 0.075f, -sn / 2f, ed, 0.012f, sn * 0.9f, 0.01f, thC) }
+                            b(t1, 0f, -0.02f, ed, legW * 0.9f, 0.012f, 0.01f, liC)
+                            b(t2, 0f, -sn + 0.045f, 0f, legW + 0.016f, 0.014f, legD + 0.016f, gold)
+                        }
+                        6 -> {  // leggings: listra lateral, joelheira, bainha
+                            b(t1, s * ew, -0.1f, 0f, 0.008f, 0.2f, 0.1f, liC); b(t2, s * ew, -sn / 2f, 0f, 0.008f, sn * 0.9f, 0.1f, liC)
+                            b(t2, 0f, -0.02f, ed, 0.13f, 0.06f, 0.008f, thC); b(t1, 0f, -0.2f, ed, 0.13f, 0.012f, 0.008f, liC)
+                            b(t2, 0f, -sn + 0.05f, 0f, legW + 0.01f, 0.012f, legD + 0.01f, liC)
+                        }
+                        else -> {  // cargo: bolsos com aba e botão, joelheira, punho amarrado, bolso traseiro
+                            b(t1, s * (ew + 0.01f), -0.115f, 0.01f, 0.014f, 0.15f, 0.15f, thC); b(t1, s * (ew + 0.014f), -0.06f, 0.01f, 0.012f, 0.016f, 0.15f, liC)
+                            b(t1, s * (ew + 0.016f), -0.075f, 0.01f, 0.014f, 0.022f, 0.022f, gold)
+                            b(t2, 0f, -0.04f, ed, 0.15f, 0.1f, 0.01f, thC); b(t2, 0f, -0.04f, ed + 0.004f, 0.15f, 0.012f, 0.01f, stitch)
+                            b(t1, 0f, -0.075f, -ed, 0.12f, 0.08f, 0.01f, thC)
+                            b(t2, 0f, -sn + 0.045f, 0f, legW + 0.016f, 0.02f, legD + 0.016f, thC)
+                        }
+                    }
+                }
             }
             fun ya(y: Float) = y + 0.22f   // converte pra o referencial da canela
             when (sh) {
@@ -309,6 +350,15 @@ class CharModel {
         // ================= CORPO =================
         if (!full && !overalls) b(base, 0f, 0.46f, 0f, bw + 0.015f, 0.05f, 0.315f, shadeC(bc, 0.85f))
         if (full) b(base, 0f, 0.45f, 0f, bw, 0.06f, 0.3f, tc)   // vestido/kimono: a cintura dobra mostrando a roupa, não a pele do quadril
+        // pelve: uma caixa presa ao tronco + um "assento" preso ao corpo todo, na cor da roupa de baixo. Sem isso, ao agachar/sentar as coxas giram pra frente e dá pra ver o vazio por dentro.
+        val pelC = if (full || overalls) tc else bc
+        b(base, 0f, 0.425f, 0f, bw + 0.005f, 0.09f, 0.305f, pelC)
+        b(r2, 0f, 0.4f, -0.01f, bw - 0.02f, 0.1f, 0.27f, pelC)
+        if (!full && !overalls) {
+            b(base, 0f, 0.447f, 0f, bw + 0.02f, 0.014f, 0.322f, if (bot == 1 || bot == 6) lite(bc, 0.4f) else 0x3A2A22)
+            if (bot == 0 || bot == 3 || bot == 7 || bot == 4) b(base, 0f, 0.446f, 0.166f, 0.06f, 0.04f, 0.012f, gold)
+            for (i in -2..2) if (i != 0) b(base, i * 0.085f, 0.452f, 0f, 0.022f, 0.045f, 0.326f, shadeC(bc, 0.7f))
+        }
         // ---- helpers de roupa: F = detalhe colado na FRENTE, K = detalhe colado nas COSTAS, band = faixa que dá a volta no tronco ----
         val hw = bw / 2f
         fun F(x: Float, y: Float, w: Float, h: Float, col: Int, d: Float = 0.014f, rz: Float = 0f) = b(base, x, y, 0.153f + d / 2f, w, h, d, col, rz = rz)
@@ -589,6 +639,11 @@ class CharModel {
             }
         }
 
+        if (full || skirtBot) skRows.add(SkR(0f, 0.415f, 0f, bw + 0.05f, 0.1f, 0.34f, if (full) tc else bc, true))   // tampa da saia: acompanha o giro e fecha o vão com a cintura
+        if (skirtBot) {
+            if (bot == 2) { sk(0.265f, 0.7f, 0.03f, 0.52f, lite(bc, 0.7f)); b(base, 0f, 0.468f, 0.168f, 0.09f, 0.05f, 0.02f, lite(bc, 0.5f)); b(base, 0f, 0.468f, 0.175f, 0.03f, 0.03f, 0.02f, gold) }
+            else { sk(0.235f, 0.74f, 0.02f, 0.54f, lite(bc, 0.6f)); b(base, 0f, 0.468f, 0.168f, 0.05f, 0.05f, 0.02f, gold); b(base, 0f, 0.468f, -0.168f, 0.2f, 0.04f, 0.02f, shadeC(bc, 0.7f)) }
+        }
         // ---- saias e vestidos: cintura fixa no corpo; o resto é UMA peça só presa ao quadril (não divide com as pernas) ----
         for (r in skRows) {
             if (r.py > 0.42f) b(base, r.x, r.py, r.z, r.sx, r.sy, r.sz, r.col)
