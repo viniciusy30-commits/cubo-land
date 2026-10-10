@@ -107,6 +107,7 @@ class CharModel {
         val full = top == 2 || top == 10 || top == 11 || top == 15   // roupas longas (cobrem as pernas)
         val overalls = top == 6
         val skirtBot = (bot == 2 || bot == 5) && !full && !overalls
+        val wide = bot == 4 && !full && !overalls   // hakama: perna larga
         val bw = if (girl) 0.44f else 0.48f
         val gold = 0xFFD060
         val trim = lite(tc, 0.35f); val dark = shadeC(tc, 0.78f)
@@ -157,11 +158,11 @@ class CharModel {
             hipL += (-42f - hipL) * land; hipR += (-42f - hipR) * land
             kneeL += (80f - kneeL) * land; kneeR += (80f - kneeR) * land
         }
-        if (full || overalls.not() && skirtBot) {   // roupa longa/saia: pernas não atravessam o tecido
-            val kk = if (full) 0.5f else 0.85f   // a saia agora acompanha as coxas, então pode balançar bem mais
-            val cap = if (full) 13f else 26f
+        if (full || wide || overalls.not() && skirtBot) {   // roupa longa/saia: pernas não atravessam o tecido
+            val kk = if (full) 0.5f else if (wide) 0.6f else 0.85f   // a saia agora acompanha as coxas, então pode balançar bem mais
+            val cap = if (full) 13f else if (wide) 17f else 26f
             hipL = (hipL * kk).coerceIn(-cap, cap); hipR = (hipR * kk).coerceIn(-cap, cap)
-            kneeL = (kneeL * kk).coerceIn(0f, if (full) 24f else 60f); kneeR = (kneeR * kk).coerceIn(0f, if (full) 24f else 60f)
+            kneeL = (kneeL * kk).coerceIn(0f, if (full) 24f else if (wide) 36f else 60f); kneeR = (kneeR * kk).coerceIn(0f, if (full) 24f else if (wide) 36f else 60f)
         }
         // posturas: agachar (pernas dobradas, tronco inclinado), sentar (pernas à frente, no chão), deitar (de costas)
         val cr = an.crouch.coerceIn(0f, 1f); val si = an.sit.coerceIn(0f, 1f)
@@ -264,7 +265,7 @@ class CharModel {
                         }
                         1 -> {  // shorts: barra virada, listra lateral, costura do bolso
                             b(t1, 0f, -seg + 0.012f, 0f, legW + 0.012f, 0.03f, legD + 0.012f, liC)
-                            b(t1, s * ew, -0.07f, 0f, 0.01f, 0.12f, 0.14f, white); b(t1, 0f, -0.06f, ed, 0.1f, 0.012f, 0.01f, thC)
+                            b(t1, s * ew, -0.07f, 0f, 0.01f, 0.12f, 0.14f, lite(legCol, 0.18f)); b(t1, 0f, -0.06f, ed, 0.1f, 0.012f, 0.01f, thC)
                             b(t1, 0f, -0.06f, -ed, 0.1f, 0.06f, 0.01f, thC)
                         }
                         3 -> {  // bermuda: bolso lateral com aba e botão, barra com costura
@@ -294,55 +295,94 @@ class CharModel {
                 }
             }
             fun ya(y: Float) = y + 0.22f   // converte pra o referencial da canela
+            // ---- calçados: tudo em coordenadas "do quadril" (chão = -0.44, joelho = -0.22). Nada passa de -0.25: antes a bota alta e as meias subiam até a coxa e furavam o joelho. ----
+            fun sb(yA: Float, yB: Float, zB: Float, zF: Float, w: Float, col: Int) = b(t2, 0f, ya((yA + yB) / 2f), (zB + zF) / 2f, w, abs(yA - yB), abs(zF - zB), col)   // aceita os dois Y em qualquer ordem
+            val soleD = 0x2E211B
             when (sh) {
-                0 -> {
-                    b(t2, 0f, ya(-0.34f), 0.03f, 0.225f, 0.2f, 0.28f, shc)
-                    b(t2, 0f, ya(-0.235f), 0.025f, 0.245f, 0.05f, 0.26f, lite(shc, 0.3f))
-                    b(t2, 0f, ya(-0.425f), 0.035f, 0.235f, 0.03f, 0.3f, 0x3A2A22)
+                0 -> {  // botas curtas de couro: sola, bico, cano baixo com barra, língua, ilhós e fivela
+                    val upL = lite(shc, 0.22f)
+                    sb(-0.44f, -0.415f, -0.13f, 0.2f, 0.235f, soleD)
+                    sb(-0.415f, -0.34f, -0.125f, 0.17f, 0.225f, shc)
+                    sb(-0.415f, -0.36f, 0.11f, 0.19f, 0.232f, upL)
+                    sb(-0.34f, -0.3f, -0.125f, 0.11f, 0.228f, shc)
+                    sb(-0.31f, -0.285f, -0.13f, 0.115f, 0.238f, upL)
+                    sb(-0.345f, -0.29f, 0.095f, 0.125f, 0.1f, lite(shc, 0.5f))
+                    for (k in 0..1) b(t2, (k * 2 - 1) * 0.04f, ya(-0.32f), 0.122f, 0.014f, 0.014f, 0.012f, gold)
+                    sb(-0.31f, -0.29f, -0.145f, -0.125f, 0.05f, upL)
+                    for (sx in intArrayOf(-1, 1)) b(t2, sx * 0.117f, ya(-0.335f), 0f, 0.012f, 0.03f, 0.05f, gold)
                 }
-                1 -> {
-                    b(t2, 0f, ya(-0.335f), 0.03f, 0.22f, 0.13f, 0.29f, shc)
-                    b(t2, 0f, ya(-0.42f), 0.035f, 0.235f, 0.04f, 0.31f, white)
-                    b(t2, 0f, ya(-0.35f), 0.14f, 0.2f, 0.09f, 0.1f, lite(shc, 0.6f))
-                    b(t2, 0f, ya(-0.27f), 0.07f, 0.12f, 0.02f, 0.1f, 0xFFFFFF)
+                1 -> {  // tênis: sola branca, biqueira, cadarço, listra lateral, língua e lingueta
+                    sb(-0.44f, -0.42f, -0.135f, 0.205f, 0.24f, white)
+                    sb(-0.42f, -0.345f, -0.125f, 0.175f, 0.225f, shc)
+                    sb(-0.42f, -0.375f, 0.11f, 0.195f, 0.232f, white)
+                    sb(-0.35f, -0.3f, -0.125f, 0.0f, 0.226f, shc)
+                    sb(-0.305f, -0.295f, -0.13f, 0.005f, 0.234f, lite(shc, 0.45f))
+                    sb(-0.355f, -0.315f, 0.0f, 0.14f, 0.12f, lite(shc, 0.55f))
+                    for (k in 0..2) b(t2, 0f, ya(-0.348f), 0.03f + k * 0.04f, 0.11f, 0.012f, 0.014f, white)
+                    for (sx in intArrayOf(-1, 1)) b(t2, sx * 0.115f, ya(-0.385f), 0.03f, 0.008f, 0.03f, 0.14f, white)
+                    sb(-0.37f, -0.31f, -0.14f, -0.125f, 0.07f, white)
                 }
-                2 -> {
-                    b(t2, 0f, ya(-0.395f), 0.04f, 0.21f, 0.09f, 0.27f, shc)
-                    b(t2, 0f, ya(-0.43f), 0.04f, 0.215f, 0.02f, 0.28f, 0x3A2A22)
-                    b(t2, 0f, ya(-0.35f), 0.17f, 0.07f, 0.04f, 0.05f, lite(shc, 0.4f))
+                2 -> {  // sapatilha fechada: calcanhar fechado atrás, bico, laço e tira com fivela
+                    val bw2 = lite(shc, 0.4f)
+                    sb(-0.44f, -0.425f, -0.125f, 0.185f, 0.225f, 0x3A2A22)
+                    sb(-0.425f, -0.385f, -0.125f, 0.18f, 0.22f, shc)
+                    sb(-0.385f, -0.355f, -0.128f, -0.06f, 0.222f, shc)
+                    sb(-0.385f, -0.37f, 0.1f, 0.18f, 0.214f, shadeC(shc, 0.9f))
+                    sb(-0.385f, -0.368f, 0.075f, 0.105f, 0.045f, bw2)
+                    for (sx in intArrayOf(-1, 1)) b(t2, sx * 0.04f, ya(-0.377f), 0.09f, 0.05f, 0.02f, 0.045f, bw2)
+                    sb(-0.385f, -0.368f, -0.02f, 0.01f, 0.224f, shadeC(shc, 0.8f))
+                    for (sx in intArrayOf(-1, 1)) b(t2, sx * 0.114f, ya(-0.377f), -0.005f, 0.01f, 0.022f, 0.022f, gold)
                 }
-                3 -> {
-                    b(t2, 0f, ya(-0.4f), 0.04f, 0.2f, 0.08f, 0.26f, skin)
-                    b(t2, 0f, ya(-0.415f), 0.17f, 0.18f, 0.05f, 0.04f, skinD)
+                3 -> {  // descalço: pé com calcanhar, peito do pé, cinco dedinhos e unhas
+                    sb(-0.44f, -0.395f, -0.11f, 0.17f, 0.2f, skin)
+                    sb(-0.395f, -0.385f, -0.11f, 0.1f, 0.2f, skinD)
+                    for (k in -2..2) {
+                        val big = if (k == -2) 0.045f else 0.034f
+                        b(t2, k * 0.038f, ya(-0.418f), 0.185f, big, 0.04f, 0.035f, skin)
+                        b(t2, k * 0.038f, ya(-0.399f), 0.195f, big * 0.55f, 0.008f, 0.014f, lite(skin, 0.45f))
+                    }
                 }
-                4 -> {
-                    b(t2, 0f, ya(-0.27f), 0.02f, 0.225f, 0.34f, 0.24f, shc)
-                    b(t2, 0f, ya(-0.095f), 0.015f, 0.245f, 0.06f, 0.25f, lite(shc, 0.3f))
-                    b(t2, 0f, ya(-0.425f), 0.035f, 0.235f, 0.03f, 0.3f, 0x3A2A22)
-                    b(t2, 0f, ya(-0.4f), 0.15f, 0.2f, 0.1f, 0.1f, shadeC(shc, 0.85f))
+                4 -> {  // botas altas (agora até logo abaixo do joelho): cano com barra virada, tira com fivela, cadarço e salto
+                    val upL = lite(shc, 0.22f); val upD = shadeC(shc, 0.72f)
+                    sb(-0.44f, -0.415f, -0.13f, 0.2f, 0.235f, soleD)
+                    sb(-0.44f, -0.42f, -0.13f, -0.03f, 0.238f, 0x2A1E18)
+                    sb(-0.415f, -0.34f, -0.125f, 0.17f, 0.225f, shc)
+                    sb(-0.415f, -0.36f, 0.11f, 0.19f, 0.232f, upL)
+                    sb(-0.34f, -0.265f, -0.125f, 0.115f, 0.23f, shc)
+                    sb(-0.275f, -0.25f, -0.135f, 0.125f, 0.242f, upL)
+                    sb(-0.31f, -0.295f, -0.13f, 0.12f, 0.238f, upD)
+                    b(t2, 0f, ya(-0.3025f), 0.125f, 0.04f, 0.026f, 0.012f, gold)
+                    sb(-0.34f, -0.265f, -0.138f, -0.125f, 0.04f, upD)
+                    for (k in 0..3) b(t2, 0f, ya(-0.335f + k * 0.018f), 0.118f, 0.08f, 0.008f, 0.012f, lite(shc, 0.5f))
                 }
-                5 -> {   // geta com meia tabi
-                    b(t2, 0f, ya(-0.35f), 0.03f, 0.205f, 0.14f, 0.23f, white)
-                    b(t2, 0f, ya(-0.395f), 0.04f, 0.23f, 0.04f, 0.3f, 0x9A6A3E)
-                    b(t2, 0f, ya(-0.432f), 0.1f, 0.22f, 0.03f, 0.05f, 0x6F4A29)
-                    b(t2, 0f, ya(-0.432f), -0.06f, 0.22f, 0.03f, 0.05f, 0x6F4A29)
-                    b(t2, 0f, ya(-0.34f), 0.1f, 0.05f, 0.05f, 0.14f, shc)
+                5 -> {  // geta com tabi: meia branca de dedo separado, base de madeira com dois dentes e tira (hanao)
+                    sb(-0.44f, -0.4f, -0.09f, -0.01f, 0.23f, 0x6F4A29)
+                    sb(-0.44f, -0.4f, 0.085f, 0.155f, 0.23f, 0x6F4A29)
+                    sb(-0.4f, -0.375f, -0.11f, 0.175f, 0.232f, 0x9A6A3E)
+                    sb(-0.375f, -0.3f, -0.11f, 0.1f, 0.205f, white)
+                    sb(-0.375f, -0.34f, 0.1f, 0.17f, 0.2f, white)
+                    sb(-0.375f, -0.34f, 0.165f, 0.176f, 0.012f, 0xB8B8C0)
+                    b(t2, 0f, ya(-0.338f), 0.08f, 0.13f, 0.012f, 0.03f, shc)
+                    for (sx in intArrayOf(-1, 1)) b(t2, sx * 0.055f, ya(-0.345f), 0.115f, 0.016f, 0.012f, 0.09f, shc)
+                    sb(-0.36f, -0.34f, 0.15f, 0.18f, 0.03f, shc)
                 }
-                6 -> {   // mocassim
-                    b(t2, 0f, ya(-0.385f), 0.04f, 0.215f, 0.11f, 0.29f, shc)
-                    b(t2, 0f, ya(-0.43f), 0.04f, 0.225f, 0.02f, 0.3f, 0x2A2220)
-                    b(t2, 0f, ya(-0.32f), 0.0f, 0.205f, 0.07f, 0.23f, white)
-                    b(t2, 0f, ya(-0.37f), 0.17f, 0.06f, 0.04f, 0.03f, gold)
+                6 -> {  // mocassim: sola, cabedal, salto, tira com fivela dourada, costura no bico e meia branca
+                    sb(-0.44f, -0.425f, -0.125f, 0.19f, 0.225f, 0x2A2220)
+                    sb(-0.425f, -0.365f, -0.125f, 0.175f, 0.22f, shc)
+                    sb(-0.365f, -0.335f, -0.125f, -0.04f, 0.22f, shc)
+                    sb(-0.375f, -0.36f, 0.02f, 0.06f, 0.222f, shadeC(shc, 0.8f))
+                    b(t2, 0f, ya(-0.368f), 0.04f, 0.07f, 0.014f, 0.03f, gold)
+                    b(t2, 0f, ya(-0.372f), 0.14f, 0.14f, 0.008f, 0.012f, lite(shc, 0.4f))
+                    sb(-0.365f, -0.3f, -0.1f, 0.0f, 0.206f, white)
                 }
-                else -> {   // meias listradas + tênis baixo
-                    b(t2, 0f, ya(-0.395f), 0.035f, 0.22f, 0.09f, 0.29f, shc)
-                    b(t2, 0f, ya(-0.43f), 0.035f, 0.23f, 0.02f, 0.3f, white)
-                    b(t2, 0f, ya(-0.28f), 0f, 0.205f, 0.13f, 0.225f, white)
-                    b(t2, 0f, ya(-0.25f), 0f, 0.21f, 0.035f, 0.23f, shc)
-                    b(t2, 0f, ya(-0.31f), 0f, 0.21f, 0.035f, 0.23f, shc)
-                    b(t2, 0f, ya(-0.12f), 0f, 0.205f, 0.14f, 0.225f, white)
-                    b(t2, 0f, ya(-0.08f), 0f, 0.21f, 0.035f, 0.23f, shc)
-                    b(t2, 0f, ya(-0.15f), 0f, 0.21f, 0.035f, 0.23f, shc)
+                else -> {  // meias listradas (param logo abaixo do joelho, sem furar a coxa) + tênis baixo
+                    sb(-0.44f, -0.42f, -0.135f, 0.205f, 0.24f, white)
+                    sb(-0.42f, -0.36f, -0.125f, 0.175f, 0.225f, shc)
+                    sb(-0.42f, -0.385f, 0.11f, 0.195f, 0.232f, white)
+                    for (k in 0..1) b(t2, 0f, ya(-0.365f), 0.04f + k * 0.04f, 0.1f, 0.012f, 0.014f, white)
+                    for (sx in intArrayOf(-1, 1)) b(t2, sx * 0.115f, ya(-0.395f), 0.03f, 0.008f, 0.025f, 0.12f, white)
+                    val bands = intArrayOf(white, shc, white, shc, white)
+                    for (k in bands.indices) sb(-0.36f + (k + 1) * 0.0225f, -0.36f + k * 0.0225f, -0.115f, 0.105f, 0.206f, bands[k])
                 }
             }
         }
@@ -384,9 +424,9 @@ class CharModel {
                 F(0f, 0.585f, 0.3f, 0.14f, dark, 0.03f, 0f); F(0f, 0.65f, 0.3f, 0.018f, lite(tc, 0.25f), 0.034f)
                 F(-0.158f, 0.575f, 0.02f, 0.11f, shadeC(tc, 0.6f), 0.034f, 8f); F(0.158f, 0.575f, 0.02f, 0.11f, shadeC(tc, 0.6f), 0.034f, -8f)
                 // capuz: arco em volta do pescoço (frente aberta) + bolsão atrás
-                b(base, 0f, 0.965f, -0.14f, 0.36f, 0.14f, 0.16f, shadeC(tc, 0.85f)); b(base, 0f, 0.95f, -0.185f, 0.26f, 0.1f, 0.05f, dark)
-                b(base, -0.15f, 0.96f, 0.04f, 0.07f, 0.1f, 0.2f, shadeC(tc, 0.88f)); b(base, 0.15f, 0.96f, 0.04f, 0.07f, 0.1f, 0.2f, shadeC(tc, 0.88f))
-                b(base, 0f, 0.935f, 0.0f, 0.3f, 0.03f, 0.33f, dark)
+                b(base, 0f, 0.895f, -0.2f, 0.34f, 0.13f, 0.13f, shadeC(tc, 0.85f)); b(base, 0f, 0.87f, -0.2f, 0.24f, 0.1f, 0.14f, dark)
+                b(base, -0.17f, 0.915f, 0.02f, 0.1f, 0.06f, 0.3f, shadeC(tc, 0.88f)); b(base, 0.17f, 0.915f, 0.02f, 0.1f, 0.06f, 0.3f, shadeC(tc, 0.88f))
+                b(base, 0f, 0.925f, 0.0f, 0.3f, 0.03f, 0.33f, dark)
                 F(-0.06f, 0.82f, 0.022f, 0.15f, white, 0.02f); F(0.06f, 0.82f, 0.022f, 0.15f, white, 0.02f)
                 F(-0.06f, 0.735f, 0.03f, 0.03f, 0xDDDDDD, 0.024f); F(0.06f, 0.735f, 0.03f, 0.03f, 0xDDDDDD, 0.024f)
                 K(0f, 0.7f, 0.2f, 0.03f, lite(tc, 0.25f)); K(0f, 0.66f, 0.12f, 0.03f, lite(tc, 0.25f))
@@ -566,13 +606,12 @@ class CharModel {
                 b(base, -0.1f, 0.945f, 0f, 0.1f, 0.06f, 0.33f, lite(tc, 0.5f)); b(base, 0.1f, 0.945f, 0f, 0.1f, 0.06f, 0.33f, lite(tc, 0.5f))
                 F(0f, 0.9f, 0.1f, 0.03f, white, 0.02f)
                 F(-0.07f, 0.775f, 0.016f, 0.03f, white, 0.026f); F(0.07f, 0.775f, 0.016f, 0.03f, white, 0.026f); F(0f, 0.775f, 0.14f, 0.012f, 0xE8E8F0, 0.022f)   // cordão himo
-                K(0f, 0.76f, 0.15f, 0.15f, white, 0.016f); K(0f, 0.76f, 0.1f, 0.1f, tc, 0.02f); K(0f, 0.76f, 0.04f, 0.04f, white, 0.024f)   // brasão nas costas
+                K(0f, 0.76f, 0.15f, 0.15f, lite(tc, 0.45f), 0.016f); K(0f, 0.76f, 0.1f, 0.1f, tc, 0.02f); K(0f, 0.76f, 0.04f, 0.04f, lite(tc, 0.7f), 0.024f)   // brasão nas costas
                 b(base, 0f, 0.5f, 0f, bw + 0.02f, 0.05f, 0.32f, 0x3A2A22)       // faixa
                 F(0f, 0.5f, 0.08f, 0.06f, gold, 0.026f)
-                // abas: curtinhas, coladas ao quadril (as pernas não passam por dentro)
-                b(base, -0.125f, 0.385f, 0.18f, 0.2f, 0.13f, 0.03f, tc); b(base, 0.125f, 0.385f, 0.18f, 0.2f, 0.13f, 0.03f, tc)
-                b(base, 0f, 0.385f, -0.18f, bw + 0.02f, 0.13f, 0.03f, tc)
-                F(-0.125f, 0.33f, 0.2f, 0.014f, lite(tc, 0.5f), 0.036f, 0f); F(0.125f, 0.33f, 0.2f, 0.014f, lite(tc, 0.5f), 0.036f)
+                band(0.462f, 0.05f, tc, 0.03f); band(0.49f, 0.012f, lite(tc, 0.5f), 0.034f)   // barra do haori rente à cintura (sem abas soltas: as pernas não atravessam mais)
+                F(-0.17f, 0.46f, 0.1f, 0.012f, gold, 0.034f); F(0.17f, 0.46f, 0.1f, 0.012f, gold, 0.034f)
+                b(base, 0f, 0.87f, 0f, bw + 0.012f, 0.03f, 0.31f, shadeC(tc, 0.85f))   // pala dos ombros
             }
             15 -> {  // maid: corpete com avental, babados nos ombros, laço, saia com avental só na frente
                 b(base, 0f, 0.69f, 0f, bw, 0.5f, 0.3f, tc)
@@ -617,8 +656,9 @@ class CharModel {
                 b(base, 0f, 0.69f, 0f, bw + 0.05f, 0.5f, 0.36f, tc)
                 for (i in 0 until 4) band(0.555f + i * 0.115f, 0.022f, dark, 0.06f)
                 for (i in 0 until 4) { F(0f, 0.5f + i * 0.115f + 0.058f, bw * 0.9f, 0.01f, lite(tc, 0.15f), 0.022f) }   // brilho dos gomos
-                b(base, 0f, 0.955f, 0f, 0.5f, 0.1f, 0.4f, dark)
-                b(base, 0f, 0.97f, 0f, 0.46f, 0.04f, 0.38f, lite(tc, 0.25f))    // forro da gola
+                b(base, 0f, 0.912f, 0f, bw + 0.04f, 0.07f, 0.37f, dark)          // gola acolchoada baixa (a cabeça fica por cima, sem atravessar)
+                b(base, 0f, 0.915f, -0.17f, 0.34f, 0.09f, 0.08f, dark)           // gola mais alta só atrás
+                b(base, 0f, 0.944f, 0f, bw * 0.7f, 0.014f, 0.32f, lite(tc, 0.3f))  // forro claro
                 F(0f, 0.7f, 0.022f, 0.5f, lite(tc, 0.55f), 0.02f); F(0f, 0.9f, 0.04f, 0.05f, 0xE8E8F0, 0.026f)
                 F(-0.145f, 0.57f, 0.1f, 0.016f, dark, 0.026f, -12f); F(0.145f, 0.57f, 0.1f, 0.016f, dark, 0.026f, 12f)   // bolsos
                 K(0f, 0.78f, 0.14f, 0.1f, dark, 0.024f)                          // etiqueta nas costas
