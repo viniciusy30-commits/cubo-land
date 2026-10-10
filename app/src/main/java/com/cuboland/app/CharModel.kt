@@ -181,7 +181,7 @@ class CharModel {
         for (sd in intArrayOf(-1, 1)) {
             val s = sd.toFloat()
             val hip = if (sd < 0) hipL else hipR; val kn = if (sd < 0) kneeL else kneeR
-            piv(t1, r2, s * 0.11f, 0.44f, 0f, rx = hip)
+            piv(t1, r2, s * 0.11f, 0.44f, 0f, rx = hip + lean * fl)   // voando: as pernas acompanham a inclinação do corpo
             piv(t2, t1, 0f, -0.22f, 0f, rx = kn)
             b(t1, 0f, -0.115f, 0f, 0.19f, 0.23f, 0.21f, skin)
             b(t2, 0f, -0.11f, 0f, 0.19f, 0.22f, 0.21f, skin)
@@ -452,16 +452,14 @@ class CharModel {
             if (an.poseOn) { ryR = an.pY * 0.9f; elR = (elR + an.pW * 0.5f).coerceIn(-70f, 10f) } }
         else if (atking || chg > 0.01f) { rxR += atkRx; if (an.poseOn) ryR = an.pY * 0.9f }
         if (swimming) {
-            // nado de peito: estica os dois braços à frente, abre puxando cada um pra um lado e volta juntando
-            val u = (t * 1.5f) % 1f
-            fun smt(x: Float) = x * x * (3f - 2f * x)
-            val ext = lp(-98f, -172f, dv)            // braços esticados (na superfície ficam mais baixos)
-            val pull = if (u < 0.3f) 0f else if (u < 0.62f) smt((u - 0.3f) / 0.32f) else 1f - smt(((u - 0.62f) / 0.38f).coerceIn(0f, 1f))
-            val rec = if (u < 0.62f) 0f else sin(((u - 0.62f) / 0.38f).coerceIn(0f, 1f) * 3.1416f)
-            val rxS = ext + 48f * pull + 30f * rec
-            val rzS = 8f + 62f * pull
-            val elS = -8f - 10f * pull - 70f * rec
-            rxL = rxS; rxR = rxS; elL = elS; elR = elS; rzL = -rzS; rzR = rzS
+            // só as pernas batem. Mergulhado: braço do item aberto pra direita e parado, braço vazio esticado rente ao corpo (em direção às pernas).
+            // Cabeça fora: mão do item pra baixo, normal; o outro braço aberto, remando devagar.
+            val sl2 = sin(t * 2.3f)
+            val lSurfX = -25f + sl2 * 14f; val lSurfZ = -(38f + sin(t * 2.3f + 1.2f) * 16f); val lSurfE = -20f + sl2 * 8f
+            rxL = lp(lSurfX, 3f, dv); rzL = lp(lSurfZ, -3f, dv); elL = lp(lSurfE, -4f, dv)
+            val rSurfX = (if (toolArm) -10f else -6f) + atkRx
+            rxR = lp(rSurfX, -14f + atkRx, dv); rzR = lp(16f, 34f, dv); elR = lp(-6f, -8f, dv)
+            ryR = if (an.poseOn && toolArm) an.pY * 0.9f else 0f
         }
         if (ab > 0.01f) {
             val flapA = sin(t * 12f) * 6f * (1f - abs(vk))
