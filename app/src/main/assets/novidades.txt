@@ -1,3 +1,13 @@
+#id 2026-10-11-g
+#titulo Vestidos e saias inteiros, sem dividir nas pernas!
+- Vestido, kimono, robe e maid agora são uma peça só que vai até quase o chão: as pernas ficam escondidas e só os pezinhos aparecem se mexendo embaixo, sem atravessar o tecido
+- Saias também ficam inteiras (não abrem mais acompanhando cada perna) e as pernas aparecem por baixo sem atravessar
+
+#id 2026-10-11-f
+#titulo Dobras sem pele aparecendo!
+- Joelhos e cotovelos dobrados agora mostram a cor da roupa por dentro, sem aparecer a pele (pulo, agachar, nado, voo)
+- Vestidos e kimonos: ao dobrar o corpo a cintura continua da cor da roupa
+
 #id 2026-10-11-e
 #titulo Nado e voo mais fluidos!
 - Nado: sem acelerar, na superfície ele só boia batendo de leve os bracinhos e as perninhas (parado ou andando); mergulhado, bate só as pernas com os braços inclinados pra trás. Ao acelerar, aí sim ele bate os braços

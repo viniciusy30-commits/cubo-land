@@ -232,7 +232,7 @@ class CharModel {
             run {   // a pele só existe onde a roupa não cobre (senão ela aparece nas dobras do joelho)
                 val tTop = if (seg > 0f) 0.02f - min(seg, 0.22f) else 0.015f
                 val tBot = -0.23f
-                if (tTop - tBot > 0.012f) b(t1, 0f, (tTop + tBot) / 2f, 0f, 0.19f, tTop - tBot, 0.21f, skin)
+                if (tTop - tBot > 0.012f && seg < 0.22f) b(t1, 0f, (tTop + tBot) / 2f, 0f, 0.19f, tTop - tBot, 0.21f, skin)   // coxa toda vestida: sem miolo de pele (ele aparecia na dobra do joelho)
                 val sTop = if (seg > 0.22f) 0.02f - (seg - 0.22f) else 0.01f
                 val sBot = -0.22f
                 if (sTop - sBot > 0.012f) b(t2, 0f, (sTop + sBot) / 2f, 0f, 0.19f, sTop - sBot, 0.21f, skin)
@@ -308,6 +308,7 @@ class CharModel {
 
         // ================= CORPO =================
         if (!full && !overalls) b(base, 0f, 0.46f, 0f, bw + 0.015f, 0.05f, 0.315f, shadeC(bc, 0.85f))
+        if (full) b(base, 0f, 0.45f, 0f, bw, 0.06f, 0.3f, tc)   // vestido/kimono: a cintura dobra mostrando a roupa, não a pele do quadril
         when (top) {
             0 -> {
                 b(base, 0f, 0.69f, 0f, bw, 0.5f, 0.3f, tc)
@@ -330,7 +331,8 @@ class CharModel {
                 sk(0.43f, bw + 0.06f, 0.14f, 0.36f, tc)
                 sk(0.36f, 0.62f, 0.12f, 0.46f, tc)
                 sk(0.27f, 0.76f, 0.10f, 0.56f, shadeC(tc, 0.94f))
-                sk(0.225f, 0.78f, 0.03f, 0.58f, lite(tc, 0.55f))
+                sk(0.17f, 0.78f, 0.10f, 0.58f, shadeC(tc, 0.9f))
+                sk(0.125f, 0.79f, 0.03f, 0.59f, lite(tc, 0.55f))
             }
             3 -> {
                 b(base, 0f, 0.69f, 0f, bw, 0.5f, 0.3f, white)
@@ -405,8 +407,8 @@ class CharModel {
                 b(base, 0f, 0.55f, -0.2f, 0.34f, 0.24f, 0.1f, obi)
                 b(base, 0f, 0.55f, -0.265f, 0.1f, 0.1f, 0.04f, gold)
                 sk(0.36f, bw + 0.05f, 0.24f, 0.4f, tc)
-                sk(0.16f, bw + 0.08f, 0.2f, 0.5f, tc)
-                sk(0.045f, bw + 0.14f, 0.05f, 0.58f, lite(tc, 0.6f))
+                sk(0.2f, bw + 0.08f, 0.2f, 0.5f, tc)
+                sk(0.115f, bw + 0.14f, 0.03f, 0.58f, lite(tc, 0.6f))
             }
             11 -> {  // robe de mago
                 b(base, 0f, 0.69f, 0f, bw, 0.5f, 0.3f, tc)
@@ -416,8 +418,8 @@ class CharModel {
                 b(base, 0f, 0.52f, 0f, bw + 0.03f, 0.05f, 0.33f, 0x6F4A29)
                 b(base, 0.1f, 0.4f, 0.17f, 0.03f, 0.22f, 0.02f, gold)
                 sk(0.4f, bw + 0.08f, 0.28f, 0.38f, tc)
-                sk(0.17f, 0.74f, 0.28f, 0.54f, shadeC(tc, 0.92f))
-                sk(0.045f, 0.76f, 0.05f, 0.56f, gold)
+                sk(0.205f, 0.74f, 0.22f, 0.54f, shadeC(tc, 0.92f))
+                sk(0.115f, 0.76f, 0.04f, 0.56f, gold)
             }
             12 -> {  // terno
                 b(base, 0f, 0.69f, 0f, bw, 0.5f, 0.3f, tc)
@@ -444,8 +446,6 @@ class CharModel {
                 b(base, -bw * 0.3f, 0.33f, 0.01f, bw * 0.4f + 0.04f, 0.26f, 0.35f, tc)
                 b(base, bw * 0.3f, 0.33f, 0.01f, bw * 0.4f + 0.04f, 0.26f, 0.35f, tc)
                 b(base, 0f, 0.33f, -0.17f, bw + 0.04f, 0.26f, 0.03f, tc)
-                b(base, -bw * 0.3f, 0.21f, 0.01f, bw * 0.4f + 0.05f, 0.03f, 0.36f, lite(tc, 0.6f))
-                b(base, bw * 0.3f, 0.21f, 0.01f, bw * 0.4f + 0.05f, 0.03f, 0.36f, lite(tc, 0.6f))
                 b(base, 0f, 0.5f, 0f, bw + 0.02f, 0.05f, 0.32f, 0x3A2A22)
             }
             15 -> {  // maid
@@ -459,8 +459,10 @@ class CharModel {
                 sk(0.43f, bw + 0.06f, 0.14f, 0.36f, tc)
                 sk(0.36f, 0.62f, 0.12f, 0.46f, tc)
                 sk(0.27f, 0.74f, 0.1f, 0.54f, tc)
-                sk(0.2f, 0.78f, 0.05f, 0.58f, white)
+                sk(0.17f, 0.76f, 0.1f, 0.56f, tc)
+                sk(0.125f, 0.78f, 0.04f, 0.58f, white)
                 sk(0.37f, 0.4f, 0.28f, 0.52f, white)
+                sk(0.2f, 0.4f, 0.2f, 0.575f, white)
             }
             16 -> {  // colete de aventureiro
                 b(base, 0f, 0.69f, 0f, bw, 0.5f, 0.3f, white)
@@ -493,23 +495,10 @@ class CharModel {
             }
         }
 
-        // ---- saias e vestidos: cintura fixa no corpo; o resto em painéis presos às coxas ----
-        if (skRows.isNotEmpty()) {
-            for (r in skRows) if (r.py > 0.42f) b(base, r.x, r.py, r.z, r.sx, r.sy, r.sz, r.col)
-            for (sd in intArrayOf(-1, 1)) {
-                val s = sd.toFloat()
-                val hip = if (sd < 0) hipL else hipR
-                piv(t1, r2, s * 0.11f, 0.44f, 0f, rx = hip + lean * fl, rz = s * (5f + 7f * (if (sd < 0) qLegL else qLegR)) * li)
-                for (r in skRows) {
-                    if (r.py > 0.42f) continue
-                    if (r.split) {
-                        val w = r.sx / 2f + 0.025f
-                        b(t1, s * (r.sx / 4f - 0.0125f) - s * 0.11f, r.py - 0.44f, r.z, w, r.sy, r.sz, r.col)
-                    } else if ((r.x >= 0f) == (sd > 0)) {
-                        b(t1, r.x - s * 0.11f, r.py - 0.44f, r.z, r.sx, r.sy, r.sz, r.col)
-                    }
-                }
-            }
+        // ---- saias e vestidos: cintura fixa no corpo; o resto é UMA peça só presa ao quadril (não divide com as pernas) ----
+        for (r in skRows) {
+            if (r.py > 0.42f) b(base, r.x, r.py, r.z, r.sx, r.sy, r.sz, r.col)
+            else b(sm, r.x, r.py - 0.5f, r.z, r.sx, r.sy, r.sz, r.col)
         }
 
         // ================= BRAÇOS (ombro + cotovelo) =================
@@ -595,7 +584,7 @@ class CharModel {
             run {   // pele só onde não há manga
                 val remS = sl - 0.215f
                 val uTop = if (sl > 0f) 0.02f - min(sl, 0.215f) else 0.015f; val uBot = -0.215f
-                if (uTop - uBot > 0.012f) b(t1, 0f, (uTop + uBot) / 2f, 0f, 0.15f, uTop - uBot, 0.17f, skin)
+                if (uTop - uBot > 0.012f && sl < 0.215f) b(t1, 0f, (uTop + uBot) / 2f, 0f, 0.15f, uTop - uBot, 0.17f, skin)   // braço todo de manga: sem miolo de pele (aparecia na dobra do cotovelo)
                 val fTop = if (remS > 0f) 0.02f - remS else 0.01f; val fBot = -0.21f
                 if (fTop - fBot > 0.012f) b(t2, 0f, (fTop + fBot) / 2f, 0f, 0.15f, fTop - fBot, 0.17f, skin)
                 val hTop = min(-0.1f, fTop + 0.01f); val hBot = -0.22f
