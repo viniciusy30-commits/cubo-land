@@ -123,7 +123,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onExit: (
             if (x < pl() || x > pr() || y < pt0() || y > pb()) toggleInv()
             return
         }
-        for (i in intArrayOf(1, 3, 4, 6, 7, 8)) if ((i != 6 || wet()) && (i != 7 || !wet()) && (i != 8 || !wet()) && hypot(x - bx(i), y - byy(i)) < br(i) * 1.15f) {
+        for (i in intArrayOf(1, 3, 4, 6, 7, 8)) if ((i != 6 || wet()) && (i != 8 || !wet()) && hypot(x - bx(i), y - byy(i)) < br(i) * 1.15f) {
             btnId[id] = i
             when (i) {
                 1 -> { game.jumpHeld = true; game.jumpTap() }
@@ -430,7 +430,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onExit: (
         for (i in intArrayOf(7, 8, 1, 6, 3, 5, 4)) {
             if (invOpen && i != 5) continue
             if (i == 6 && !wet()) continue
-            if ((i == 7 || i == 8) && wet()) continue
+            if (i == 8 && wet()) continue
             val active = btnId.containsValue(i) || (i == 5 && invOpen) || (i == 7 && game.sprint) || (i == 8 && game.posture != 0)
             press[i] += ((if (active) 1f else 0f) - press[i]) * 0.5f
             val on = press[i] > 0.5f

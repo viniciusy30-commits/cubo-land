@@ -220,6 +220,7 @@ class Game(val world: World) {
     // mira por toque: desvio normalizado (-1..1) a partir do centro da tela; vale só quando aimOn
     @Volatile var aimOn = false; @Volatile var aimNx = 0f; @Volatile var aimNy = 0f; @Volatile var aspect = 2f
     @Volatile var sprint = false
+    @Volatile var flyImp = 0f; private var wasFast = false; private var trailT = 0f   // impulso de herói ao disparar no voo + rastro
     // postura: 0 em pé, 1 agachado, 2 sentado, 3 deitado (valores suavizados pra animação/câmera)
     @Volatile var posture = 0
     var crouchA = 0f; var sitA = 0f; var lieA = 0f
@@ -861,7 +862,7 @@ class Game(val world: World) {
         sitA += ((if (posture == 2) 1f else 0f) - sitA) * pk
         lieA += ((if (posture == 3) 1f else 0f) - lieA) * pk
         if (hypot(stickX, stickY) < 0.1f || posture != 0) sprint = false   // parou de andar: desliga a corrida
-        val sp = (if (p.inWater && !flying) 2.8f else if (flying) 9f else 5f) * (if (charging) 0.55f else 1f) * (if (sprint && !p.inWater && !flying) 1.55f else 1f) * (1f - 0.45f * crouchA) * (1f - 0.65f * lieA)
+        val sp = (if (p.inWater && !flying) 3.6f else if (flying) 10f else 5f) * (if (charging) 0.55f else 1f) * (if (sprint) (if (flying) 1.9f else if (p.inWater) 1.7f else 1.55f) else 1f) * (1f - 0.45f * crouchA) * (1f - 0.72f * lieA)
         val f = sin(yaw); val c = cos(yaw)
         val mx = (f * stickY + (-c) * stickX) * sp; val mz = (c * stickY + f * stickX) * sp
         val k = min(1f, (if (p.onGround) 14f else 5f) * dt)
@@ -881,6 +882,22 @@ class Game(val world: World) {
         waterAndSteps(dt, wasW, vyPre)
         p.x = p.x.coerceIn(2f, World.SX - 2f); p.z = p.z.coerceIn(2f, World.SZ - 2f)
         if (p.y < -5f) respawn()
+        // voo rápido: impulso de herói no começo e rastro luminoso atrás (sem tremer a tela)
+        val spdF = hypot(p.vx, p.vz)
+        val fastFly = flying && spdF > 11f
+        if (fastFly && !wasFast) flyImp = 1f
+        wasFast = fastFly; flyImp = max(0f, flyImp - dt / 0.6f)
+        trailT -= dt
+        if ((fastFly || (p.inWater && !flying && sprint && spdF > 4.5f)) && trailT <= 0f && parts.size < 480) {
+            trailT = 0.025f
+            val l = max(0.1f, spdF); val bx = -p.vx / l; val bz = -p.vz / l
+            val col = if (flying) (if (rnd.nextFloat() < 0.5f) 0xFFFFFF else 0x9FE6FF) else 0xD8F4FF
+            for (i in 0 until 2) {
+                val pr = Particle(p.x + bx * 0.4f + (rnd.nextFloat() - 0.5f) * 0.35f, p.y + 0.8f + (rnd.nextFloat() - 0.5f) * 0.5f, p.z + bz * 0.4f + (rnd.nextFloat() - 0.5f) * 0.35f,
+                    bx * 0.6f, 0.2f, bz * 0.6f, col, 0.05f + rnd.nextFloat() * 0.05f, 0.55f + rnd.nextFloat() * 0.3f)
+                pr.grav = 0f; parts.add(pr)
+            }
+        }
         walkAmt += (min(1f, mag) * (if (p.onGround) 1f else 0.4f) - walkAmt) * min(1f, 10f * dt)
         walkPhase += dt * 9f * walkAmt
 

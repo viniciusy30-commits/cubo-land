@@ -826,7 +826,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
 
     private val an = Anim()
     private var lastPT = 0f; private var phaseA = 0f; private var runA = 0f; private var landA = 0f
-    private var wasAirP = false; private var lastVyP = 0f; private var airSm = 0f; private var landSm = 0f; private var vyHold = 0f; private var flySm = 0f; private var flySp = 0f; private val tpP = FloatArray(10); private var diveSm = 0f; private var tiltSm = 0f
+    private var wasAirP = false; private var lastVyP = 0f; private var airSm = 0f; private var landSm = 0f; private var vyHold = 0f; private var flySm = 0f; private var flySp = 0f; private val tpP = FloatArray(10); private var diveSm = 0f; private var tiltSm = 0f; private var dashSm = 0f; private var swimPhA = 0f
 
     private fun drawPlayer(t: Float) {
         val p = game.player
@@ -839,7 +839,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         // passada ligada à velocidade real do chão: o pé não desliza (nem devagar)
         val spdH = sqrt(p.vx * p.vx + p.vz * p.vz)
         val strideA = (26f + 30f * runA) * 0.01745f
-        phaseA += dtp * (if (wa > 0.02f && p.onGround) (spdH / (0.58f * strideA)).coerceIn(0f, 20f) else 0f)
+        phaseA += dtp * (if (wa > 0.02f && p.onGround) (spdH / ((0.58f - 0.32f * game.lieA) * strideA)).coerceIn(0f, 30f) else 0f)
         if (wasAirP && p.onGround && lastVyP < -4f) landA = (-lastVyP / 12f).coerceIn(0.35f, 1f)
         landA = max(0f, landA - dtp * 5f)
         wasAirP = airNow; lastVyP = p.vy
@@ -849,7 +849,9 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         landSm += (landA - landSm) * min(1f, 16f * dtp)
         val flyNow = game.flying && !p.onGround
         flySm += ((if (flyNow) 1f else 0f) - flySm) * min(1f, 6f * dtp)
-        flySp += (min(1f, spdH / 7f) - flySp) * min(1f, 5f * dtp)
+        flySp += (min(1f, spdH / 10f) - flySp) * min(1f, 5f * dtp)
+        dashSm += ((if (flyNow && spdH > 11f) 1f else 0f) - dashSm) * min(1f, 6f * dtp)
+        swimPhA += dtp * (2.4f + 4.2f * min(1f, wa * 2f)) * (if (game.sprint) 1.3f else 1f)
         val surfY = World.WATER_Y + 0.88f
         val diveTarget = ((surfY - (p.y + 1.55f)) / 0.45f).coerceIn(0f, 1f)
         diveSm += (diveTarget - diveSm) * min(1f, 6f * dtp)
@@ -858,7 +860,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val tiltTarget = swm * (32f + (((78f - pitchDeg * 0.35f).coerceIn(40f, 110f)) - 32f) * diveSm)
         tiltSm += (tiltTarget - tiltSm) * min(1f, 9f * dtp)
         an.t = t; an.phase = phaseA; an.move = wa; an.run = runA; an.vy = vyHold; an.air = airNow; an.airA = airSm; an.fly = flySm; an.flySpd = flySp
-        an.crouch = game.crouchA; an.sit = game.sitA; an.lie = game.lieA; an.landT = landSm; an.swim = swm; an.dive = diveSm; an.tilt = tiltSm
+        an.dash = dashSm; an.imp = game.flyImp; an.swimPh = swimPhA; an.crouch = game.crouchA; an.sit = game.sitA; an.lie = game.lieA; an.landT = landSm; an.swim = swm; an.dive = diveSm; an.tilt = tiltSm
         an.atk = game.swing; an.atkArm = swingDelta(id, game.swing); an.hasTool = id > 0
         // mesmos keyframes de golpe/carga da 1ª pessoa, aplicados no braço do boneco
         if (game.charging) { chargePose(tpP, id, game.charge, t); an.charge = min(1f, game.charge) }
@@ -874,6 +876,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         cm.draw(charBox, base, an, handM)
         if (id > 0) {   // mesmo modelo 3D da 1ª pessoa e dos ícones: cabo pra cima, fio pra frente
             System.arraycopy(handM, 0, base2, 0, 16)
+            if (an.armFwdR > 0.01f) Matrix.rotateM(base2, 0, 180f * an.armFwdR, 1f, 0f, 0f)   // braço esticado pra frente: o item aponta pra longe da cabeça
             if (game.lieA > 0.01f) Matrix.rotateM(base2, 0, -90f * game.lieA, 0f, 1f, 0f)   // rastejando: o item fica deitado, sem furar chão nem cabeça
             if (id in 1..13) {
                 Matrix.translateM(base2, 0, 0f, -0.16f, 0.04f)
