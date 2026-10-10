@@ -23,7 +23,7 @@ object Look {
     val PAL_NAMES = arrayOf("Menta", "Rosa", "Branco", "Preto", "Vermelho", "Laranja", "Amarelo", "Verde", "Azul", "Roxo", "Marrom", "Marinho", "Bege", "Vinho", "Cinza", "Turquesa")
 
     val GENDER_NAMES = arrayOf("Menino", "Menina")
-    val HAIR_STYLES = arrayOf("Curto", "Espetado", "Chanel", "Maria-chiquinha", "Rabo de cavalo", "Coque", "Longo", "Fofo", "Undercut", "Franja de lado", "Bagunçado", "Topete", "Saiyajin", "Raspado", "Moicano", "Repartido", "Hime", "Trança", "Dois coques", "Twintail alto", "Ahoge")
+    val HAIR_STYLES = arrayOf("Curto", "Espetado", "Chanel", "Maria-chiquinha", "Rabo de cavalo", "Coque", "Longo", "Fofo", "Undercut", "Franja de lado", "Bagunçado", "Topete", "Saiyajin", "Raspado", "Moicano", "Repartido", "Hime", "Trança", "Dois coques", "Twintail alto", "Ahoge", "Degradê", "Social", "Pompadour", "Cacheado curto", "Black power", "Dreads", "Mullet", "Coque samurai", "Cortina", "Pra trás", "Lobo", "Longo liso", "Ondulado", "Cacheado longo", "Tranças box", "Emo", "Militar", "Cogumelo", "Rabo baixo")
     val EYE_STYLES = arrayOf("Grandes", "Felizes", "Bolinhas", "Sonolentos", "Brilhantes", "Sérios", "Estrelas", "Gato", "Cansados")
     val ONOFF = arrayOf("Não", "Sim")
     val TOPS = arrayOf("Camiseta", "Moletom", "Vestido", "Jaqueta", "Túnica", "Armadura", "Macacão", "Camisa social", "Marinheiro", "Gakuran", "Kimono", "Robe de mago", "Terno", "Regata", "Haori samurai", "Maid", "Colete aventureiro", "Casacão")
@@ -35,7 +35,7 @@ object Look {
     val MOUTHS = arrayOf("Sorriso", "Neutra", "Biquinho", "Aberta", "Dentinho", "Gatinho")
     val NECKS = arrayOf("Nada", "Cachecol", "Laço", "Colar", "Gravata", "Gravata borboleta", "Coleira de sino", "Lenço", "Gargantilha", "Medalha")
 
-    val COUNTS = intArrayOf(2, 6, 21, 16, 9, 10, 2, 18, 16, 8, 16, 8, 16, 24, 16, 13, 10, 16, 10, 16, 6)
+    val COUNTS = intArrayOf(2, 6, 40, 16, 9, 10, 2, 18, 16, 8, 16, 8, 16, 24, 16, 13, 10, 16, 10, 16, 6)
 
 
     /** looks prontos: 21 valores na ordem dos índices acima */

@@ -1,3 +1,10 @@
+#id 2026-10-11-h
+#titulo Cabelos novos, detalhados e cheios de textura!
+- Todos os cabelos foram refeitos do zero: em vez de blocos grandes, agora são mechas finas e afiladas, em camadas, com tons e brilhos variando de fio em fio
+- 19 estilos novos, a maioria masculinos: degradê, social, pompadour, cacheado curto, black power, dreads, mullet, coque samurai, cortina, pra trás, lobo, longo liso, ondulado, cacheado longo, tranças box, emo, militar, cogumelo e rabo baixo
+- Cabelos antigos redesenhados: franjas em leque, chanel com pontas viradas, rabos e maria-chiquinhas com mechas balançando, tranças trançadas de verdade, coques em camadas, espetos afilados
+- Chapéus não atravessam mais cabelo volumoso: o chapéu sobe um pouquinho ou o cabelo se ajusta embaixo dele
+
 #id 2026-10-11-g
 #titulo Vestidos e saias inteiros, sem dividir nas pernas!
 - Vestido, kimono, robe e maid agora são uma peça só que vai até quase o chão: as pernas ficam escondidas e só os pezinhos aparecem se mexendo embaixo, sem atravessar o tecido

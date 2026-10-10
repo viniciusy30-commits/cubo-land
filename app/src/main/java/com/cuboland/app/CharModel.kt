@@ -90,6 +90,383 @@ class CharModel {
         }
     }
 
+    // ======================= CABELOS: mechas finas afiladas, camadas e tons variados =======================
+    private val hsA = FloatArray(16); private val hsB = FloatArray(16)
+    private var hC = 0; private var hSk = 0; private var tY = 1.715f; private var tH = 0.1f
+
+    /** variação de tom determinística (cada mecha um tiquinho diferente: dá textura ao cabelo) */
+    private fun tone(i: Int): Int {
+        val k = ((i * 1103515245 + 12345) ushr 9) and 0xFF
+        val f = (k % 9) / 8f
+        return if (f < 0.55f) shadeC(hC, 0.74f + f * 0.4f) else lite(hC, (f - 0.55f) * 0.5f)
+    }
+
+    /** mecha que pende pra baixo, em segmentos que afinam até a ponta (rx = pra trás, rz = pro lado +x) */
+    private fun strand(px: Float, py: Float, pz: Float, len: Float, w: Float, d: Float, rx: Float, rz: Float, col: Int, tip: Int = col,
+                       bnx: Float = 0f, bnz: Float = 0f, segs: Int = 3, taper: Float = 0.22f, alt: Int = col, zig: Boolean = false) {
+        piv(hsA, hm, px, py, pz, rx, 0f, rz)
+        var cur = hsA; var nx = hsB
+        val sl = len / segs
+        for (i in 0 until segs) {
+            val f = max(0.15f, 1f - taper * i)
+            val c = if (i == segs - 1) tip else if (i % 2 == 1) alt else col
+            b(cur, 0f, -sl / 2f, 0f, w * f, sl * 1.1f, d * f, c)
+            if (i < segs - 1) {
+                val sgn = if (zig && i % 2 == 1) -1f else 1f
+                piv(nx, cur, 0f, -sl, 0f, bnx, 0f, bnz * sgn)
+                val tmp = cur; cur = nx; nx = tmp
+            }
+        }
+    }
+
+    /** topo da cabeça: placas com altura e tom diferentes */
+    private fun hTop() {
+        for (ix in 0..2) for (iz in 0..2) {
+            val i = ix * 3 + iz
+            val jh = ((i * 5) % 3) * 0.012f
+            hb((ix - 1) * 0.29f, tY + jh / 2f, (iz - 1) * 0.29f, 0.3f, tH + jh, 0.3f, tone(i))
+        }
+    }
+
+    private fun hStreak(x: Float, z: Float, len: Float, wd: Float = 0.05f, k: Float = 0.3f) =
+        hb(x, tY + tH / 2f + 0.022f, z, wd, 0.03f, len, lite(hC, k))
+
+    /** nuca: colunas de tamanhos diferentes (borda irregular), com ponta afilada nos cabelos longos */
+    private fun hBack(low: Float, tip: Float = 0f, cols: Int = 6, sway: Float = 0f, shade: Float = 1f, base: Int = 20, topY: Float = 1.68f) {
+        val wv = 0.88f / cols
+        for (i in 0 until cols) {
+            val x = (i - (cols - 1) / 2f) * wv
+            val bot = low + ((i * 7) % 4) * 0.03f
+            val body = max(0.03f, topY - (bot + tip))
+            hb(x, topY - body / 2f, -0.41f, wv * 1.08f, body, 0.12f, shadeC(tone(base + i), shade))
+            if (tip > 0f) strand(x, bot + tip, -0.41f, tip + 0.02f, wv, 0.1f, sway, 0f, shadeC(tone(base + i + 9), shade), shadeC(tone(base + i + 3), shade), segs = 2, taper = 0.35f)
+        }
+    }
+
+    /** laterais (costeletas) em três colunas */
+    private fun hSide(low: Float, tip: Float = 0f, shade: Float = 1f, base: Int = 40, topY: Float = 1.68f) {
+        for (sd in intArrayOf(-1, 1)) {
+            val s = sd.toFloat()
+            for (j in 0..2) {
+                val z = -0.28f + j * 0.19f
+                val bot = low + (if (j == 1) 0.04f else 0f) + (if (j == 2) 0.1f else 0f)
+                val body = topY - (bot + tip)
+                if (body <= 0.01f) continue
+                hb(s * 0.425f, topY - body / 2f, z, 0.075f, body, 0.2f, shadeC(tone(base + j + (sd + 1) * 3), shade))
+                if (tip > 0f) strand(s * 0.425f, bot + tip, z, tip + 0.02f, 0.075f, 0.18f, 0f, 0f, shadeC(tone(base + j + 11), shade), shadeC(tone(base + j + 5), shade), segs = 2, taper = 0.35f)
+            }
+        }
+    }
+
+    /** franja: mechas finas na testa, abrindo em leque */
+    private fun hBangs(lens: FloatArray, lean: Float = 0f, fan: Float = 14f, cx: Float = 0f, d: Float = 0.07f, curl: Float = 0f, base: Int = 60) {
+        val n = lens.size; val step = 0.8f / n
+        for (i in 0 until n) {
+            val m = i - (n - 1) / 2f
+            strand(m * step, 1.72f, 0.405f + (i % 2) * 0.012f, lens[i] + 0.03f, step * 1.12f, d, 0f, lean + (m - cx) / n * fan * 2f,
+                tone(base + i), tone(base + i + 5), bnz = curl, segs = 2, taper = 0.3f)
+        }
+    }
+
+    /** espeto de cabelo apontando pra cima (out = abre pro lado, rx>0 inclina pra trás) */
+    private fun hSpike(x: Float, z: Float, len: Float, w: Float, out: Float, rx: Float = 0f, base: Int = 200) {
+        strand(x, tY, z, len, w, w, rx, 180f - out, tone(base + (x * 50f).toInt() + (z * 30f).toInt()), lite(hC, 0.28f), segs = 3, taper = 0.3f)
+    }
+
+    private fun hCurl(x: Float, y: Float, z: Float, s: Float, i: Int) =
+        hb(x, y, z, s, s, s, tone(i), rz = ((i * 37) % 50 - 25).toFloat(), rx = ((i * 53) % 60 - 30).toFloat(), ry = ((i * 29) % 90).toFloat())
+
+    /** nuvem de cachos em volta da cabeça (cacheado, black power, fofo) */
+    private fun hCurls(radius: Float, topY: Float, sz: Float, lowY: Float, rings: Int, base: Int) {
+        hb(0f, (topY + lowY) / 2f + 0.03f, -0.04f, radius * 1.6f, (topY - lowY) + 0.12f, radius * 1.5f, shadeC(hC, 0.8f))
+        hCurl(0f, topY + sz * 0.15f, 0f, sz * 1.25f, base)
+        for (ri in 0 until rings) {
+            val k = if (rings > 1) ri / (rings - 1f) else 0f
+            val y = topY - (topY - lowY) * k
+            val rad = radius * (if (ri == 0) 0.62f else 1f)
+            val cnt = max(5, (rad * 6.2831f / (sz * 1.3f)).toInt())
+            for (c in 0 until cnt) {
+                val th = 6.2831f * c / cnt + ri * 0.45f
+                val x = sin(th) * rad; val z = cos(th) * rad
+                if (ri > 0 && z > 0.28f && y < 1.64f) continue   // nunca tapa o rosto
+                hCurl(x, y, z, sz * (0.9f + ((base + ri * 7 + c * 3) % 4) * 0.07f), base + ri * 17 + c)
+            }
+        }
+    }
+
+    private fun hBun(x: Float, y: Float, z: Float, sz: Float, i: Int) {
+        hb(x, y, z, sz, sz * 0.85f, sz, tone(i))
+        hb(x, y, z, sz, sz * 0.85f, sz, tone(i + 1), ry = 45f)
+        hb(x, y + sz * 0.45f, z, sz * 0.6f, sz * 0.15f, sz * 0.6f, lite(hC, 0.25f))
+        hb(x, y - sz * 0.5f, z, sz * 0.72f, 0.05f, sz * 0.72f, Look.pal(Look.HATC))
+    }
+
+    /** faixas de degradê (pele -> cabelo) nas laterais e na nuca */
+    private fun hFade(y0: Float, bands: Int, from: Float, to: Float) {
+        for (k in 0 until bands) {
+            val c = mixC(hSk, hC, from + (to - from) * k / max(1, bands - 1))
+            val yb = y0 - k * 0.1f
+            hb(-0.425f, yb, -0.08f, 0.075f, 0.1f, 0.66f, c); hb(0.425f, yb, -0.08f, 0.075f, 0.1f, 0.66f, c)
+            hb(0f, yb, -0.41f, 0.88f, 0.1f, 0.12f, c)
+        }
+    }
+
+    /** vários fios caindo em volta da cabeça (dreads e tranças) */
+    private fun hHang(backN: Int, sideN: Int, len: Float, w: Float, segs: Int, base: Int, sway: Float, bnz: Float, taper: Float, alt: Int, zig: Boolean, topY: Float = 1.62f) {
+        for (i in 0 until backN) {
+            val x = (i - (backN - 1) / 2f) * (0.76f / max(1, backN - 1))
+            strand(x, topY, -0.43f, len * (1f - (i % 3) * 0.1f), w, w, sway, 0f, tone(base + i), tone(base + i + 4), bnz = bnz, segs = segs, taper = taper, alt = alt, zig = zig)
+        }
+        for (sd in intArrayOf(-1, 1)) {
+            val s = sd.toFloat()
+            for (j in 0 until sideN) {
+                val z = -0.3f + j * (0.5f / max(1, sideN - 1))
+                strand(s * 0.43f, topY, z, len * (0.85f - j * 0.05f), w, w, 0f, 0f, tone(base + 30 + j + (sd + 1) * 4), tone(base + 34 + j), bnz = bnz * s, segs = segs, taper = taper, alt = alt, zig = zig)
+            }
+        }
+    }
+
+    private fun hairLift(hs: Int): Float = when (hs) {
+        1 -> 0.08f; 5 -> 0.1f; 7 -> 0.18f; 10 -> 0.08f; 11 -> 0.1f; 12 -> 0.2f; 14 -> 0.1f; 18 -> 0.08f; 21 -> 0.04f; 23 -> 0.14f
+        24 -> 0.1f; 25 -> 0.22f; 26 -> 0.04f; 28 -> 0.1f; 34 -> 0.12f; 37 -> 0.05f; else -> 0f
+    }
+
+    private fun drawHair(hs0: Int, hatCovers: Boolean, hcol: Int, tie: Int, skin: Int, t: Float, move: Float, sw: Float) {
+        hC = hcol; hSk = skin
+        val hc = hcol; val hd = shadeC(hc, 0.82f); val hl = lite(hc, 0.25f)
+        val bulky = hs0 == 1 || hs0 == 5 || hs0 == 7 || hs0 == 10 || hs0 == 11 || hs0 == 12 || hs0 == 14 || hs0 == 18 || hs0 == 23 ||
+            hs0 == 24 || hs0 == 25 || hs0 == 26 || hs0 == 28 || hs0 == 34 || hs0 == 35
+        val hs = if (hatCovers && bulky) 0 else hs0
+        tH = if (hatCovers) 0.05f else 0.1f; tY = if (hatCovers) 1.69f else 1.715f
+        val sway = sin(t * 2.4f) * 3f + move * 5f + sw * 0.1f
+        fun std(backLow: Float, sideLow: Float, lens: FloatArray, lean: Float = 0f, fan: Float = 14f, cx: Float = 0f) {
+            hTop(); hBack(backLow); hSide(sideLow); hBangs(lens, lean, fan, cx)
+            hStreak(-0.15f, 0.05f, 0.45f); hStreak(0.12f, -0.1f, 0.45f)
+        }
+        when (hs) {
+            0 -> std(1.2f, 1.38f, floatArrayOf(0.2f, 0.27f, 0.17f, 0.25f, 0.19f), -3f)
+            1 -> {
+                hTop(); hBack(1.38f); hSide(1.48f); hBangs(floatArrayOf(0.12f, 0.16f, 0.1f, 0.15f, 0.11f))
+                hSpike(-0.3f, 0.22f, 0.28f, 0.15f, 34f, -8f); hSpike(0f, 0.25f, 0.34f, 0.15f, -4f, -10f); hSpike(0.3f, 0.22f, 0.28f, 0.15f, 34f, -8f)
+                hSpike(-0.34f, 0f, 0.3f, 0.16f, 32f); hSpike(-0.12f, 0.02f, 0.38f, 0.16f, 12f); hSpike(0.12f, 0.02f, 0.38f, 0.16f, -12f); hSpike(0.34f, 0f, 0.3f, 0.16f, 32f)
+                hSpike(-0.2f, -0.24f, 0.3f, 0.15f, 24f, 14f); hSpike(0.2f, -0.24f, 0.3f, 0.15f, 24f, 14f)
+            }
+            2 -> {
+                hTop(); hBack(1.02f, 0.12f, sway = sway * 0.4f); hSide(1.02f, 0.1f); hBangs(floatArrayOf(0.22f, 0.18f, 0.18f, 0.18f, 0.22f), 0f, 3f)
+                for (sd in intArrayOf(-1, 1)) { val s = sd.toFloat()
+                    strand(s * 0.43f, 1.62f, 0.2f, 0.52f, 0.08f, 0.2f, 0f, 0f, tone(90 + sd), tone(93 + sd), bnz = -s * 9f, segs = 3, taper = 0.12f) }
+                hStreak(-0.1f, 0.05f, 0.5f)
+            }
+            3 -> {
+                hTop(); hBack(1.25f); hSide(1.4f); hBangs(floatArrayOf(0.2f, 0.16f, 0.2f, 0.16f, 0.2f), 0f, 10f)
+                for (sd in intArrayOf(-1, 1)) { val s = sd.toFloat()
+                    hb(s * 0.47f, 1.5f, -0.02f, 0.15f, 0.13f, 0.15f, tie); hb(s * 0.47f, 1.58f, -0.02f, 0.1f, 0.1f, 0.1f, tie)
+                    for (k in -1..1) strand(s * 0.47f + k * 0.055f, 1.46f, -0.02f, if (k == 0) 0.7f else 0.56f, 0.1f, 0.12f, 0f, s * (8f + sway + sin(t * 3f + s) * 3f),
+                        tone(100 + k + sd * 3), lite(hc, 0.25f), bnz = s * 5f, segs = 4, taper = 0.2f, zig = true) }
+            }
+            4 -> {
+                hTop(); hBack(1.38f); hSide(1.45f); hBangs(floatArrayOf(0.22f, 0.14f, 0.14f, 0.22f), 0f, 12f)
+                hb(0f, 1.55f, -0.45f, 0.18f, 0.16f, 0.14f, tie)
+                val lens = floatArrayOf(0.55f, 0.7f, 0.82f, 0.7f, 0.55f)
+                for (k in 0 until 5) strand((k - 2) * 0.055f, 1.56f, -0.47f, lens[k], 0.1f, 0.12f, 30f + sw * 0.3f + sin(t * 2.5f + k * 0.4f) * 3f + move * 8f, 0f,
+                    tone(110 + k), lite(hc, 0.25f), bnx = 10f, segs = 4, taper = 0.18f)
+            }
+            5 -> {
+                hTop(); hBack(1.25f); hSide(1.42f); hBangs(floatArrayOf(0.2f, 0.15f, 0.15f, 0.2f), 0f, 12f)
+                hBun(0f, 1.93f, -0.08f, 0.36f, 120)
+                strand(0.14f, 1.74f, -0.3f, 0.3f, 0.06f, 0.06f, 0f, 8f, tone(130), tone(131), segs = 2); strand(-0.15f, 1.74f, -0.3f, 0.24f, 0.06f, 0.06f, 0f, -8f, tone(132), tone(133), segs = 2)
+            }
+            6 -> {
+                hTop(); hBack(0.62f, 0.3f, sway = sway * 0.5f); hSide(0.95f, 0.15f); hBangs(floatArrayOf(0.2f, 0.26f, 0.15f, 0.26f, 0.2f), 0f, 16f)
+                for (sd in intArrayOf(-1, 1)) { val s = sd.toFloat()
+                    strand(s * 0.43f, 1.64f, 0.14f, 0.82f, 0.09f, 0.2f, 0f, s * 2f, tone(140 + sd), tone(143 + sd), bnz = s * 3f, segs = 4, taper = 0.12f) }
+                hStreak(-0.12f, 0.1f, 0.5f); hStreak(0.14f, -0.05f, 0.5f)
+            }
+            7 -> {
+                hCurls(0.52f, 1.8f, 0.3f, 1.3f, 3, 150)
+                for (k in -1..1) hCurl(k * 0.26f, 1.73f, 0.39f, 0.2f, 170 + k)
+            }
+            8 -> {   // undercut
+                hTop(); hBack(1.5f, shade = 0.6f); hSide(1.55f, shade = 0.6f)
+                hFade(1.62f, 3, 0.2f, 0.7f)
+                for (k in 0 until 4) hb(0.03f, 1.8f + (if (k == 1 || k == 2) 0.04f else 0f), 0.32f - k * 0.2f, 0.62f, 0.18f + (k % 2) * 0.03f, 0.22f, tone(180 + k), rx = 4f - k * 3f)
+                hBangs(floatArrayOf(0.26f, 0.2f, 0.14f, 0.1f), 6f, 10f, 0.5f)
+                hb(0.1f, 1.92f, 0.1f, 0.4f, 0.06f, 0.4f, hl)
+                for (k in -2..2) strand(k * 0.12f, 1.9f, 0.34f, 0.2f, 0.1f, 0.12f, -118f, 0f, tone(190 + k), hl, bnx = -12f, segs = 2, taper = 0.3f)
+            }
+            9 -> {   // franja de lado (cobre um olho)
+                hTop(); hBack(1.15f); hSide(1.2f)
+                for (i in 0..5) strand(0.28f - i * 0.12f, 1.72f, 0.405f + (i % 2) * 0.012f, 0.62f - i * 0.04f, 0.14f, 0.07f, 0f, -26f - i * 3f, tone(200 + i), tone(206 + i), bnz = -4f, segs = 3, taper = 0.2f)
+                strand(0.34f, 1.72f, 0.405f, 0.22f, 0.12f, 0.07f, 0f, 4f, tone(212), tone(213), segs = 2)
+                strand(-0.36f, 1.5f, 0.3f, 0.5f, 0.07f, 0.12f, 0f, 3f, tone(214), tone(215), segs = 3, taper = 0.15f)
+                hStreak(-0.1f, 0.12f, 0.5f)
+            }
+            10 -> {  // bagunçado anime
+                hTop(); hBack(1.3f); hSide(1.4f); hBangs(floatArrayOf(0.18f, 0.26f, 0.12f, 0.28f, 0.16f), 0f, 22f)
+                hSpike(-0.3f, 0.1f, 0.26f, 0.16f, 30f); hSpike(0f, 0.2f, 0.3f, 0.15f, -6f, -14f); hSpike(0.3f, 0.05f, 0.26f, 0.16f, 32f)
+                hSpike(-0.2f, -0.2f, 0.24f, 0.15f, 24f, 10f); hSpike(0.2f, -0.2f, 0.24f, 0.15f, 22f, 10f); hSpike(0f, -0.05f, 0.28f, 0.14f, -14f, 5f)
+                for (sd in intArrayOf(-1, 1)) { val s = sd.toFloat(); strand(s * 0.44f, 1.58f, 0.15f, 0.24f, 0.1f, 0.12f, 0f, s * 28f, tone(220 + sd), tone(223 + sd), segs = 2) }
+            }
+            11 -> {  // topete
+                hTop(); hBack(1.42f); hSide(1.5f, shade = 0.85f); hBangs(floatArrayOf(0.08f, 0.1f, 0.08f, 0.1f, 0.08f))
+                hb(0f, 1.83f, 0.05f, 0.66f, 0.18f, 0.5f, tone(230))
+                for (k in 0 until 5) strand((k - 2) * 0.15f, 1.8f, 0.2f, 0.36f, 0.14f, 0.2f, -125f, 0f, tone(235 + k), lite(hc, 0.3f), bnx = -14f, segs = 3, taper = 0.15f)
+                hb(0f, 1.88f, -0.12f, 0.6f, 0.1f, 0.3f, tone(240))
+            }
+            12 -> {  // saiyajin
+                hTop(); hBack(1.3f); hSide(1.4f); hBangs(floatArrayOf(0.3f, 0.14f, 0.34f, 0.16f), 0f, 18f)
+                hSpike(0f, 0.02f, 0.62f, 0.26f, 0f); hSpike(-0.22f, 0.04f, 0.5f, 0.24f, 24f); hSpike(0.22f, 0.04f, 0.5f, 0.24f, 24f)
+                hSpike(-0.38f, -0.06f, 0.42f, 0.2f, 50f); hSpike(0.38f, -0.06f, 0.42f, 0.2f, 50f)
+                hSpike(0f, -0.28f, 0.48f, 0.24f, 0f, 22f); hSpike(-0.26f, -0.24f, 0.4f, 0.2f, 32f, 12f); hSpike(0.26f, -0.24f, 0.4f, 0.2f, 32f, 12f)
+            }
+            13 -> {  // raspado
+                hTop(); hBack(1.62f); hSide(1.6f, shade = 0.9f); hBangs(floatArrayOf(0.03f, 0.04f, 0.03f, 0.04f, 0.03f), d = 0.05f)
+            }
+            14 -> {  // moicano
+                hSide(1.55f, shade = 0.55f); hBack(1.6f, shade = 0.55f)
+                hb(0f, 1.72f, 0f, 0.26f, 0.1f, 0.9f, tone(250)); hb(0f, 1.45f, -0.4f, 0.26f, 0.5f, 0.14f, tone(251))
+                for (k in 0 until 7) strand(0f, 1.74f, 0.36f - k * 0.12f, 0.34f + (k % 2) * 0.1f + (if (k in 2..4) 0.1f else 0f), 0.2f, 0.16f, 8f + k * 3f, 180f, tone(255 + k), lite(hc, 0.3f), segs = 3, taper = 0.25f)
+            }
+            15 -> {  // repartido
+                hTop(); hBack(1.15f); hSide(1.1f)
+                hBangs(floatArrayOf(0.3f, 0.22f, 0.18f, 0.22f, 0.3f, 0.28f), 0f, 26f, 0.9f)
+                hb(0.14f, tY + tH / 2f + 0.02f, 0.1f, 0.02f, 0.03f, 0.7f, shadeC(hc, 0.5f)); hStreak(-0.12f, 0.08f, 0.5f)
+            }
+            16 -> {  // hime
+                hTop(); hBack(0.48f, 0.12f, sway = sway * 0.4f); hSide(0.95f, 0.1f); hBangs(floatArrayOf(0.22f, 0.22f, 0.22f, 0.22f, 0.22f), 0f, 2f)
+                for (sd in intArrayOf(-1, 1)) { val s = sd.toFloat()
+                    strand(s * 0.425f, 1.62f, 0.3f, 0.92f, 0.1f, 0.14f, 0f, 0f, tone(270 + sd), tone(273 + sd), segs = 4, taper = 0.12f)
+                    strand(s * 0.425f, 1.62f, 0.1f, 0.5f, 0.1f, 0.2f, 0f, 0f, tone(275 + sd), tone(278 + sd), segs = 3, taper = 0.12f) }
+            }
+            17 -> {  // trança
+                hTop(); hBack(1.2f); hSide(1.4f); hBangs(floatArrayOf(0.2f, 0.14f, 0.2f, 0.16f), 0f, 12f)
+                piv(hsA, hm, 0f, 1.45f, -0.45f, rx = 12f + sin(t * 2.2f) * 4f + move * 10f)
+                var cur = hsA; var nx = hsB
+                for (k in 0 until 6) {
+                    val f = 1f - 0.06f * k
+                    b(cur, -0.045f * f, -0.1f, 0f, 0.1f * f, 0.22f, 0.13f * f, tone(280 + k * 2), rz = 14f)
+                    b(cur, 0.045f * f, -0.1f, 0f, 0.1f * f, 0.22f, 0.13f * f, tone(281 + k * 2), rz = -14f)
+                    piv(nx, cur, 0f, -0.18f, 0f, rx = sin(t * 2.2f + k * 0.7f) * 6f)
+                    val tmp = cur; cur = nx; nx = tmp
+                }
+                b(cur, 0f, -0.05f, 0f, 0.16f, 0.07f, 0.15f, tie)
+            }
+            18 -> {  // dois coques
+                hTop(); hBack(1.25f); hSide(1.42f); hBangs(floatArrayOf(0.2f, 0.15f, 0.15f, 0.2f), 0f, 12f)
+                hBun(-0.3f, 1.92f, -0.02f, 0.32f, 290); hBun(0.3f, 1.92f, -0.02f, 0.32f, 300)
+            }
+            19 -> {  // twintail alto
+                hTop(); hBack(1.3f); hSide(1.42f); hBangs(floatArrayOf(0.2f, 0.16f, 0.2f, 0.16f), 0f, 12f)
+                for (sd in intArrayOf(-1, 1)) { val s = sd.toFloat()
+                    hb(s * 0.4f, 1.74f, -0.06f, 0.18f, 0.12f, 0.18f, tie)
+                    for (k in -1..1) strand(s * 0.4f + k * 0.065f, 1.72f, -0.06f, if (k == 0) 0.95f else 0.78f, 0.13f, 0.14f, 0f, s * (26f + sin(t * 2.4f + s) * 5f + move * 6f),
+                        tone(310 + k + sd * 3), lite(hc, 0.25f), bnz = s * 6f, segs = 5, taper = 0.16f, zig = true) }
+            }
+            20 -> {  // ahoge
+                std(1.2f, 1.38f, floatArrayOf(0.2f, 0.26f, 0.16f, 0.24f, 0.18f))
+                val aw = sin(t * 2.6f) * 8f
+                strand(0f, 1.74f, 0.06f, 0.34f, 0.07f, 0.07f, 0f, 180f + aw, tone(320), lite(hc, 0.3f), bnz = -22f, segs = 4, taper = 0.15f)
+            }
+            21 -> {  // degradê
+                tH = if (hatCovers) 0.05f else 0.16f; hTop(); hFade(1.6f, 4, 0.15f, 0.85f)
+                hBangs(floatArrayOf(0.1f, 0.15f, 0.09f, 0.15f, 0.1f, 0.13f), 0f, 10f)
+                hStreak(-0.15f, 0.05f, 0.45f); hStreak(0.14f, -0.1f, 0.45f)
+            }
+            22 -> {  // social
+                hTop(); hBack(1.4f); hSide(1.45f, shade = 0.8f)
+                hBangs(floatArrayOf(0.1f, 0.15f, 0.19f, 0.22f, 0.2f, 0.16f), 12f, 3f)
+                hb(-0.18f, tY + tH / 2f + 0.02f, 0.08f, 0.02f, 0.03f, 0.7f, shadeC(hc, 0.5f))
+                hStreak(0.05f, 0.1f, 0.5f, 0.06f); hStreak(0.2f, 0.0f, 0.5f, 0.06f)
+            }
+            23 -> {  // pompadour
+                hTop(); hBack(1.45f, shade = 0.8f); hSide(1.5f, shade = 0.6f)
+                hb(0f, 1.9f, 0.18f, 0.66f, 0.3f, 0.46f, tone(330)); hb(0f, 2.06f, 0.18f, 0.6f, 0.2f, 0.4f, tone(331))
+                hb(0f, 2.0f, 0.4f, 0.62f, 0.2f, 0.14f, shadeC(hc, 0.85f)); hb(0f, 1.8f, 0.43f, 0.6f, 0.1f, 0.06f, hd)
+                for (k in -2..2) hb(k * 0.13f, 2.17f, 0.18f, 0.06f, 0.04f, 0.42f, lite(hc, 0.3f))
+            }
+            24 -> {  // cacheado curto
+                hCurls(0.44f, 1.78f, 0.2f, 1.45f, 3, 340)
+                for (k in -2..2) hCurl(k * 0.17f, 1.72f, 0.39f, 0.15f, 360 + k)
+            }
+            25 -> {  // black power
+                hCurls(0.58f, 1.85f, 0.24f, 1.35f, 4, 370)
+                for (k in -2..2) hCurl(k * 0.18f, 1.74f, 0.4f, 0.17f, 390 + k)
+            }
+            26 -> {  // dreads
+                hTop(); hBangs(floatArrayOf(0.1f, 0.14f, 0.09f, 0.14f, 0.1f), 0f, 10f)
+                hHang(7, 4, 0.9f, 0.1f, 4, 400, sway * 0.5f, 6f, 0.07f, shadeC(hc, 0.7f), true)
+            }
+            27 -> {  // mullet
+                hTop(); hSide(1.4f); hBack(0.9f, 0.3f, 5, sway * 0.5f); hBangs(floatArrayOf(0.14f, 0.2f, 0.12f, 0.22f, 0.14f), 0f, 18f)
+                hSpike(-0.2f, 0.1f, 0.14f, 0.14f, 20f); hSpike(0.2f, 0.1f, 0.14f, 0.14f, 20f); hSpike(0f, 0f, 0.16f, 0.14f, 0f)
+            }
+            28 -> {  // coque samurai (man bun)
+                hTop(); hSide(1.45f, shade = 0.7f); hBack(1.42f, shade = 0.7f); hBangs(floatArrayOf(0.1f, 0.14f, 0.1f, 0.13f, 0.1f), 0f, 8f)
+                for (k in -2..2) hb(k * 0.13f, tY + tH / 2f + 0.03f, -0.05f, 0.07f, 0.05f, 0.8f, tone(420 + k))
+                hBun(0f, 1.95f, -0.2f, 0.32f, 430)
+            }
+            29 -> {  // cortina
+                hTop(); hBack(1.2f); hSide(1.3f)
+                hBangs(floatArrayOf(0.38f, 0.3f, 0.22f, 0.18f, 0.22f, 0.3f, 0.38f), 0f, 30f, 0f, 0.07f, 0f)
+                for (sd in intArrayOf(-1, 1)) { val s = sd.toFloat()
+                    strand(s * 0.43f, 1.64f, 0.26f, 0.5f, 0.09f, 0.12f, 0f, s * 2f, tone(440 + sd), tone(443 + sd), bnz = -s * 4f, segs = 3, taper = 0.18f) }
+            }
+            30 -> {  // penteado pra trás
+                hTop(); hBack(1.3f); hSide(1.5f, shade = 0.75f)
+                for (k in -3..3) hb(k * 0.12f, tY + tH / 2f + 0.03f, 0f, 0.08f, 0.05f, 0.84f, tone(450 + k))
+                hb(0f, 1.7f, 0.42f, 0.8f, 0.05f, 0.05f, tone(460))
+            }
+            31 -> {  // lobo
+                hTop(); hBack(0.95f, 0.2f, 6, sway * 0.6f); hSide(1.2f, 0.15f); hBangs(floatArrayOf(0.22f, 0.3f, 0.16f, 0.32f, 0.2f, 0.26f), 0f, 22f)
+                for (sd in intArrayOf(-1, 1)) { val s = sd.toFloat()
+                    strand(s * 0.43f, 1.45f, 0f, 0.42f, 0.1f, 0.22f, 0f, s * 16f, tone(470 + sd), tone(473 + sd), bnz = s * 8f, segs = 2, taper = 0.3f) }
+                hSpike(-0.2f, 0.05f, 0.18f, 0.14f, 24f); hSpike(0.22f, -0.08f, 0.2f, 0.14f, 22f); hSpike(0f, -0.2f, 0.18f, 0.14f, 4f, 12f)
+            }
+            32 -> {  // longo masculino
+                hTop(); hBack(0.55f, 0.3f, 6, sway * 0.5f); hSide(0.95f, 0.2f); hBangs(floatArrayOf(0.22f, 0.28f, 0.14f, 0.22f, 0.26f, 0.16f), 0f, 20f, 0.5f)
+                for (sd in intArrayOf(-1, 1)) { val s = sd.toFloat()
+                    strand(s * 0.43f, 1.64f, 0.12f, 0.78f, 0.1f, 0.22f, 0f, s * 3f, tone(480 + sd), tone(483 + sd), bnz = -s * 3f, segs = 4, taper = 0.14f) }
+                hStreak(-0.1f, 0.05f, 0.5f)
+            }
+            33 -> {  // ondulado médio
+                hTop(); hBack(1.0f, 0.2f, 6, sway * 0.5f); hSide(1.15f, 0.12f); hBangs(floatArrayOf(0.22f, 0.28f, 0.2f, 0.26f, 0.2f), 0f, 18f, 0f, 0.07f, 6f)
+                for (sd in intArrayOf(-1, 1)) { val s = sd.toFloat()
+                    strand(s * 0.43f, 1.62f, 0.12f, 0.75f, 0.1f, 0.22f, 0f, 0f, tone(490 + sd), tone(493 + sd), bnz = s * 10f, segs = 4, taper = 0.12f, zig = true) }
+            }
+            34 -> {  // cacheado longo
+                hCurls(0.5f, 1.78f, 0.21f, 1.0f, 5, 500)
+                for (k in -2..2) hCurl(k * 0.17f, 1.72f, 0.39f, 0.15f, 530 + k)
+            }
+            35 -> {  // tranças box
+                hTop(); hBangs(floatArrayOf(0.1f, 0.14f, 0.09f, 0.14f, 0.1f), 0f, 10f)
+                hHang(5, 4, 1.0f, 0.09f, 4, 540, sway * 0.4f, 0f, 0.05f, shadeC(hc, 0.68f), false)
+            }
+            36 -> {  // emo
+                hTop(); hBack(1.1f, 0.1f); hSide(1.25f)
+                for (i in 0..5) strand(0.1f - i * 0.14f, 1.72f, 0.405f + (i % 2) * 0.012f, 0.64f - i * 0.02f, 0.15f, 0.07f, 0f, -30f - i * 3f, tone(550 + i), tone(556 + i), bnz = -5f, segs = 3, taper = 0.2f)
+                strand(0.24f, 1.72f, 0.405f, 0.2f, 0.12f, 0.07f, 0f, 6f, tone(562), tone(563), segs = 2); strand(0.34f, 1.72f, 0.405f, 0.14f, 0.1f, 0.07f, 0f, 8f, tone(564), tone(565), segs = 2)
+                hSpike(-0.2f, -0.15f, 0.2f, 0.14f, 26f, 10f); hSpike(0.2f, -0.12f, 0.2f, 0.14f, 26f, 8f); hSpike(0f, -0.28f, 0.22f, 0.14f, 0f, 16f)
+            }
+            37 -> {  // corte militar (flat top)
+                tH = if (hatCovers) 0.05f else 0.16f; hTop(); hFade(1.6f, 3, 0.25f, 0.8f)
+                hb(0f, tY + tH / 2f - 0.02f, 0.4f, 0.8f, 0.1f, 0.05f, tone(570))
+                hStreak(-0.15f, 0f, 0.6f); hStreak(0.15f, 0f, 0.6f)
+            }
+            38 -> {  // cogumelo / tigela
+                hTop(); hBack(1.3f); hSide(1.3f)
+                hBangs(floatArrayOf(0.2f, 0.2f, 0.2f, 0.2f, 0.2f, 0.2f, 0.2f), 0f, 3f)
+                hb(0f, 1.32f, -0.4f, 0.9f, 0.03f, 0.14f, hd)
+            }
+            39 -> {  // rabo baixo
+                hTop(); hBack(1.45f); hSide(1.4f); hBangs(floatArrayOf(0.16f, 0.24f, 0.14f, 0.24f, 0.18f), 6f, 12f)
+                hb(0f, 1.4f, -0.45f, 0.2f, 0.09f, 0.13f, tie)
+                val lens = floatArrayOf(0.74f, 0.92f, 0.74f)
+                for (k in 0 until 3) strand((k - 1) * 0.07f, 1.38f, -0.47f, lens[k], 0.12f, 0.12f, 10f + sway * 0.6f + sin(t * 2.2f + k) * 3f, 0f, tone(580 + k), lite(hc, 0.25f), bnx = -4f, segs = 4, taper = 0.16f)
+            }
+            else -> std(1.2f, 1.38f, floatArrayOf(0.2f, 0.27f, 0.17f, 0.25f, 0.19f))
+        }
+    }
+
     /** root = origem nos pés. handOut = matriz da mão direita (pra segurar item). */
     fun draw(boxIn: BoxFn, root: FloatArray, an: Anim, handOut: FloatArray?) {
         var zf = 0
@@ -1082,173 +1459,12 @@ class CharModel {
         }
 
         // ---------- cabelo ----------
-        val hc = Look.hair(); val hd = shadeC(hc, 0.82f); val hl = lite(hc, 0.25f)
-        val tie = Look.pal(Look.HATC)
-        val hs = L[Look.HAIR]
-        fun bangs(h: FloatArray) {
-            val n = h.size
-            for (i in 0 until n) hb((i - (n - 1) / 2f) * 0.2f, 1.71f - h[i] / 2f, 0.405f, 0.205f, h[i], 0.06f, hc)
-        }
-        if (hs == 7) {
-            hb(0f, 1.72f, 0f, 0.98f, 0.3f, 0.98f, hc)
-            hb(-0.47f, 1.4f, 0f, 0.14f, 0.55f, 0.9f, hc)
-            hb(0.47f, 1.4f, 0f, 0.14f, 0.55f, 0.9f, hc)
-            hb(0f, 1.38f, -0.46f, 0.98f, 0.65f, 0.14f, hc)
-            hb(-0.4f, 1.86f, 0.2f, 0.3f, 0.3f, 0.3f, hl, ry = 45f)
-            hb(0.4f, 1.86f, 0.2f, 0.3f, 0.3f, 0.3f, hl, ry = 45f)
-            hb(-0.4f, 1.86f, -0.25f, 0.3f, 0.3f, 0.3f, hl, ry = 45f)
-            hb(0.4f, 1.86f, -0.25f, 0.3f, 0.3f, 0.3f, hl, ry = 45f)
-            bangs(floatArrayOf(0.16f, 0.12f, 0.16f, 0.12f))
-        } else if (hs == 14) {   // moicano
-            hb(0f, 1.69f, 0f, 0.22f, 0.12f, 0.86f, hc)
-            hb(0f, 1.5f, -0.2f, 0.22f, 0.4f, 0.4f, hc)
-            for (i in 0 until 5) hb(0f, 1.82f + (if (i % 2 == 0) 0.05f else 0f), 0.3f - i * 0.15f, 0.2f, 0.22f + (if (i % 2 == 0) 0.1f else 0f), 0.14f, hl)
-            hb(-0.4f, 1.62f, 0f, 0.06f, 0.16f, 0.7f, shadeC(hc, 0.6f))
-            hb(0.4f, 1.62f, 0f, 0.06f, 0.16f, 0.7f, shadeC(hc, 0.6f))
-        } else {
-            hb(0f, 1.655f, -0.005f, 0.86f, 0.17f, 0.86f, hc)
-            val backLow = when (hs) { 0 -> 1.16f; 1 -> 1.3f; 2 -> 1.0f; 3 -> 1.2f; 4 -> 1.2f; 5 -> 1.25f; 6 -> 0.7f; 8 -> 1.35f; 9 -> 1.15f; 10 -> 1.25f; 11 -> 1.35f; 12 -> 1.3f; 13 -> 1.6f; 15 -> 1.15f; 16 -> 0.5f; else -> 1.2f }
-            hb(0f, (backLow + 1.7f) / 2f, -0.37f, 0.88f, 1.7f - backLow, 0.14f, hc)
-            val sideLow = when (hs) { 2 -> 1.0f; 6 -> 0.85f; 0 -> 1.35f; 9 -> 1.2f; 15 -> 1.1f; 16 -> 0.6f; 8 -> 1.5f; 13 -> 1.6f; else -> 1.4f }
-            hb(-0.415f, (sideLow + 1.7f) / 2f, -0.12f, 0.07f, 1.7f - sideLow, 0.52f, hc)
-            hb(0.415f, (sideLow + 1.7f) / 2f, -0.12f, 0.07f, 1.7f - sideLow, 0.52f, hc)
-            when (hs) {
-                0 -> bangs(floatArrayOf(0.2f, 0.14f, 0.22f, 0.16f))
-                1 -> {
-                    bangs(floatArrayOf(0.16f, 0.1f, 0.18f, 0.1f))
-                    hb(0f, 1.85f, 0.1f, 0.15f, 0.24f, 0.15f, hc)
-                    hb(-0.22f, 1.84f, 0f, 0.15f, 0.22f, 0.15f, hc, rz = 18f)
-                    hb(0.22f, 1.84f, 0f, 0.15f, 0.22f, 0.15f, hc, rz = -18f)
-                    hb(-0.15f, 1.84f, -0.2f, 0.15f, 0.2f, 0.15f, hc, rz = 12f)
-                    hb(0.15f, 1.84f, -0.2f, 0.15f, 0.2f, 0.15f, hc, rz = -12f)
-                }
-                2 -> {
-                    bangs(floatArrayOf(0.2f, 0.17f, 0.17f, 0.2f))
-                    hb(-0.4f, 1.3f, 0.24f, 0.05f, 0.6f, 0.14f, hc)
-                    hb(0.4f, 1.3f, 0.24f, 0.05f, 0.6f, 0.14f, hc)
-                }
-                3 -> {
-                    bangs(floatArrayOf(0.2f, 0.16f, 0.2f, 0.16f))
-                    for (sd in intArrayOf(-1, 1)) {
-                        val s = sd.toFloat()
-                        val sway = sin(t * 2.4f + s) * 4f + sw * 0.18f + move * 6f
-                        piv(t3, hm, s * 0.47f, 1.5f, -0.02f, rz = s * (8f + sway))
-                        b(t3, 0f, 0f, 0f, 0.14f, 0.12f, 0.14f, tie)
-                        b(t3, 0f, -0.2f, 0f, 0.16f, 0.34f, 0.16f, hc)
-                        piv(t4, t3, 0f, -0.36f, 0f, rz = s * sin(t * 3f + s) * 5f)
-                        b(t4, 0f, -0.14f, 0f, 0.12f, 0.28f, 0.12f, hd)
-                        b(t4, 0f, -0.3f, 0f, 0.08f, 0.08f, 0.08f, hl)
-                    }
-                }
-                4 -> {
-                    bangs(floatArrayOf(0.22f, 0.14f, 0.14f, 0.22f))
-                    hb(0f, 1.55f, -0.45f, 0.16f, 0.14f, 0.12f, tie)
-                    piv(t3, hm, 0f, 1.56f, -0.46f, rx = 30f + sw * 0.3f + sin(t * 2.5f) * 3f + move * 8f)
-                    b(t3, 0f, -0.17f, 0f, 0.2f, 0.34f, 0.16f, hc)
-                    piv(t4, t3, 0f, -0.34f, 0f, rx = 12f + sin(t * 3f) * 5f)
-                    b(t4, 0f, -0.15f, 0f, 0.16f, 0.3f, 0.13f, hd)
-                    b(t4, 0f, -0.32f, 0f, 0.1f, 0.08f, 0.1f, hl)
-                }
-                5 -> {
-                    bangs(floatArrayOf(0.2f, 0.15f, 0.15f, 0.2f))
-                    hb(0f, 1.9f, -0.08f, 0.34f, 0.3f, 0.34f, hc)
-                    hb(0f, 1.76f, -0.08f, 0.24f, 0.05f, 0.24f, tie)
-                    hb(0f, 1.99f, -0.08f, 0.2f, 0.08f, 0.2f, hl)
-                }
-                6 -> {
-                    bangs(floatArrayOf(0.2f, 0.2f, 0.14f, 0.2f))
-                    hb(-0.38f, 1.2f, 0.12f, 0.08f, 0.75f, 0.24f, hc)
-                    hb(0.38f, 1.2f, 0.12f, 0.08f, 0.75f, 0.24f, hc)
-                }
-                8 -> {   // undercut
-                    bangs(floatArrayOf(0.24f, 0.2f, 0.16f, 0.1f))
-                    hb(0.04f, 1.8f, 0.06f, 0.62f, 0.16f, 0.68f, hc)
-                    hb(0.1f, 1.9f, 0.14f, 0.4f, 0.1f, 0.4f, hl)
-                }
-                9 -> {   // franja de lado (cobre um olho)
-                    bangs(floatArrayOf(0.12f, 0.12f, 0.2f, 0.24f))
-                    hb(-0.13f, 1.46f, 0.415f, 0.5f, 0.5f, 0.04f, hc)
-                    hb(-0.36f, 1.2f, 0.3f, 0.08f, 0.7f, 0.14f, hd)
-                }
-                10 -> {  // bagunçado anime
-                    bangs(floatArrayOf(0.18f, 0.12f, 0.2f, 0.1f))
-                    hb(-0.3f, 1.84f, 0.1f, 0.16f, 0.22f, 0.16f, hc, rz = 25f)
-                    hb(0f, 1.88f, 0.15f, 0.16f, 0.26f, 0.16f, hl, rz = -8f)
-                    hb(0.3f, 1.84f, 0.05f, 0.16f, 0.22f, 0.16f, hc, rz = -28f)
-                    hb(-0.2f, 1.84f, -0.25f, 0.16f, 0.2f, 0.16f, hd, rz = 20f)
-                    hb(0.2f, 1.84f, -0.25f, 0.16f, 0.2f, 0.16f, hd, rz = -20f)
-                    hb(-0.46f, 1.55f, 0.15f, 0.1f, 0.2f, 0.14f, hc, rz = 30f)
-                    hb(0.46f, 1.55f, 0.15f, 0.1f, 0.2f, 0.14f, hc, rz = -30f)
-                }
-                11 -> {  // topete
-                    bangs(floatArrayOf(0.1f, 0.08f, 0.1f, 0.08f))
-                    hb(0f, 1.86f, 0.18f, 0.62f, 0.22f, 0.52f, hc)
-                    hb(0f, 1.97f, 0.28f, 0.42f, 0.14f, 0.3f, hl)
-                    hb(0f, 1.8f, 0.46f, 0.5f, 0.1f, 0.1f, hd)
-                }
-                12 -> {  // saiyajin
-                    bangs(floatArrayOf(0.26f, 0.12f, 0.3f, 0.14f))
-                    hb(0f, 2.0f, 0f, 0.2f, 0.55f, 0.2f, hc)
-                    hb(-0.22f, 1.93f, 0.04f, 0.2f, 0.45f, 0.2f, hc, rz = 20f)
-                    hb(0.22f, 1.93f, 0.04f, 0.2f, 0.45f, 0.2f, hc, rz = -20f)
-                    hb(-0.36f, 1.8f, -0.08f, 0.18f, 0.34f, 0.18f, hd, rz = 40f)
-                    hb(0.36f, 1.8f, -0.08f, 0.18f, 0.34f, 0.18f, hd, rz = -40f)
-                    hb(0f, 1.9f, -0.26f, 0.2f, 0.4f, 0.18f, hd, rx = -20f)
-                }
-                13 -> bangs(floatArrayOf(0.1f, 0.08f, 0.1f, 0.08f))
-                15 -> {  // repartido
-                    bangs(floatArrayOf(0.3f, 0.2f, 0.2f, 0.3f))
-                    hb(-0.41f, 1.38f, 0.1f, 0.06f, 0.3f, 0.26f, hc)
-                    hb(0.41f, 1.38f, 0.1f, 0.06f, 0.3f, 0.26f, hc)
-                }
-                16 -> {  // hime
-                    bangs(floatArrayOf(0.22f, 0.22f, 0.22f, 0.22f))
-                    hb(-0.4f, 1.12f, 0.26f, 0.1f, 0.85f, 0.14f, hc)
-                    hb(0.4f, 1.12f, 0.26f, 0.1f, 0.85f, 0.14f, hc)
-                    hb(-0.2f, 0.65f, -0.36f, 0.2f, 0.3f, 0.12f, hd)
-                    hb(0.2f, 0.65f, -0.36f, 0.2f, 0.3f, 0.12f, hd)
-                }
-                17 -> {  // trança
-                    bangs(floatArrayOf(0.2f, 0.14f, 0.2f, 0.16f))
-                    piv(t3, hm, 0f, 1.45f, -0.45f, rx = 12f + sin(t * 2.2f) * 4f + move * 10f)
-                    b(t3, 0f, -0.14f, 0f, 0.17f, 0.3f, 0.15f, hc)
-                    piv(t4, t3, 0f, -0.3f, 0f, rx = sin(t * 2.2f + 1f) * 6f)
-                    b(t4, 0f, -0.14f, 0f, 0.15f, 0.28f, 0.13f, hd)
-                    piv(t5, t4, 0f, -0.28f, 0f, rx = sin(t * 2.2f + 2f) * 8f)
-                    b(t5, 0f, -0.12f, 0f, 0.13f, 0.24f, 0.11f, hc)
-                    b(t5, 0f, -0.25f, 0f, 0.15f, 0.06f, 0.13f, tie)
-                }
-                18 -> {  // dois coques
-                    bangs(floatArrayOf(0.2f, 0.15f, 0.15f, 0.2f))
-                    for (sd in intArrayOf(-1, 1)) {
-                        val s = sd.toFloat()
-                        hb(s * 0.3f, 1.9f, -0.02f, 0.3f, 0.3f, 0.3f, hc)
-                        hb(s * 0.3f, 1.77f, -0.02f, 0.2f, 0.05f, 0.2f, tie)
-                        hb(s * 0.3f, 2.0f, -0.02f, 0.18f, 0.08f, 0.18f, hl)
-                    }
-                }
-                19 -> {  // twintail alto
-                    bangs(floatArrayOf(0.2f, 0.16f, 0.2f, 0.16f))
-                    for (sd in intArrayOf(-1, 1)) {
-                        val s = sd.toFloat()
-                        piv(t3, hm, s * 0.4f, 1.72f, -0.06f, rz = s * (28f + sin(t * 2.4f + s) * 5f + move * 6f))
-                        b(t3, 0f, 0f, 0f, 0.16f, 0.12f, 0.16f, tie)
-                        b(t3, 0f, -0.22f, 0f, 0.22f, 0.4f, 0.2f, hc)
-                        piv(t4, t3, 0f, -0.42f, 0f, rz = s * sin(t * 3f + s) * 6f)
-                        b(t4, 0f, -0.2f, 0f, 0.18f, 0.4f, 0.16f, hd)
-                        b(t4, 0f, -0.44f, 0f, 0.1f, 0.08f, 0.1f, hl)
-                    }
-                }
-                20 -> {  // ahoge
-                    bangs(floatArrayOf(0.2f, 0.14f, 0.22f, 0.16f))
-                    val aw = sin(t * 2.6f) * 8f
-                    hb(0f, 1.85f, 0.06f, 0.06f, 0.2f, 0.06f, hc, rz = aw)
-                    hb(0.05f, 1.97f, 0.06f, 0.07f, 0.1f, 0.06f, hc, rz = -30f + aw)
-                }
-                else -> {}
-            }
-        }
-
+        val hatId = L[Look.HAT]
+        val hatCovers = hatId == 1 || hatId == 2 || hatId == 3 || hatId == 8 || hatId == 9 || hatId == 16 || hatId == 17 || hatId == 19 || hatId == 20 || hatId == 21 || hatId == 22 || hatId == 23
+        drawHair(L[Look.HAIR], hatCovers, Look.hair(), Look.pal(Look.HATC), skin, t, move, sw)
+        // cabelo volumoso empurra o chapéu pra cima (sem atravessar)
+        val hatLift = if (hatId == 0 || hatCovers) 0f else hairLift(L[Look.HAIR])
+        if (hatLift != 0f) Matrix.translateM(hm, 0, 0f, hatLift, 0f)
         // ---------- chapéus e enfeites ----------
         val hcl = Look.pal(Look.HATC)
         when (L[Look.HAT]) {
@@ -1457,6 +1673,7 @@ class CharModel {
             }
         }
 
+        if (hatLift != 0f) Matrix.translateM(hm, 0, 0f, -hatLift, 0f)
         // ---------- rosto: acessórios por cima (lentes translúcidas por último) ----------
         if (fc == 4) {
             hb(-0.2f, 1.25f, 0.415f, 0.26f, 0.22f, 0.03f, 0x1E1E28)
