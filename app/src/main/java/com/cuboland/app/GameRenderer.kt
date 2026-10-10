@@ -60,7 +60,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             }
             gl_Position = uVP * wp;
             vCol = aCol; vUV = aUV; vWP = wp.xyz; vTile = tile; vView = uCam - wp.xyz;
-            vFog = clamp((length(wp.xyz - uCam) - mix(38.0, 1.0, uUnder)) / mix(52.0, 30.0, uUnder), 0.0, 1.0);
+            vFog = clamp((length(wp.xyz - uCam) - mix(38.0, 6.0, uUnder)) / mix(52.0, 62.0, uUnder), 0.0, 1.0);
             vFog = vFog * vFog * (3.0 - 2.0 * vFog);
         }"""
     private val FS = """
@@ -138,11 +138,11 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                 if (uUnder > 0.5) {   // vista de baixo: lisa, degradê suave com brilho do sol e um balanço bem leve
                     float win = smoothstep(0.52, 0.80, ndv);
                     float sh = 0.5 + 0.5 * sin(P.x * 0.45 + P.y * 0.35 + tm * 0.5);
-                    vec3 mir = mix(vec3(0.16, 0.50, 0.72), vec3(0.24, 0.62, 0.82), sh);
+                    vec3 mir = mix(vec3(0.20, 0.58, 0.80), vec3(0.30, 0.70, 0.88), sh);
                     float sun = pow(max(dot(-V, L), 0.0), 8.0);
                     vec3 winc = mix(vec3(0.58, 0.88, 0.98), vec3(0.76, 0.96, 1.0), sh) + vec3(0.18) * ripGlow + vec3(1.0, 0.98, 0.88) * sun * 0.40;
                     wc = mix(mir, winc, win);
-                    wa = mix(0.90, 0.62, win);
+                    wa = mix(0.50, 0.16, win);
                 }
                 c = wc; alpha = wa;
             } else if (uWind > 0.5 && vWP.y < 9.86) {   // tudo que está debaixo d'água: azulado, escuro com a profundidade e luz dançando
@@ -824,7 +824,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
 
     private val an = Anim()
     private var lastPT = 0f; private var phaseA = 0f; private var runA = 0f; private var landA = 0f
-    private var wasAirP = false; private var lastVyP = 0f
+    private var wasAirP = false; private var lastVyP = 0f; private var airSm = 0f; private var diveSm = 0f; private var tiltSm = 0f
 
     private fun drawPlayer(t: Float) {
         val p = game.player
@@ -839,12 +839,22 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         landA = max(0f, landA - dtp * 5f)
         wasAirP = airNow; lastVyP = p.vy
         val id = game.cur()
-        an.t = t; an.phase = phaseA; an.move = wa; an.run = runA; an.vy = p.vy; an.air = airNow
-        an.landT = landA; an.swim = swm; an.atk = game.swing; an.atkArm = swingDelta(id, game.swing); an.hasTool = id > 0
+        airSm += ((if (airNow) 1f else 0f) - airSm) * min(1f, 11f * dtp)
+        val surfY = World.WATER_Y + 0.88f
+        val diveTarget = ((surfY - (p.y + 1.55f)) / 0.45f).coerceIn(0f, 1f)
+        diveSm += (diveTarget - diveSm) * min(1f, 6f * dtp)
+        val pitchDeg = Math.toDegrees(game.pitch.toDouble()).toFloat()
+        // superfície: quase em pé, inclinado pra frente; mergulhado: deitado, seguindo o olhar
+        val tiltTarget = swm * (32f + (((78f - pitchDeg * 0.35f).coerceIn(40f, 110f)) - 32f) * diveSm)
+        tiltSm += (tiltTarget - tiltSm) * min(1f, 9f * dtp)
+        an.t = t; an.phase = phaseA; an.move = wa; an.run = runA; an.vy = p.vy; an.air = airNow; an.airA = airSm
+        an.landT = landA; an.swim = swm; an.dive = diveSm; an.tilt = tiltSm
+        an.atk = game.swing; an.atkArm = swingDelta(id, game.swing); an.hasTool = id > 0
         setBase(p.x, p.y, p.z, Math.toDegrees(game.bodyYaw.toDouble()).toFloat())
-        if (swm > 0.01f) {   // nadando: o corpo deita na água (mais inclinado ao mergulhar)
+        if (swm > 0.01f) {   // nadando: boia na superfície (cabeça fora) ou desliza deitado quando mergulha
+            Matrix.translateM(base, 0, 0f, sin(t * 2.2f) * 0.025f * (1f - diveSm) * swm, 0f)
             Matrix.translateM(base, 0, 0f, 0.9f, 0f)
-            Matrix.rotateM(base, 0, swm * (78f - Math.toDegrees(game.pitch.toDouble()).toFloat() * 0.35f).coerceIn(40f, 110f), 1f, 0f, 0f)
+            Matrix.rotateM(base, 0, tiltSm, 1f, 0f, 0f)
             Matrix.translateM(base, 0, 0f, -0.9f, 0f)
         }
         cm.draw(charBox, base, an, handM)

@@ -125,13 +125,13 @@ class CharView(ctx: Context) : View(ctx) {
         Matrix.rotateM(base, 0, yaw, 0f, 1f, 0f)
         an.t = tt
         var hop = 0f
-        an.move = 0f; an.run = 0f; an.air = false; an.landT = 0f; an.atk = 1f; an.atkArm = 0f; an.hasTool = false; an.vy = 0f
+        an.move = 0f; an.run = 0f; an.air = false; an.landT = 0f; an.atk = 1f; an.atkArm = 0f; an.hasTool = false; an.vy = 0f; an.airA = 0f; an.swim = 0f; an.dive = 0f; an.tilt = 0f
         when (mode) {
             1 -> { ph += dt * 8f; an.move = 1f }
             2 -> { ph += dt * 14f; an.move = 1f; an.run = 1f }
             3 -> {
                 val jt = tt % 1.7f
-                if (jt < 0.9f) { an.air = true; an.vy = if (jt < 0.45f) 5f else -5f; hop = sin(jt / 0.9f * 3.1416f) * 0.45f }
+                if (jt < 0.9f) { an.air = true; an.airA = 1f; an.vy = 6f * kotlin.math.cos(jt / 0.9f * 3.1416f); hop = sin(jt / 0.9f * 3.1416f) * 0.45f }
                 else if (jt < 1.2f) an.landT = 1f - (jt - 0.9f) / 0.3f
             }
             4 -> { val cyc = (tt % 0.9f) / 0.9f; an.atk = cyc; an.atkArm = CharModel.atkDelta(cyc); an.hasTool = true }

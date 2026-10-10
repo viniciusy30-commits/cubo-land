@@ -53,8 +53,13 @@ class MeshBuf {
 
 class World {
     companion object {
-        const val SX = 96; const val SY = 32; const val SZ = 96; const val CH = 16
-        const val CX = SX / CH; const val CZ = SZ / CH; const val WATER_Y = 9
+        @JvmField var SX = 96; @JvmField var SZ = 96
+        const val SY = 32; const val CH = 16
+        val CX: Int get() = SX / CH
+        val CZ: Int get() = SZ / CH
+        const val WATER_Y = 9
+        /** deve ser chamado ANTES de criar World/Game/GameRenderer: o mapa plano é bem maior que a ilha */
+        fun configure(flat: Boolean) { SX = if (flat) 256 else 96; SZ = SX }
         val CU = intArrayOf(0, 1); val CV = intArrayOf(0, 1)
         val QU = intArrayOf(0, 1, 1, 0); val QV = intArrayOf(0, 0, 1, 1)
         val AOB = floatArrayOf(0.86f, 0.91f, 0.96f, 1f)
@@ -155,6 +160,54 @@ class World {
         }
         plantForest(Random(seed.toLong()), 420) { x, z -> h[x * SZ + z] }
         // pilares decorativos perto do spawn
+        val cols = intArrayOf(B.PINK, B.BLUE, B.YELLOW, B.BRICK)
+        for (i in 0 until 4) {
+            val x = SX / 2 + 3 + i * 2; val z = SZ / 2 + 4
+            val y = surfaceY(x, z)
+            for (t in 0..2) blocks[((y + t) * SZ + z) * SX + x] = cols[i].toByte()
+            blocks[((y + 3) * SZ + z) * SX + x] = B.LANTERN.toByte()
+        }
+        java.util.Arrays.fill(dirty, true)
+    }
+
+
+    /** Mapa plano: planície de grama (y=10), camadas de terra/pedra embaixo, um rio enorme serpenteando e árvores bem espaçadas. */
+    fun generateFlat(seed: Int) {
+        java.util.Arrays.fill(blocks, 0)
+        val h = IntArray(SX * SZ)
+        for (x in 0 until SX) {
+            val wob = vnoise(x * 0.012f, 0f, seed + 3)
+            val zc = SZ / 2f + 58f + 22f * sin(x * 0.022f + seed * 0.1f) + (wob - 0.5f) * 30f
+            val hw = 15f + 5f * sin(x * 0.047f + 1.3f) + 3f * vnoise(x * 0.03f, 4f, seed + 9)
+            for (z in 0 until SZ) {
+                val t = Math.abs(z - zc) / hw
+                val depth = if (t < 1f) 1 + Math.round(6f * (1f - t * t)) else 0
+                val hh = 10 - depth
+                h[x * SZ + z] = hh
+                val river = depth > 0
+                for (y in 0..hh) {
+                    val id = when {
+                        y == hh -> if (river) (if (t > 0.55f) B.SAND else B.DIRT) else B.GRASS
+                        y >= hh - 2 -> if (river) B.SAND else B.DIRT
+                        else -> B.STONE
+                    }
+                    blocks[(y * SZ + z) * SX + x] = id.toByte()
+                }
+                for (y in hh + 1..WATER_Y) blocks[(y * SZ + z) * SX + x] = B.WATER.toByte()
+            }
+        }
+        val rnd = Random(seed.toLong())
+        val placed = ArrayList<IntArray>()
+        for (i in 0 until 1600) {
+            val x = 6 + rnd.nextInt(SX - 12); val z = 6 + rnd.nextInt(SZ - 12)
+            val y = h[x * SZ + z]
+            if (y != 10 || get(x, y, z) != B.GRASS || !air(x, y + 1, z)) continue
+            if (Math.abs(x - SX / 2) < 8 && Math.abs(z - SZ / 2) < 8) continue
+            val type = pickTree(rnd); val r = treeRadius[type]
+            if (placed.any { Math.max(Math.abs(it[0] - x), Math.abs(it[1] - z)) < it[2] + r + 9 }) continue   // bem espaçadas
+            placed.add(intArrayOf(x, z, r))
+            plantTree(x, y, z, type, rnd)
+        }
         val cols = intArrayOf(B.PINK, B.BLUE, B.YELLOW, B.BRICK)
         for (i in 0 until 4) {
             val x = SX / 2 + 3 + i * 2; val z = SZ / 2 + 4

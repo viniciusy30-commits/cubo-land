@@ -14,6 +14,8 @@ class GameActivity : AppCompatActivity() {
     private lateinit var gl: GLSurfaceView
     private lateinit var world: World
     private lateinit var game: Game
+    private var flat = false
+    private lateinit var saveFile: File
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -23,9 +25,12 @@ class GameActivity : AppCompatActivity() {
             hide(WindowInsetsCompat.Type.systemBars())
             systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
+        flat = intent.getBooleanExtra("flat", false)
+        World.configure(flat)
         world = World()
-        if (!world.load(File(filesDir, "mundo.bin"))) world.generate(1234)
-        else {
+        saveFile = File(filesDir, if (flat) "mundo_plano.bin" else "mundo.bin")
+        if (!world.load(saveFile)) { if (flat) world.generateFlat(4321) else world.generate(1234) }
+        else if (!flat) {
             val mark = File(filesDir, "arvores_v3")
             if (!mark.exists()) { world.replantTrees(1234); try { mark.writeText("1") } catch (_: Exception) {} }
         }
@@ -53,7 +58,7 @@ class GameActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         gl.onPause()
-        world.save(File(filesDir, "mundo.bin"))
+        world.save(saveFile)
         getSharedPreferences("cfg", 0).edit().putString("hb", game.hotbar.joinToString(",")).apply()
     }
 

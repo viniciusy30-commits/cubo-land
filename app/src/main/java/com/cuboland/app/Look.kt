@@ -29,13 +29,13 @@ object Look {
     val TOPS = arrayOf("Camiseta", "Moletom", "Vestido", "Jaqueta", "Túnica", "Armadura", "Macacão", "Camisa social", "Marinheiro", "Gakuran", "Kimono", "Robe de mago", "Terno", "Regata", "Haori samurai", "Maid", "Colete aventureiro", "Casacão")
     val BOTTOMS = arrayOf("Calça", "Shorts", "Saia", "Bermuda", "Hakama", "Saia plissada", "Leggings", "Cargo")
     val SHOE_STYLES = arrayOf("Botas", "Tênis", "Sapatilha", "Descalço", "Botas altas", "Geta", "Mocassim", "Meias listradas")
-    val HATS = arrayOf("Nenhum", "Chapéu de bruxo", "Gorro de lã", "Boné", "Coroa", "Orelhas de gato", "Orelhas de coelho", "Laço grande", "Capacete", "Chapéu de palha", "Florzinha", "Faixa ninja", "Auréola", "Chifrinhos", "Orelhas de raposa", "Tiara", "Boina", "Chapéu kasa", "Fones", "Capuz", "Touca de maid")
-    val FACES = arrayOf("Nada", "Óculos redondos", "Óculos escuros", "Sardas", "Tapa-olho", "Cicatriz", "Curativo", "Bigodes de gato", "Máscara", "Óculos quadrados", "Lágrima")
+    val HATS = arrayOf("Nenhum", "Chapéu de bruxo", "Gorro de lã", "Boné", "Coroa", "Orelhas de gato", "Orelhas de coelho", "Laço grande", "Capacete", "Chapéu de palha", "Florzinha", "Faixa ninja", "Auréola", "Chifrinhos", "Orelhas de raposa", "Tiara", "Boina", "Chapéu kasa", "Fones", "Capuz", "Touca de maid", "Cartola", "Chapéu de chef", "Capacete viking")
+    val FACES = arrayOf("Nada", "Óculos redondos", "Óculos escuros", "Sardas", "Tapa-olho", "Cicatriz", "Curativo", "Bigodes de gato", "Máscara", "Óculos quadrados", "Lágrima", "Monóculo", "Óculos aviador")
     val BACKS = arrayOf("Nada", "Capa", "Mochila", "Asinhas", "Rabinho", "Espada nas costas", "Asas de morcego", "Aljava", "Rabo de raposa", "Mochila escolar")
     val MOUTHS = arrayOf("Sorriso", "Neutra", "Biquinho", "Aberta", "Dentinho", "Gatinho")
-    val NECKS = arrayOf("Nada", "Cachecol", "Laço", "Colar", "Gravata", "Gravata borboleta", "Coleira de sino", "Lenço", "Gargantilha")
+    val NECKS = arrayOf("Nada", "Cachecol", "Laço", "Colar", "Gravata", "Gravata borboleta", "Coleira de sino", "Lenço", "Gargantilha", "Medalha")
 
-    val COUNTS = intArrayOf(2, 6, 21, 16, 9, 10, 2, 18, 16, 8, 16, 8, 16, 21, 16, 11, 10, 16, 9, 16, 6)
+    val COUNTS = intArrayOf(2, 6, 21, 16, 9, 10, 2, 18, 16, 8, 16, 8, 16, 24, 16, 13, 10, 16, 10, 16, 6)
 
 
     /** looks prontos: 21 valores na ordem dos índices acima */

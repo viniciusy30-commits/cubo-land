@@ -23,6 +23,9 @@ class Anim {
     @JvmField var atk = 1f        // progresso do golpe (1 = sem golpe)
     @JvmField var atkArm = 0f     // graus extras do braço direito no golpe
     @JvmField var hasTool = false // segurando item na mão direita
+    @JvmField var airA = 0f       // 0..1 suavizado: quanto está "no ar" (pulo fluido)
+    @JvmField var dive = 0f       // 0 nadando com a cabeça fora .. 1 mergulhado
+    @JvmField var tilt = 0f       // graus que o corpo deita ao nadar (o jogo aplica na matriz)
 }
 
 /** Modelo chibi do personagem, montado só com caixas. Usado no jogo (OpenGL) e na tela de personagem (preview). */
@@ -51,7 +54,8 @@ class CharModel {
     private fun lite(c: Int, k: Float) = mixC(c, 0xFFFFFF, k)
 
     companion object {
-        const val HEAD_SCALE = 0.8f
+        const val HEAD_SCALE = 0.7f
+        private fun lp(a: Float, b: Float, k: Float) = a + (b - a) * k
         /** graus extras do braço no golpe padrão */
         fun atkDelta(sp: Float): Float {
             if (sp >= 1f) return 0f
@@ -60,8 +64,12 @@ class CharModel {
     }
 
     /** root = origem nos pés. handOut = matriz da mão direita (pra segurar item). */
-    fun draw(box: BoxFn, root: FloatArray, an: Anim, handOut: FloatArray?) {
-        bx = box
+    fun draw(boxIn: BoxFn, root: FloatArray, an: Anim, handOut: FloatArray?) {
+        var zf = 0
+        bx = { m, px, py, pz, rx, ry, sx, sy, sz, oy, col, a, rz ->
+            val k = 1f + min(zf, 260) * 0.00011f; zf++   // cada caixa nova fica um tiquinho maior: acaba o z-fighting de faces coplanares
+            boxIn(m, px, py, pz, rx, ry, sx * k, sy * k, sz * k, oy, col, a, rz)
+        }
         val t = an.t
         val L = Look.v
         val girl = L[Look.GENDER] == 1
@@ -79,31 +87,45 @@ class CharModel {
         // ================= ANIMAÇÃO =================
         val mv = an.move.coerceIn(0f, 1f); val rn = an.run.coerceIn(0f, 1f); val ph = an.phase
         val swimming = an.swim > 0.2f
-        val air = an.air && !swimming
-        val rising = air && an.vy > 0.5f
-        val falling = air && !rising
+        val ab = if (swimming) 0f else an.airA.coerceIn(0f, 1f)
+        val vk = (an.vy / 7f).coerceIn(-1f, 1f)
+        val air = ab > 0.02f
+        val fs = (1f - vk) * 0.5f          // 0 subindo .. 1 caindo (contínuo, sem trancos)
+        val dv = an.dive.coerceIn(0f, 1f)
         val land = an.landT.coerceIn(0f, 1f)
         val atk = an.atk; val atking = atk < 1f
-        val stride = if (air || swimming) 0f else mv
-        val sw = if (swimming) sin(t * 8f) * 28f else sin(ph) * (30f + 32f * rn) * stride
+        val stride = if (ab > 0.02f || swimming) 0f else mv
+        var sw = sin(ph) * (30f + 32f * rn) * stride
         var hipL = sw; var hipR = -sw
         var kneeL = max(0f, -cos(ph)) * (12f + 50f * rn) * stride
         var kneeR = max(0f, cos(ph)) * (12f + 50f * rn) * stride
-        if (swimming) { kneeL = 15f + sin(t * 8f) * 14f; kneeR = 15f - sin(t * 8f) * 14f }
-        if (rising) { hipL = -45f; kneeL = 75f; hipR = 10f; kneeR = 40f }
-        else if (falling) { hipL = -14f + sin(t * 10f) * 4f; kneeL = 22f; hipR = 16f; kneeR = 34f }
+        if (swimming) {
+            val sa = sin(t * 8f); val sb = sin(t * 4.6f); val cb = cos(t * 4.6f)
+            // na superfície: pedalada; mergulhado: batida de perna reta (crawl)
+            hipL = lp(sb * 26f, sa * 30f, dv); hipR = lp(-sb * 26f, -sa * 30f, dv)
+            kneeL = lp(30f + cb * 24f, 8f + sa * 10f, dv); kneeR = lp(30f - cb * 24f, 8f - sa * 10f, dv)
+        }
+        if (ab > 0.01f) {
+            val pL = lp(-38f, -12f + sin(t * 10f) * 3f, fs); val pKL = lp(62f, 20f, fs)
+            val pR = lp(8f, 16f, fs); val pKR = lp(28f, 34f, fs)
+            hipL = lp(hipL, pL, ab); kneeL = lp(kneeL, pKL, ab); hipR = lp(hipR, pR, ab); kneeR = lp(kneeR, pKR, ab)
+        }
         if (land > 0f) {
             hipL += (-42f - hipL) * land; hipR += (-42f - hipR) * land
             kneeL += (80f - kneeL) * land; kneeR += (80f - kneeR) * land
         }
+        if (full || overalls.not() && skirtBot) {   // roupa longa/saia: pernas não atravessam o tecido
+            val kk = if (full) 0.38f else 0.6f
+            hipL *= kk; hipR *= kk; kneeL *= kk + 0.05f; kneeR *= kk + 0.05f
+        }
         val drop = 0.1f * land
         val bob = sin(t * 2f) * 0.012f * (1f - stride) + abs(sin(ph)) * (0.035f + 0.04f * rn) * stride
-        val move = stride * (1f + rn * 0.6f) + (if (falling) 1.2f else 0f) + (if (rising) 0.4f else 0f)
+        val move = stride * (1f + rn * 0.6f) + ab * lp(0.4f, 1.2f, fs)
 
         System.arraycopy(root, 0, r2, 0, 16)
         Matrix.translateM(r2, 0, 0f, bob - drop, 0f)
 
-        val lean = 3f * stride + 12f * rn * stride + (if (rising) -5f else 0f) + (if (falling) 7f else 0f) + 16f * land +
+        val lean = 3f * stride + 12f * rn * stride + ab * lp(-5f, 7f, fs) + 16f * land +
             (if (atking) 9f * sin(atk * 3.1416f) else 0f)
         val twist = sin(ph) * (5f + 9f * rn) * stride + (if (atking) 18f * sin(atk * 6.2832f) else 0f)
         val roll = sin(ph) * 2.2f * stride * (1f - rn) + (if (air) 0f else sin(t * 0.9f) * 1.3f * (1f - stride))
@@ -119,7 +141,7 @@ class CharModel {
         // cabeça: pivô no pescoço, escala menor (cabeção mais proporcional), olha em volta e balança com o passo
         val look = sin(t * 0.55f) * sin(t * 0.23f)
         val hy = if (stride > 0.1f) -twist * 0.7f else look * 16f * (1f - stride)
-        val hnod = -lean * 0.55f + sin(ph * 2f) * 1.8f * stride + sin(t * 1.3f) * 1.4f * (1f - stride) + (if (falling) -8f else 0f) + (if (rising) 5f else 0f)
+        val hnod = -lean * 0.55f + sin(ph * 2f) * 1.8f * stride + sin(t * 1.3f) * 1.4f * (1f - stride) + ab * lp(5f, -8f, fs) - an.tilt * lp(0.9f, 0.5f, dv)
         val htilt = sin(t * 0.8f) * 2f * (1f - stride)
         System.arraycopy(bm, 0, hm, 0, 16)
         Matrix.translateM(hm, 0, 0f, 0.94f, 0f)
@@ -131,7 +153,7 @@ class CharModel {
         val blink = (t % 3.7f) > 3.58f || (t % 6.1f) > 6.0f
 
         // saia balançando (preso ao quadril)
-        val flare = 1f + (if (falling) 0.1f else 0f) + (if (rising) 0.06f else 0f) + 0.05f * rn * stride
+        val flare = 1f + ab * lp(0.06f, 0.1f, fs) + 0.05f * rn * stride
         piv(sm, bm, 0f, 0.5f, 0f, rx = sin(t * 2.2f) * 1.5f + sin(ph * 2f) * 3f * stride)
         Matrix.scaleM(sm, 0, flare, 1f, flare)
         fun sk(py: Float, sx: Float, sy: Float, sz: Float, col: Int) = b(sm, 0f, py - 0.5f, 0f, sx, sy, sz, col)
@@ -408,25 +430,36 @@ class CharModel {
         val sl = when (top) { 0 -> 0.16f; 1 -> 0.36f; 2 -> 0.13f; 3 -> 0.36f; 4 -> 0.30f; 5 -> 0.2f; 6 -> 0.16f; 7 -> 0.32f; 8 -> 0.18f; 9 -> 0.36f; 10 -> 0.34f; 11 -> 0.36f; 12 -> 0.36f; 13 -> 0f; 14 -> 0.30f; 15 -> 0.14f; 16 -> 0.16f; else -> 0.36f }
         val slCol = when (top) { 5 -> 0x4A5568; 6, 8, 15, 16 -> white; else -> tc }
         val asw = sw * (0.95f + 0.5f * rn)
-        var rxL = -asw - 4f; var rxR = asw - 4f
+        var rxL = asw - 4f; var rxR = -asw - 4f   // braço direito (sd<0) balança contra a perna direita
         var elL = -(8f + 6f * stride + 58f * rn * stride); var elR = elL
         var rzL = -(4f + sin(t * 2f) * 1.5f * (1f - stride)); var rzR = -rzL
         val aa = an.atkArm
-        if (toolArm) { rxR = -22f + aa + sw * 0.25f * (1f - rn * 0.5f); elR = -6f - 6f * rn * stride; rzR = 10f }
+        if (toolArm) { rxR = -22f + aa - sw * 0.25f * (1f - rn * 0.5f); elR = -6f - 6f * rn * stride; rzR = 14f }
         else if (atking) rxR += aa
         if (swimming) {
-            rxR = -95f + sin(t * 5f) * 70f; rxL = -95f - sin(t * 5f) * 70f; elL = -10f; elR = -10f; rzL = -6f; rzR = 6f
-        } else if (rising) {
-            rxL = -35f; elL = -10f; rzL = -150f
-            if (toolArm) { rxR = -50f + aa; elR = -6f; rzR = 35f } else { rxR = -35f; elR = -10f; rzR = 150f }
-        } else if (falling) {
-            rxL = -10f + sin(t * 14f) * 8f; elL = -8f; rzL = -75f
-            if (toolArm) { rxR = -40f + aa; elR = -6f; rzR = 30f } else { rxR = -10f - sin(t * 14f) * 8f; elR = -8f; rzR = 75f }
+            val c1 = t * 4.6f * 57.3f
+            // superfície: braçada de peito/cachorrinho; mergulhado: crawl rodando o ombro
+            val sfL = -62f + sin(t * 4.6f) * 38f; val sfR = -62f - sin(t * 4.6f) * 38f
+            val cwL = -(c1 % 360f) - 20f; val cwR = -((c1 + 180f) % 360f) - 20f
+            rxL = lp(sfL, cwL, dv); rxR = lp(sfR, cwR, dv)
+            elL = lp(-30f + sin(t * 4.6f) * 20f, -14f, dv); elR = lp(-30f - sin(t * 4.6f) * 20f, -14f, dv)
+            rzL = lp(-26f, -6f, dv); rzR = lp(26f, 6f, dv)
+        }
+        if (ab > 0.01f) {
+            val flapA = sin(t * 12f) * 6f * (1f - abs(vk))
+            val pxL = lp(-35f, -10f, fs) + flapA; val pzL = lp(-150f, -75f, fs); val pelL = lp(-10f, -8f, fs)
+            rxL = lp(rxL, pxL, ab); rzL = lp(rzL, pzL, ab); elL = lp(elL, pelL, ab)
+            if (toolArm) {   // braço da ferramenta continua vivo: balança de leve, sem subir pra cabeça
+                val tx = -20f + aa + lp(-8f, 14f, fs); val tz = lp(18f, 26f, fs)
+                rxR = lp(rxR, tx, ab); rzR = lp(rzR, tz, ab); elR = lp(elR, -8f, ab)
+            } else {
+                rxR = lp(rxR, lp(-35f, -10f, fs) - flapA, ab); rzR = lp(rzR, lp(150f, 75f, fs), ab); elR = lp(elR, pelL, ab)
+            }
         }
         if (land > 0f) { rzL -= 25f * land; if (!toolArm) rzR += 25f * land }
         for (sd in intArrayOf(-1, 1)) {
             val s = sd.toFloat()
-            val rx = if (sd > 0) rxR else rxL; val rz = if (sd > 0) rzR else rzL; val el = if (sd > 0) elR else elL
+            val rx = if (sd < 0) rxR else rxL; val rz = if (sd < 0) -rzR else -rzL; val el = if (sd < 0) elR else elL   // +x é a ESQUERDA do boneco: o item vai na direita (sd<0)
             piv(t1, base, s * (bw / 2f + 0.09f), 0.88f, 0f, rx = rx, rz = rz)
             piv(t2, t1, 0f, -0.21f, 0f, rx = el)
             b(t1, 0f, -0.1f, 0f, 0.15f, 0.23f, 0.17f, skin)
@@ -455,7 +488,7 @@ class CharModel {
                 17 -> { b(t1, 0f, -0.1f, 0f, 0.21f, 0.04f, 0.23f, dark); b(t2, 0f, -0.05f, 0f, 0.21f, 0.04f, 0.23f, dark) }
                 9 -> b(t2, 0f, -rnd(sl), 0f, 0.194f, 0.025f, 0.214f, gold)
             }
-            if (sd > 0 && handOut != null) {
+            if (sd < 0 && handOut != null) {
                 piv(handOut, t1, 0f, -0.21f, 0f, rx = el)
                 Matrix.translateM(handOut, 0, 0f, -0.16f, 0.02f)
             }
@@ -555,6 +588,11 @@ class CharModel {
         // ================= PESCOÇO =================
         val ncol = Look.pal(Look.NECKC)
         when (L[Look.NECK]) {
+            9 -> {   // medalha dourada com fita
+                b(base, 0f, 0.86f, 0.158f, 0.07f, 0.2f, 0.012f, 0xE05555)
+                b(base, 0f, 0.72f, 0.165f, 0.12f, 0.12f, 0.02f, gold)
+                b(base, 0f, 0.72f, 0.176f, 0.06f, 0.06f, 0.012f, 0xFFF0A0)
+            }
             1 -> {
                 b(base, 0f, 0.93f, 0f, 0.52f, 0.1f, 0.35f, ncol)
                 b(base, 0f, 0.945f, 0f, 0.53f, 0.025f, 0.36f, lite(ncol, 0.45f))
@@ -913,26 +951,27 @@ class CharModel {
                 hb(0f, 1.725f, 0.52f, 0.62f, 0.045f, 0.34f, shadeC(hcl, 0.8f), rx = 10f)
                 hb(0f, 1.82f, 0.445f, 0.12f, 0.08f, 0.02f, 0xFFFFFF)
             }
-            4 -> {   // coroa
-                hb(0f, 1.82f, 0.37f, 0.8f, 0.1f, 0.06f, gold)
-                hb(0f, 1.82f, -0.37f, 0.8f, 0.1f, 0.06f, gold)
-                hb(0.37f, 1.82f, 0f, 0.06f, 0.1f, 0.68f, gold)
-                hb(-0.37f, 1.82f, 0f, 0.06f, 0.1f, 0.68f, gold)
+            4 -> {   // coroa (assenta no topo da cabeça/cabelo)
+                val R = 0.47f; val cy = 1.755f
+                hb(0f, cy, R, 0.96f, 0.11f, 0.06f, gold)
+                hb(0f, cy, -R, 0.96f, 0.11f, 0.06f, gold)
+                hb(R, cy, 0f, 0.06f, 0.11f, 0.9f, gold)
+                hb(-R, cy, 0f, 0.06f, 0.11f, 0.9f, gold)
                 for (i in 0 until 5) {
-                    val x = -0.3f + i * 0.15f
+                    val x = -0.36f + i * 0.18f
                     val hh = if (i % 2 == 0) 0.2f else 0.12f
-                    hb(x, 1.87f + hh / 2f, 0.37f, 0.09f, hh, 0.06f, gold)
-                    hb(x, 1.87f + 0.07f, -0.37f, 0.09f, 0.14f, 0.06f, gold)
+                    hb(x, cy + 0.055f + hh / 2f, R, 0.1f, hh, 0.06f, gold)
+                    hb(x, cy + 0.055f + 0.07f, -R, 0.1f, 0.14f, 0.06f, gold)
                 }
                 for (i in 0 until 3) {
-                    val z = -0.2f + i * 0.2f
-                    hb(0.37f, 1.93f, z, 0.06f, 0.14f, 0.09f, gold)
-                    hb(-0.37f, 1.93f, z, 0.06f, 0.14f, 0.09f, gold)
+                    val z = -0.24f + i * 0.24f
+                    hb(R, cy + 0.12f, z, 0.06f, 0.14f, 0.1f, gold)
+                    hb(-R, cy + 0.12f, z, 0.06f, 0.14f, 0.1f, gold)
                 }
-                hb(0f, 1.82f, 0.405f, 0.08f, 0.07f, 0.02f, hcl)
-                hb(-0.2f, 1.82f, 0.405f, 0.05f, 0.05f, 0.02f, lite(hcl, 0.3f))
-                hb(0.2f, 1.82f, 0.405f, 0.05f, 0.05f, 0.02f, lite(hcl, 0.3f))
-                hb(0f, 2.1f, 0.37f, 0.045f, 0.045f, 0.045f, hcl)
+                hb(0f, cy, R + 0.035f, 0.09f, 0.08f, 0.02f, hcl)
+                hb(-0.25f, cy, R + 0.035f, 0.055f, 0.055f, 0.02f, lite(hcl, 0.3f))
+                hb(0.25f, cy, R + 0.035f, 0.055f, 0.055f, 0.02f, lite(hcl, 0.3f))
+                hb(0f, cy + 0.3f, R, 0.05f, 0.05f, 0.05f, hcl)
             }
             5 -> {
                 for (sd in intArrayOf(-1, 1)) {
@@ -1059,6 +1098,31 @@ class CharModel {
                 hb(0f, 1.46f, 0.455f, 0.94f, 0.04f, 0.04f, lite(hcl, 0.35f))
                 hb(0f, 1.0f, -0.4f, 0.94f, 0.1f, 0.28f, shadeC(hcl, 0.85f))
             }
+            21 -> {  // cartola
+                hb(0f, 1.745f, 0f, 1.0f, 0.06f, 1.0f, shadeC(hcl, 0.8f))
+                hb(0f, 1.99f, 0f, 0.58f, 0.46f, 0.58f, hcl)
+                hb(0f, 1.8f, 0f, 0.6f, 0.09f, 0.6f, lite(hcl, 0.5f))
+                hb(0f, 2.225f, 0f, 0.6f, 0.03f, 0.6f, shadeC(hcl, 0.85f))
+                hb(0.2f, 1.8f, 0.3f, 0.1f, 0.1f, 0.02f, gold)
+            }
+            22 -> {  // chapéu de chef
+                hb(0f, 1.78f, 0f, 0.84f, 0.12f, 0.84f, lite(hcl, 0.7f))
+                hb(0f, 1.98f, 0f, 0.98f, 0.32f, 0.98f, lite(hcl, 0.85f))
+                hb(0f, 2.18f, 0f, 0.8f, 0.14f, 0.8f, lite(hcl, 0.85f))
+                hb(0f, 1.84f, 0.43f, 0.84f, 0.025f, 0.02f, shadeC(hcl, 0.8f))
+            }
+            23 -> {  // capacete viking
+                val iron = mixC(0xC5CEDA, hcl, 0.3f); val bone = 0xF2EAD0
+                hb(0f, 1.78f, 0f, 0.9f, 0.2f, 0.9f, iron)
+                hb(0f, 1.9f, 0f, 0.7f, 0.06f, 0.7f, shadeC(iron, 0.9f))
+                hb(0f, 1.74f, 0.46f, 0.14f, 0.18f, 0.03f, shadeC(iron, 0.85f))
+                for (sd in intArrayOf(-1, 1)) {
+                    val s = sd.toFloat()
+                    hb(s * 0.5f, 1.8f, 0f, 0.14f, 0.14f, 0.14f, bone)
+                    hb(s * 0.6f, 1.93f, 0f, 0.13f, 0.18f, 0.13f, bone, rz = -s * 14f)
+                    hb(s * 0.66f, 2.1f, 0f, 0.1f, 0.18f, 0.1f, bone, rz = -s * 28f)
+                }
+            }
             20 -> {  // touca de maid
                 hb(0f, 1.74f, 0.02f, 0.82f, 0.06f, 0.5f, white)
                 for (i in -2..2) hb(i * 0.15f, 1.78f, 0.27f, 0.1f, 0.05f, 0.05f, white)
@@ -1095,6 +1159,28 @@ class CharModel {
             hb(-0.285f, 1.1f, 0.41f, 0.035f, 0.1f, 0.02f, 0x8AD0FF, a = 0.9f)
             hb(-0.285f, 1.03f, 0.41f, 0.05f, 0.05f, 0.02f, 0x8AD0FF, a = 0.9f)
         }
+        if (fc == 11) {   // monóculo (olho direito do boneco)
+            val gx = -0.2f; val gy = 1.25f; val fr = gold
+            hb(gx, gy + 0.14f, 0.41f, 0.3f, 0.03f, 0.025f, fr); hb(gx, gy - 0.14f, 0.41f, 0.3f, 0.03f, 0.025f, fr)
+            hb(gx - 0.15f, gy, 0.41f, 0.03f, 0.3f, 0.025f, fr); hb(gx + 0.15f, gy, 0.41f, 0.03f, 0.3f, 0.025f, fr)
+            hb(gx, gy, 0.405f, 0.27f, 0.27f, 0.015f, 0xCFE8FF, a = 0.25f)
+            hb(gx - 0.15f, gy - 0.3f, 0.4f, 0.02f, 0.3f, 0.02f, fr)
+            hb(gx - 0.15f, gy - 0.47f, 0.38f, 0.04f, 0.04f, 0.04f, fr)
+        }
+        if (fc == 12) {   // óculos aviador
+            val fr = gold
+            for (sd in intArrayOf(-1, 1)) {
+                val s = sd.toFloat(); val cx = s * 0.2f
+                hb(cx, 1.25f, 0.41f, 0.3f, 0.26f, 0.025f, 0x3A3A44, a = 0.8f)
+                hb(cx, 1.15f, 0.41f, 0.22f, 0.07f, 0.025f, 0x3A3A44, a = 0.8f)
+                hb(cx, 1.385f, 0.412f, 0.32f, 0.03f, 0.025f, fr); hb(cx, 1.115f, 0.412f, 0.2f, 0.03f, 0.025f, fr)
+                hb(cx - 0.16f, 1.25f, 0.412f, 0.03f, 0.26f, 0.025f, fr); hb(cx + 0.16f, 1.25f, 0.412f, 0.03f, 0.26f, 0.025f, fr)
+                hb(s * 0.37f, 1.32f, 0.41f, 0.11f, 0.03f, 0.025f, fr)
+                hb(s * 0.4f, 1.32f, 0.2f, 0.03f, 0.03f, 0.43f, fr)
+                hb(s * 0.4f, 1.295f, -0.005f, 0.03f, 0.05f, 0.06f, fr)
+            }
+            hb(0f, 1.34f, 0.412f, 0.1f, 0.03f, 0.025f, fr)
+        }
         if (fc == 1 || fc == 2 || fc == 9) {
             val frame = if (fc == 1) 0x3A2E24 else if (fc == 9) 0x2A3A5A else 0x1E1E28
             val cy = 1.25f
@@ -1114,7 +1200,9 @@ class CharModel {
                     hb(cx, cy, 0.41f, 0.25f, 0.2f, 0.03f, frame)
                     hb(cx - 0.05f, cy + 0.04f, 0.428f, 0.07f, 0.03f, 0.01f, 0x6A6A88)
                 }
-                hb(s * 0.41f, cy + 0.07f, 0.18f, 0.025f, 0.025f, 0.4f, frame)
+                hb(s * 0.37f, cy + 0.07f, 0.41f, 0.11f, 0.03f, 0.025f, frame)        // dobradiça: liga a frente à haste
+                hb(s * 0.4f, cy + 0.07f, 0.2f, 0.03f, 0.03f, 0.43f, frame)           // haste encostada na lateral
+                hb(s * 0.4f, cy + 0.045f, -0.005f, 0.03f, 0.05f, 0.06f, frame)       // ponta que desce atrás da orelha
             }
             hb(0f, cy + 0.04f, 0.41f, 0.1f, 0.03f, 0.025f, frame)
             if (fc == 2) hb(0f, cy + 0.1f, 0.41f, 0.56f, 0.035f, 0.03f, frame)

@@ -1,3 +1,19 @@
+#id 2026-10-10-n
+#titulo Novo mapa: planície gigante com rio enorme!
+- Botão "Mapa plano + rio" no menu: planície de grama gigante (256x256), camadas de terra e pedra por baixo
+- Rio bem grande serpenteando pelo mapa, com margens de areia
+- Árvores bem espaçadas, sem floresta apertada
+- O mapa da ilha continua no botão "Jogar", com o save separado
+
+#id 2026-10-10-m
+#titulo Pulo fluido, nado de verdade e acessórios novos!
+- Pulo redesenhado: transição suave entre subir e cair, braço da ferramenta balança sem entrar na cabeça
+- Item na mão DIREITA também na 3ª pessoa (antes ia pra esquerda); cabeça menor pra picareta não atravessar
+- Robes, kimono, vestido e saias: pernas não atravessam mais o tecido ao andar
+- Coroa agora assenta na cabeça; óculos com hastes ligadas à armação; menos texturas piscando nas roupas
+- Nado: cabeça fora d'água (pedalada + braçada) e mergulhado (crawl deitado); visão de baixo bem mais transparente
+- Novos: cartola, chapéu de chef, capacete viking, monóculo, óculos aviador e medalha
+
 #id 2026-10-10-k
 #titulo Boneco repaginado: cabeça menor, mil roupas e animações de verdade!
 - Cabeça ajustada pra um chibi mais proporcional: a ferramenta na mão não fica mais cortada
