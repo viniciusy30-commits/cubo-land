@@ -41,6 +41,10 @@ class GameActivity : AppCompatActivity() {
         gl.setRenderer(GameRenderer(game))
         val root = FrameLayout(this)
         root.addView(gl)
+        gl.post {   // renderiza em ~80% da resolução em telas grandes: bem mais fluido, o HUD continua nítido
+            val w = gl.width; val h = gl.height
+            if (w > 1500) gl.holder.setFixedSize((w * 0.8f).toInt(), (h * 0.8f).toInt())
+        }
         root.addView(HudView(this, game) { finish() })
         setContentView(root)
     }

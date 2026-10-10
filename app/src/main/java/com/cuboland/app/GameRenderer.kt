@@ -55,12 +55,12 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                     float dy = sin(uTime * 2.0 + ph * 1.4 + wp.y) * 0.03;
                     wp.x += dx; wp.z += dz; wp.y += dy;
                 } else if (tile == 10.0) {
-                    wp.y += sin(uTime * 1.8 + wp.x * 1.3 + wp.z * 0.7) * 0.03 + cos(uTime * 1.4 + wp.z * 1.5 - wp.x * 0.6) * 0.025;
+                    wp.y += sin(uTime * 1.2 + wp.x * 0.7 + wp.z * 0.4) * 0.018 + cos(uTime * 0.9 + wp.z * 0.8 - wp.x * 0.4) * 0.014;
                 }
             }
             gl_Position = uVP * wp;
             vCol = aCol; vUV = aUV; vWP = wp.xyz; vTile = tile; vView = uCam - wp.xyz;
-            vFog = clamp((length(wp.xyz - uCam) - mix(38.0, 1.0, uUnder)) / mix(52.0, 22.0, uUnder), 0.0, 1.0);
+            vFog = clamp((length(wp.xyz - uCam) - mix(38.0, 1.0, uUnder)) / mix(52.0, 30.0, uUnder), 0.0, 1.0);
             vFog = vFog * vFog * (3.0 - 2.0 * vFog);
         }"""
     private val FS = """
@@ -76,9 +76,8 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         float caus(vec3 p, float t) {
             float a = sin(p.x * 1.7 + p.y * 0.9 + t * 0.9 + sin(p.z * 1.3 - t * 0.6) * 1.4);
             float b = sin(p.z * 1.9 - p.y * 0.7 - t * 0.8 + sin(p.x * 1.1 + t * 0.5) * 1.4);
-            float c = sin((p.x + p.z) * 1.2 + p.y * 0.5 + t * 0.7 + sin((p.x - p.z) * 1.5 - t * 0.4) * 1.2);
-            float k = abs(a + b + c) / 3.0;
-            return pow(1.0 - k, 6.0);
+            float k = abs(a + b) * 0.5;
+            return pow(1.0 - k, 5.0);
         }
 
         void main() {
@@ -96,52 +95,57 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                 float tm = uTime;
                 vec2 P = vWP.xz;
                 vec2 g = vec2(0.0);
-                g += vec2(0.80, 0.60) * cos(dot(P, vec2(0.80, 0.60)) * 1.9 + tm * 1.3) * 0.040 * 1.9;
-                g += vec2(-0.50, 0.87) * cos(dot(P, vec2(-0.50, 0.87)) * 2.7 + tm * 1.6) * 0.030 * 2.7;
-                g += vec2(0.95, -0.31) * cos(dot(P, vec2(0.95, -0.31)) * 4.3 + tm * 2.1) * 0.020 * 4.3;
-                g += vec2(-0.20, -0.98) * cos(dot(P, vec2(-0.20, -0.98)) * 6.1 + tm * 2.6) * 0.012 * 6.1;
+                // ondas largas e suaves (nada de serrilhado)
+                g += vec2(0.80, 0.60) * cos(dot(P, vec2(0.80, 0.60)) * 0.85 + tm * 0.75) * 0.040;
+                g += vec2(-0.50, 0.87) * cos(dot(P, vec2(-0.50, 0.87)) * 1.35 + tm * 0.95) * 0.030;
+                g += vec2(0.95, -0.31) * cos(dot(P, vec2(0.95, -0.31)) * 2.5 + tm * 1.3) * 0.013;
                 float ripGlow = 0.0;
-                for (int ri = 0; ri < 4; ri++) {   // ondas de quem entra/nada na água
+                for (int ri = 0; ri < 4; ri++) {
                     vec4 rp = uRip[ri];
                     if (rp.w > 0.0) {
                         vec2 dd = P - rp.xy; float dl = max(length(dd), 0.001);
                         float xx = dl - rp.z * 1.7;
-                        float env = exp(-xx * xx * 2.2) * rp.w * exp(-rp.z * 0.7);
-                        g += (dd / dl) * cos(xx * 8.0) * env * 1.1;
-                        ripGlow += env * (0.5 + 0.5 * cos(xx * 8.0));
+                        float env = exp(-xx * xx * 1.6) * rp.w * exp(-rp.z * 0.7);
+                        g += (dd / dl) * cos(xx * 6.0) * env * 0.55;
+                        ripGlow += env * (0.5 + 0.5 * cos(xx * 6.0));
                     }
                 }
-                vec3 n = normalize(vec3(-g.x * 1.6, 1.0, -g.y * 1.6));
+                vec3 n = normalize(vec3(-g.x * 1.25, 1.0, -g.y * 1.25));
                 vec3 V = normalize(vView);
                 if (dot(n, V) < 0.0) n = -n;
                 vec3 L = normalize(vec3(0.55, 0.5, 0.65));
                 float depth = clamp(vCol.g, 0.0, 1.0);
-                vec3 shallow = vec3(0.30, 0.76, 0.76);
-                vec3 deep = vec3(0.03, 0.20, 0.58);
-                vec3 base = shallow;   // cor única: toda a água igual à parte clara
+                vec3 shallow = vec3(0.38, 0.86, 0.84);
+                vec3 deep = vec3(0.10, 0.48, 0.78);
+                vec3 base = mix(shallow, deep, smoothstep(0.12, 0.95, depth) * 0.6);
                 float ndv = max(dot(n, V), 0.0);
                 float fres = 0.02 + 0.98 * pow(1.0 - ndv, 5.0);
                 vec3 R = reflect(-V, n);
-                vec3 sky = mix(uFog, vec3(0.34, 0.56, 0.94), pow(clamp(R.y, 0.0, 1.0), 0.45));
+                vec3 sky = mix(uFog, vec3(0.42, 0.66, 0.97), pow(clamp(R.y, 0.0, 1.0), 0.45));
                 float rl = max(dot(R, L), 0.0);
-                float spec = pow(rl, 30.0) * 0.16;
-                vec3 wc = base * (0.84 + 0.26 * dot(n, L));
-                wc = mix(wc, sky, clamp(fres * 1.1 + 0.06, 0.0, 0.9));
-                wc += vec3(0.6) * ripGlow * 0.22;
-                // cintilados do sol nas ondinhas
-                float sp = max(0.0, sin(P.x * 9.0 + tm * 2.2) * sin(P.y * 8.0 - tm * 1.9));
-                wc += vec3(1.0, 0.97, 0.88) * spec;
-                // espuma na beirada
-                float foam = smoothstep(0.17, 0.0, depth) * (0.55 + 0.45 * sin(P.x * 5.0 + P.y * 4.0 + tm * 1.8 + sin(P.y * 3.0 - tm) * 2.0));
-                wc = mix(wc, vec3(1.0), clamp(foam, 0.0, 1.0) * 0.5);
-                float wa = mix(0.46, 0.74, smoothstep(0.0, 0.5, depth));
-                wa = clamp(wa + fres * 0.35 + foam * 0.3, 0.0, 1.0);
-                if (uUnder > 0.5) {   // vendo a superfície por baixo: janela de céu no meio, espelho escuro nas bordas
-                    float win = smoothstep(0.56, 0.70, ndv);
-                    vec3 mir = vec3(0.07, 0.36, 0.55) + vec3(0.10, 0.20, 0.22) * (0.5 + 0.5 * sin(P.x * 2.0 + P.y * 1.7 + tm * 1.2));
-                    vec3 winc = vec3(0.62, 0.90, 1.0) + vec3(0.25) * ripGlow + vec3(0.10) * (0.5 + 0.5 * sin(P.x * 5.0 - P.y * 4.0 + tm * 1.6));
+                vec3 wc = base * (0.88 + 0.22 * dot(n, L));
+                // luz suave desenhando teia na superfície
+                wc += vec3(0.55, 0.95, 0.95) * caus(vec3(P.x * 0.9, 0.0, P.y * 0.9), tm * 0.7) * 0.10;
+                wc = mix(wc, sky, clamp(fres * 1.05 + 0.05, 0.0, 0.85));
+                wc += vec3(0.6) * ripGlow * 0.16;
+                // brilho do sol: halo suave + cintilado delicado
+                float glit = pow(0.5 + 0.5 * sin(P.x * 11.0 + tm * 1.9 + sin(P.y * 5.0 + tm) * 1.5) * sin(P.y * 10.0 - tm * 1.6), 7.0);
+                wc += vec3(1.0, 0.97, 0.88) * (pow(rl, 48.0) * 0.28 + pow(rl, 10.0) * glit * 0.35);
+                // espuma macia na beirada
+                float foam = smoothstep(0.17, 0.0, depth) * (0.55 + 0.45 * sin(P.x * 4.0 + P.y * 3.5 + tm * 1.4 + sin(P.y * 2.5 - tm) * 2.0));
+                wc = mix(wc, vec3(1.0), clamp(foam, 0.0, 1.0) * 0.45);
+                float wa = mix(0.50, 0.78, smoothstep(0.0, 0.5, depth));
+                wa = clamp(wa + fres * 0.30 + foam * 0.3, 0.0, 1.0);
+                if (uUnder > 0.5) {   // vista de baixo: janela de Snell luminosa, borda azul-turquesa clara com luz dançando
+                    float win = smoothstep(0.50, 0.74, ndv);
+                    float sh = 0.5 + 0.5 * sin(P.x * 1.5 + P.y * 1.2 + tm * 0.8 + sin(P.y * 1.1 - tm * 0.5) * 1.6);
+                    vec3 mir = mix(vec3(0.17, 0.54, 0.74), vec3(0.30, 0.72, 0.88), sh);
+                    mir += vec3(0.30, 0.55, 0.60) * caus(vec3(P.x * 1.2, 0.0, P.y * 1.2), tm) * 0.55;
+                    float sun = pow(max(dot(-V, L), 0.0), 10.0);
+                    vec3 winc = vec3(0.72, 0.95, 1.0) + vec3(0.25) * ripGlow + vec3(1.0, 0.98, 0.85) * sun * 0.45;
+                    winc += vec3(0.45, 0.85, 0.95) * caus(vec3(P.x * 1.5, 0.0, P.y * 1.5), tm * 1.1) * 0.35;
                     wc = mix(mir, winc, win);
-                    wa = mix(0.93, 0.6, win);
+                    wa = mix(0.88, 0.55, win);
                 }
                 c = wc; alpha = wa;
             } else if (uWind > 0.5 && vWP.y < 9.86) {   // tudo que está debaixo d'água: azulado, escuro com a profundidade e luz dançando
@@ -151,9 +155,8 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             }
             if (vTile > 14.5 && vTile < 15.5) c = t.rgb * 1.25;
             if (uUnder > 0.5 && !isWater) {
-                c *= vec3(0.78, 0.95, 1.05);
-                float k1 = sin(vWP.x * 3.0 + uTime * 1.5) + sin(vWP.z * 3.3 - uTime * 1.2) + sin((vWP.x + vWP.z) * 2.0 + uTime);
-                c += vec3(0.6, 0.9, 1.0) * pow(max(0.0, k1 * 0.33), 3.0) * 0.5;
+                c *= vec3(0.86, 1.02, 1.10);
+                c += vec3(0.5, 0.85, 1.0) * caus(vWP * 0.9, uTime * 1.2) * 0.35;
             }
             float g2 = dot(c, vec3(0.299, 0.587, 0.114));
             c = mix(vec3(g2), c, 1.12); c = mix(c, smoothstep(0.0, 1.0, c), 0.3);
@@ -515,26 +518,38 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         }
     }
 
+    /** pegadas em forma de sola: calcanhar, arco, peito do pé e dedinhos. side = -1 pé esquerdo, 1 pé direito */
+    private fun shoe(side: Float, y: Float, grow: Float, col: Int, a: Float, toes: Boolean) {
+        box(base, 0f, y, -0.100f, 0f, 0f, 0.080f + grow, 0.012f, 0.075f + grow, 0f, col, a)
+        box(base, 0.004f * side, y, -0.040f, 0f, 0f, 0.058f + grow, 0.012f, 0.060f + grow, 0f, col, a)
+        box(base, 0.006f * side, y, 0.035f, 0f, 0f, 0.108f + grow, 0.012f, 0.085f + grow, 0f, col, a)
+        if (toes) {
+            box(base, -0.034f * side, y, 0.098f, 0f, 0f, 0.038f + grow, 0.012f, 0.040f + grow, 0f, col, a)   // dedão (lado de dentro)
+            box(base, 0.004f * side, y, 0.106f, 0f, 0f, 0.030f + grow, 0.012f, 0.034f + grow, 0f, col, a)
+            box(base, 0.036f * side, y, 0.094f, 0f, 0f, 0.026f + grow, 0.012f, 0.030f + grow, 0f, col, a)
+        }
+    }
+
     /** pegadas: areia = funda com borda levantada, terra = marca escura, grama = amassadinho */
     private fun drawPrints() {
         for (q in game.prints) {
+            if (!seen(q.x, q.y, q.z, 22f)) continue
             val fade = min(1f, (q.life() - (game.time - q.born)) / 4f)
             if (fade <= 0f) continue
             setBase(q.x, q.y + 0.012f, q.z, Math.toDegrees(q.ang.toDouble()).toFloat())
             when (q.id) {
                 B.SAND -> {
-                    box(base, 0f, 0f, -0.01f, 0f, 0f, 0.19f, 0.012f, 0.42f, 0f, 0xFFF1BE, 0.5f * fade)
-                    box(base, 0f, 0.006f, -0.115f, 0f, 0f, 0.115f, 0.012f, 0.13f, 0f, 0xA8924E, 0.85f * fade)
-                    box(base, 0f, 0.006f, 0.075f, 0f, 0f, 0.15f, 0.012f, 0.22f, 0f, 0xA8924E, 0.85f * fade)
-                    box(base, 0f, 0.012f, 0.085f, 0f, 0f, 0.09f, 0.012f, 0.12f, 0f, 0x8C7840, 0.6f * fade)
+                    shoe(q.side, 0.000f, 0.030f, 0xFFF3C8, 0.55f * fade, false)   // borda de areia levantada
+                    shoe(q.side, 0.004f, 0.000f, 0xA8924E, 0.85f * fade, true)    // fundo da pegada
+                    box(base, 0f, 0.010f, -0.07f, 0f, 0f, 0.06f, 0.012f, 0.10f, 0f, 0x8C7840, 0.45f * fade)   // sombra funda no centro do calcanhar
                 }
                 B.DIRT -> {
-                    box(base, 0f, 0.004f, -0.115f, 0f, 0f, 0.105f, 0.01f, 0.12f, 0f, 0x4E3320, 0.7f * fade)
-                    box(base, 0f, 0.004f, 0.075f, 0f, 0f, 0.14f, 0.01f, 0.2f, 0f, 0x4E3320, 0.7f * fade)
+                    shoe(q.side, 0.003f, 0.012f, 0x6B4A2E, 0.45f * fade, false)
+                    shoe(q.side, 0.006f, 0.000f, 0x45301E, 0.75f * fade, true)
                 }
                 else -> {
-                    box(base, 0f, 0.004f, -0.115f, 0f, 0f, 0.105f, 0.01f, 0.12f, 0f, 0x3F8A2E, 0.4f * fade)
-                    box(base, 0f, 0.004f, 0.075f, 0f, 0f, 0.14f, 0.01f, 0.2f, 0f, 0x3F8A2E, 0.4f * fade)
+                    shoe(q.side, 0.003f, 0.000f, 0x3F8A2E, 0.40f * fade, true)
+                    shoe(q.side, 0.005f, -0.030f, 0x2F6B22, 0.18f * fade, false)
                 }
             }
         }
@@ -557,7 +572,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             val rad = 0.25f + r.age * 1.7f
             val al = (1f - r.age / 3.2f) * min(1f, r.amp + 0.25f) * 0.75f
             if (al <= 0.02f) continue
-            val n = (10 + rad * 6f).toInt().coerceAtMost(28)
+            val n = (10 + rad * 5f).toInt().coerceAtMost(20)
             val seg = 6.2832f * rad / n * 1.08f
             for (k in 0 until n) {
                 val a = k * 6.2832f / n
@@ -571,6 +586,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
 
     private fun drawDebris() {
         for (q in game.debris) {
+            if (!seen(q.x, q.y, q.z, 40f)) continue
             val sc = q.size * min(1f, q.life * 2f)
             if (sc < 0.01f) continue
             setBase(q.x, q.y, q.z, 0f)
@@ -1281,6 +1297,30 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         }
     }
 
+    // ---------- culling: não desenha o que está fora da tela (grande ganho de desempenho) ----------
+    private val fpl = FloatArray(24); private val chunkVis = BooleanArray(World.CX * World.CZ)
+    private var cvx = 0f; private var cvy = 0f; private var cvz = 0f; private var cdx = 0f; private var cdy = 0f; private var cdz = 0f
+    private fun updateFrustum(m: FloatArray) {
+        for (i in 0 until 6) {
+            val sg = if (i % 2 == 0) 1f else -1f; val r = i / 2
+            var a = m[3] + sg * m[r]; var b = m[7] + sg * m[4 + r]; var c = m[11] + sg * m[8 + r]; var d = m[15] + sg * m[12 + r]
+            val l = Math.sqrt((a * a + b * b + c * c).toDouble()).toFloat().coerceAtLeast(1e-6f)
+            fpl[i * 4] = a / l; fpl[i * 4 + 1] = b / l; fpl[i * 4 + 2] = c / l; fpl[i * 4 + 3] = d / l
+        }
+        for (cz in 0 until World.CZ) for (cx in 0 until World.CX) {
+            val x = cx * World.CH + World.CH / 2f; val y = World.SY / 2f; val z = cz * World.CH + World.CH / 2f
+            var ok = true
+            for (i in 0 until 6) if (fpl[i * 4] * x + fpl[i * 4 + 1] * y + fpl[i * 4 + 2] * z + fpl[i * 4 + 3] < -21f) { ok = false; break }
+            chunkVis[cz * World.CX + cx] = ok
+        }
+    }
+    /** ponto à frente da câmera e perto o bastante? */
+    private fun seen(x: Float, y: Float, z: Float, maxD: Float = 34f): Boolean {
+        val dx = x - cvx; val dy = y - cvy; val dz = z - cvz
+        if (dx * dx + dy * dy + dz * dz > maxD * maxD) return false
+        return dx * cdx + dy * cdy + dz * cdz > -1.5f
+    }
+
     override fun onDrawFrame(gl: GL10?) {
         if (!iconsBaked) bakeIcons()
         val now = System.nanoTime()
@@ -1304,9 +1344,11 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val ez = game.camZ + (rnd.nextFloat() - 0.5f) * sh
         Matrix.setLookAtM(view, 0, ex, ey, ez, ex + game.lookDirX(), ey + game.lookDirY(), ez + game.lookDirZ(), 0f, 1f, 0f)
         Matrix.multiplyMM(vp, 0, proj, 0, view, 0)
+        updateFrustum(vp)
+        cvx = ex; cvy = ey; cvz = ez; cdx = game.lookDirX(); cdy = game.lookDirY(); cdz = game.lookDirZ()
         val uwy = floor(ey).toInt()
         val under = world.get(floor(ex).toInt(), uwy, floor(ez).toInt()) == B.WATER && (world.get(floor(ex).toInt(), uwy + 1, floor(ez).toInt()) != B.AIR || ey < uwy + 0.88f)
-        val fr = if (under) 0.38f else fogR; val fg = if (under) 0.76f else fogG; val fb = if (under) 0.93f else fogB
+        val fr = if (under) 0.36f else fogR; val fg = if (under) 0.78f else fogG; val fb = if (under) 0.95f else fogB
         // céu: degradê, sol, nuvens suaves
         Matrix.invertM(inv, 0, vp, 0)
         G.glDisable(G.GL_DEPTH_TEST); G.glDisable(G.GL_CULL_FACE)
@@ -1330,7 +1372,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         G.glUniformMatrix4fv(uModel, 1, false, ident, 0)
         tint(0xFFFFFF, 1f)
         for (i in 0 until World.CX * World.CZ) {
-            if (cnt[i * 2] == 0) continue
+            if (cnt[i * 2] == 0 || !chunkVis[i]) continue
             bindMesh(vbo[i * 2], ibo[i * 2]); G.glDrawElements(G.GL_TRIANGLES, cnt[i * 2], G.GL_UNSIGNED_SHORT, 0)
         }
         G.glUniform1f(uWind, 0f)
@@ -1345,17 +1387,21 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         for (s in game.slimes) drawSlime(s)
         drawDebris(); drawTrees(); drawDrops()
         for (q in game.parts) {
+            if (!seen(q.x, q.y, q.z, 28f)) continue
             setBase(q.x, q.y, q.z, game.time * 200f)
             val ps = q.size * min(1f, 0.35f + q.life * 1.6f)
             box(base, 0f, 0f, 0f, 0f, 0f, ps, ps, ps, 0f, q.color, min(1f, q.life * 2.2f))
         }
         for (l in game.leafFall) {
-            setBase(l.x, l.y, l.z, l.age * 50f + l.ph * 57f)
-            val tl = if (l.landed) 0f else sin(l.age * 3f + l.ph) * 50f; val rl = if (l.landed) 0f else cos(l.age * 2.3f + l.ph) * 40f
+            if (!seen(l.x, l.y, l.z, 30f)) continue
+            val sp = if (l.spin > 0f) l.spin else 1f
+            setBase(l.x, l.y, l.z, l.age * 50f * sp + l.ph * 57f)
+            val tl = if (l.landed) 0f else sin(l.age * 3f * sp + l.ph) * 55f; val rl = if (l.landed) 0f else cos(l.age * 2.3f * sp + l.ph) * 45f
             val al = min(1f, min(l.age * 3f, l.life * 1.2f))
-            box(base, 0f, 0f, 0f, tl, 0f, l.size * 0.95f, 0.01f, l.size * 1.05f, 0f, l.color, al, 1f, null, 0, rl)
-            box(base, 0f, 0f, 0f, tl, 0f, l.size * 0.5f, 0.011f, l.size * 1.75f, 0f, l.color, al, 1.08f, null, 0, rl)
-            box(base, 0f, 0.004f, 0f, tl, 0f, l.size * 0.1f, 0.012f, l.size * 1.8f, 0f, 0x2F6B1E, al * 0.8f, 1f, null, 0, rl)
+            val edge = mixCol(l.color, 0xE6F59A, 0.35f)
+            box(base, 0f, 0f, 0f, tl, 0f, l.size * 0.95f, 0.01f, l.size * 1.15f, 0f, l.color, al, 1f, null, 0, rl)
+            box(base, 0f, 0.003f, l.size * 0.28f, tl, 0f, l.size * 0.55f, 0.011f, l.size * 0.55f, 0f, edge, al * 0.9f, 1.05f, null, 0, rl)
+            box(base, 0f, 0.006f, 0f, tl, 0f, l.size * 0.09f, 0.012f, l.size * 1.9f, 0f, 0x2F6B1E, al * 0.85f, 1f, null, 0, rl)
         }
         for (b in game.bolts) {
             setBase(b.x, b.y, b.z, 0f)
@@ -1376,7 +1422,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         G.glDisable(G.GL_CULL_FACE)
         tint(0xFFFFFF, 1f)
         for (i in 0 until World.CX * World.CZ) {
-            if (cnt[i * 2 + 1] == 0) continue
+            if (cnt[i * 2 + 1] == 0 || !chunkVis[i]) continue
             bindMesh(vbo[i * 2 + 1], ibo[i * 2 + 1]); G.glDrawElements(G.GL_TRIANGLES, cnt[i * 2 + 1], G.GL_UNSIGNED_SHORT, 0)
         }
         G.glUniform1f(uWind, 0f); bindMesh(cubeVb, cubeIb)
