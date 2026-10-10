@@ -874,6 +874,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         cm.draw(charBox, base, an, handM)
         if (id > 0) {   // mesmo modelo 3D da 1ª pessoa e dos ícones: cabo pra cima, fio pra frente
             System.arraycopy(handM, 0, base2, 0, 16)
+            if (game.lieA > 0.01f) Matrix.rotateM(base2, 0, -90f * game.lieA, 0f, 1f, 0f)   // rastejando: o item fica deitado, sem furar chão nem cabeça
             if (id in 1..13) {
                 Matrix.translateM(base2, 0, 0f, -0.16f, 0.04f)
                 Matrix.scaleM(base2, 0, 0.8f, 0.8f, 0.8f)

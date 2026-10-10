@@ -135,7 +135,8 @@ class CharModel {
         val cr = an.crouch.coerceIn(0f, 1f); val si = an.sit.coerceIn(0f, 1f); val li = an.lie.coerceIn(0f, 1f)
         if (cr > 0f) { hipL = lp(hipL, -55f + sw * 0.4f, cr); hipR = lp(hipR, -55f - sw * 0.4f, cr); kneeL = lp(kneeL, 95f + kneeL * 0.3f, cr); kneeR = lp(kneeR, 95f + kneeR * 0.3f, cr) }
         if (si > 0f) { val br = sin(t * 1.6f) * 2f; hipL = lp(hipL, -88f + br, si); hipR = lp(hipR, -86f - br, si); kneeL = lp(kneeL, 4f, si); kneeR = lp(kneeR, 8f, si) }
-        if (li > 0f) { hipL = lp(hipL, 0f, li); hipR = lp(hipR, 0f, li); kneeL = lp(kneeL, 4f, li); kneeR = lp(kneeR, 8f, li) }
+        if (li > 0f) { val mc = min(1f, mv * 3f); hipL = lp(hipL, 0f, li); hipR = lp(hipR, 0f, li)
+            kneeL = lp(kneeL, 6f + 26f * (0.5f + 0.5f * sin(ph + 3.14f)) * mc, li); kneeR = lp(kneeR, 6f + 26f * (0.5f + 0.5f * sin(ph)) * mc, li) }
         val drop = 0.1f * land + 0.145f * cr + 0.31f * si
         val bob = sin(t * 2f) * 0.012f * (1f - stride) + abs(sin(ph)) * (0.035f + 0.04f * rn) * stride
         val move = stride * (1f + rn * 0.6f) + ab * lp(0.4f, 1.2f, fs)
@@ -143,8 +144,8 @@ class CharModel {
         System.arraycopy(root, 0, r2, 0, 16)
         Matrix.translateM(r2, 0, 0f, bob - drop, 0f)
         if (li > 0.001f) {   // deitado de costas: gira o corpo todo em volta do centro
-            Matrix.translateM(r2, 0, 0f, 0.16f * li, 0.7f * li)
-            Matrix.rotateM(r2, 0, -90f * li, 1f, 0f, 0f)
+            Matrix.translateM(r2, 0, 0f, 0.2f * li, -0.7f * li)   // rastejando, de frente (barriga no chão)
+            Matrix.rotateM(r2, 0, 90f * li, 1f, 0f, 0f)
         }
 
         val lean = 18f * cr + 6f * si + 3f * stride + 12f * rn * stride + ab * lp(-5f, 7f, fs) + 16f * land + fl * (8f + 52f * fm) - 10f * chg +
@@ -163,7 +164,7 @@ class CharModel {
         // cabeça: pivô no pescoço, escala menor (cabeção mais proporcional), olha em volta e balança com o passo
         val look = sin(t * 0.55f) * sin(t * 0.23f)
         val hy = if (stride > 0.1f) -twist * 0.7f else look * 16f * (1f - stride)
-        val hnod = -lean * 0.55f + sin(ph * 2f) * 1.8f * stride + sin(t * 1.3f) * 1.4f * (1f - stride) + ab * lp(5f, -8f, fs) - an.tilt * lp(0.9f, 0.5f, dv)
+        val hnod = -lean * 0.55f + sin(ph * 2f) * 1.8f * stride + sin(t * 1.3f) * 1.4f * (1f - stride) + ab * lp(5f, -8f, fs) - an.tilt * lp(0.9f, 0.5f, dv) - 70f * li
         val htilt = sin(t * 0.8f) * 2f * (1f - stride)
         System.arraycopy(bm, 0, hm, 0, 16)
         Matrix.translateM(hm, 0, 0f, 0.94f, 0f)
@@ -491,6 +492,11 @@ class CharModel {
             else { rxR = lp(rxR, dn - sin(t * 2.6f) * 3f, fl); rzR = lp(rzR, 16f + fw, fl); elR = lp(elR, -8f, fl) }
         }
         if (land > 0f) { rzL -= 25f * land; if (!toolArm) rzR += 25f * land }
+        if (li > 0.001f) {   // rastejar: braços rentes ao chão, puxando alternados pra frente (no plano do chão)
+            val mc = min(1f, mv * 3f); val pl = (0.5f + 0.5f * sin(ph)) * mc; val pr = (0.5f + 0.5f * sin(ph + 3.1416f)) * mc
+            rxL = lp(rxL, 0f, li); rxR = lp(rxR, 0f, li); rzL = lp(rzL, -(25f + 95f * pl), li); rzR = lp(rzR, 25f + 95f * pr, li)
+            elL = lp(elL, -6f, li); elR = lp(elR, -6f, li); ryR = lp(ryR, 0f, li)
+        }
         for (sd in intArrayOf(-1, 1)) {
             val s = sd.toFloat()
             val rx = if (sd < 0) rxR else rxL; val rz = if (sd < 0) -rzR else -rzL; val el = if (sd < 0) elR else elL   // +x é a ESQUERDA do boneco: o item vai na direita (sd<0)
