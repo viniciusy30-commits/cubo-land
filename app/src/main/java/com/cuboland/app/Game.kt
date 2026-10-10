@@ -88,7 +88,7 @@ class Game(val world: World) {
     @Volatile var attackHeld = false; @Volatile var attackPress = false; @Volatile var attackRelease = false
     @Volatile var charging = false; @Volatile var charge = 0f
     private var pressT = 0f; private var pressing = false; var swingDur = 0.46f; @Volatile var powerSwing = false
-    @Volatile var creative = false; @Volatile var flying = false; @Volatile var downHeld = false; private var lastJumpT = -9f
+    @Volatile var creative = false; @Volatile var flying = false; @Volatile var downHeld = false; private var lastJumpT = -9f; private var lastDownT = -9f
     var brX = 0; var brY = -1; var brZ = 0; @Volatile var hitPulse = 0f; var rT = 0f
     val dmg = HashMap<Long, Dmg>(); val debris = ArrayList<Debris>(); val trees = ArrayList<FallTree>()
     private var hitT = -1f; private var hitItem = 0; private var hitStab = false
@@ -148,10 +148,16 @@ class Game(val world: World) {
         e.inWater = world.get(floor(e.x).toInt(), floor(e.y + 0.4f).toInt(), floor(e.z).toInt()) == B.WATER
     }
 
-    fun jumpTap() {   // toque duplo no pulo (modo criativo) liga/desliga o voo
+    fun jumpTap() {   // toque duplo no botão de subir (modo criativo) volta a voar
         if (!creative) return
-        if (time - lastJumpT < 0.32f) { flying = !flying; if (flying) player.vy = 0f }
+        if (time - lastJumpT < 0.32f && !flying) { flying = true; player.vy = 0f }
         lastJumpT = time
+    }
+
+    fun downTap() {   // toque duplo no botão de descer sai do voo
+        if (!creative) return
+        if (time - lastDownT < 0.32f && flying) flying = false
+        lastDownT = time
     }
 
     private fun physics(e: Ent, dt: Float) {

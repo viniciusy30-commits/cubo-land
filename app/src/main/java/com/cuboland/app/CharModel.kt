@@ -35,6 +35,7 @@ class Anim {
     @JvmField var crouch = 0f; @JvmField var sit = 0f; @JvmField var lie = 0f   // posturas 0..1
     @JvmField var dash = 0f; @JvmField var imp = 0f; @JvmField var swimPh = 0f; @JvmField var armFwdR = 0f   // voo rápido, impulso, fase da braçada, (saída) quanto o braço do item está esticado
     @JvmField var tilt = 0f       // graus que o corpo deita ao nadar (o jogo aplica na matriz)
+    @JvmField var swimFast = 0f   // 0..1 (suavizado) acelerando na água: só aí os braços batem; sem acelerar, boia/desliza
     @JvmField var toolA = 0f      // (saída) graus extras em X no item da mão, pra ele não furar o corpo/chão (nado e voo rápido)
 }
 
@@ -140,8 +141,9 @@ class CharModel {
         }
         if (fl > 0.01f) {
             val fk = sin(t * 7f) * 8f * fm
-            hipL = lp(hipL, -6f + fk + sin(t * 2.4f) * 5f * (1f - fm), fl); hipR = lp(hipR, 4f - fk + sin(t * 2.4f + 1f) * 5f * (1f - fm), fl)
-            kneeL = lp(kneeL, 10f + 8f * fm, fl); kneeR = lp(kneeR, 14f + 8f * fm, fl)
+            val fh = -5f + sin(t * 1.6f) * 3f * (1f - fm)   // pairando: as duas pernas iguais (nada de passo), só uma balançadinha junto com o corpo
+            hipL = lp(hipL, fh + fk, fl); hipR = lp(hipR, fh - fk, fl)
+            kneeL = lp(kneeL, 12f + 8f * fm, fl); kneeR = lp(kneeR, 12f + 8f * fm, fl)
         }
         if (dashW > 0.001f && fl > 0.01f) {
             val fk2 = sin(t * 14f) * 6f
@@ -160,12 +162,12 @@ class CharModel {
         val cr = an.crouch.coerceIn(0f, 1f); val si = an.sit.coerceIn(0f, 1f)
         var qLegL = 0f; var qLegR = 0f
         if (cr > 0f) { hipL = lp(hipL, -55f + sw * 0.4f, cr); hipR = lp(hipR, -55f - sw * 0.4f, cr); kneeL = lp(kneeL, 95f + kneeL * 0.3f, cr); kneeR = lp(kneeR, 95f + kneeR * 0.3f, cr) }
-        if (si > 0f) { val br = sin(t * 1.6f) * 2f; hipL = lp(hipL, -88f + br, si); hipR = lp(hipR, -86f - br, si); kneeL = lp(kneeL, 4f, si); kneeR = lp(kneeR, 8f, si) }
+        if (si > 0f) { val br = sin(t * 1.6f) * 2f; hipL = lp(hipL, -87f + br, si); hipR = lp(hipR, -87f + br, si); kneeL = lp(kneeL, 4f, si); kneeR = lp(kneeR, 4f, si) }
         if (li > 0f) { val mc = min(1f, mv * 3f); qLegL = (0.5f + 0.5f * sin(ph + 3.1416f)) * mc; qLegR = (0.5f + 0.5f * sin(ph)) * mc
             hipL = lp(hipL, 2f + 7f * qLegL, li); hipR = lp(hipR, 2f + 7f * qLegR, li)
             kneeL = lp(kneeL, 4f + 26f * qLegL, li); kneeR = lp(kneeR, 4f + 26f * qLegR, li) }
         val drop = 0.1f * land + 0.145f * cr + 0.31f * si
-        val bob = sin(t * 2f) * 0.012f * (1f - stride) + abs(sin(ph)) * (0.035f + 0.04f * rn) * stride * (1f - 0.85f * li)
+        val bob = sin(t * 2f) * 0.012f * (1f - stride) + abs(sin(ph)) * (0.035f + 0.04f * rn) * stride * (1f - 0.85f * li) + fl * (1f - fm) * sin(t * 1.6f) * 0.09f   // pairando: sobe e desce devagar
         val move = stride * (1f + rn * 0.6f) + ab * lp(0.4f, 1.2f, fs)
 
         System.arraycopy(root, 0, r2, 0, 16)
@@ -497,26 +499,28 @@ class CharModel {
         var swimToolA = 0f
         if (swimming) {
             // cabeça fora: braçada alternada e calma (alcança, puxa pra baixo, volta com o cotovelo dobrado). Mergulhado: braçada de peito (V à frente, abre, puxa pros lados e volta).
-            val mc2 = min(1f, mv * 3f); val sa = an.swimPh; val pi = 3.1416f
+            val fa = an.swimFast.coerceIn(0f, 1f); val sa = an.swimPh; val pi = 3.1416f   // fa: só acelerando os braços batem
             val sl2 = sin(t * 2.3f)
+            // sem acelerar: na superfície os bracinhos batem leve pra boiar (parado ou andando); mergulhado os dois braços ficam inclinados pra trás, nas diagonais
             val lSurfX = -25f + sl2 * 14f; val lSurfZ = -(38f + sin(t * 2.3f + 1.2f) * 16f); val lSurfE = -20f + sl2 * 8f
+            val diagX = 14f + sin(t * 2.5f) * 3f; val diagZ = 30f + sin(t * 2.5f + 1f) * 3f; val diagE = -6f
             val recL = max(0f, cos(sa)); val recR = max(0f, cos(sa + pi))
-            val sXL = lp(lSurfX, -67f - 55f * sin(sa), mc2); val sXR = lp(lSurfX, -67f - 55f * sin(sa + pi), mc2) + atkRx
-            val sZL = lp(lSurfZ, -8f, mc2); val sZR = lp(-lSurfZ, 8f, mc2)
-            val sEL = lp(lSurfE, -(7f + 30f * recL), mc2); val sER = lp(lSurfE, -(7f + 30f * recR), mc2)
-            val sYL = (16f + 10f * recL) * mc2; val sYR = -(16f + 10f * recR) * mc2
+            val sXL = lp(lSurfX, -67f - 55f * sin(sa), fa); val sXR = lp(lSurfX, -67f - 55f * sin(sa + pi), fa) + atkRx
+            val sZL = lp(lSurfZ, -8f, fa); val sZR = lp(-lSurfZ, 8f, fa)
+            val sEL = lp(lSurfE, -(7f + 30f * recL), fa); val sER = lp(lSurfE, -(7f + 30f * recR), fa)
+            val sYL = (16f + 10f * recL) * fa; val sYR = -(16f + 10f * recR) * fa
             var e = (sa / 6.2832f) % 1f; if (e < 0f) e += 1f
             var ki = 0; while (ki < 4 && e >= STROKE_T[ki + 1]) ki++
             val ue = (e - STROKE_T[ki]) / (STROKE_T[ki + 1] - STROKE_T[ki]); val u = ue * ue * (3f - 2f * ue)
             val ka = STROKE_KF[ki]; val kb = STROKE_KF[ki + 1]
             val yw = lp(ka[0], kb[0], u); val ev = lp(ka[1], kb[1], u); val dE0 = lp(ka[2], kb[2], u)
             armIk(yw, ev, 1f, ikL); armIk(yw, ev, -1f, ikR)
-            val dXL = lp(15f, ikL[0], mc2); val dZL = lp(-8f, -ikL[1], mc2); val dEL = lp(-5f, dE0, mc2)
-            val dXR = lp(15f, ikR[0], mc2) + atkRx; val dZR = lp(8f, -ikR[1], mc2)
+            val dXL = lp(diagX, ikL[0], fa); val dZL = lp(-diagZ, -ikL[1], fa); val dEL = lp(diagE, dE0, fa)
+            val dXR = lp(diagX, ikR[0], fa) + atkRx; val dZR = lp(diagZ, -ikR[1], fa)
             rxL = lp(sXL, dXL, dv); rzL = lp(sZL, dZL, dv); elL = lp(sEL, dEL, dv); ryL = lp(sYL, 0f, dv)
             rxR = lp(sXR, dXR, dv); rzR = lp(sZR, dZR, dv); elR = lp(sER, dEL, dv); ryR = lp(sYR, 0f, dv)
             if (an.poseOn && toolArm) ryR += an.pY * 0.9f
-            swimToolA = -(an.tilt - 14f) - (rxR - atkRx + elR)   // o item acompanha o corpo deitado e não entra na cabeça
+            swimToolA = 0.5f * (-(an.tilt - 14f) - (rxR - atkRx + elR))   // o item segue a mão (metade da compensação): sem atravessar cabeça nem tronco
         }
         if (ab > 0.01f) {
             val flapA = sin(t * 12f) * 6f * (1f - abs(vk))

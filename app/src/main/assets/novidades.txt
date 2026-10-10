@@ -1,3 +1,12 @@
+#id 2026-10-11-e
+#titulo Nado e voo mais fluidos!
+- Nado: sem acelerar, na superfície ele só boia batendo de leve os bracinhos e as perninhas (parado ou andando); mergulhado, bate só as pernas com os braços inclinados pra trás. Ao acelerar, aí sim ele bate os braços
+- A ferramenta agora segue a mão no nado, sem atravessar a cabeça
+- Sentado, deitado ou parado no ar, os dois pés ficam iguais, sem o jeitinho de quem anda
+- Parado no ar, o personagem sobe e desce bem devagar, flutuando
+- Transição suave ao acelerar e ao desacelerar no voo
+- Toque duplo em descer sai do voo; toque duplo em subir volta a voar
+
 #id 2026-10-11-d
 #titulo Poses novas: rastejar, nado e voo rápido com vento de herói!
 - Rastejar refeito: o corpo não gira mais de lado nem afunda no chão, as pernas ficam baixas e abertas e os braços puxam alternados no plano do chão

@@ -826,7 +826,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
 
     private val an = Anim()
     private var lastPT = 0f; private var phaseA = 0f; private var runA = 0f; private var landA = 0f
-    private var wasAirP = false; private var lastVyP = 0f; private var airSm = 0f; private var landSm = 0f; private var vyHold = 0f; private var flySm = 0f; private var flySp = 0f; private val tpP = FloatArray(10); private var diveSm = 0f; private var tiltSm = 0f; private var dashSm = 0f; private var swimPhA = 0f
+    private var wasAirP = false; private var lastVyP = 0f; private var airSm = 0f; private var landSm = 0f; private var vyHold = 0f; private var flySm = 0f; private var flySp = 0f; private val tpP = FloatArray(10); private var diveSm = 0f; private var tiltSm = 0f; private var dashSm = 0f; private var swimPhA = 0f; private var swimFastA = 0f
 
     private fun drawPlayer(t: Float) {
         val p = game.player
@@ -850,7 +850,8 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val flyNow = game.flying && !p.onGround
         flySm += ((if (flyNow) 1f else 0f) - flySm) * min(1f, 6f * dtp)
         flySp += (min(1f, spdH / 10f) - flySp) * min(1f, 5f * dtp)
-        dashSm += ((if (flyNow && spdH > 11f) 1f else 0f) - dashSm) * min(1f, 6f * dtp)
+        dashSm += ((if (flyNow && spdH > 11f) 1f else 0f) - dashSm) * min(1f, 3.5f * dtp)   // transição suave pro voo rápido (e de volta)
+        swimFastA += ((if (swm > 0.2f && game.sprint && wa > 0.1f) 1f else 0f) - swimFastA) * min(1f, 7f * dtp)
         swimPhA += dtp * (2.2f + 1.8f * min(1f, wa * 2f)) * (if (game.sprint) 1.3f else 1f)
         val surfY = World.WATER_Y + 0.88f
         val diveTarget = ((surfY - (p.y + 1.55f)) / 0.45f).coerceIn(0f, 1f)
@@ -860,7 +861,8 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val tiltTarget = swm * (32f + (((78f - pitchDeg * 0.35f).coerceIn(40f, 110f)) - 32f) * diveSm)
         tiltSm += (tiltTarget - tiltSm) * min(1f, 9f * dtp)
         an.t = t; an.phase = phaseA; an.move = wa; an.run = runA; an.vy = vyHold; an.air = airNow; an.airA = airSm; an.fly = flySm; an.flySpd = flySp
-        an.dash = dashSm; an.imp = game.flyImp; an.swimPh = swimPhA; an.crouch = game.crouchA; an.sit = game.sitA; an.lie = game.lieA; an.landT = landSm; an.swim = swm; an.dive = diveSm; an.tilt = tiltSm
+        val impK = ((1f - game.flyImp) * 3f).coerceIn(0f, 1f)   // o impulso entra em ~0,2s em vez de estalar
+        an.dash = dashSm; an.imp = game.flyImp * impK * impK * (3f - 2f * impK); an.swimFast = swimFastA; an.swimPh = swimPhA; an.crouch = game.crouchA; an.sit = game.sitA; an.lie = game.lieA; an.landT = landSm; an.swim = swm; an.dive = diveSm; an.tilt = tiltSm
         an.atk = game.swing; an.atkArm = swingDelta(id, game.swing); an.hasTool = id > 0
         // mesmos keyframes de golpe/carga da 1ª pessoa, aplicados no braço do boneco
         if (game.charging) { chargePose(tpP, id, game.charge, t); an.charge = min(1f, game.charge) }

@@ -127,7 +127,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onExit: (
             btnId[id] = i
             when (i) {
                 1 -> { game.jumpHeld = true; game.jumpTap() }
-                6 -> game.downHeld = true
+                6 -> { game.downHeld = true; game.downTap() }
                 7 -> game.sprint = !game.sprint      // toque liga/desliga; parar de andar desliga sozinho
                 8 -> { poseDownT = System.currentTimeMillis(); poseFired = false }
                 3 -> game.wantCam = true
