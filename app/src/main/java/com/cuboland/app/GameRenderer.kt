@@ -822,24 +822,32 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     private val handM = FloatArray(16)
     private val charBox: BoxFn = { m, px, py, pz, rx, ry, sx, sy, sz, oy, col, a, rz -> box(m, px, py, pz, rx, ry, sx, sy, sz, oy, col, a, 1f, null, 0, rz) }
 
+    private val an = Anim()
+    private var lastPT = 0f; private var phaseA = 0f; private var runA = 0f; private var landA = 0f
+    private var wasAirP = false; private var lastVyP = 0f
+
     private fun drawPlayer(t: Float) {
         val p = game.player
-        val wp = game.walkPhase; val wa = game.walkAmt
+        val dtp = (t - lastPT).coerceIn(0f, 0.1f); lastPT = t
+        val wa = game.walkAmt
         val swm = game.swimAmt
-        val sw = if (swm > 0.2f) sin(t * 8f) * 28f else sin(wp) * 38f * wa
-        val air = if (p.onGround) 0f else 1f
-        val idle = sin(t * 2f) * 3f * (1f - wa)
-        val bob = if (wa < 0.1f) sin(t * 2f) * 0.012f else abs(sin(wp)) * 0.05f * wa
-        setBase(p.x, p.y + bob, p.z, Math.toDegrees(game.bodyYaw.toDouble()).toFloat())
+        val airNow = !p.onGround && swm < 0.2f
+        val runTarget = if (p.onGround && swm < 0.2f) ((wa - 0.62f) / 0.3f).coerceIn(0f, 1f) else 0f
+        runA += (runTarget - runA) * min(1f, 8f * dtp)
+        phaseA += dtp * (8f + 7f * runA) * wa
+        if (wasAirP && p.onGround && lastVyP < -4f) landA = (-lastVyP / 12f).coerceIn(0.35f, 1f)
+        landA = max(0f, landA - dtp * 5f)
+        wasAirP = airNow; lastVyP = p.vy
+        val id = game.cur()
+        an.t = t; an.phase = phaseA; an.move = wa; an.run = runA; an.vy = p.vy; an.air = airNow
+        an.landT = landA; an.swim = swm; an.atk = game.swing; an.atkArm = swingDelta(id, game.swing); an.hasTool = id > 0
+        setBase(p.x, p.y, p.z, Math.toDegrees(game.bodyYaw.toDouble()).toFloat())
         if (swm > 0.01f) {   // nadando: o corpo deita na água (mais inclinado ao mergulhar)
             Matrix.translateM(base, 0, 0f, 0.9f, 0f)
             Matrix.rotateM(base, 0, swm * (78f - Math.toDegrees(game.pitch.toDouble()).toFloat() * 0.35f).coerceIn(40f, 110f), 1f, 0f, 0f)
             Matrix.translateM(base, 0, 0f, -0.9f, 0f)
         }
-        val id = game.cur()
-        val angR = -28f + sw * 0.5f - 25f * air - idle + swingDelta(id, game.swing)
-        val angL = -sw * 0.9f - 40f * air + idle
-        cm.draw(charBox, base, t, sw, angR, angL, handM)
+        cm.draw(charBox, base, an, handM)
         if (id > 0) {   // mesmo modelo 3D da 1ª pessoa e dos ícones: cabo pra cima, fio pra frente
             System.arraycopy(handM, 0, base2, 0, 16)
             if (id in 1..13) {
@@ -876,7 +884,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
 
     private val SKIN: Int get() = Look.skin()
     private val SKIN_D: Int get() = shadeC(Look.skin(), 0.85f)
-    private val SLEEVE: Int get() = when (Look.v[Look.TOP]) { 5 -> 0x4A5568; 6 -> 0xF4F4F4; else -> Look.pal(Look.TOPC) }
+    private val SLEEVE: Int get() = when (Look.v[Look.TOP]) { 5 -> 0x4A5568; 6, 8, 15, 16 -> 0xF4F4F4; else -> Look.pal(Look.TOPC) }
     private val SLEEVE_L: Int get() = mixC(SLEEVE, 0xFFFFFF, 0.35f)
     private val showLeftHand = false   // mão esquerda vazia no canto, como no Minecraft (false = esconde)
 

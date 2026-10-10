@@ -29,6 +29,9 @@ class CharView(ctx: Context) : View(ctx) {
     private val dst = Rect()
     private var yaw = -25f; private var drag = false; private var lastX = 0f
     private var tt = 0f; private var lastT = System.nanoTime()
+    /** 0 parado, 1 andando, 2 correndo, 3 pulando, 4 atacando */
+    var mode = 0
+    private val an = Anim(); private var ph = 0f
     private val wx = FloatArray(8); private val wy = FloatArray(8); private val wz = FloatArray(8)
     private val faces = arrayOf(intArrayOf(4, 5, 7, 6), intArrayOf(1, 0, 2, 3), intArrayOf(5, 1, 3, 7), intArrayOf(0, 4, 6, 2), intArrayOf(6, 7, 3, 2), intArrayOf(0, 1, 5, 4))
     private val sx = FloatArray(4); private val sy = FloatArray(4); private val sz = FloatArray(4)
@@ -120,8 +123,22 @@ class CharView(ctx: Context) : View(ctx) {
         background()
         Matrix.setIdentityM(base, 0)
         Matrix.rotateM(base, 0, yaw, 0f, 1f, 0f)
-        val idle = sin(tt * 2f) * 3f
-        model.draw(boxFn, base, tt, 0f, -6f - idle, 6f + idle, null)
+        an.t = tt
+        var hop = 0f
+        an.move = 0f; an.run = 0f; an.air = false; an.landT = 0f; an.atk = 1f; an.atkArm = 0f; an.hasTool = false; an.vy = 0f
+        when (mode) {
+            1 -> { ph += dt * 8f; an.move = 1f }
+            2 -> { ph += dt * 14f; an.move = 1f; an.run = 1f }
+            3 -> {
+                val jt = tt % 1.7f
+                if (jt < 0.9f) { an.air = true; an.vy = if (jt < 0.45f) 5f else -5f; hop = sin(jt / 0.9f * 3.1416f) * 0.45f }
+                else if (jt < 1.2f) an.landT = 1f - (jt - 0.9f) / 0.3f
+            }
+            4 -> { val cyc = (tt % 0.9f) / 0.9f; an.atk = cyc; an.atkArm = CharModel.atkDelta(cyc); an.hasTool = true }
+        }
+        an.phase = ph
+        if (hop > 0f) Matrix.translateM(base, 0, 0f, hop, 0f)
+        model.draw(boxFn, base, an, null)
         bmp.setPixels(pix, 0, W, 0, 0, W, H)
         val sc = min(width / W.toFloat(), height / H.toFloat())
         val dw = (W * sc).toInt(); val dh = (H * sc).toInt()

@@ -1,3 +1,14 @@
+#id 2026-10-10-k
+#titulo Boneco repaginado: cabeça menor, mil roupas e animações de verdade!
+- Cabeça ajustada pra um chibi mais proporcional: a ferramenta na mão não fica mais cortada
+- Muito mais opções: 21 cabelos (undercut, saiyajin, moicano, hime, trança, dois coques, twintail, ahoge...), 18 blusas (marinheiro, gakuran, kimono, robe de mago, terno, haori, maid...), hakama, saia plissada, leggings, geta, mocassim e mais
+- Novos acessórios: faixa ninja, auréola, chifrinhos, orelhas de raposa, tiara, boina, kasa, fones, capuz, espada nas costas, asas de morcego, aljava, rabo de raposa, mochila escolar, gravata, coleira de sino e lenço
+- Rostos: olhos sérios/estrelas/gato/cansados, bocas diferentes, tapa-olho, cicatriz, curativo, bigodes, máscara e lágrima
+- Looks prontos: Ninja, Colegial, Mago, Samurai, Princesa, Maid, Príncipe, Gatinha, Raposa e mais
+- Corrigidos os acessórios bugados (coroa, colar) e o chuvisco de pixels nas jaquetas
+- Animações novas: respirar e piscar parado, andar com balanço, correr inclinado com cotovelos dobrados, pular com pernas encolhidas e braços pro alto, cair com braços abertos, amortecer o pouso e girar o corpo ao atacar
+- Na tela do personagem, o botão "Animação" deixa você testar parado, andando, correndo, pulando e atacando
+
 #id 2026-10-10-j
 #titulo Personagem chibi novinho e totalmente personalizável!
 - Novo botão "Personagem" no menu: escolha menino ou menina, pele, 8 cabelos, olhos, bochechas, blusas, saias/calças/shorts, calçados e muitos acessórios (chapéus, óculos, capa, mochila, asinhas, rabinho...), com preview em 3D que gira

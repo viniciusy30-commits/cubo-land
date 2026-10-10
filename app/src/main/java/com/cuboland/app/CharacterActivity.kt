@@ -15,6 +15,8 @@ import androidx.appcompat.app.AppCompatActivity
 class CharacterActivity : AppCompatActivity() {
     private lateinit var col: LinearLayout
     private val refreshers = ArrayList<() -> Unit>()
+    private var presetIdx = 0
+    private val ANIMS = arrayOf("Parado", "Andando", "Correndo", "Pulando", "Atacando")
 
     private fun label(t: String, size: Float = 15f, g: Int = Gravity.START) = TextView(this).apply {
         text = t; textSize = size; setTextColor(Color.WHITE); typeface = mcFont(); gravity = g
@@ -69,12 +71,31 @@ class CharacterActivity : AppCompatActivity() {
         val root = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; background = dirtBackground(); setPadding(dp(16), dp(10), dp(16), dp(10)) }
 
         val left = FrameLayout(this)
-        left.addView(CharView(this), FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+        val cv = CharView(this)
+        left.addView(cv, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+        var animBtn: android.widget.Button? = null
+        animBtn = btn("Animação: " + ANIMS[0], Color.rgb(66, 133, 244)) {
+            cv.mode = (cv.mode + 1) % ANIMS.size
+            animBtn?.text = "Animação: " + ANIMS[cv.mode]
+        }
+        left.addView(animBtn, FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, dp(44), Gravity.TOP or Gravity.START).apply { topMargin = dp(4); leftMargin = dp(4) })
         left.addView(label("Arraste pra girar", 12f, Gravity.CENTER), FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM))
         root.addView(left, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 0.9f))
 
         col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(14), 0, dp(14), dp(12)) }
         col.addView(label("Meu personagem", 26f))
+        header("Looks prontos")
+        run {
+            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+            val tv = label("", 15f, Gravity.CENTER)
+            val prev = btn("<", Color.rgb(171, 71, 188)) { presetIdx = (presetIdx + Look.PRESETS.size - 1) % Look.PRESETS.size; Look.applyPreset(presetIdx); changed(); tv.text = Look.PRESET_NAMES[presetIdx] }
+            val next = btn(">", Color.rgb(171, 71, 188)) { presetIdx = (presetIdx + 1) % Look.PRESETS.size; Look.applyPreset(presetIdx); changed(); tv.text = Look.PRESET_NAMES[presetIdx] }
+            tv.text = "Toque nas setas"
+            row.addView(prev, LinearLayout.LayoutParams(dp(54), dp(46)))
+            row.addView(tv, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            row.addView(next, LinearLayout.LayoutParams(dp(54), dp(46)))
+            col.addView(row, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(4) })
+        }
         header("Corpo")
         stepper("Tipo", Look.GENDER, Look.GENDER_NAMES)
         swatches("Pele", Look.SKIN, Look.SKINS, Look.SKIN_NAMES)
@@ -84,6 +105,7 @@ class CharacterActivity : AppCompatActivity() {
         header("Rosto")
         stepper("Olhos", Look.EYES, Look.EYE_STYLES)
         swatches("Cor dos olhos", Look.EYEC, Look.EYE_COLORS, Look.EYE_COLOR_NAMES)
+        stepper("Boca", Look.MOUTH, Look.MOUTHS)
         stepper("Bochechas coradas", Look.BLUSH, Look.ONOFF)
         stepper("Rosto", Look.FACE, Look.FACES)
         header("Roupas")
