@@ -13,7 +13,7 @@ class Slime(x: Float, y: Float, z: Float) : Ent(x, y, z, 0.42f, 0.85f) {
 }
 
 class Particle(var x: Float, var y: Float, var z: Float, var vx: Float, var vy: Float, var vz: Float,
-               val color: Int, val size: Float, var life: Float) { var grav = 18f }
+               val color: Int, val size: Float, var life: Float) { var grav = 18f; var dust = false; var age = 0f }
 
 class LeafP(var x: Float, var y: Float, var z: Float, var vx: Float, var vz: Float, val ph: Float, val color: Int, val size: Float, var life: Float, var landed: Boolean = false, var age: Float = 0f) {
     var vy = 0f; var burst = 0f; var spin = 0f   // burst > 0: folhinha lançada por um corte (voa pra fora e depois flutua)
@@ -157,13 +157,15 @@ class Game(val world: World) {
         if (e === player && e.inWater) {   // nado: flutua com a cabeça fora, mergulha olhando pra baixo e nadando, sobe olhando pra cima
             val surf = World.WATER_Y + 0.88f
             val mg = hypot(stickX, stickY)
-            val tv = when {
-                jumpHeld -> 3.6f
-                mg > 0.15f && pitch < -0.28f -> sin(pitch) * 4.2f
-                mg > 0.15f && pitch > 0.28f -> sin(pitch) * 3.2f
-                else -> (((surf - 1.05f) - e.y) * 1.6f).coerceIn(-1.5f, 1.6f)
-            }
-            e.vy += (tv - e.vy) * min(1f, 6f * dt)
+            // empuxo de mola: a água empurra pra cima (mais forte quanto mais fundo), balança com as ondas e amortece o mergulho
+            val bob = sin(time * 1.5f + e.x * 0.7f + e.z * 0.5f) * 0.05f + sin(time * 2.3f + e.z * 0.9f) * 0.025f
+            var acc = (((surf - 1.05f) + bob - e.y) * 10f).coerceIn(-5f, 7f)
+            if (downHeld) acc = -15f   // botão de afundar
+            else if (jumpHeld) acc += 17f
+            else if (mg > 0.15f && pitch < -0.28f) acc = sin(pitch) * 16f
+            else if (mg > 0.15f && pitch > 0.28f) acc = sin(pitch) * 12f
+            e.vy += (acc - 3.4f * e.vy) * dt
+            e.vy = e.vy.coerceIn(-4.6f, 4.4f)
             e.vx *= 1f - 3f * dt; e.vz *= 1f - 3f * dt
             move(e, e.vx * dt, e.vy * dt, e.vz * dt)
             return
@@ -557,25 +559,31 @@ class Game(val world: World) {
     }
 
     private val leafCols = intArrayOf(0x4FA52E, 0x6CBF3C, 0x8AD453, 0x3E8A25, 0xA3DF6A, 0xC4E070, 0x7FC84A)
-    /** o bloco de folha se desfaz numa explosão de folhinhas que giram, flutuam e pousam, com brilhinhos e um sopro verde */
-    private fun leafCutFx(x: Int, y: Int, z: Int) {
+    /** a espada corta o bloco: ele vira, na hora, uma nuvem de folhinhas que escorrem no sentido do corte, girando e planando */
+    private fun leafCutFx(x: Int, y: Int, z: Int, k: Int) {
         val cx = x + 0.5f; val cy = y + 0.5f; val cz = z + 0.5f
-        // folhinhas: lançadas pra fora do centro, depois desaceleram e planam
-        if (leafFall.size < 150) for (i in 0 until 14) {
-            val a = rnd.nextFloat() * 6.2832f; val sp = 0.9f + rnd.nextFloat() * 2.2f
-            val l = LeafP(cx + (rnd.nextFloat() - 0.5f) * 0.7f, cy + (rnd.nextFloat() - 0.5f) * 0.7f, cz + (rnd.nextFloat() - 0.5f) * 0.7f,
-                cos(a) * sp, sin(a) * sp, rnd.nextFloat() * 6.28f, leafCols[rnd.nextInt(leafCols.size)], 0.07f + rnd.nextFloat() * 0.06f, 3.2f + rnd.nextFloat() * 2.2f)
-            l.vy = 0.8f + rnd.nextFloat() * 2.4f; l.burst = 0.55f + rnd.nextFloat() * 0.4f; l.spin = 1.6f + rnd.nextFloat() * 2.4f
+        val fx = dirX(); val fz = dirZ(); val hl = max(0.001f, hypot(fx, fz)); val fwx = fx / hl; val fwz = fz / hl
+        val rxv = fwz; val rzv = -fwx; val sg = if (combo == 1) -1f else 1f   // direção lateral do talho
+        val n = if (k == 0) 18 else 10
+        if (leafFall.size < 260) for (i in 0 until n) {
+            val ox = (rnd.nextFloat() - 0.5f) * 0.95f; val oy = (rnd.nextFloat() - 0.5f) * 0.95f; val oz = (rnd.nextFloat() - 0.5f) * 0.95f
+            val along = (ox * rxv + oz * rzv) * sg    // posição ao longo do corte: quem está na frente voa mais alto (arco)
+            val s = 1.5f + rnd.nextFloat() * 2.6f
+            val l = LeafP(cx + ox, cy + oy, cz + oz,
+                rxv * sg * s + fwx * (0.4f + rnd.nextFloat() * 1.5f) + (rnd.nextFloat() - 0.5f) * 0.8f,
+                rzv * sg * s + fwz * (0.4f + rnd.nextFloat() * 1.5f) + (rnd.nextFloat() - 0.5f) * 0.8f,
+                rnd.nextFloat() * 6.28f, leafCols[rnd.nextInt(leafCols.size)], 0.07f + rnd.nextFloat() * 0.07f, 3.4f + rnd.nextFloat() * 2.2f)
+            l.vy = 0.5f + rnd.nextFloat() * 2.0f + along * 1.6f; l.burst = 0.6f + rnd.nextFloat() * 0.5f; l.spin = 1.4f + rnd.nextFloat() * 2.4f
             leafFall.add(l)
         }
-        // pedacinhos pequenos + brilhinhos de luz
-        for (i in 0 until 9) parts.add(Particle(cx + (rnd.nextFloat() - 0.5f) * 0.8f, cy + (rnd.nextFloat() - 0.5f) * 0.8f, cz + (rnd.nextFloat() - 0.5f) * 0.8f,
-            (rnd.nextFloat() - 0.5f) * 3.4f, 0.8f + rnd.nextFloat() * 2.2f, (rnd.nextFloat() - 0.5f) * 3.4f,
-            leafCols[rnd.nextInt(leafCols.size)], 0.03f + rnd.nextFloat() * 0.04f, 0.5f + rnd.nextFloat() * 0.5f).also { it.grav = 6f })
-        for (i in 0 until 4) parts.add(Particle(cx + (rnd.nextFloat() - 0.5f) * 0.8f, cy + (rnd.nextFloat() - 0.5f) * 0.8f, cz + (rnd.nextFloat() - 0.5f) * 0.8f,
-            (rnd.nextFloat() - 0.5f) * 1.2f, 0.4f + rnd.nextFloat() * 1.2f, (rnd.nextFloat() - 0.5f) * 1.2f,
-            if (rnd.nextBoolean()) 0xF4FFB8 else 0xFFFFFF, 0.022f, 0.6f + rnd.nextFloat() * 0.5f).also { it.grav = 0.4f })
-        if (rnd.nextFloat() < 0.12f) dropItem(cx, cy, cz, B.LEAVES, 0f, 0f)
+        if (parts.size < 540) {
+            for (i in 0 until 8) parts.add(Particle(cx + (rnd.nextFloat() - 0.5f) * 0.9f, cy + (rnd.nextFloat() - 0.5f) * 0.9f, cz + (rnd.nextFloat() - 0.5f) * 0.9f,
+                rxv * sg * (1f + rnd.nextFloat() * 2.5f) + (rnd.nextFloat() - 0.5f), 0.5f + rnd.nextFloat() * 1.8f, rzv * sg * (1f + rnd.nextFloat() * 2.5f) + (rnd.nextFloat() - 0.5f),
+                leafCols[rnd.nextInt(leafCols.size)], 0.03f + rnd.nextFloat() * 0.035f, 0.5f + rnd.nextFloat() * 0.5f).also { it.grav = 5f })
+            for (i in 0 until 3) parts.add(Particle(cx + (rnd.nextFloat() - 0.5f) * 0.9f, cy + (rnd.nextFloat() - 0.5f) * 0.9f, cz + (rnd.nextFloat() - 0.5f) * 0.9f,
+                rxv * sg * 0.8f, 0.4f + rnd.nextFloat() * 1.0f, rzv * sg * 0.8f, if (rnd.nextBoolean()) 0xF4FFB8 else 0xFFFFFF, 0.022f, 0.6f + rnd.nextFloat() * 0.5f).also { it.grav = 0.4f })
+        }
+        if (k == 0 && rnd.nextFloat() < 0.12f) dropItem(cx, cy, cz, B.LEAVES, 0f, 0f)
     }
 
     private fun tuftFx(x: Float, y: Float, z: Float, kind: Int) {
@@ -594,7 +602,7 @@ class Game(val world: World) {
             for (o in offs) {
                 val x = bx + o[0]; val y = by + o[1]; val z = bz + o[2]
                 if (world.get(x, y, z) != B.LEAVES) continue
-                world.set(x, y, z, B.AIR); leafBreaks.add(LeafBreak(x, y, z, -0.045f * leafBreaks.size.coerceAtMost(8)))
+                world.set(x, y, z, B.AIR); leafCutFx(x, y, z, if (o[0] == 0 && o[1] == 0 && o[2] == 0) 0 else 1)
             }
         }
         val gx0 = floor(cx - 1.4f).toInt(); val gx1 = floor(cx + 1.4f).toInt(); val gz0 = floor(cz - 1.4f).toInt(); val gz1 = floor(cz + 1.4f).toInt()
@@ -827,7 +835,7 @@ class Game(val world: World) {
             bodyYaw += diff * min(1f, 12f * dt)
         } else if (!thirdPerson) bodyYaw = yaw
         if (jumpHeld && !flying) {
-            if (p.inWater) p.vy = 3.6f else if (p.onGround) { p.vy = 8.6f; p.onGround = false }
+            if (p.inWater) { if (p.y > World.WATER_Y + 0.88f - 1.4f) p.vy = max(p.vy, 4.2f) } else if (p.onGround) { p.vy = 8.6f; p.onGround = false }
         }
         val wasW = p.inWater; val vyPre = p.vy
         for (i in 0 until 2) physics(p, dt / 2f)
@@ -929,7 +937,8 @@ class Game(val world: World) {
         val pi = parts.iterator()
         while (pi.hasNext()) {
             val q = pi.next()
-            q.life -= dt; q.vy -= q.grav * dt
+            q.life -= dt; q.vy -= q.grav * dt; q.age += dt
+            if (q.dust) { val dr = max(0f, 1f - 3.2f * dt); q.vx *= dr; q.vz *= dr; q.vy *= max(0f, 1f - 2f * dt) }
             if (q.grav < 0f && q.y > World.WATER_Y + 0.85f) q.life = 0f   // bolhas estouram na superfície
             val nx = q.x + q.vx * dt; val ny = q.y + q.vy * dt; val nz = q.z + q.vz * dt
             if (world.solid(floor(nx).toInt(), floor(ny).toInt(), floor(nz).toInt())) { q.vx *= 0.3f; q.vz *= 0.3f; q.vy = 0f }
@@ -990,8 +999,40 @@ class Game(val world: World) {
         shake = max(shake, min(0.2f, v * 0.012f))
     }
 
+    private var prevG = true
+    private fun dustColor(gid: Int): Int {
+        if (gid == B.GRASS) return 0xBDD293; if (gid == B.SAND) return 0xF3E6B6; if (gid == B.DIRT) return 0xCCA67E
+        val c = B.top[gid]; val r = (c shr 16 and 255); val gg = (c shr 8 and 255); val b = (c and 255)
+        return ((r + (255 - r) * 45 / 100) shl 16) or ((gg + (255 - gg) * 45 / 100) shl 8) or (b + (255 - b) * 45 / 100)
+    }
+    /** poeirinha fofa: bolinhas que sobem, inflam e somem; jogadas um pouco pra trás do passo */
+    private fun stepDust(x: Float, y: Float, z: Float, gid: Int, vx: Float, vz: Float, sp: Float) {
+        if (parts.size > 520) return
+        val col = dustColor(gid)
+        for (i in 0 until 5) {
+            val a = rnd.nextFloat() * 6.2832f; val r = 0.3f + rnd.nextFloat() * 0.5f
+            val pt = Particle(x + cos(a) * 0.12f, y + 0.04f + rnd.nextFloat() * 0.06f, z + sin(a) * 0.12f,
+                -vx * 0.18f + cos(a) * r, 0.5f + rnd.nextFloat() * 0.7f, -vz * 0.18f + sin(a) * r, col, 0.07f + rnd.nextFloat() * 0.06f, 0.55f + rnd.nextFloat() * 0.35f)
+            pt.dust = true; pt.grav = 0.6f; parts.add(pt)
+        }
+    }
+    private fun landDust(x: Float, y: Float, z: Float, gid: Int, power: Float) {
+        if (parts.size > 500) return
+        val col = dustColor(gid); val n = (10 + power).toInt().coerceAtMost(18)
+        for (i in 0 until n) {
+            val a = i * 6.2832f / n + rnd.nextFloat() * 0.3f; val sp = 1.6f + rnd.nextFloat() * 1.2f
+            val pt = Particle(x + cos(a) * 0.2f, y + 0.05f, z + sin(a) * 0.2f, cos(a) * sp, 0.3f + rnd.nextFloat() * 0.6f, sin(a) * sp, col, 0.09f + rnd.nextFloat() * 0.07f, 0.6f + rnd.nextFloat() * 0.4f)
+            pt.dust = true; pt.grav = 0.4f; parts.add(pt)
+        }
+    }
+
     private fun waterAndSteps(dt: Float, wasW: Boolean, vyPre: Float) {
         val p = player
+        if (p.onGround && !prevG && vyPre < -7f && !p.inWater && !flying) {
+            val lg = world.get(floor(p.x).toInt(), floor(p.y - 0.06f).toInt(), floor(p.z).toInt())
+            if (lg != B.AIR && lg != B.WATER) landDust(p.x, p.y, p.z, lg, -vyPre)
+        }
+        prevG = p.onGround
         val surf = World.WATER_Y + 0.88f
         val sp = hypot(p.vx, p.vz)
         swimAmt += ((if (p.inWater && !p.onGround && !flying) 1f else 0f) - swimAmt) * min(1f, 8f * dt)
@@ -1023,6 +1064,7 @@ class Game(val world: World) {
                 stepDist = 0f; stepLeft = !stepLeft
                 val gx = floor(p.x).toInt(); val gy = floor(p.y - 0.06f).toInt(); val gz = floor(p.z).toInt()
                 val gid = world.get(gx, gy, gz)
+                if (gid != B.AIR && gid != B.WATER) stepDust(p.x, gy + 1f, p.z, gid, p.vx, p.vz, sp)
                 if (gid == B.SAND || gid == B.DIRT || gid == B.GRASS) {
                     val ang = atan2(p.vx, p.vz); val sd = if (stepLeft) -1f else 1f
                     prints.add(Foot(p.x + cos(ang) * 0.13f * sd, gy + 1f, p.z - sin(ang) * 0.13f * sd, ang, gid, time, sd))

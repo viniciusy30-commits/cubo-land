@@ -83,7 +83,7 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
             if (x < pl() || x > pr() || y < pt0() || y > pb()) toggleInv()
             return
         }
-        for (i in intArrayOf(0, 1, 2, 3, 4, 6)) if ((i != 6 || game.flying) && hypot(x - bx(i), y - byy(i)) < br(i) * 1.15f) {
+        for (i in intArrayOf(0, 1, 2, 3, 4, 6)) if ((i != 6 || game.flying || game.player.inWater) && hypot(x - bx(i), y - byy(i)) < br(i) * 1.15f) {
             btnId[id] = i
             when (i) {
                 0 -> { game.attackPress = true; game.attackHeld = true }
@@ -234,7 +234,7 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
         }
         for (i in 0 until 7) {
             if (invOpen && i != 5) continue
-            if (i == 6 && !game.flying) continue
+            if (i == 6 && !game.flying && !game.player.inWater) continue
             circle(c, i, btnId.containsValue(i) || (i == 5 && invOpen))
             val x = bx(i); val y = byy(i)
             pt.style = Paint.Style.STROKE; pt.strokeWidth = 4f * d; pt.color = Color.WHITE; pt.strokeCap = Paint.Cap.ROUND; pt.strokeJoin = Paint.Join.ROUND

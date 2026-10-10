@@ -123,16 +123,17 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                 vec3 R = reflect(-V, n);
                 vec3 sky = mix(uFog, vec3(0.42, 0.66, 0.97), pow(clamp(R.y, 0.0, 1.0), 0.45));
                 float rl = max(dot(R, L), 0.0);
-                base = mix(base, vec3(0.58, 0.86, 0.86), 0.2);   // água turva, meio leitosa
                 vec3 wc = base * (0.88 + 0.22 * dot(n, L));
+                // luz suave desenhando teia na superfície
+                wc += vec3(0.55, 0.95, 0.95) * caus(vec3(P.x * 0.9, 0.0, P.y * 0.9), tm * 0.7) * 0.10;
                 wc = mix(wc, sky, clamp(fres * 1.05 + 0.05, 0.0, 0.85));
                 wc += vec3(0.6) * ripGlow * 0.16;
                 // brilho do sol: halo suave + cintilado delicado
-                wc += vec3(1.0, 0.97, 0.88) * (pow(rl, 40.0) * 0.20);
+                wc += vec3(1.0, 0.97, 0.88) * (pow(rl, 48.0) * 0.28);
                 // espuma macia na beirada
                 float foam = smoothstep(0.17, 0.0, depth) * (0.55 + 0.45 * sin(P.x * 4.0 + P.y * 3.5 + tm * 1.4 + sin(P.y * 2.5 - tm) * 2.0));
                 wc = mix(wc, vec3(1.0), clamp(foam, 0.0, 1.0) * 0.45);
-                float wa = mix(0.62, 0.88, smoothstep(0.0, 0.45, depth));
+                float wa = mix(0.50, 0.78, smoothstep(0.0, 0.5, depth));
                 wa = clamp(wa + fres * 0.30 + foam * 0.3, 0.0, 1.0);
                 if (uUnder > 0.5) {   // vista de baixo: lisa, degradê suave com brilho do sol e um balanço bem leve
                     float win = smoothstep(0.52, 0.80, ndv);
@@ -146,12 +147,13 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                 c = wc; alpha = wa;
             } else if (uWind > 0.5 && vWP.y < 9.86) {   // tudo que está debaixo d'água: azulado, escuro com a profundidade e luz dançando
                 float dep = clamp((9.88 - vWP.y) / 6.0, 0.0, 1.0);
-                c *= mix(vec3(0.95, 1.0, 1.0), vec3(0.82, 0.95, 1.0), dep * 0.5);
-                c = mix(c, vec3(0.40, 0.76, 0.84), 0.18 + 0.40 * dep);   // turbidez: fundo meio enevoado
+                c *= mix(vec3(0.92, 1.0, 1.0), vec3(0.8, 0.95, 1.0), dep * 0.5);
+                c += vec3(0.55, 0.95, 1.0) * caus(vWP * 1.1, uTime) * 0.5 * (1.0 - dep * 0.6);
             }
             if (vTile > 14.5 && vTile < 15.5) c = t.rgb * 1.25;
             if (uUnder > 0.5 && !isWater) {
                 c *= vec3(0.88, 1.02, 1.10);
+                c += vec3(0.5, 0.85, 1.0) * caus(vWP * 0.9, uTime * 1.2) * 0.35;
             }
             float g2 = dot(c, vec3(0.299, 0.587, 0.114));
             c = mix(vec3(g2), c, 1.12); c = mix(c, smoothstep(0.0, 1.0, c), 0.3);
@@ -1407,9 +1409,15 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         drawPrints()
         G.glDepthMask(true)
         for (s in game.slimes) drawSlime(s)
-        drawDebris(); drawTrees(); drawDrops(); drawLeafBreaks()
+        drawDebris(); drawTrees(); drawDrops()
         for (q in game.parts) {
             if (!seen(q.x, q.y, q.z, 28f)) continue
+            if (q.dust) {   // poeira: nasce pequena, vai inchando devagar e some suave
+                setBase(q.x, q.y, q.z, q.age * 55f + q.z * 90f)
+                val ps = q.size * (1f + q.age * 2.4f)
+                box(base, 0f, 0f, 0f, q.age * 30f, 0f, ps, ps * 0.8f, ps, 0f, q.color, min(0.5f, q.life * 0.9f) * min(1f, q.age * 12f), 1.05f)
+                continue
+            }
             setBase(q.x, q.y, q.z, game.time * 200f)
             val ps = q.size * min(1f, 0.35f + q.life * 1.6f)
             box(base, 0f, 0f, 0f, 0f, 0f, ps, ps, ps, 0f, q.color, min(1f, q.life * 2.2f))
@@ -1419,7 +1427,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             val sp = if (l.spin > 0f) l.spin else 1f
             setBase(l.x, l.y, l.z, l.age * 50f * sp + l.ph * 57f)
             val tl = if (l.landed) 0f else sin(l.age * 3f * sp + l.ph) * 55f; val rl = if (l.landed) 0f else cos(l.age * 2.3f * sp + l.ph) * 45f
-            val al = min(1f, min(l.age * 3f, l.life * 1.2f))
+            val al = min(1f, min(l.age * (if (l.spin > 0f) 14f else 3f), l.life * 1.2f))
             val edge = mixCol(l.color, 0xE6F59A, 0.35f)
             box(base, 0f, 0f, 0f, tl, 0f, l.size * 0.95f, 0.01f, l.size * 1.15f, 0f, l.color, al, 1f, null, 0, rl)
             box(base, 0f, 0.003f, l.size * 0.28f, tl, 0f, l.size * 0.55f, 0.011f, l.size * 0.55f, 0f, edge, al * 0.9f, 1.05f, null, 0, rl)
