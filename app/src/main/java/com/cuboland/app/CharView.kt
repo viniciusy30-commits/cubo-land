@@ -31,6 +31,9 @@ class CharView(ctx: Context) : View(ctx) {
     private var tt = 0f; private var lastT = System.nanoTime()
     /** 0 parado, 1 andando, 2 correndo, 3 pulando, 4 atacando */
     var mode = 0
+    /** fundo transparente (menu principal) e balanço suave em vez de girar sem parar */
+    var transparentBg = false
+    var sway = false
     private val an = Anim(); private var ph = 0f
     private val wx = FloatArray(8); private val wy = FloatArray(8); private val wz = FloatArray(8)
     private val faces = arrayOf(intArrayOf(4, 5, 7, 6), intArrayOf(1, 0, 2, 3), intArrayOf(5, 1, 3, 7), intArrayOf(0, 4, 6, 2), intArrayOf(6, 7, 3, 2), intArrayOf(0, 1, 5, 4))
@@ -102,7 +105,7 @@ class CharView(ctx: Context) : View(ctx) {
     private fun background() {
         val top = Color.rgb(150, 205, 250); val bot = Color.rgb(214, 238, 255)
         for (y in 0 until H) {
-            val c = mixC(top, bot, y / (H - 1f))
+            val c = if (transparentBg) 0 else mixC(top, bot, y / (H - 1f))
             val row = y * W
             for (x in 0 until W) { pix[row + x] = c; zb[row + x] = -1e9f }
         }
@@ -112,14 +115,14 @@ class CharView(ctx: Context) : View(ctx) {
             val dx = (x - W * 0.5f) / 70f; val dy = (y - gy) / 12f
             val d = dx * dx + dy * dy
             val i = y * W + x
-            if (d < 1f) pix[i] = mixC(pix[i], Color.rgb(40, 60, 40), 0.35f * (1f - d))
+            if (d < 1f) pix[i] = if (transparentBg) Color.argb((110 * (1f - d)).toInt(), 20, 24, 20) else mixC(pix[i], Color.rgb(40, 60, 40), 0.35f * (1f - d))
         }
     }
 
     override fun onDraw(c: Canvas) {
         val now = System.nanoTime(); val dt = min(0.1f, (now - lastT) / 1e9f); lastT = now
         tt += dt
-        if (!drag) yaw += dt * 28f
+        if (!drag) { if (sway) yaw += (-20f + 24f * sin(tt * 0.7f) - yaw) * min(1f, dt * 2f) else yaw += dt * 28f }
         background()
         Matrix.setIdentityM(base, 0)
         Matrix.rotateM(base, 0, yaw, 0f, 1f, 0f)

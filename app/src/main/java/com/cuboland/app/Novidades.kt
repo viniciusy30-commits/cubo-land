@@ -1,10 +1,16 @@
 package com.cuboland.app
 
 import android.app.Activity
-import androidx.appcompat.app.AlertDialog
+import android.view.ViewGroup
 
 object Novidades {
-    class Entry(val id: String, val titulo: String, val itens: List<String>)
+    class Entry(val id: String, val titulo: String, val itens: List<String>) {
+        /** "2026-10-10-o" -> "10/10/2026" */
+        fun data(): String {
+            val p = id.split("-")
+            return if (p.size >= 3) "${p[2]}/${p[1]}/${p[0]}" else id
+        }
+    }
 
     fun parse(a: Activity): List<Entry> {
         val out = ArrayList<Entry>()
@@ -24,11 +30,24 @@ object Novidades {
         return out
     }
 
+    fun hasUnseen(a: Activity): Boolean {
+        val top = parse(a).firstOrNull() ?: return false
+        return a.getSharedPreferences("novidades", 0).getString("seen", "") != top.id
+    }
+
+    fun markSeen(a: Activity) {
+        val top = parse(a).firstOrNull() ?: return
+        a.getSharedPreferences("novidades", 0).edit().putString("seen", top.id).apply()
+    }
+
     private fun show(a: Activity, e: Entry) {
         if (a.isFinishing) return
-        AlertDialog.Builder(a).setTitle("✨ " + e.titulo)
-            .setMessage(e.itens.joinToString("\n") { "• $it" })
-            .setPositiveButton("Legal!", null).show()
+        a.cozyDialog(460) { p, close ->
+            p.addView(a.cTxt("✦ Novidades · ${e.data()}", 12f, Cz.SOFT, false))
+            p.addView(a.cTxt(e.titulo, 19f, Cz.GOLD).apply { setPadding(0, a.dp(2), 0, a.dp(8)) })
+            for (item in e.itens) p.addView(a.cTxt("•  $item", 13f, Cz.CREAM, false).apply { setPadding(0, a.dp(2), 0, a.dp(2)) })
+            p.addView(a.cBtn("Legal!", Cz.GREEN, 16f) { close() }, android.widget.LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = a.dp(12) })
+        }
     }
 
     fun showIfNew(a: Activity) {

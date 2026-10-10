@@ -1,3 +1,14 @@
+#id 2026-10-11-a
+#titulo Reformulação total: menu novo, mundos, personagem e controles!
+- Menu principal em tela cheia: céu que muda com a hora do seu aparelho (dia, pôr do sol e noite com lua e estrelas), seu personagem em cima de uma ilhazinha flutuante e logo de cubinhos
+- Novo botão Jogar leva à escolha de mundos: crie, edite, duplique e exclua mundos, cada um com miniatura, tipo (Ilha ou Planície e rio), modo (Sobrevivência ou Criativo), semente e data do último jogo
+- Seus saves antigos foram migrados automaticamente pra lista de mundos (Minha ilha e Planície e rio)
+- Ajustes em abas: Geral, Controles, Gráficos, Novidades (histórico completo) e Sobre
+- Editor de personagem refeito em abas (Looks, Corpo, Cabelo, Rosto, Roupas, Acessórios) com grades de opções, bolinhas de cor e prévia 3D com animações
+- Controles estilo Minecraft: toque rápido coloca bloco ou ataca, segurar quebra sem parar, arrastar move a câmera (dá pra desligar nos Ajustes)
+- Botões do jogo, hotbar e mochila com visual novo, tamanho dos botões ajustável e menu de pausa (botão de pausa ou botão voltar do aparelho)
+- Resolução do mundo 3D configurável (automática, alta, média ou leve)
+
 #id 2026-10-10-o
 #titulo Animações de verdade: golpes na 3ª pessoa, nado de peito e voo
 - 3ª pessoa agora usa os mesmos golpes da 1ª pessoa (combo da espada, machado, picareta, soco) e o ataque carregado

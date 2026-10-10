@@ -6,7 +6,14 @@ import android.view.MotionEvent
 import android.view.View
 import kotlin.math.*
 
-class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) {
+class HudView(ctx: Context, val game: Game, val worldName: String, val onExit: () -> Unit) : View(ctx) {
+    private val prefs = ctx.getSharedPreferences("cfg", 0)
+    private val tapMode = prefs.getBoolean("tap", true)
+    private val bs = prefs.getFloat("btn", 1f).coerceIn(0.8f, 1.25f)
+    private var paused = false
+    private var lookDownT = 0L; private var lookMoved = 0f; private var lookHold = false
+    private val rf2 = RectF()
+    private fun al(c: Int, a: Int) = Color.argb(a, Color.red(c), Color.green(c), Color.blue(c))
     private val d = resources.displayMetrics.density
     private val pt = Paint(Paint.ANTI_ALIAS_FLAG)
     private val bp = Paint().apply { isFilterBitmap = false; isAntiAlias = false }
@@ -26,7 +33,7 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
     // 0 atacar, 1 pular, 2 colocar, 3 câmera, 4 sair, 5 mochila
     private fun bx(i: Int) = when (i) { 0 -> width - 100 * d; 1 -> width - 195 * d; 6 -> width - 195 * d; 2 -> width - 70 * d; 3 -> width - 40 * d; 5 -> width - 92 * d; else -> 40 * d }
     private fun byy(i: Int) = when (i) { 0 -> height - 100 * d; 1 -> height - 62 * d; 6 -> height - 152 * d; 2 -> height - 190 * d; else -> 40 * d }
-    private fun br(i: Int) = when (i) { 0 -> 44 * d; 1 -> 34 * d; 6 -> 30 * d; 2 -> 32 * d; else -> 22 * d }
+    private fun br(i: Int) = (when (i) { 0 -> 44 * d; 1 -> 34 * d; 6 -> 30 * d; 2 -> 32 * d; else -> 22 * d }) * (if (i in 0..2 || i == 6) bs else 1f)
     private val slot get() = 46 * d
     private fun hbLeft() = (width - 8 * slot - 7 * 4 * d) / 2f
     private fun hbTop() = height - slot - 10 * d
@@ -49,10 +56,27 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
         val act = e.actionMasked; val idx = e.actionIndex
         when (act) {
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> down(e.getPointerId(idx), e.getX(idx), e.getY(idx))
-            MotionEvent.ACTION_MOVE -> if (!invOpen) for (i in 0 until e.pointerCount) move(e.getPointerId(i), e.getX(i), e.getY(i))
+            MotionEvent.ACTION_MOVE -> if (!invOpen && !paused) for (i in 0 until e.pointerCount) move(e.getPointerId(i), e.getX(i), e.getY(i))
             MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> up(e.getPointerId(idx))
         }
         return true
+    }
+
+    fun togglePause() {
+        paused = !paused
+        game.paused = paused
+        stickId = -1; lookId = -1; sx = 0f; sy = 0f; lookHold = false
+        game.stickX = 0f; game.stickY = 0f; game.jumpHeld = false; game.downHeld = false; game.attackHeld = false; btnId.clear()
+        if (invOpen) invOpen = false
+    }
+
+    private fun pbox() = RectF(width / 2f - 150 * d, height / 2f - 118 * d, width / 2f + 150 * d, height / 2f + 118 * d)
+    private fun pbtn(k: Int): RectF { val b = pbox(); val t = b.top + 70 * d + k * 56 * d; return RectF(b.left + 22 * d, t, b.right - 22 * d, t + 46 * d) }
+
+    private fun pauseDown(x: Float, y: Float) {
+        if (pbtn(0).contains(x, y)) { togglePause(); return }
+        if (pbtn(1).contains(x, y)) { game.thirdPerson = !game.thirdPerson; return }
+        if (pbtn(2).contains(x, y)) { onExit(); return }
     }
 
     private fun toggleInv() {
@@ -71,6 +95,7 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
     }
 
     private fun down(id: Int, x: Float, y: Float) {
+        if (paused) { pauseDown(x, y); return }
         if (hypot(x - bx(5), y - byy(5)) < br(5) * 1.2f) { toggleInv(); return }
         if (invOpen) {
             if (hotbarHit(x, y)) return
@@ -91,13 +116,13 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
                 6 -> game.downHeld = true
                 2 -> game.wantPlace = true
                 3 -> game.wantCam = true
-                4 -> onExit()
+                4 -> togglePause()
             }
             return
         }
         if (hotbarHit(x, y)) return
         if (x < width * 0.38f && stickId < 0) { stickId = id; scx = x; scy = y; sx = 0f; sy = 0f; return }
-        if (lookId < 0) { lookId = id; lx = x; ly = y }
+        if (lookId < 0) { lookId = id; lx = x; ly = y; lookDownT = System.currentTimeMillis(); lookMoved = 0f; lookHold = false }
     }
 
     private fun move(id: Int, x: Float, y: Float) {
@@ -109,13 +134,22 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
             sx = dx / r; sy = dy / r
             game.stickX = sx; game.stickY = -sy
         } else if (id == lookId) {
-            game.addLook(x - lx, y - ly); lx = x; ly = y
+            lookMoved += hypot(x - lx, y - ly); game.addLook(x - lx, y - ly); lx = x; ly = y
         }
     }
 
     private fun up(id: Int) {
         if (id == stickId) { stickId = -1; sx = 0f; sy = 0f; game.stickX = 0f; game.stickY = 0f }
-        if (id == lookId) lookId = -1
+        if (id == lookId) {
+            lookId = -1
+            if (tapMode && !paused && !invOpen) {
+                if (lookHold) { game.attackHeld = false; game.attackRelease = true }
+                else if (lookMoved < 14 * d && System.currentTimeMillis() - lookDownT < 320) {
+                    if (Items.isBlock(game.cur())) game.wantPlace = true else { game.attackPress = true; game.attackRelease = true }
+                }
+            }
+            lookHold = false
+        }
         val b = btnId.remove(id)
         if (b == 1) game.jumpHeld = false
         if (b == 6) game.downHeld = false
@@ -139,12 +173,43 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
 
     /** painel quadrado de pedra: borda preta + chanfro */
     private fun mcPanel(c: Canvas, r: RectF, fill: Int, sel: Boolean) {
-        val u = 2 * d
+        val rad = 10 * d
+        pt.style = Paint.Style.FILL; pt.shader = null
+        pt.color = fill; c.drawRoundRect(r, rad, rad, pt)
+        pt.color = Color.argb(34, 255, 255, 255)
+        rf2.set(r.left + 3 * d, r.top + 3 * d, r.right - 3 * d, r.top + r.height() * 0.46f); c.drawRoundRect(rf2, 7 * d, 7 * d, pt)
+        pt.style = Paint.Style.STROKE; pt.strokeWidth = (if (sel) 3f else 2f) * d
+        pt.color = if (sel) gold else Cz.INK; c.drawRoundRect(r, rad, rad, pt)
         pt.style = Paint.Style.FILL
-        pt.color = if (sel) Color.WHITE else Color.BLACK; c.drawRect(r, pt)
-        pt.color = fill; c.drawRect(r.left + u, r.top + u, r.right - u, r.bottom - u, pt)
-        pt.color = shadeC(fill, 0.55f); c.drawRect(r.left + u, r.bottom - u * 2, r.right - u, r.bottom - u, pt); c.drawRect(r.right - u * 2, r.top + u, r.right - u, r.bottom - u, pt)
-        pt.color = shadeC(fill, 1.35f); c.drawRect(r.left + u, r.top + u, r.right - u, r.top + u * 2, pt); c.drawRect(r.left + u, r.top + u, r.left + u * 2, r.bottom - u, pt)
+    }
+
+    /** botão desenhado (menu de pausa) */
+    private fun czBtn(c: Canvas, r: RectF, fill: Int, label: String) {
+        val lip = 4 * d; val rad = 14 * d
+        pt.style = Paint.Style.FILL; pt.shader = null
+        rf2.set(r.left, r.top + lip, r.right, r.bottom + lip); pt.color = shadeC(fill, 0.55f); c.drawRoundRect(rf2, rad, rad, pt)
+        pt.shader = LinearGradient(0f, r.top, 0f, r.bottom, shadeC(fill, 1.15f), shadeC(fill, 0.92f), Shader.TileMode.CLAMP); c.drawRoundRect(r, rad, rad, pt); pt.shader = null
+        pt.color = Color.argb(40, 255, 255, 255); rf2.set(r.left + 4 * d, r.top + 3 * d, r.right - 4 * d, r.top + r.height() * 0.45f); c.drawRoundRect(rf2, rad * 0.7f, rad * 0.7f, pt)
+        pt.style = Paint.Style.STROKE; pt.strokeWidth = 2 * d; pt.color = Cz.INK; c.drawRoundRect(r, rad, rad, pt)
+        pt.style = Paint.Style.FILL; pt.textAlign = Paint.Align.CENTER; pt.textSize = 16 * d; pt.typeface = Typeface.create("sans-serif-rounded", Typeface.BOLD)
+        pt.setShadowLayer(0.5f, 1.5f * d, 1.5f * d, Color.argb(160, 20, 14, 30)); pt.color = Color.WHITE
+        c.drawText(label, r.centerX(), r.centerY() + 5.5f * d, pt); pt.clearShadowLayer()
+    }
+
+    private fun drawPause(c: Canvas) {
+        val w = width.toFloat(); val h = height.toFloat()
+        pt.style = Paint.Style.FILL; pt.color = Color.argb(150, 8, 8, 24); c.drawRect(0f, 0f, w, h, pt)
+        val b = pbox()
+        pt.color = Cz.PANEL; c.drawRoundRect(b, 22 * d, 22 * d, pt)
+        pt.color = Color.argb(30, 255, 255, 255); rf2.set(b.left + 4 * d, b.top + 4 * d, b.right - 4 * d, b.top + 56 * d); c.drawRoundRect(rf2, 18 * d, 18 * d, pt)
+        pt.style = Paint.Style.STROKE; pt.strokeWidth = 3 * d; pt.color = Cz.INK; c.drawRoundRect(b, 22 * d, 22 * d, pt)
+        pt.strokeWidth = 1.2f * d; pt.color = Color.argb(70, 255, 255, 255); rf2.set(b.left + 5 * d, b.top + 5 * d, b.right - 5 * d, b.bottom - 5 * d); c.drawRoundRect(rf2, 18 * d, 18 * d, pt)
+        pt.style = Paint.Style.FILL; pt.textAlign = Paint.Align.CENTER; pt.typeface = Typeface.create("sans-serif-rounded", Typeface.BOLD)
+        pt.textSize = 22 * d; pt.color = gold; c.drawText("Pausado", w / 2, b.top + 36 * d, pt)
+        pt.textSize = 12 * d; pt.color = Color.argb(200, 255, 255, 255); c.drawText(worldName, w / 2, b.top + 54 * d, pt)
+        czBtn(c, pbtn(0), Cz.GREEN, "▶  Continuar")
+        czBtn(c, pbtn(1), Cz.SKY, if (game.thirdPerson) "Câmera: 3ª pessoa" else "Câmera: 1ª pessoa")
+        czBtn(c, pbtn(2), Cz.RED, "Salvar e sair")
     }
 
     private fun face(c: Canvas, tile: Int, a: Float, b: Float, cc: Float, dd: Float, ee: Float, ff: Float, f: ColorFilter?) {
@@ -186,7 +251,7 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
         }
     }
 
-    private fun accent(i: Int) = when (i) { 0 -> Color.rgb(255, 120, 100); 1, 6 -> Color.rgb(120, 195, 255); 2 -> Color.rgb(130, 230, 130); else -> Color.rgb(200, 210, 235) }
+    private fun accent(i: Int) = when (i) { 0 -> Cz.RED; 1, 6 -> Cz.SKY; 2 -> Cz.GREEN; 3 -> Cz.TEAL; 5 -> Cz.GOLD; else -> Cz.LILAC }
     private val rf = RectF()
     private val ip = Paint(Paint.ANTI_ALIAS_FLAG).apply { isFilterBitmap = true }
     private val shadowF = LightingColorFilter(0x000000, 0x000000)
@@ -194,19 +259,18 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
 
     private fun circle(c: Canvas, i: Int, active: Boolean) {
         press[i] += ((if (active) 1f else 0f) - press[i]) * 0.3f
-        val cx = bx(i); val cy = byy(i); val r = br(i) * (1f - 0.08f * press[i]); val ac = accent(i)
-        pt.style = Paint.Style.FILL; pt.color = Color.argb(70, 0, 0, 0); c.drawCircle(cx, cy + 3 * d, r, pt)
-        pt.color = Color.argb((120 + 70 * press[i]).toInt(), 16, 20, 36); c.drawCircle(cx, cy, r, pt)
-        pt.color = Color.argb((35 + 70 * press[i]).toInt(), Color.red(ac), Color.green(ac), Color.blue(ac)); c.drawCircle(cx, cy, r * 0.86f, pt)
-        rf.set(cx - r * 0.78f, cy - r * 0.78f, cx + r * 0.78f, cy + r * 0.78f)
-        pt.style = Paint.Style.STROKE; pt.strokeWidth = 3f * d; pt.strokeCap = Paint.Cap.ROUND
-        pt.color = Color.argb(70, 255, 255, 255); c.drawArc(rf, 200f, 100f, false, pt)
-        pt.strokeWidth = 2.5f * d; pt.color = Color.argb(235, Color.red(ac), Color.green(ac), Color.blue(ac)); c.drawCircle(cx, cy, r, pt)
-        pt.strokeWidth = 1f * d; pt.color = Color.argb(90, 255, 255, 255); c.drawCircle(cx, cy, r + 2 * d, pt)
+        val cx = bx(i); val cy = byy(i); val r = br(i) * (1f - 0.06f * press[i]); val ac = accent(i)
+        val a = (170 + 70 * press[i]).toInt()
+        pt.style = Paint.Style.FILL; pt.color = Color.argb(70, 0, 0, 0); c.drawCircle(cx, cy + 4 * d, r, pt)
+        pt.shader = LinearGradient(cx, cy - r, cx, cy + r, al(shadeC(ac, 1.0f), a), al(shadeC(ac, 0.55f), a), Shader.TileMode.CLAMP)
+        c.drawCircle(cx, cy, r, pt); pt.shader = null
+        pt.color = Color.argb(55, 255, 255, 255); rf.set(cx - r * 0.68f, cy - r * 0.9f, cx + r * 0.68f, cy - r * 0.08f); c.drawOval(rf, pt)
+        pt.style = Paint.Style.STROKE; pt.strokeWidth = 3 * d; pt.color = Color.argb(235, 36, 28, 48); c.drawCircle(cx, cy, r, pt)
+        pt.strokeWidth = 1.5f * d; pt.color = Color.argb(200, 255, 244, 214); c.drawCircle(cx, cy, r - 3 * d, pt)
     }
 
     private fun pill(c: Canvas, l: Float, t: Float, r: Float, b: Float, a: Int = 110) {
-        rf.set(l, t, r, b); mcPanel(c, rf, Color.argb(255, 38, 38, 42).let { Color.rgb(Color.red(it), Color.green(it), Color.blue(it)) }, false)
+        rf.set(l, t, r, b); mcPanel(c, rf, Cz.PANEL3, false)
     }
 
     override fun onDraw(c: Canvas) {
@@ -214,6 +278,12 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
         val clock = System.nanoTime() / 1e9f
         if (game.hurtFlash > 0f) { pt.style = Paint.Style.FILL; pt.color = Color.argb((game.hurtFlash * 90).toInt(), 255, 0, 0); c.drawRect(0f, 0f, w, h, pt) }
         pt.strokeCap = Paint.Cap.ROUND
+        if (tapMode && lookId >= 0 && !paused && !invOpen) {
+            if (!lookHold && lookMoved < 16 * d && System.currentTimeMillis() - lookDownT > 320) {
+                lookHold = true
+                game.attackHeld = true; game.attackPress = true
+            } else if (lookHold && game.cur() != Items.SWORD && game.cur() != Items.AXE) game.attackPress = true
+        }
         if (!invOpen) {
             // mira com contorno
             for (k in 0..1) {
@@ -250,7 +320,7 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
                 5 -> { pt.strokeWidth = 3f * d; c.drawRoundRect(x - 10 * d, y - 6 * d, x + 10 * d, y + 11 * d, 5 * d, 5 * d, pt)
                     path.reset(); path.moveTo(x - 6 * d, y - 6 * d); path.cubicTo(x - 6 * d, y - 15 * d, x + 6 * d, y - 15 * d, x + 6 * d, y - 6 * d); c.drawPath(path, pt)
                     c.drawLine(x - 10 * d, y, x + 10 * d, y, pt) }
-                else -> { path.reset(); path.moveTo(x + 6 * d, y - 10 * d); path.lineTo(x - 6 * d, y); path.lineTo(x + 6 * d, y + 10 * d); c.drawPath(path, pt) }
+                else -> { pt.strokeWidth = 4.5f * d; c.drawLine(x - 5 * d, y - 9 * d, x - 5 * d, y + 9 * d, pt); c.drawLine(x + 5 * d, y - 9 * d, x + 5 * d, y + 9 * d, pt) }
             }
         }
         // anel de carga do golpe poderoso
@@ -267,14 +337,14 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
         bounce = max(0f, bounce - 0.08f)
         val left = hbLeft(); val top = hbTop()
         rf.set(left - 7 * d, top - 7 * d, left + 8 * slot + 7 * 4 * d + 7 * d, top + slot + 7 * d)
-        pt.style = Paint.Style.FILL; pt.color = Color.argb(150, 0, 0, 0); c.drawRect(rf, pt)
+        pt.style = Paint.Style.FILL; pt.color = Color.argb(150, 20, 18, 40); c.drawRoundRect(rf, 14 * d, 14 * d, pt)
         for (i in 0 until 8) {
             val x = left + i * (slot + 4 * d)
             val s = i == game.sel
             val lift = if (s) 3 * d + 4 * d * sin(bounce * 3.14f) else 0f
             val rr = RectF(x, top - lift, x + slot, top + slot - lift)
-            mcPanel(c, rr, if (s) Color.rgb(92, 92, 100) else Color.rgb(64, 64, 70), s)
-            if (s) { pt.style = Paint.Style.STROKE; pt.strokeWidth = 2 * d; pt.color = Color.argb((90 + 60 * sin(clock * 4f)).toInt(), 255, 255, 255); c.drawRect(rr.left - 2 * d, rr.top - 2 * d, rr.right + 2 * d, rr.bottom + 2 * d, pt) }
+            mcPanel(c, rr, if (s) Cz.PANEL2 else Cz.PANEL, s)
+            if (s) { pt.style = Paint.Style.STROKE; pt.strokeWidth = 2 * d; pt.color = Color.argb((110 + 80 * sin(clock * 4f)).toInt(), 255, 214, 90); c.drawRoundRect(rr.left - 3 * d, rr.top - 3 * d, rr.right + 3 * d, rr.bottom + 3 * d, 12 * d, 12 * d, pt) }
             icon(c, x + slot / 2, rr.top + slot * 0.5f, slot, game.hotbar[i])
             pt.style = Paint.Style.FILL; pt.textSize = 9 * d; pt.textAlign = Paint.Align.LEFT; pt.color = Color.argb(if (s) 255 else 150, 255, 255, 255)
             pt.typeface = Typeface.MONOSPACE; pt.setShadowLayer(0.5f, 1.5f * d, 1.5f * d, Color.BLACK); c.drawText("${i + 1}", rr.left + 6 * d, rr.top + 14 * d, pt); pt.clearShadowLayer()
@@ -282,7 +352,7 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
         if (!invOpen) {
             pt.textSize = 14 * d; pt.typeface = Typeface.DEFAULT_BOLD; pt.textAlign = Paint.Align.CENTER
             val nm = Items.name(game.cur()); val tw = pt.measureText(nm)
-            rf.set(w / 2 - tw / 2 - 12 * d, top - 40 * d, w / 2 + tw / 2 + 12 * d, top - 16 * d); pt.style = Paint.Style.FILL; pt.color = Color.argb(140, 0, 0, 0); c.drawRect(rf, pt)
+            rf.set(w / 2 - tw / 2 - 12 * d, top - 40 * d, w / 2 + tw / 2 + 12 * d, top - 16 * d); pt.style = Paint.Style.FILL; pt.color = Color.argb(150, 20, 18, 40); c.drawRoundRect(rf, 10 * d, 10 * d, pt)
             pt.typeface = Typeface.MONOSPACE; pt.color = Color.rgb(60, 60, 60); c.drawText(nm, w / 2 + 1.5f * d, top - 22 * d + 1.5f * d, pt); pt.color = Color.WHITE; c.drawText(nm, w / 2, top - 22 * d, pt)
             if (game.pickT > 0f) {   // "+1 Terra" ao pegar um item do chão
                 val al = (kotlin.math.min(1f, game.pickT * 2f) * 255).toInt()
@@ -304,6 +374,8 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
             pxHeart(c, cx, 28 * d + bob, 2.4f * d * beat, Color.rgb(228, 36, 48), half && !full, !(full || half))
             if (half && !full) pxHeart(c, cx, 28 * d + bob, 2.4f * d * beat, Color.rgb(228, 36, 48), true, false)
         }
+        pt.style = Paint.Style.FILL; pt.typeface = Typeface.create("sans-serif-rounded", Typeface.BOLD); pt.textSize = 12 * d; pt.textAlign = Paint.Align.LEFT
+        pt.color = Color.argb(200, 255, 255, 255); pt.setShadowLayer(2 * d, 0f, 1f, Color.BLACK); c.drawText(worldName, 40 * d + 30 * d, 44 * d, pt); pt.clearShadowLayer()
         // contador de slimes
         val ktxt = "${game.kills}"; pt.textSize = 15 * d; pt.typeface = Typeface.DEFAULT_BOLD; pt.textAlign = Paint.Align.LEFT
         val kw = pt.measureText(ktxt) + 44 * d; val kr = w - 118 * d
@@ -315,6 +387,7 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
         if (game.deadTimer > 0f) { pt.textAlign = Paint.Align.CENTER; pt.textSize = 26 * d; pt.color = Color.WHITE; c.drawText("Você desmaiou! Renascendo...", w / 2, h / 2 - 40 * d, pt) }
         pt.clearShadowLayer(); pt.typeface = Typeface.DEFAULT
         if (invOpen) drawInventory(c)
+        if (paused) drawPause(c)
         postInvalidateOnAnimation()
     }
 
@@ -322,19 +395,22 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
         val w = width.toFloat(); val h = height.toFloat()
         pt.style = Paint.Style.FILL; pt.color = Color.argb(150, 6, 8, 20); c.drawRect(0f, 0f, w, h, pt)
         val rr = RectF(pl(), pt0(), pr(), pb())
-        pt.shader = LinearGradient(0f, rr.top, 0f, rr.bottom, Color.argb(240, 40, 50, 88), Color.argb(240, 20, 24, 48), Shader.TileMode.CLAMP)
-        c.drawRoundRect(rr, 18 * d, 18 * d, pt); pt.shader = null
+        pt.style = Paint.Style.FILL
+        pt.shader = LinearGradient(0f, rr.top, 0f, rr.bottom, Color.argb(244, 56, 54, 98), Color.argb(244, 36, 34, 68), Shader.TileMode.CLAMP)
+        c.drawRoundRect(rr, 20 * d, 20 * d, pt); pt.shader = null
         c.save(); c.clipRect(rr.left, rr.top, rr.right, rr.top + 46 * d)
-        pt.color = Color.argb(60, 255, 214, 90); c.drawRoundRect(rr, 18 * d, 18 * d, pt); c.restore()
-        pt.style = Paint.Style.STROKE; pt.strokeWidth = 3f * d; pt.color = Color.argb(230, 255, 214, 90); c.drawRoundRect(rr, 18 * d, 18 * d, pt)
+        pt.color = Color.argb(46, 255, 214, 90); c.drawRoundRect(rr, 20 * d, 20 * d, pt); c.restore()
+        pt.style = Paint.Style.STROKE; pt.strokeWidth = 3.5f * d; pt.color = Cz.INK; c.drawRoundRect(rr, 20 * d, 20 * d, pt)
+        pt.strokeWidth = 1.5f * d; pt.color = Color.argb(200, 255, 214, 90); rf2.set(rr.left + 4 * d, rr.top + 4 * d, rr.right - 4 * d, rr.bottom - 4 * d); c.drawRoundRect(rf2, 16 * d, 16 * d, pt)
         pt.strokeWidth = 1f * d; pt.color = Color.argb(60, 255, 255, 255); c.drawLine(rr.left + 14 * d, rr.top + 46 * d, rr.right - 14 * d, rr.top + 46 * d, pt)
-        pt.style = Paint.Style.FILL; pt.color = Color.WHITE; pt.textSize = 20 * d; pt.textAlign = Paint.Align.LEFT; pt.typeface = Typeface.DEFAULT_BOLD
+        pt.style = Paint.Style.FILL; pt.color = Color.WHITE; pt.textSize = 20 * d; pt.textAlign = Paint.Align.LEFT; pt.typeface = Typeface.create("sans-serif-rounded", Typeface.BOLD)
         c.drawText("Mochila", pl() + 18 * d, pt0() + 31 * d, pt)
         // fechar
-        pt.color = Color.argb(90, 255, 255, 255); c.drawCircle(pr() - 20 * d, pt0() + 22 * d, 14 * d, pt)
-        pt.style = Paint.Style.STROKE; pt.strokeWidth = 3f * d; pt.color = Color.WHITE; pt.strokeCap = Paint.Cap.ROUND
+        pt.color = Cz.RED; c.drawCircle(pr() - 20 * d, pt0() + 22 * d, 14 * d, pt)
+        pt.style = Paint.Style.STROKE; pt.strokeWidth = 2.5f * d; pt.color = Cz.INK; c.drawCircle(pr() - 20 * d, pt0() + 22 * d, 14 * d, pt)
+        pt.strokeWidth = 3f * d; pt.color = Color.WHITE; pt.strokeCap = Paint.Cap.ROUND
         val xx = pr() - 20 * d; val yy = pt0() + 22 * d
-        c.drawLine(xx - 6 * d, yy - 6 * d, xx + 6 * d, yy + 6 * d, pt); c.drawLine(xx + 6 * d, yy - 6 * d, xx - 6 * d, yy + 6 * d, pt)
+        c.drawLine(xx - 5 * d, yy - 5 * d, xx + 5 * d, yy + 5 * d, pt); c.drawLine(xx + 5 * d, yy - 5 * d, xx - 5 * d, yy + 5 * d, pt)
         // info do item selecionado no cabeçalho
         val sel = if (invSel > 0) invSel else game.cur()
         val ix = pl() + 130 * d; val avail = pr() - 50 * d - ix
@@ -346,10 +422,10 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
         for ((i, id) in Items.inventory.withIndex()) {
             val x = cellX(i); val y = cellY(i); val s = cell - 6 * d
             val on = id == invSel
-            pt.style = Paint.Style.FILL; pt.color = Color.argb(if (on) 70 else 34, 255, 255, 255)
+            pt.style = Paint.Style.FILL; pt.color = if (on) Color.argb(235, 84, 82, 138) else Color.argb(220, 46, 44, 82)
             val cr = RectF(x, y, x + s, y + s); c.drawRoundRect(cr, 11 * d, 11 * d, pt)
             rf.set(x + 3 * d, y + 3 * d, x + s - 3 * d, y + s * 0.45f); pt.color = Color.argb(if (on) 40 else 18, 255, 255, 255); c.drawRoundRect(rf, 8 * d, 8 * d, pt)
-            pt.style = Paint.Style.STROKE; pt.strokeWidth = (if (on) 3f else 1.2f) * d; pt.color = if (on) gold else Color.argb(80, 255, 255, 255)
+            pt.style = Paint.Style.STROKE; pt.strokeWidth = (if (on) 3f else 2f) * d; pt.color = if (on) gold else Cz.INK
             c.drawRoundRect(cr, 11 * d, 11 * d, pt)
             icon(c, x + s / 2, y + s / 2, s, id)
         }

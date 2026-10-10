@@ -1,134 +1,175 @@
 package com.cuboland.app
 
 import android.graphics.Color
-import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
 
-class CharacterActivity : AppCompatActivity() {
-    private lateinit var col: LinearLayout
+class CharacterActivity : CozyActivity() {
+    private lateinit var content: LinearLayout
+    private lateinit var scroll: ScrollView
+    private lateinit var cv: CharView
     private val refreshers = ArrayList<() -> Unit>()
-    private var presetIdx = 0
+    private val tabViews = ArrayList<TextView>()
+    private val TABS = arrayOf("★ Looks", "☺ Corpo", "✂ Cabelo", "◉ Rosto", "♣ Roupas", "♛ Acessórios")
     private val ANIMS = arrayOf("Parado", "Andando", "Correndo", "Pulando", "Atacando")
-
-    private fun label(t: String, size: Float = 15f, g: Int = Gravity.START) = TextView(this).apply {
-        text = t; textSize = size; setTextColor(Color.WHITE); typeface = mcFont(); gravity = g
-        setShadowLayer(0.5f, dp(2).toFloat(), dp(2).toFloat(), Color.rgb(40, 40, 40)); setPadding(0, dp(4), 0, dp(2))
-    }
+    private var current = -1
+    private val MATCH = ViewGroup.LayoutParams.MATCH_PARENT
+    private val WRAP = ViewGroup.LayoutParams.WRAP_CONTENT
 
     private fun changed() { Look.save(this); refreshers.forEach { it() } }
 
-    private fun header(t: String) {
-        col.addView(label(t, 18f).apply { setTextColor(Color.rgb(255, 230, 120)); setPadding(0, dp(14), 0, dp(2)) })
-    }
+    private fun add(v: View) { content.addView(v, lpW(MATCH, WRAP).apply { bottomMargin = dp(12) }) }
 
-    private fun stepper(title: String, idx: Int, names: Array<String>) {
-        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-        val tv = label("", 15f, Gravity.CENTER)
-        val prev = btn("<", Color.rgb(66, 133, 244)) { Look.set(idx, Look.v[idx] - 1); changed() }
-        val next = btn(">", Color.rgb(66, 133, 244)) { Look.set(idx, Look.v[idx] + 1); changed() }
-        row.addView(prev, LinearLayout.LayoutParams(dp(54), dp(46)))
-        row.addView(tv, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-        row.addView(next, LinearLayout.LayoutParams(dp(54), dp(46)))
-        refreshers.add { tv.text = "$title: ${names[Look.v[idx].coerceIn(0, names.size - 1)]}" }
-        col.addView(row, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(4) })
-    }
-
-    private fun swatches(title: String, idx: Int, colors: IntArray, names: Array<String>) {
-        val tv = label("", 14f)
-        refreshers.add { tv.text = "$title: ${names[Look.v[idx].coerceIn(0, names.size - 1)]}" }
-        col.addView(tv)
-        val perRow = 6
+    /** grade de opções (chips); a escolhida fica dourada */
+    private fun grid(card: LinearLayout, label: String, idx: Int, names: Array<String>, perRow: Int = 3) {
+        val tv = cTxt("", 13f, Cz.SOFT, false).apply { setPadding(0, dp(10), 0, dp(2)) }
+        card.addView(tv)
+        val chips = ArrayList<TextView>()
         var row: LinearLayout? = null
+        for (i in names.indices) {
+            if (i % perRow == 0) { row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }; card.addView(row, lpW(MATCH, WRAP).apply { topMargin = dp(4) }) }
+            val c = cChip(names[i]) { Look.set(idx, i); changed() }
+            chips.add(c)
+            row!!.addView(c, lpW(0, WRAP, 1f).apply { if (i % perRow != 0) leftMargin = dp(4) })
+        }
+        val rem = names.size % perRow
+        if (rem != 0) for (k in rem until perRow) row!!.addView(View(this), lpW(0, 1, 1f).apply { leftMargin = dp(4) })
+        refreshers.add {
+            tv.text = "$label:  ${names[Look.v[idx].coerceIn(0, names.size - 1)]}"
+            for ((i, c) in chips.withIndex()) c.styleChip(Look.v[idx] == i)
+        }
+    }
+
+    /** bolinhas de cor */
+    private fun swatch(card: LinearLayout, label: String, idx: Int, colors: IntArray, names: Array<String>, perRow: Int = 8) {
+        val tv = cTxt("", 13f, Cz.SOFT, false).apply { setPadding(0, dp(10), 0, dp(2)) }
+        card.addView(tv)
         val views = ArrayList<View>()
+        var row: LinearLayout? = null
         for (i in colors.indices) {
-            if (i % perRow == 0) { row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }; col.addView(row) }
+            if (i % perRow == 0) { row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }; card.addView(row) }
             val v = View(this)
             v.setOnClickListener { Look.set(idx, i); changed() }
-            row!!.addView(v, LinearLayout.LayoutParams(dp(36), dp(36)).apply { setMargins(0, dp(3), dp(6), dp(3)) })
+            row!!.addView(v, LinearLayout.LayoutParams(dp(34), dp(34)).apply { setMargins(0, dp(3), dp(6), dp(3)) })
             views.add(v)
         }
         refreshers.add {
+            tv.text = "$label:  ${names[Look.v[idx].coerceIn(0, names.size - 1)]}"
             for (i in views.indices) {
                 val sel = Look.v[idx] == i
                 views[i].background = GradientDrawable().apply {
-                    setColor(colors[i] or (0xFF shl 24)); setStroke(if (sel) dp(3) else dp(1), if (sel) Color.WHITE else Color.BLACK)
+                    shape = GradientDrawable.OVAL
+                    setColor(colors[i] or (0xFF shl 24)); setStroke(if (sel) dp(3) else dp(2), if (sel) Cz.GOLD else Cz.INK)
                 }
+                views[i].scaleX = if (sel) 1.12f else 1f; views[i].scaleY = if (sel) 1.12f else 1f
             }
         }
+    }
+
+    private fun select(i: Int) {
+        if (i == current) return
+        current = i
+        refreshers.clear()
+        for ((k, tv) in tabViews.withIndex()) tv.styleChip(k == i)
+        content.removeAllViews(); scroll.scrollTo(0, 0)
+        when (i) {
+            0 -> {
+                val c = cCard("Looks prontos", "Toque num look para vestir. Depois ajuste o que quiser nas outras abas.")
+                val chips = ArrayList<TextView>()
+                var row: LinearLayout? = null
+                for (k in Look.PRESET_NAMES.indices) {
+                    if (k % 2 == 0) { row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }; c.addView(row, lpW(MATCH, WRAP).apply { topMargin = dp(6) }) }
+                    val ch = cChip(Look.PRESET_NAMES[k]) { Look.applyPreset(k); changed() }
+                    chips.add(ch); row!!.addView(ch, lpW(0, WRAP, 1f).apply { if (k % 2 != 0) leftMargin = dp(6) })
+                }
+                refreshers.add { for ((k, ch) in chips.withIndex()) ch.styleChip(Look.v.contentEquals(Look.PRESETS[k])) }
+                add(c)
+                val a = cCard("Surpresa")
+                val br = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(8), 0, 0) }
+                br.addView(cBtn("⚄  Aleatório", Cz.LILAC, 15f) { Look.randomize(); changed() }, lpW(0, WRAP, 1f).apply { rightMargin = dp(6) })
+                br.addView(cBtn("↺  Restaurar", Cz.STONE, 15f) { Look.v = Look.DEF.copyOf(); changed() }, lpW(0, WRAP, 1f).apply { leftMargin = dp(6) })
+                a.addView(br); add(a)
+            }
+            1 -> {
+                val c = cCard("Corpo"); grid(c, "Tipo", Look.GENDER, Look.GENDER_NAMES, 2); swatch(c, "Pele", Look.SKIN, Look.SKINS, Look.SKIN_NAMES, 6); add(c)
+            }
+            2 -> {
+                val c = cCard("Cabelo"); grid(c, "Estilo", Look.HAIR, Look.HAIR_STYLES, 3); swatch(c, "Cor", Look.HAIRC, Look.HAIRS, Look.HAIR_NAMES); add(c)
+            }
+            3 -> {
+                val c1 = cCard("Olhos"); grid(c1, "Estilo", Look.EYES, Look.EYE_STYLES, 3); swatch(c1, "Cor dos olhos", Look.EYEC, Look.EYE_COLORS, Look.EYE_COLOR_NAMES, 10); add(c1)
+                val c2 = cCard("Boca e bochechas"); grid(c2, "Boca", Look.MOUTH, Look.MOUTHS, 3); grid(c2, "Bochechas coradas", Look.BLUSH, Look.ONOFF, 2); add(c2)
+                val c3 = cCard("Detalhes do rosto"); grid(c3, "Detalhe", Look.FACE, Look.FACES, 3); add(c3)
+            }
+            4 -> {
+                val c1 = cCard("Blusa"); grid(c1, "Modelo", Look.TOP, Look.TOPS, 3); swatch(c1, "Cor", Look.TOPC, Look.PAL, Look.PAL_NAMES); add(c1)
+                val c2 = cCard("Parte de baixo"); grid(c2, "Modelo", Look.BOTTOM, Look.BOTTOMS, 3); swatch(c2, "Cor", Look.BOTTOMC, Look.PAL, Look.PAL_NAMES); add(c2)
+                val c3 = cCard("Calçados"); grid(c3, "Modelo", Look.SHOES, Look.SHOE_STYLES, 3); swatch(c3, "Cor", Look.SHOEC, Look.PAL, Look.PAL_NAMES); add(c3)
+            }
+            else -> {
+                val c1 = cCard("Cabeça"); grid(c1, "Item", Look.HAT, Look.HATS, 3); swatch(c1, "Cor", Look.HATC, Look.PAL, Look.PAL_NAMES); add(c1)
+                val c2 = cCard("Pescoço"); grid(c2, "Item", Look.NECK, Look.NECKS, 3); swatch(c2, "Cor", Look.NECKC, Look.PAL, Look.PAL_NAMES); add(c2)
+                val c3 = cCard("Costas"); grid(c3, "Item", Look.BACK, Look.BACKS, 3); swatch(c3, "Cor", Look.BACKC, Look.PAL, Look.PAL_NAMES); add(c3)
+            }
+        }
+        refreshers.forEach { it() }
+        for (k in 0 until content.childCount) content.getChildAt(k).popIn(60L * k, 16)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Look.load(this)
-        val root = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; background = dirtBackground(); setPadding(dp(16), dp(10), dp(16), dp(10)) }
+        val root = FrameLayout(this)
+        root.addView(SceneBg(this, 0.5f))
+        val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(28), dp(18), dp(28), dp(14)) }
+        val head = cHeader("Meu personagem", "Tudo é salvo automaticamente") { finish() }
+        col.addView(head)
+        val body = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
 
-        val left = FrameLayout(this)
-        val cv = CharView(this)
-        left.addView(cv, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
-        var animBtn: android.widget.Button? = null
-        animBtn = btn("Animação: " + ANIMS[0], Color.rgb(66, 133, 244)) {
-            cv.mode = (cv.mode + 1) % ANIMS.size
-            animBtn?.text = "Animação: " + ANIMS[cv.mode]
+        // ESQUERDA: pré-visualização 3D + animações
+        val leftCol = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        val pv = FrameLayout(this).apply { background = CozyBox(this@CharacterActivity, Cz.PANEL3, 22f, false); setPadding(dp(8), dp(8), dp(8), dp(8)) }
+        cv = CharView(this)
+        pv.addView(cv, FrameLayout.LayoutParams(-1, -1))
+        pv.addView(cTxt("Arraste para girar", 11f, Cz.SOFT, false), FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply { bottomMargin = dp(4) })
+        leftCol.addView(pv, lpW(MATCH, 0, 1f))
+        val animRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(8), 0, 0) }
+        val animChips = ArrayList<TextView>()
+        for (k in ANIMS.indices) {
+            val c = cChip(ANIMS[k]) { cv.mode = k; for ((j, ch) in animChips.withIndex()) ch.styleChip(j == k) }
+            animChips.add(c)
+            animRow.addView(c, lpW(WRAP, WRAP).apply { if (k > 0) leftMargin = dp(5) })
         }
-        left.addView(animBtn, FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, dp(44), Gravity.TOP or Gravity.START).apply { topMargin = dp(4); leftMargin = dp(4) })
-        left.addView(label("Arraste pra girar", 12f, Gravity.CENTER), FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM))
-        root.addView(left, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 0.9f))
+        animChips[0].styleChip(true)
+        leftCol.addView(HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; addView(animRow) }, lpW(MATCH, WRAP))
+        body.addView(leftCol, lpW(0, MATCH, 0.8f))
 
-        col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(14), 0, dp(14), dp(12)) }
-        col.addView(label("Meu personagem", 26f))
-        header("Looks prontos")
-        run {
-            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-            val tv = label("", 15f, Gravity.CENTER)
-            val prev = btn("<", Color.rgb(171, 71, 188)) { presetIdx = (presetIdx + Look.PRESETS.size - 1) % Look.PRESETS.size; Look.applyPreset(presetIdx); changed(); tv.text = Look.PRESET_NAMES[presetIdx] }
-            val next = btn(">", Color.rgb(171, 71, 188)) { presetIdx = (presetIdx + 1) % Look.PRESETS.size; Look.applyPreset(presetIdx); changed(); tv.text = Look.PRESET_NAMES[presetIdx] }
-            tv.text = "Toque nas setas"
-            row.addView(prev, LinearLayout.LayoutParams(dp(54), dp(46)))
-            row.addView(tv, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-            row.addView(next, LinearLayout.LayoutParams(dp(54), dp(46)))
-            col.addView(row, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(4) })
+        // DIREITA: abas + conteúdo
+        val rightCol = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(14), 0, 0, 0) }
+        val tabRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        for ((i, t) in TABS.withIndex()) {
+            val tv = cChip(t) { select(i) }
+            tv.textSize = 14f
+            tabViews.add(tv)
+            tabRow.addView(tv, lpW(WRAP, WRAP).apply { if (i > 0) leftMargin = dp(6) })
         }
-        header("Corpo")
-        stepper("Tipo", Look.GENDER, Look.GENDER_NAMES)
-        swatches("Pele", Look.SKIN, Look.SKINS, Look.SKIN_NAMES)
-        header("Cabelo")
-        stepper("Estilo", Look.HAIR, Look.HAIR_STYLES)
-        swatches("Cor", Look.HAIRC, Look.HAIRS, Look.HAIR_NAMES)
-        header("Rosto")
-        stepper("Olhos", Look.EYES, Look.EYE_STYLES)
-        swatches("Cor dos olhos", Look.EYEC, Look.EYE_COLORS, Look.EYE_COLOR_NAMES)
-        stepper("Boca", Look.MOUTH, Look.MOUTHS)
-        stepper("Bochechas coradas", Look.BLUSH, Look.ONOFF)
-        stepper("Rosto", Look.FACE, Look.FACES)
-        header("Roupas")
-        stepper("Blusa", Look.TOP, Look.TOPS)
-        swatches("Cor da blusa", Look.TOPC, Look.PAL, Look.PAL_NAMES)
-        stepper("Parte de baixo", Look.BOTTOM, Look.BOTTOMS)
-        swatches("Cor", Look.BOTTOMC, Look.PAL, Look.PAL_NAMES)
-        stepper("Calçados", Look.SHOES, Look.SHOE_STYLES)
-        swatches("Cor dos calçados", Look.SHOEC, Look.PAL, Look.PAL_NAMES)
-        header("Acessórios")
-        stepper("Cabeça", Look.HAT, Look.HATS)
-        swatches("Cor", Look.HATC, Look.PAL, Look.PAL_NAMES)
-        stepper("Pescoço", Look.NECK, Look.NECKS)
-        swatches("Cor", Look.NECKC, Look.PAL, Look.PAL_NAMES)
-        stepper("Costas", Look.BACK, Look.BACKS)
-        swatches("Cor", Look.BACKC, Look.PAL, Look.PAL_NAMES)
-        header("")
-        col.addView(btn("Aleatório", Color.rgb(171, 71, 188)) { Look.randomize(); changed() }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(6) })
-        col.addView(btn("Voltar", Color.rgb(90, 100, 120)) { finish() }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(8) })
+        rightCol.addView(HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; addView(tabRow) }, lpW(MATCH, WRAP))
+        content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, dp(10), dp(4), dp(10)) }
+        scroll = ScrollView(this).apply { isVerticalScrollBarEnabled = false; addView(content) }
+        rightCol.addView(scroll, lpW(MATCH, 0, 1f))
+        body.addView(rightCol, lpW(0, MATCH, 1.2f))
 
-        val sv = ScrollView(this).apply { addView(col) }
-        root.addView(sv, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1.1f))
+        col.addView(body, lpW(MATCH, 0, 1f).apply { topMargin = dp(10) })
+        root.addView(col)
         setContentView(root)
-        changed()
+        select(0)
     }
 }

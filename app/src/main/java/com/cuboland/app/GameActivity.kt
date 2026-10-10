@@ -16,6 +16,7 @@ class GameActivity : AppCompatActivity() {
     private lateinit var game: Game
     private var flat = false
     private lateinit var saveFile: File
+    private var hud: HudView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,22 +26,24 @@ class GameActivity : AppCompatActivity() {
             hide(WindowInsetsCompat.Type.systemBars())
             systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
-        flat = intent.getBooleanExtra("flat", false)
+        val info = Worlds.get(this, intent.getStringExtra("wid") ?: "")
+        if (info == null) { finish(); return }
+        Worlds.touch(this, info.id)
+        flat = info.type == Worlds.FLAT
         World.configure(flat)
         world = World()
-        saveFile = File(filesDir, if (flat) "mundo_plano.bin" else "mundo.bin")
-        if (!world.load(saveFile)) { if (flat) world.generateFlat(4321) else world.generate(1234) }
-        else if (!flat) {
+        saveFile = Worlds.fileOf(this, info)
+        if (!world.load(saveFile)) { if (flat) world.generateFlat(info.seed) else world.generate(info.seed) }
+        else if (!flat && info.file == "mundo.bin") {
             val mark = File(filesDir, "arvores_v3")
             if (!mark.exists()) { world.replantTrees(1234); try { mark.writeText("1") } catch (_: Exception) {} }
         }
-        File(filesDir, "arvores_v3").let { if (!it.exists()) try { it.writeText("1") } catch (_: Exception) {} }
         game = Game(world)
         Look.load(this)
         getSharedPreferences("cfg", 0).getString("hb", null)?.split(",")?.mapNotNull { it.toIntOrNull() }
             ?.takeIf { it.size == 8 }?.forEachIndexed { i, v -> if (Items.valid(v)) game.hotbar[i] = v }
         game.sens = getSharedPreferences("cfg", 0).getFloat("sens", 1f)
-        game.creative = getSharedPreferences("cfg", 0).getBoolean("creative", false)
+        game.creative = info.creative
         gl = GLSurfaceView(this)
         gl.setEGLContextClientVersion(2)
         gl.setEGLConfigChooser(8, 8, 8, 8, 16, 0)
@@ -49,14 +52,22 @@ class GameActivity : AppCompatActivity() {
         root.addView(gl)
         gl.post {   // renderiza em ~80% da resolução em telas grandes: bem mais fluido, o HUD continua nítido
             val w = gl.width; val h = gl.height
-            if (w > 1500) gl.holder.setFixedSize((w * 0.8f).toInt(), (h * 0.8f).toInt())
+            val q = getSharedPreferences("cfg", 0).getInt("res", 0)   // 0 auto, 1 alta, 2 média, 3 leve
+            val f = when (q) { 1 -> 1f; 2 -> 0.8f; 3 -> 0.6f; else -> if (w > 1500) 0.8f else 1f }
+            if (f < 1f) gl.holder.setFixedSize((w * f).toInt(), (h * f).toInt())
         }
-        root.addView(HudView(this, game) { finish() })
+        val h = HudView(this, game, info.name) { finish() }
+        hud = h
+        root.addView(h)
         setContentView(root)
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() { hud?.togglePause() }
+        })
     }
 
     override fun onPause() {
         super.onPause()
+        if (!::gl.isInitialized) return
         gl.onPause()
         world.save(saveFile)
         getSharedPreferences("cfg", 0).edit().putString("hb", game.hotbar.joinToString(",")).apply()
@@ -64,6 +75,6 @@ class GameActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        gl.onResume()
+        if (::gl.isInitialized) gl.onResume()
     }
 }

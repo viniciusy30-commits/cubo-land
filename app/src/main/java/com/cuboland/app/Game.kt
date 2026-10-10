@@ -808,7 +808,10 @@ class Game(val world: World) {
         burst(player.x, player.y + 1f, player.z, 0xFF5050, 8, 3f)
     }
 
+    @Volatile var paused = false
+
     fun update(dt: Float) {
+        if (paused) return
     for (sl in slashes) if (time - sl.born > SLASH_LIFE || world.get(sl.d.x, sl.d.y, sl.d.z) != sl.d.id) slashes.remove(sl)
         time += dt
         var ddx: Float; var ddy: Float
