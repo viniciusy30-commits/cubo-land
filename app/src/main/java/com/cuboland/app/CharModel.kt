@@ -134,9 +134,9 @@ class CharModel {
         // posturas: agachar (pernas dobradas, tronco inclinado), sentar (pernas à frente, no chão), deitar (de costas)
         val cr = an.crouch.coerceIn(0f, 1f); val si = an.sit.coerceIn(0f, 1f); val li = an.lie.coerceIn(0f, 1f)
         if (cr > 0f) { hipL = lp(hipL, -55f + sw * 0.4f, cr); hipR = lp(hipR, -55f - sw * 0.4f, cr); kneeL = lp(kneeL, 95f + kneeL * 0.3f, cr); kneeR = lp(kneeR, 95f + kneeR * 0.3f, cr) }
-        if (si > 0f) { val br = sin(t * 1.6f) * 2f; hipL = lp(hipL, -82f + br, si); hipR = lp(hipR, -78f - br, si); kneeL = lp(kneeL, 22f, si); kneeR = lp(kneeR, 30f, si) }
+        if (si > 0f) { val br = sin(t * 1.6f) * 2f; hipL = lp(hipL, -88f + br, si); hipR = lp(hipR, -86f - br, si); kneeL = lp(kneeL, 4f, si); kneeR = lp(kneeR, 8f, si) }
         if (li > 0f) { hipL = lp(hipL, 0f, li); hipR = lp(hipR, 0f, li); kneeL = lp(kneeL, 4f, li); kneeR = lp(kneeR, 8f, li) }
-        val drop = 0.1f * land + 0.145f * cr + 0.38f * si
+        val drop = 0.1f * land + 0.145f * cr + 0.31f * si
         val bob = sin(t * 2f) * 0.012f * (1f - stride) + abs(sin(ph)) * (0.035f + 0.04f * rn) * stride
         val move = stride * (1f + rn * 0.6f) + ab * lp(0.4f, 1.2f, fs)
 
@@ -470,21 +470,17 @@ class CharModel {
             // Cabeça fora: mão do item pra baixo, normal; o outro braço aberto, remando devagar.
             val sl2 = sin(t * 2.3f)
             val lSurfX = -25f + sl2 * 14f; val lSurfZ = -(38f + sin(t * 2.3f + 1.2f) * 16f); val lSurfE = -20f + sl2 * 8f
-            rxL = lp(lSurfX, 3f, dv); rzL = lp(lSurfZ, -3f, dv); elL = lp(lSurfE, -4f, dv)
-            val rSurfX = (if (toolArm) -10f else -6f) + atkRx
-            rxR = lp(rSurfX, -14f + atkRx, dv); rzR = lp(16f, 34f, dv); elR = lp(-6f, -8f, dv)
+            // cabeça fora: os dois braços fazem a mesma remada (espelhada). Mergulhado: o braço vazio copia a pose do braço do item.
+            rxL = lp(lSurfX, -14f, dv); rzL = lp(lSurfZ, -34f, dv); elL = lp(lSurfE, -8f, dv)
+            rxR = lp(lSurfX + atkRx, -14f + atkRx, dv); rzR = lp(-lSurfZ, 34f, dv); elR = lp(lSurfE, -8f, dv)
             ryR = if (an.poseOn && toolArm) an.pY * 0.9f else 0f
         }
         if (ab > 0.01f) {
             val flapA = sin(t * 12f) * 6f * (1f - abs(vk))
             val pxL = lp(-35f, -10f, fs) + flapA; val pzL = lp(-150f, -75f, fs); val pelL = lp(-10f, -8f, fs)
             rxL = lp(rxL, pxL, ab); rzL = lp(rzL, pzL, ab); elL = lp(elL, pelL, ab)
-            if (toolArm) {   // braço da ferramenta continua vivo: balança de leve, sem subir pra cabeça
-                val tx = -22f + atkRx + lp(-14f, 22f, fs) + sin(t * 9f) * 5f * (1f - abs(vk)); val tz = lp(22f, 34f, fs)
-                rxR = lp(rxR, tx, ab); rzR = lp(rzR, tz, ab); elR = lp(elR, lp(-12f, -4f, fs), ab)
-            } else {
-                rxR = lp(rxR, lp(-35f, -10f, fs) - flapA, ab); rzR = lp(rzR, lp(150f, 75f, fs), ab); elR = lp(elR, pelL, ab)
-            }
+            // no pulo os dois braços sobem igual (o do item também), com o golpe somado por cima
+            rxR = lp(rxR, lp(-35f, -10f, fs) - flapA + atkRx, ab); rzR = lp(rzR, lp(150f, 75f, fs), ab); elR = lp(elR, pelL, ab)
         }
         if (fl > 0.01f) {
             // os dois braços ficam pra baixo, iguais ao do item: só um balanço leve

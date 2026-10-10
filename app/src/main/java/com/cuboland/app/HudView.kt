@@ -470,7 +470,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onExit: (
             }
             if (game.pickT > 0f) {
                 val al = (min(1f, game.pickT * 2f) * 255).toInt()
-                val py2 = top - 74 * d - (1.6f - game.pickT) * 14 * d
+                val py2 = top - 52 * d - (1.6f - game.pickT) * 14 * d
                 pxText(c, game.pickMsg, w / 2, py2, tsc(1.6f), Color.argb(al, 255, 236, 140), 1)
             }
         }
@@ -478,7 +478,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onExit: (
         val hp = game.hp
         for (i in 0 until 5) {
             val full = hp >= (i + 1) * 2; val half = hp == i * 2 + 1
-            val cx = w / 2 - 60 * d + i * 30 * d; val hy = top - 40 * d
+            val cx = 84 * d + i * 28 * d; val hy = 40 * d
             val beat = if (hp <= 2 && hp > 0) 1f + 0.08f * sin(clock * 9f) else 1f
             val bob = if (hp <= 2 && hp > 0) sin(clock * 12f + i) * 1.5f * d else 0f
             pxHeart(c, cx, hy + bob, 2.4f * d * beat, Color.rgb(228, 36, 48), half && !full, !(full || half))
