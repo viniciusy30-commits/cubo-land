@@ -44,37 +44,37 @@ class WorldsActivity : CozyActivity() {
         countTxt.text = if (list.isEmpty()) "" else "${list.size} mundo${if (list.size > 1) "s" else ""}"
         for ((i, w) in list.withIndex()) {
             val card = worldCard(w, i == 0)
-            strip.addView(card, lpW(dp(236), ViewGroup.LayoutParams.WRAP_CONTENT).apply { rightMargin = dp(14) })
+            strip.addView(card, lpW(dp(290), ViewGroup.LayoutParams.WRAP_CONTENT).apply { rightMargin = dp(14) })
             card.popIn(70L * i, 30)
         }
         val add = newCard()
-        strip.addView(add, lpW(dp(236), dp(270)))
+        strip.addView(add, lpW(dp(220), dp(250)))
         add.popIn(70L * list.size, 30)
     }
 
     private fun badge(t: String, color: Int): TextView = cTxt(t, 11f, Cz.INK, false).apply {
-        background = CozyBox(this@WorldsActivity, color, 9f, false); setPadding(dp(8), dp(3), dp(8), dp(3))
+        background = CozyBox(this@WorldsActivity, color, 9f, false); setPadding(dp(8), dp(4), dp(8), dp(4))
     }
 
     private fun worldCard(w: Worlds.Info, last: Boolean): LinearLayout {
-        val card = cPanel(Cz.PANEL, 20f, 10)
-        card.addView(cTxt(if (last) "★ MAIS RECENTE" else if (w.creative) "✦ CRIATIVO" else "♥ SOBREVIVÊNCIA", 10f, Cz.INK, false).apply {
-            gravity = Gravity.CENTER; setPadding(0, dp(3), 0, dp(3)); background = CozyBox(this@WorldsActivity, if (last) Cz.GOLD else if (w.creative) Cz.LILAC else Cz.GREEN, 8f, false) },
-            lpW(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(6) })
-        card.addView(WorldThumb(this, w.seed, w.type), lpW(ViewGroup.LayoutParams.MATCH_PARENT, dp(110)))
-        card.addView(cTxt(w.name, 18f, Color.WHITE).apply { maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END; setPadding(0, dp(8), 0, 0) })
-        val tags = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(6), 0, dp(4)) }
-        tags.addView(badge(Worlds.TYPE_NAMES[w.type.coerceIn(0, 1)], if (w.type == 1) Cz.SKY else Cz.GREEN))
-        tags.addView(badge(if (w.creative) "Criativo" else "Sobrevivência", if (w.creative) Cz.GOLD else Cz.ORANGE), lpW(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { leftMargin = dp(6) })
+        val card = cPanel(Cz.PANEL, 20f, 12)
+        card.addView(WorldThumb(this, w.seed, w.type), lpW(ViewGroup.LayoutParams.MATCH_PARENT, dp(78)))
+        val nameRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(0, dp(8), 0, dp(4)) }
+        nameRow.addView(cTxt(w.name, 18f, Color.WHITE).apply { maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END }, lpW(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        if (last) nameRow.addView(badge("RECENTE", Cz.GOLD), lpW(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { leftMargin = dp(6) })
+        card.addView(nameRow)
+        val tags = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(2), 0, dp(6)) }
+        tags.addView(badge(if (w.type == 1) "PLANÍCIE" else "ILHA", if (w.type == 1) Cz.SKY else Cz.GREEN))
+        tags.addView(badge(if (w.creative) "CRIATIVO" else "SOBREVIV.", if (w.creative) Cz.LILAC else Cz.ORANGE), lpW(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { leftMargin = dp(6) })
         card.addView(tags)
-        card.addView(cTxt((if (last) "★ Último jogado · " else "") + Worlds.agoText(w.played) + " · " + Worlds.sizeText(this, w), 11f, Cz.SOFT, false).apply { setPadding(0, 0, 0, dp(8)) })
-        card.addView(cBtn("Jogar", Cz.GREEN, 16f) { play(w) })
-        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(6), 0, 0) }
-        row.addView(cBtn("Editar", Cz.SKY, 12f) { editor(w) }, lpW(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { rightMargin = dp(4) })
-        row.addView(cBtn("2x", Cz.LILAC, 14f) { Worlds.duplicate(this, w); Toast.makeText(this, "Mundo duplicado", Toast.LENGTH_SHORT).show(); refresh() }, lpW(dp(48), ViewGroup.LayoutParams.WRAP_CONTENT).apply { rightMargin = dp(4) })
-        row.addView(cBtn("X", Cz.RED, 14f) {
+        card.addView(cTxt(Worlds.agoText(w.played) + "  ·  " + Worlds.sizeText(this, w), 12f, Cz.SOFT, false).apply { setPadding(0, 0, 0, dp(10)) })
+        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+        row.addView(cBtn("Jogar", Cz.GREEN, 16f) { play(w) }, lpW(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.4f).apply { rightMargin = dp(6) })
+        row.addView(cBtn("Editar", Cz.SKY, 12f) { editor(w) }, lpW(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { rightMargin = dp(6) })
+        row.addView(cBtn("2x", Cz.LILAC, 12f) { Worlds.duplicate(this, w); Toast.makeText(this, "Mundo duplicado", Toast.LENGTH_SHORT).show(); refresh() }, lpW(dp(46), ViewGroup.LayoutParams.WRAP_CONTENT).apply { rightMargin = dp(6) })
+        row.addView(cBtn("X", Cz.RED, 12f) {
             cozyConfirm("Excluir \"${w.name}\"?", "Tudo que você construiu nesse mundo será apagado. Isso não tem volta.", "Excluir", Cz.RED) { Worlds.delete(this, w); refresh() }
-        }, lpW(dp(48), ViewGroup.LayoutParams.WRAP_CONTENT))
+        }, lpW(dp(46), ViewGroup.LayoutParams.WRAP_CONTENT))
         card.addView(row)
         return card
     }
@@ -84,9 +84,9 @@ class WorldsActivity : CozyActivity() {
         card.gravity = Gravity.CENTER
         card.isClickable = true
         card.setOnClickListener { editor(null) }
-        card.addView(cTxt("+", 54f, Cz.GOLD))
-        card.addView(cTxt("Criar novo mundo", 16f, Cz.CREAM).apply { gravity = Gravity.CENTER })
-        card.addView(cTxt("Ilha ou planície com rio gigante", 11f, Cz.SOFT, false).apply { gravity = Gravity.CENTER; setPadding(0, dp(4), 0, 0) })
+        card.addView(cTxt("+", 60f, Cz.GOLD).apply { gravity = Gravity.CENTER })
+        card.addView(cTxt("Criar novo mundo", 16f, Cz.CREAM).apply { gravity = Gravity.CENTER; setPadding(0, dp(4), 0, 0) })
+        card.addView(cTxt("Ilha ou planície com rio gigante", 12f, Cz.SOFT, false).apply { gravity = Gravity.CENTER; setPadding(0, dp(8), 0, 0) })
         return card
     }
 

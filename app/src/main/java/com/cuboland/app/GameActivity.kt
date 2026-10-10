@@ -67,7 +67,7 @@ class GameActivity : AppCompatActivity() {
         game.creative = info.creative
         gl = GLSurfaceView(this)
         gl.setEGLContextClientVersion(2)
-        gl.setEGLConfigChooser(8, 8, 8, 8, 16, 0)
+        gl.setEGLConfigChooser(8, 8, 8, 8, 24, 0)
         gl.setRenderer(GameRenderer(game))
         root.addView(gl, 0)
         gl.post {   // renderiza em ~80% da resolução em telas grandes: bem mais fluido, o HUD continua nítido

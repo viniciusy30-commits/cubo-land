@@ -17,7 +17,7 @@ class SettingsActivity : CozyActivity() {
     private lateinit var content: LinearLayout
     private lateinit var scroll: ScrollView
     private val tabViews = ArrayList<TextView>()
-    private val TAB_COL = intArrayOf(Cz.PINK, Cz.SKY, Cz.GREEN, Cz.ORANGE, Cz.LILAC)
+    private val TAB_COL = intArrayOf(Cz.ORANGE, Cz.SKY, Cz.GREEN, Cz.LILAC, Cz.TEAL)
     private val TABS = arrayOf("Geral", "Controles", "Gráficos", "Novidades", "Sobre")
     private var current = -1
 

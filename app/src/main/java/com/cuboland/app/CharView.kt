@@ -18,14 +18,14 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 /** Preview 3D do personagem: rasterizador próprio (z-buffer) em baixa resolução, usando o MESMO modelo do jogo. Arraste pra girar. */
-class CharView(ctx: Context, private val W: Int = 300, private val H: Int = 380) : View(ctx) {
+class CharView(ctx: Context, private val W: Int = 420, private val H: Int = 532) : View(ctx) {
     private val S = 140f * H / 380f
     private val bmp = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888)
     private val pix = IntArray(W * H)
     private val zb = FloatArray(W * H)
     private val model = CharModel()
     private val base = FloatArray(16); private val tmp = FloatArray(16)
-    private val paint = Paint().apply { isFilterBitmap = false }
+    private val paint = Paint().apply { isFilterBitmap = true }
     private val dst = Rect()
     private var yaw = -25f; private var drag = false; private var lastX = 0f
     private var tt = 0f; private var lastT = System.nanoTime()
@@ -41,6 +41,9 @@ class CharView(ctx: Context, private val W: Int = 300, private val H: Int = 380)
     /** desenha a sombrinha no chão (o menu principal desenha a própria) */
     var shadow = true
     private var m0 = 0f
+    private var mvSm = 0f; private var runSm = 0f; private var airSm = 0f; private var landSm = 0f; private var vyHold = 0f
+    private var crSm = 0f; private var siSm = 0f; private var liSm = 0f; private var flSm = 0f; private var fsSm = 0f; private var dsSm = 0f
+    private var swSm = 0f; private var dvSm = 0f; private var tiSm = 0f; private var sfSm = 0f; private var swPh = 0f
     private val an = Anim(); private var ph = 0f
     private val wx = FloatArray(8); private val wy = FloatArray(8); private val wz = FloatArray(8)
     private val faces = arrayOf(intArrayOf(4, 5, 7, 6), intArrayOf(1, 0, 2, 3), intArrayOf(5, 1, 3, 7), intArrayOf(0, 4, 6, 2), intArrayOf(6, 7, 3, 2), intArrayOf(0, 1, 5, 4))
@@ -129,7 +132,7 @@ class CharView(ctx: Context, private val W: Int = 300, private val H: Int = 380)
     }
 
     /** toque rápido no personagem: um pulinho */
-    fun hopNow() { mode = 5; m0 = tt }
+    fun hopNow() { mode = 99; m0 = tt }
     fun setYaw(v: Float) { yaw = v }
     fun dragStart(x: Float) { drag = true; lastX = x }
     fun dragMove(x: Float, k: Float) { yaw += (x - lastX) * k; lastX = x }
@@ -146,25 +149,44 @@ class CharView(ctx: Context, private val W: Int = 300, private val H: Int = 380)
         Matrix.rotateM(base, 0, yaw, 0f, 1f, 0f)
         an.t = tt
         var hop = 0f
-        an.move = 0f; an.run = 0f; an.air = false; an.landT = 0f; an.atk = 1f; an.atkArm = 0f; an.hasTool = false; an.vy = 0f; an.airA = 0f; an.poseOn = false; an.charge = 0f; an.fly = 0f; an.swim = 0f; an.dive = 0f; an.tilt = 0f
+        // alvos de cada modo; tudo é suavizado igual ao jogo (transições fluidas entre poses)
+        var mvT = 0f; var runT = 0f; var airT = 0f; var landT = 0f; var vy = 0f
+        var crT = 0f; var siT = 0f; var liT = 0f; var flT = 0f; var fsT = 0f; var dsT = 0f
+        var swT = 0f; var dvT = 0f; var tiT = 0f; var sfT = 0f
+        an.atk = 1f; an.atkArm = 0f; an.hasTool = false; an.poseOn = false; an.charge = 0f
         when (mode) {
-            1 -> { ph += dt * 8f; an.move = 1f }
-            2 -> { ph += dt * 14f; an.move = 1f; an.run = 1f }
-            3 -> {
-                val jt = tt % 1.7f
-                if (jt < 0.9f) { an.air = true; an.airA = 1f; an.vy = 6f * kotlin.math.cos(jt / 0.9f * 3.1416f); hop = sin(jt / 0.9f * 3.1416f) * 0.45f }
-                else if (jt < 1.2f) an.landT = 1f - (jt - 0.9f) / 0.3f
+            1 -> { ph += dt * 8f; mvT = 1f }
+            2 -> { ph += dt * 14f; mvT = 1f; runT = 1f }
+            3, 99 -> {
+                val jt = if (mode == 3) tt % 1.7f else tt - m0
+                if (mode == 99 && jt >= 1.2f) mode = 0
+                else if (jt < 0.9f) { airT = 1f; vy = 7f * kotlin.math.cos(jt / 0.9f * 3.1416f); hop = sin(jt / 0.9f * 3.1416f) * (if (mode == 3) 0.9f else 0.5f) }
+                else landT = 1f - (jt - 0.9f) / 0.3f
             }
             4 -> { val cyc = (tt % 0.9f) / 0.9f; an.atk = cyc; an.atkArm = CharModel.atkDelta(cyc); an.hasTool = true }
-            5 -> {
-                val jt = tt - m0
-                if (jt >= 1.2f) mode = 0
-                else if (jt < 0.9f) { an.air = true; an.airA = 1f; an.vy = 6f * kotlin.math.cos(jt / 0.9f * 3.1416f); hop = sin(jt / 0.9f * 3.1416f) * 0.3f }
-                else an.landT = 1f - (jt - 0.9f) / 0.3f
-            }
+            5 -> crT = 1f
+            6 -> siT = 1f
+            7 -> liT = 1f
+            8 -> { liT = 1f; mvT = 1f; ph += dt * 5f }
+            9 -> flT = 1f
+            10 -> { flT = 1f; fsT = 1f; dsT = 1f }
+            11 -> { swT = 1f; sfT = 1f; tiT = 32f; mvT = 0.6f }
+            12 -> { swT = 1f; dvT = 1f; sfT = 1f; tiT = 78f; mvT = 0.6f }
         }
+        fun sm(cur: Float, tg: Float, k: Float) = cur + (tg - cur) * min(1f, k * dt)
+        mvSm = sm(mvSm, mvT, 8f); runSm = sm(runSm, runT, 8f); airSm = sm(airSm, airT, 9f); landSm = sm(landSm, landT, 16f)
+        vyHold = sm(vyHold, vy, 12f)
+        crSm = sm(crSm, crT, 8f); siSm = sm(siSm, siT, 7f); liSm = sm(liSm, liT, 6f); flSm = sm(flSm, flT, 6f)
+        fsSm = sm(fsSm, fsT, 5f); dsSm = sm(dsSm, dsT, 3.5f); swSm = sm(swSm, swT, 8f); dvSm = sm(dvSm, dvT, 6f)
+        tiSm = sm(tiSm, tiT, 9f); sfSm = sm(sfSm, sfT, 7f)
+        swPh += dt * (if (swT > 0f) 3.6f else 0f)
+        an.move = mvSm; an.run = runSm; an.air = airSm > 0.05f; an.airA = airSm; an.vy = vyHold; an.landT = landSm
+        an.crouch = crSm; an.sit = siSm; an.lie = liSm; an.fly = flSm; an.flySpd = fsSm; an.dash = dsSm; an.imp = 0f
+        an.swim = swSm; an.dive = dvSm; an.tilt = tiSm; an.swimFast = sfSm; an.swimPh = swPh
         an.phase = ph
+        hop += 0.5f * flSm * (1f + 0.04f * sin(tt * 1.6f))
         if (hop > 0f) Matrix.translateM(base, 0, 0f, hop, 0f)
+        if (swSm > 0.01f) { Matrix.translateM(base, 0, 0f, 0.9f, 0f); Matrix.rotateM(base, 0, tiSm, 1f, 0f, 0f); Matrix.translateM(base, 0, 0f, -0.9f, 0f) }
         model.draw(boxFn, base, an, null)
         bmp.setPixels(pix, 0, W, 0, 0, W, H)
     }

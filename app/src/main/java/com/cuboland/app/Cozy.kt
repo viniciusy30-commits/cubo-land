@@ -461,7 +461,7 @@ fun Context.cPanel(fill: Int = Cz.PANEL, radius: Float = 18f, pad: Int = 14): Li
 private var cardTick = 0
 fun Context.cCard(title: String, sub: String? = null): LinearLayout {
     val p = cPanel(Cz.PANEL, 16f, 12)
-    val accents = intArrayOf(Cz.PINK, Cz.SKY, Cz.GREEN, Cz.ORANGE, Cz.LILAC, Cz.TEAL)
+    val accents = intArrayOf(Cz.SKY, Cz.GREEN, Cz.ORANGE, Cz.LILAC, Cz.TEAL, Cz.RED)
     val rib = cTxtL(title, 15f).apply { background = CozyBox(this@cCard, accents[cardTick++ % accents.size], 10f, false); setPadding(dp(12), dp(6), dp(12), dp(7)) }
     p.addView(rib, lpW(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
     if (sub != null) p.addView(cTxt(sub, 12f, Cz.SOFT, false).apply { setPadding(dp(2), dp(6), 0, 0) })
@@ -557,14 +557,14 @@ fun Activity.cozyConfirm(title: String, msg: String, okText: String, okColor: In
     }
 }
 
-/** cabeçalho padrão: faixa rosa-doce com botão voltar e título branco */
+/** cabeçalho padrão: faixa creme com botão voltar e título dourado */
 fun Context.cHeader(title: String, sub: String?, onBack: () -> Unit): LinearLayout {
     val h = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
-        background = CozyBox(this@cHeader, Cz.PINK, 18f, false); setPadding(dp(12), dp(8), dp(12), dp(10)) }
+        background = CozyBox(this@cHeader, Cz.PANEL, 18f, false); setPadding(dp(12), dp(8), dp(12), dp(10)) }
     h.addView(cIconBtn("‹", Cz.SKY, 46, onBack).apply { textSize = 28f })
     val tx = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), 0, 0, 0) }
-    tx.addView(cTxtL(title, 24f, Color.WHITE))
-    if (sub != null) tx.addView(cTxtL(sub, 12f, Color.rgb(255, 236, 244), false))
+    tx.addView(cTxt(title, 26f, Cz.GOLD))
+    if (sub != null) tx.addView(cTxt(sub, 12f, Cz.SOFT, false).apply { setPadding(0, dp(2), 0, 0) })
     h.addView(tx, lpW(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
     return h
 }

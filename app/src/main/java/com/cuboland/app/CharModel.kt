@@ -91,7 +91,7 @@ class CharModel {
     fun draw(boxIn: BoxFn, root: FloatArray, an: Anim, handOut: FloatArray?) {
         var zf = 0
         bx = { m, px, py, pz, rx, ry, sx, sy, sz, oy, col, a, rz ->
-            val k = 1f + min(zf, 260) * 0.00011f; zf++   // cada caixa nova fica um tiquinho maior: acaba o z-fighting de faces coplanares
+            val k = 1f + min(zf, 400) * 0.00014f; zf++   // cada caixa nova fica um tiquinho maior: acaba o z-fighting de faces coplanares
             boxIn(m, px, py, pz, rx, ry, sx * k, sy * k, sz * k, oy, col, a, rz)
         }
         val t = an.t
@@ -155,8 +155,10 @@ class CharModel {
             kneeL += (80f - kneeL) * land; kneeR += (80f - kneeR) * land
         }
         if (full || overalls.not() && skirtBot) {   // roupa longa/saia: pernas não atravessam o tecido
-            val kk = if (full) 0.38f else 0.6f
-            hipL *= kk; hipR *= kk; kneeL *= kk + 0.05f; kneeR *= kk + 0.05f
+            val kk = if (full) 0.3f else 0.5f
+            val cap = if (full) 11f else 17f   // o pé nunca passa da barra do tecido
+            hipL = (hipL * kk).coerceIn(-cap, cap); hipR = (hipR * kk).coerceIn(-cap, cap)
+            kneeL = (kneeL * (kk + 0.05f)).coerceIn(0f, cap * 2.2f); kneeR = (kneeR * (kk + 0.05f)).coerceIn(0f, cap * 2.2f)
         }
         // posturas: agachar (pernas dobradas, tronco inclinado), sentar (pernas à frente, no chão), deitar (de costas)
         val cr = an.crouch.coerceIn(0f, 1f); val si = an.sit.coerceIn(0f, 1f)
@@ -206,7 +208,7 @@ class CharModel {
 
         // saia balançando (preso ao quadril)
         val flare = 1f + ab * lp(0.06f, 0.1f, fs) + 0.05f * rn * stride
-        piv(sm, bm, 0f, 0.5f, 0f, rx = sin(t * 2.2f) * 1.5f + sin(ph * 2f) * 3f * stride)
+        piv(sm, bm, 0f, 0.5f, 0f, rx = sin(t * 2.2f) * 1.5f + sin(ph * 2f) * 3f * stride - 62f * an.sit.coerceIn(0f, 1f) - 34f * an.crouch.coerceIn(0f, 1f))
         Matrix.scaleM(sm, 0, flare, 1f, flare)
         fun sk(py: Float, sx: Float, sy: Float, sz: Float, col: Int) = b(sm, 0f, py - 0.5f, 0f, sx, sy, sz, col)
 
@@ -223,8 +225,14 @@ class CharModel {
             val hip = if (sd < 0) hipL else hipR; val kn = if (sd < 0) kneeL else kneeR
             piv(t1, r2, s * 0.11f, 0.44f, 0f, rx = hip + lean * fl, rz = s * (5f + 7f * (if (sd < 0) qLegL else qLegR)) * li)   // rastejando: pernas abertas pro lado   // voando: as pernas acompanham a inclinação do corpo
             piv(t2, t1, 0f, -0.22f, 0f, rx = kn)
-            b(t1, 0f, -0.115f, 0f, 0.19f, 0.23f, 0.21f, skin)
-            b(t2, 0f, -0.11f, 0f, 0.19f, 0.22f, 0.21f, skin)
+            run {   // a pele só existe onde a roupa não cobre (senão ela aparece nas dobras do joelho)
+                val tTop = if (seg > 0f) 0.02f - min(seg, 0.22f) else 0.015f
+                val tBot = -0.23f
+                if (tTop - tBot > 0.012f) b(t1, 0f, (tTop + tBot) / 2f, 0f, 0.19f, tTop - tBot, 0.21f, skin)
+                val sTop = if (seg > 0.22f) 0.02f - (seg - 0.22f) else 0.01f
+                val sBot = -0.22f
+                if (sTop - sBot > 0.012f) b(t2, 0f, (sTop + sBot) / 2f, 0f, 0.19f, sTop - sBot, 0.21f, skin)
+            }
             // juntas: quadril e joelho com a cor da roupa (ou da pele) pra não abrir vão ao dobrar
             val hipC = if (seg > 0f) legCol else skin
             b(t1, 0f, 0.025f, 0f, (if (seg > 0f) legW else 0.19f) - 0.004f, 0.11f, (if (seg > 0f) legD else 0.21f) - 0.004f, hipC)
@@ -234,7 +242,7 @@ class CharModel {
                 b(t1, 0f, 0.005f - st / 2f, 0f, legW, st + 0.01f, legD, legCol)
                 if (sn > 0f) {
                     b(t2, 0f, -sn / 2f, 0f, legW, sn, legD, legCol)
-                    b(t2, 0f, 0f, 0f, legW - 0.012f, 0.08f, legD - 0.012f, legCol)
+                    b(t2, 0f, 0f, 0f, legW - 0.006f, 0.15f, legD - 0.006f, legCol)   // joelho bem cheio: sem vão ao dobrar
                     if (seg >= 0.3f) b(t2, 0f, -sn + 0.0175f, 0f, legW + 0.012f, 0.035f, legD + 0.012f, if (bot == 4) lite(bc, 0.5f) else shadeC(legCol, 0.8f))
                 }
                 if (bot == 7) b(t1, s * (legW / 2f + 0.006f), -0.12f, 0.02f, 0.025f, 0.12f, 0.12f, shadeC(legCol, 0.82f))
@@ -392,9 +400,9 @@ class CharModel {
                 b(base, 0f, 0.53f, 0.17f, 0.2f, 0.03f, 0.01f, gold)
                 b(base, 0f, 0.55f, -0.2f, 0.34f, 0.24f, 0.1f, obi)
                 b(base, 0f, 0.55f, -0.265f, 0.1f, 0.1f, 0.04f, gold)
-                sk(0.36f, bw + 0.05f, 0.24f, 0.34f, tc)
-                sk(0.16f, bw + 0.08f, 0.2f, 0.37f, tc)
-                sk(0.045f, bw + 0.09f, 0.05f, 0.38f, lite(tc, 0.6f))
+                sk(0.36f, bw + 0.05f, 0.24f, 0.4f, tc)
+                sk(0.16f, bw + 0.08f, 0.2f, 0.5f, tc)
+                sk(0.045f, bw + 0.14f, 0.05f, 0.58f, lite(tc, 0.6f))
             }
             11 -> {  // robe de mago
                 b(base, 0f, 0.69f, 0f, bw, 0.5f, 0.3f, tc)
@@ -561,12 +569,18 @@ class CharModel {
             val rx = if (sd < 0) rxR else rxL; val rz = if (sd < 0) -rzR else -rzL; val el = if (sd < 0) elR else elL   // +x é a ESQUERDA do boneco: o item vai na direita (sd<0)
             piv(t1, base, s * (bw / 2f + 0.09f), 0.88f, 0f, rx = rx, ry = if (sd < 0) ryR else ryL, rz = rz)
             piv(t2, t1, 0f, -0.21f, 0f, rx = el, ry = elbowSpin * s)
-            b(t1, 0f, -0.1f, 0f, 0.15f, 0.23f, 0.17f, skin)
-            b(t2, 0f, -0.1f, 0f, 0.15f, 0.22f, 0.17f, skin)
-            b(t2, 0f, -0.16f, 0.005f, 0.165f, 0.12f, 0.185f, skin)
+            run {   // pele só onde não há manga
+                val remS = sl - 0.215f
+                val uTop = if (sl > 0f) 0.02f - min(sl, 0.215f) else 0.015f; val uBot = -0.215f
+                if (uTop - uBot > 0.012f) b(t1, 0f, (uTop + uBot) / 2f, 0f, 0.15f, uTop - uBot, 0.17f, skin)
+                val fTop = if (remS > 0f) 0.02f - remS else 0.01f; val fBot = -0.21f
+                if (fTop - fBot > 0.012f) b(t2, 0f, (fTop + fBot) / 2f, 0f, 0.15f, fTop - fBot, 0.17f, skin)
+                val hTop = min(-0.1f, fTop + 0.01f); val hBot = -0.22f
+                if (hTop - hBot > 0.012f) b(t2, 0f, (hTop + hBot) / 2f, 0.005f, 0.165f, hTop - hBot, 0.185f, skin)
+            }
             // juntas do braço: cotovelo e ombro na cor da manga (ou da pele, sem manga)
-            if (sl >= 0.19f) b(t2, 0f, 0f, 0f, 0.181f, 0.08f, 0.201f, slCol) else b(t2, 0f, 0f, 0f, 0.152f, 0.07f, 0.172f, skin)
-            if (sl > 0f) b(t1, 0f, 0.0f, 0f, 0.184f, 0.1f, 0.204f, slCol)
+            if (sl >= 0.19f) b(t2, 0f, 0f, 0f, 0.183f, 0.14f, 0.203f, slCol) else b(t2, 0f, 0f, 0f, 0.152f, 0.07f, 0.172f, skin)
+            if (sl > 0f) b(t1, 0f, 0.0f, 0f, 0.186f, 0.12f, 0.206f, slCol)
             val su = min(sl, 0.215f)
             if (sl > 0f) {
                 b(t1, 0f, (0.03f - su) / 2f, 0f, 0.18f, su + 0.03f, 0.2f, slCol)

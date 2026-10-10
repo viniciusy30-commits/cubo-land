@@ -262,7 +262,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     override fun onSurfaceChanged(gl: GL10?, w: Int, h: Int) {
         vw = w; vh = h
         G.glViewport(0, 0, w, h)
-        Matrix.perspectiveM(proj, 0, 70f, w.toFloat() / h, 0.05f, 200f)
+        Matrix.perspectiveM(proj, 0, 70f, w.toFloat() / h, 0.1f, 200f)
     }
 
     private fun bindMesh(vb: Int, ib: Int) {

@@ -23,8 +23,8 @@ class CharacterActivity : CozyActivity() {
     private val refreshers = ArrayList<() -> Unit>()
     private val tabViews = ArrayList<TextView>()
     private val TABS = arrayOf("Looks", "Corpo", "Cabelo", "Rosto", "Roupas", "Acessórios")
-    private val TAB_COL = intArrayOf(Cz.PINK, Cz.ORANGE, Cz.GREEN, Cz.SKY, Cz.LILAC, Cz.TEAL)
-    private val ANIMS = arrayOf("Parado", "Andando", "Correndo", "Pulando", "Atacando")
+    private val TAB_COL = intArrayOf(Cz.RED, Cz.ORANGE, Cz.GREEN, Cz.SKY, Cz.LILAC, Cz.TEAL)
+    private val ANIMS = arrayOf("Parado", "Andando", "Correndo", "Pulando", "Atacando", "Agachado", "Sentado", "Deitado", "Rastejando", "Voando", "Voo rápido", "Nadando", "Mergulho")
     private var current = -1
     private val MATCH = ViewGroup.LayoutParams.MATCH_PARENT
     private val WRAP = ViewGroup.LayoutParams.WRAP_CONTENT
@@ -140,7 +140,7 @@ class CharacterActivity : CozyActivity() {
         val pv = FrameLayout(this).apply { background = CozyBox(this@CharacterActivity, Cz.GOLD, 22f, false); setPadding(dp(6), dp(6), dp(6), dp(6)) }
         cv = CharView(this); cv.scenic = true
         pv.addView(cv, FrameLayout.LayoutParams(-1, -1))
-        pv.addView(cTxtL("Arraste para girar", 11f, Color.WHITE, true), FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply { bottomMargin = dp(4) })
+        pv.addView(cTxtL("Arraste para girar", 11f, Color.WHITE, true), FrameLayout.LayoutParams(-2, -2, Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = dp(6) })
         leftCol.addView(pv, lpW(MATCH, 0, 1f))
         val nameBox = EditText(this).apply {
             setText(Look.name(this@CharacterActivity)); hint = "Nome do personagem"

@@ -375,8 +375,8 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onExit: (
         rc(c, 0f, 0f, w, h, Color.argb(150, 8, 8, 24))
         val b = pbox()
         pxPanel(c, b.left, b.top, b.right, b.bottom, Cz.PANEL)
-        pxText(c, "Pausado", w / 2, b.top + 20 * d, tsc(3.4f), gold, 1)
-        pxText(c, worldName, w / 2, b.top + 48 * d, tsc(1.6f), Color.argb(220, 255, 255, 255), 1)
+        pxText(c, "Pausado", w / 2, b.top + 20 * d, tsc(3.4f), Cz.GOLD_D, 1, false)
+        pxText(c, worldName, w / 2, b.top + 48 * d, tsc(1.6f), Cz.TXT, 1, false)
         pxBtn(c, pbtn(0), Cz.GREEN, "Continuar")
         pxBtn(c, pbtn(1), Cz.SKY, if (game.thirdPerson) "Câmera: 3ª pessoa" else "Câmera: 1ª pessoa")
         pxBtn(c, pbtn(2), Cz.RED, "Salvar e sair")
@@ -494,17 +494,17 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onExit: (
         val w = width.toFloat(); val h = height.toFloat()
         rc(c, 0f, 0f, w, h, Color.argb(150, 6, 8, 20))
         pxPanel(c, pl(), pt0(), pr(), pb(), Cz.PANEL, false, false, 250)
-        pxText(c, "Mochila", pl() + 18 * d, pt0() + 16 * d, tsc(3f), Color.WHITE)
+        pxText(c, "Mochila", pl() + 18 * d, pt0() + 16 * d, tsc(3f), Cz.TXT, 0, false)
         // fechar
         val xx = pr() - 20 * d; val yy = pt0() + 22 * d
         pxRound(c, xx, yy, 5, Cz.RED, false); sprite(c, S_X, sn(xx), sn(yy), Cz.RED)
         // info do item selecionado no cabeçalho
         val sel = if (invSel > 0) invSel else game.cur()
         val ix = pl() + 150 * d; val avail = (pr() - 50 * d - ix).toInt()
-        pxText(c, Items.name(sel), ix, pt0() + 10 * d, tsc(1.9f), Color.rgb(255, 224, 130))
-        val ds = Items.desc(sel); var dsc = tsc(1.2f)
+        pxText(c, Items.name(sel), ix, pt0() + 8 * d, tsc(2.1f), Cz.GOLD_D, 0, false)
+        val ds = Items.desc(sel); var dsc = tsc(1.4f)
         while (dsc > 1 && PixFont.width(ds, dsc) > avail) dsc--
-        pxText(c, ds, ix, pt0() + 30 * d, dsc, Color.argb(235, 255, 255, 255))
+        pxText(c, ds, ix, pt0() + 32 * d, dsc, Cz.TXT, 0, false)
         for ((i, id) in Items.inventory.withIndex()) {
             val x = cellX(i); val y = cellY(i); val s = cell - 6 * d
             val on = id == invSel
@@ -512,6 +512,6 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onExit: (
             icon(c, x + s / 2, y + s / 2, s, id)
         }
         val ty = cellY(Items.inventory.size - 1) + cell + 8 * d
-        if (ty < pb() - 4 * d) pxText(c, "Toque num item para colocá-lo no slot selecionado", pl() + 18 * d, ty, tsc(1.2f), Color.argb(190, 255, 255, 255))
+        if (ty < pb() - 4 * d) pxText(c, "Toque num item para colocá-lo no slot selecionado", pl() + 18 * d, ty, tsc(1.5f), Cz.TXT, 0, false)
     }
 }

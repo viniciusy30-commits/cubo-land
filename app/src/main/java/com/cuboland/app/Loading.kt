@@ -65,18 +65,22 @@ class LoadingView(private val c0: Context, worldName: String, flat: Boolean) : F
     init {
         isClickable = true
         addView(SceneBg(c0, 0.15f), LayoutParams(-1, -1))
-        val col = LinearLayout(c0).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL; setPadding(dp(30), dp(10), dp(30), dp(10)) }
-        col.addView(c0.cTxtL("CUBO LAND", 30f, Cz.GOLD).apply { gravity = Gravity.CENTER })
-        col.addView(BounceCube(c0), lpW(dp(150), dp(110)).apply { topMargin = dp(8) })
-        val card = c0.cPanel(Cz.PANEL, 18f, 14)
-        card.addView(c0.cTxt("Entrando em", 12f, Cz.SOFT, false).apply { gravity = Gravity.CENTER })
-        card.addView(c0.cTxt(worldName, 22f, Color.WHITE).apply { gravity = Gravity.CENTER; maxLines = 1 })
-        card.addView(c0.cTxt(if (flat) "Planície e rio" else "Ilha", 11f, if (flat) Cz.SKY else Cz.GREEN, false).apply { gravity = Gravity.CENTER; setPadding(0, 0, 0, dp(8)) })
-        card.addView(bar, lpW(-1, dp(18)))
-        msg = c0.cTxt(steps[0], 12f, Cz.CREAM, false).apply { gravity = Gravity.CENTER; setPadding(0, dp(8), 0, 0) }
+        val col = LinearLayout(c0).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL; setPadding(dp(30), dp(14), dp(30), dp(14)) }
+        col.addView(c0.cTxtL("CUBO LAND", 34f, Cz.GOLD).apply { gravity = Gravity.CENTER })
+        col.addView(BounceCube(c0), lpW(dp(130), dp(96)).apply { topMargin = dp(6) })
+        val card = c0.cPanel(Cz.PANEL, 20f, 20)
+        card.addView(c0.cTxt("ENTRANDO EM", 12f, Cz.SOFT, false).apply { gravity = Gravity.CENTER })
+        card.addView(c0.cTxt(worldName, 26f, Cz.TXT).apply { gravity = Gravity.CENTER; maxLines = 1; setPadding(0, dp(8), 0, dp(8)) })
+        card.addView(c0.cTxt(if (flat) "PLANÍCIE E RIO" else "ILHA", 11f, Cz.INK, false).apply {
+            gravity = Gravity.CENTER; background = CozyBox(c0, if (flat) Cz.SKY else Cz.GREEN, 9f, false); setPadding(dp(12), dp(5), dp(12), dp(5)) },
+            lpW(-2, -2).apply { gravity = Gravity.CENTER_HORIZONTAL })
+        card.addView(bar, lpW(-1, dp(22)).apply { topMargin = dp(16) })
+        msg = c0.cTxt(steps[0], 13f, Cz.CREAM, false).apply { gravity = Gravity.CENTER; setPadding(0, dp(12), 0, 0) }
         card.addView(msg, lpW(-1, -2))
-        col.addView(card, lpW(dp(340), -2).apply { topMargin = dp(6) })
-        col.addView(c0.cTxtL(tips[(System.currentTimeMillis() % tips.size).toInt()], 12f, Color.WHITE, true).apply { gravity = Gravity.CENTER; setPadding(0, dp(14), 0, 0) }, lpW(dp(420), -2))
+        col.addView(card, lpW(dp(400), -2).apply { topMargin = dp(10) })
+        val tipBox = c0.cPanel(Cz.PANEL2, 14f, 10)
+        tipBox.addView(c0.cTxt(tips[(System.currentTimeMillis() % tips.size).toInt()], 13f, Cz.CREAM, false).apply { gravity = Gravity.CENTER })
+        col.addView(tipBox, lpW(dp(460), -2).apply { topMargin = dp(14) })
         addView(col, LayoutParams(-1, -1).apply { gravity = Gravity.CENTER })
     }
 }
