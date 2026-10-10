@@ -1,3 +1,12 @@
+#id 2026-10-10-o
+#titulo Animações de verdade: golpes na 3ª pessoa, nado de peito e voo
+- 3ª pessoa agora usa os mesmos golpes da 1ª pessoa (combo da espada, machado, picareta, soco) e o ataque carregado
+- Ferramenta com o cabo quase horizontal, apontando pra frente e levemente pra cima, longe da cabeça
+- Nado de peito: estica os braços e puxa um pra cada lado
+- Animação de voar (pairando e voando rápido)
+- Pulo e aterrissagem sem pulos de frame; braço da ferramenta se mexe no ar
+- Andar devagar sem deslizar: a passada acompanha a velocidade do chão
+
 #id 2026-10-10-n
 #titulo Novo mapa: planície gigante com rio enorme!
 - Botão "Mapa plano + rio" no menu: planície de grama gigante (256x256), camadas de terra e pedra por baixo

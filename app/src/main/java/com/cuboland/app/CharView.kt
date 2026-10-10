@@ -125,7 +125,7 @@ class CharView(ctx: Context) : View(ctx) {
         Matrix.rotateM(base, 0, yaw, 0f, 1f, 0f)
         an.t = tt
         var hop = 0f
-        an.move = 0f; an.run = 0f; an.air = false; an.landT = 0f; an.atk = 1f; an.atkArm = 0f; an.hasTool = false; an.vy = 0f; an.airA = 0f; an.swim = 0f; an.dive = 0f; an.tilt = 0f
+        an.move = 0f; an.run = 0f; an.air = false; an.landT = 0f; an.atk = 1f; an.atkArm = 0f; an.hasTool = false; an.vy = 0f; an.airA = 0f; an.poseOn = false; an.charge = 0f; an.fly = 0f; an.swim = 0f; an.dive = 0f; an.tilt = 0f
         when (mode) {
             1 -> { ph += dt * 8f; an.move = 1f }
             2 -> { ph += dt * 14f; an.move = 1f; an.run = 1f }

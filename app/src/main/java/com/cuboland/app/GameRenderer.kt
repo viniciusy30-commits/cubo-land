@@ -818,13 +818,15 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         }
     }
 
+    /** ângulo do cabo na 3ª pessoa: TILT = quanto deita pra frente (0 = em pé), OUT = quanto abre pro lado (inverta o sinal se abrir pra dentro) */
+    private val TOOL_TILT = -93f; private val TOOL_OUT = 0f
     private val cm = CharModel()
     private val handM = FloatArray(16)
     private val charBox: BoxFn = { m, px, py, pz, rx, ry, sx, sy, sz, oy, col, a, rz -> box(m, px, py, pz, rx, ry, sx, sy, sz, oy, col, a, 1f, null, 0, rz) }
 
     private val an = Anim()
     private var lastPT = 0f; private var phaseA = 0f; private var runA = 0f; private var landA = 0f
-    private var wasAirP = false; private var lastVyP = 0f; private var airSm = 0f; private var diveSm = 0f; private var tiltSm = 0f
+    private var wasAirP = false; private var lastVyP = 0f; private var airSm = 0f; private var landSm = 0f; private var vyHold = 0f; private var flySm = 0f; private var flySp = 0f; private val tpP = FloatArray(10); private var diveSm = 0f; private var tiltSm = 0f
 
     private fun drawPlayer(t: Float) {
         val p = game.player
@@ -834,12 +836,20 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val airNow = !p.onGround && swm < 0.2f
         val runTarget = if (p.onGround && swm < 0.2f) ((wa - 0.62f) / 0.3f).coerceIn(0f, 1f) else 0f
         runA += (runTarget - runA) * min(1f, 8f * dtp)
-        phaseA += dtp * (8f + 7f * runA) * wa
+        // passada ligada à velocidade real do chão: o pé não desliza (nem devagar)
+        val spdH = sqrt(p.vx * p.vx + p.vz * p.vz)
+        val strideA = (26f + 30f * runA) * 0.01745f
+        phaseA += dtp * (if (wa > 0.02f && p.onGround) (spdH / (0.58f * strideA)).coerceIn(0f, 20f) else 0f)
         if (wasAirP && p.onGround && lastVyP < -4f) landA = (-lastVyP / 12f).coerceIn(0.35f, 1f)
         landA = max(0f, landA - dtp * 5f)
         wasAirP = airNow; lastVyP = p.vy
         val id = game.cur()
-        airSm += ((if (airNow) 1f else 0f) - airSm) * min(1f, 11f * dtp)
+        airSm += ((if (airNow) 1f else 0f) - airSm) * min(1f, 9f * dtp)
+        if (airNow) vyHold += (p.vy - vyHold) * min(1f, 12f * dtp)   // segura a pose de queda até os pés tocarem de verdade (sem pulo de frame)
+        landSm += (landA - landSm) * min(1f, 16f * dtp)
+        val flyNow = game.flying && !p.onGround
+        flySm += ((if (flyNow) 1f else 0f) - flySm) * min(1f, 6f * dtp)
+        flySp += (min(1f, spdH / 7f) - flySp) * min(1f, 5f * dtp)
         val surfY = World.WATER_Y + 0.88f
         val diveTarget = ((surfY - (p.y + 1.55f)) / 0.45f).coerceIn(0f, 1f)
         diveSm += (diveTarget - diveSm) * min(1f, 6f * dtp)
@@ -847,9 +857,13 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         // superfície: quase em pé, inclinado pra frente; mergulhado: deitado, seguindo o olhar
         val tiltTarget = swm * (32f + (((78f - pitchDeg * 0.35f).coerceIn(40f, 110f)) - 32f) * diveSm)
         tiltSm += (tiltTarget - tiltSm) * min(1f, 9f * dtp)
-        an.t = t; an.phase = phaseA; an.move = wa; an.run = runA; an.vy = p.vy; an.air = airNow; an.airA = airSm
-        an.landT = landA; an.swim = swm; an.dive = diveSm; an.tilt = tiltSm
+        an.t = t; an.phase = phaseA; an.move = wa; an.run = runA; an.vy = vyHold; an.air = airNow; an.airA = airSm; an.fly = flySm; an.flySpd = flySp
+        an.landT = landSm; an.swim = swm; an.dive = diveSm; an.tilt = tiltSm
         an.atk = game.swing; an.atkArm = swingDelta(id, game.swing); an.hasTool = id > 0
+        // mesmos keyframes de golpe/carga da 1ª pessoa, aplicados no braço do boneco
+        if (game.charging) { chargePose(tpP, id, game.charge, t); an.charge = min(1f, game.charge) }
+        else { evalPose(tpP, kfFor(id), game.swing); an.charge = 0f }
+        an.poseOn = true; an.pP = tpP[3]; an.pY = tpP[4]; an.pR = tpP[5]; an.pW = tpP[6]
         setBase(p.x, p.y, p.z, Math.toDegrees(game.bodyYaw.toDouble()).toFloat())
         if (swm > 0.01f) {   // nadando: boia na superfície (cabeça fora) ou desliza deitado quando mergulha
             Matrix.translateM(base, 0, 0f, sin(t * 2.2f) * 0.025f * (1f - diveSm) * swm, 0f)
@@ -866,7 +880,8 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                 drawItem(base2, id, t)
             } else {
                 Matrix.rotateM(base2, 0, 180f, 0f, 1f, 0f)
-                Matrix.rotateM(base2, 0, -58f, 1f, 0f, 0f)
+                Matrix.rotateM(base2, 0, TOOL_OUT, 0f, 0f, 1f)   // abre o cabo pra fora (longe da cabeça)
+                Matrix.rotateM(base2, 0, TOOL_TILT, 1f, 0f, 0f)
                 Matrix.scaleM(base2, 0, 0.7f, 0.7f, 0.7f)
                 drawTool3D(base2, id, t, 0f)
             }
