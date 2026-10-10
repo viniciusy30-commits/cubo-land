@@ -186,14 +186,14 @@ object SkinArt {
         return (100 + prev)
     }
 
-    fun rws(c: SkinCtx, b: Int, y0: Int, y1: Int, col: Int) {
+    fun rowsp(c: SkinCtx, b: Int, y0: Int, y1: Int, col: Int) {
         for (f in 2 until 6) {
             c.fill(b, f, 0, y0, c.fw(b, f), (y1 - y0), sh(f, col))
         }
     }
 
     fun torso(c: SkinCtx, o: Int, y0: Int, y1: Int, col: Int) {
-        rows(c, (BODY + o), y0, y1, col)
+        rowsp(c, (BODY + o), y0, y1, col)
         if (((y0 == 0) && (o == 0))) {
             c.fill(BODY, TOP, 0, 0, 8, 4, shade(col, 96))
             c.fill(BODY, TOP, 2, 1, 4, 2, shade(SKINS[c.L[SKIN]], 88))
@@ -201,8 +201,8 @@ object SkinArt {
     }
 
     fun arms(c: SkinCtx, o: Int, y0: Int, y1: Int, col: Int) {
-        rows(c, (RARM + (2 * o)), y0, y1, col)
-        rows(c, (LARM + (2 * o)), y0, y1, col)
+        rowsp(c, (RARM + (2 * o)), y0, y1, col)
+        rowsp(c, (LARM + (2 * o)), y0, y1, col)
         if ((y0 == 0)) {
             c.fill((RARM + (2 * o)), TOP, 0, 0, c.fw(RARM, TOP), 4, shade(col, 98))
             c.fill((LARM + (2 * o)), TOP, 0, 0, c.fw(LARM, TOP), 4, shade(col, 98))
@@ -210,8 +210,8 @@ object SkinArt {
     }
 
     fun legs(c: SkinCtx, o: Int, y0: Int, y1: Int, col: Int) {
-        rows(c, (RLEG + (2 * o)), y0, y1, col)
-        rows(c, (LLEG + (2 * o)), y0, y1, col)
+        rowsp(c, (RLEG + (2 * o)), y0, y1, col)
+        rowsp(c, (LLEG + (2 * o)), y0, y1, col)
         if ((y0 == 0)) {
             c.fill((RLEG + (2 * o)), TOP, 0, 0, 4, 4, col)
             c.fill((LLEG + (2 * o)), TOP, 0, 0, 4, 4, col)
@@ -673,7 +673,7 @@ object SkinArt {
             hem(c, RLEG, 8, BD)
             hem(c, LLEG, 8, BD)
             legs(c, 1, 8, 9, shade(B, 62))
-            rows(c, BODY, 8, 10, B)
+            rowsp(c, BODY, 8, 10, B)
             hem(c, BODY, 8, shade(B, 82))
             for (y in 1 until 8) {
                 c.px(RLEG, RIGHT, 2, y, BD)
@@ -682,16 +682,16 @@ object SkinArt {
         } else if ((b == 1)) {
             legs(c, 0, 0, 4, B)
             legs(c, 1, 3, 4, BD)
-            rows(c, BODY, 8, 10, B)
+            rowsp(c, BODY, 8, 10, B)
             hem(c, BODY, 8, BD)
         } else if ((b == 2)) {
-            rows(c, BODY, 8, 10, B)
+            rowsp(c, BODY, 8, 10, B)
             hem(c, BODY, 8, BL)
             skirt(c, B, BL, 0, 2)
         } else if ((b == 3)) {
             legs(c, 0, 0, 6, B)
             legs(c, 1, 5, 6, BD)
-            rows(c, BODY, 8, 10, B)
+            rowsp(c, BODY, 8, 10, B)
             hem(c, BODY, 8, BD)
         } else if ((b == 4)) {
             legs(c, 0, 0, 9, B)
@@ -706,10 +706,10 @@ object SkinArt {
             }
             hem(c, RLEGO, 8, BL)
             hem(c, LLEGO, 8, BL)
-            rows(c, BODY, 8, 10, BL)
+            rowsp(c, BODY, 8, 10, BL)
             hem(c, BODY, 9, B)
         } else if ((b == 5)) {
-            rows(c, BODY, 8, 10, B)
+            rowsp(c, BODY, 8, 10, B)
             hem(c, BODY, 8, BL)
             skirt(c, B, BL, 0, 5)
         } else if ((b == 6)) {
@@ -723,11 +723,11 @@ object SkinArt {
                 c.px(RLEG, FRONT, 1, y, lite(B, 45))
                 c.px(LLEG, FRONT, 1, y, lite(B, 45))
             }
-            rows(c, BODY, 8, 10, shade(B, 92))
+            rowsp(c, BODY, 8, 10, shade(B, 92))
         } else {
             legs(c, 0, 0, 7, B)
             legs(c, 1, 6, 7, BD)
-            rows(c, BODY, 8, 10, B)
+            rowsp(c, BODY, 8, 10, B)
             hem(c, BODY, 8, BD)
             c.fill(RLEGO, RIGHT, 0, 2, 4, 4, shade(B, 112))
             c.fill(LLEGO, LEFT, 0, 2, 4, 4, shade(B, 112))
