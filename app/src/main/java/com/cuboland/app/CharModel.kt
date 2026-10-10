@@ -309,175 +309,269 @@ class CharModel {
         // ================= CORPO =================
         if (!full && !overalls) b(base, 0f, 0.46f, 0f, bw + 0.015f, 0.05f, 0.315f, shadeC(bc, 0.85f))
         if (full) b(base, 0f, 0.45f, 0f, bw, 0.06f, 0.3f, tc)   // vestido/kimono: a cintura dobra mostrando a roupa, não a pele do quadril
+        // ---- helpers de roupa: F = detalhe colado na FRENTE, K = detalhe colado nas COSTAS, band = faixa que dá a volta no tronco ----
+        val hw = bw / 2f
+        fun F(x: Float, y: Float, w: Float, h: Float, col: Int, d: Float = 0.014f, rz: Float = 0f) = b(base, x, y, 0.153f + d / 2f, w, h, d, col, rz = rz)
+        fun K(x: Float, y: Float, w: Float, h: Float, col: Int, d: Float = 0.014f, rz: Float = 0f) = b(base, x, y, -(0.153f + d / 2f), w, h, d, col, rz = rz)
+        fun band(y: Float, h: Float, col: Int, e: Float = 0.012f) = b(base, 0f, y, 0f, bw + e, h, 0.3f + e, col)
+        val steel = 0xC5CEDA; val leather = 0x6F4A29; val leatherD = 0x4A3019
+        // IMPORTANTE: o tronco inteiro (frente, costas e lados) é SEMPRE da cor da roupa. Antes jaqueta/macacão/colete/haori usavam base branca e as costas apareciam brancas.
         when (top) {
-            0 -> {
+            0 -> {  // camiseta: gola canelada, listras, estampa de estrela, etiqueta nas costas
                 b(base, 0f, 0.69f, 0f, bw, 0.5f, 0.3f, tc)
+                band(0.46f, 0.045f, dark, 0.01f)
+                band(0.595f, 0.022f, trim, 0.006f); band(0.55f, 0.022f, trim, 0.006f)
                 b(base, 0f, 0.935f, 0f, bw * 0.55f, 0.035f, 0.32f, trim)
-                b(base, 0f, 0.46f, 0f, bw + 0.01f, 0.04f, 0.31f, dark)
+                F(0f, 0.91f, bw * 0.3f, 0.03f, trim); K(0f, 0.915f, bw * 0.34f, 0.02f, dark)
+                val st = lite(tc, 0.75f)
+                F(0f, 0.78f, 0.045f, 0.14f, st); F(0f, 0.78f, 0.14f, 0.045f, st); F(0f, 0.78f, 0.09f, 0.09f, lite(tc, 0.9f), 0.018f)
+                K(0f, 0.895f, 0.06f, 0.04f, white)
+                b(base, -hw + 0.004f, 0.69f, 0f, 0.012f, 0.46f, 0.296f, dark); b(base, hw - 0.004f, 0.69f, 0f, 0.012f, 0.46f, 0.296f, dark)
             }
-            1 -> {
+            1 -> {  // moletom: capuz volumoso, cordões, bolso canguru, barra e punhos canelados
                 b(base, 0f, 0.69f, 0f, bw + 0.02f, 0.5f, 0.32f, tc)
-                b(base, 0f, 0.47f, 0f, bw + 0.03f, 0.06f, 0.33f, dark)
-                b(base, 0f, 0.58f, 0.165f, 0.26f, 0.12f, 0.03f, dark)
-                b(base, -0.06f, 0.82f, 0.168f, 0.025f, 0.14f, 0.02f, 0xFFFFFF)
-                b(base, 0.06f, 0.82f, 0.168f, 0.025f, 0.14f, 0.02f, 0xFFFFFF)
-                b(base, 0f, 0.96f, -0.13f, 0.36f, 0.16f, 0.18f, dark)
+                band(0.47f, 0.06f, dark, 0.04f); band(0.505f, 0.015f, lite(tc, 0.2f), 0.03f)
+                F(0f, 0.585f, 0.3f, 0.14f, dark, 0.03f, 0f); F(0f, 0.65f, 0.3f, 0.018f, lite(tc, 0.25f), 0.034f)
+                F(-0.158f, 0.575f, 0.02f, 0.11f, shadeC(tc, 0.6f), 0.034f, 8f); F(0.158f, 0.575f, 0.02f, 0.11f, shadeC(tc, 0.6f), 0.034f, -8f)
+                // capuz: arco em volta do pescoço (frente aberta) + bolsão atrás
+                b(base, 0f, 0.965f, -0.14f, 0.36f, 0.14f, 0.16f, shadeC(tc, 0.85f)); b(base, 0f, 0.95f, -0.185f, 0.26f, 0.1f, 0.05f, dark)
+                b(base, -0.15f, 0.96f, 0.04f, 0.07f, 0.1f, 0.2f, shadeC(tc, 0.88f)); b(base, 0.15f, 0.96f, 0.04f, 0.07f, 0.1f, 0.2f, shadeC(tc, 0.88f))
+                b(base, 0f, 0.935f, 0.0f, 0.3f, 0.03f, 0.33f, dark)
+                F(-0.06f, 0.82f, 0.022f, 0.15f, white, 0.02f); F(0.06f, 0.82f, 0.022f, 0.15f, white, 0.02f)
+                F(-0.06f, 0.735f, 0.03f, 0.03f, 0xDDDDDD, 0.024f); F(0.06f, 0.735f, 0.03f, 0.03f, 0xDDDDDD, 0.024f)
+                K(0f, 0.7f, 0.2f, 0.03f, lite(tc, 0.25f)); K(0f, 0.66f, 0.12f, 0.03f, lite(tc, 0.25f))
             }
-            2 -> {
+            2 -> {  // vestido: corpete com decote quadrado, alças, faixa, laço atrás, saia em camadas com barra de renda
                 b(base, 0f, 0.69f, 0f, bw, 0.5f, 0.3f, tc)
                 b(base, 0f, 0.935f, 0f, bw * 0.6f, 0.035f, 0.32f, trim)
-                b(base, 0f, 0.5f, 0f, bw + 0.02f, 0.05f, 0.32f, trim)
-                b(base, 0f, 0.5f, -0.18f, 0.16f, 0.1f, 0.05f, trim)
+                F(0f, 0.9f, bw * 0.55f, 0.04f, trim); K(0f, 0.9f, bw * 0.55f, 0.04f, trim)
+                F(0f, 0.72f, 0.02f, 0.3f, trim, 0.012f); F(-0.07f, 0.72f, 0.016f, 0.3f, shadeC(tc, 0.85f), 0.012f, 6f); F(0.07f, 0.72f, 0.016f, 0.3f, shadeC(tc, 0.85f), 0.012f, -6f)
+                for (i in 0 until 3) { F(-0.05f + i * 0.05f, 0.62f, 0.02f, 0.02f, lite(tc, 0.8f), 0.016f) }
+                b(base, 0f, 0.5f, 0f, bw + 0.02f, 0.06f, 0.32f, trim)
+                F(0f, 0.5f, 0.07f, 0.07f, lite(tc, 0.85f), 0.024f)
+                b(base, 0f, 0.5f, -0.18f, 0.16f, 0.1f, 0.05f, trim); b(base, -0.1f, 0.5f, -0.19f, 0.09f, 0.07f, 0.04f, trim, rz = 20f); b(base, 0.1f, 0.5f, -0.19f, 0.09f, 0.07f, 0.04f, trim, rz = -20f)
+                b(base, 0f, 0.43f, -0.2f, 0.03f, 0.12f, 0.02f, trim)
                 sk(0.43f, bw + 0.06f, 0.14f, 0.36f, tc)
                 sk(0.36f, 0.62f, 0.12f, 0.46f, tc)
                 sk(0.27f, 0.76f, 0.10f, 0.56f, shadeC(tc, 0.94f))
                 sk(0.17f, 0.78f, 0.10f, 0.58f, shadeC(tc, 0.9f))
                 sk(0.125f, 0.79f, 0.03f, 0.59f, lite(tc, 0.55f))
+                sk(0.095f, 0.8f, 0.025f, 0.6f, lite(tc, 0.8f))
             }
-            3 -> {
-                b(base, 0f, 0.69f, 0f, bw, 0.5f, 0.3f, white)
-                b(base, -bw * 0.3f, 0.69f, 0.01f, bw * 0.4f + 0.02f, 0.52f, 0.31f, tc)
-                b(base, bw * 0.3f, 0.69f, 0.01f, bw * 0.4f + 0.02f, 0.52f, 0.31f, tc)
-                b(base, -0.12f, 0.94f, 0f, 0.12f, 0.06f, 0.33f, dark)
-                b(base, 0.12f, 0.94f, 0f, 0.12f, 0.06f, 0.33f, dark)
-                b(base, 0f, 0.46f, 0f, bw + 0.03f, 0.05f, 0.32f, dark)
-            }
-            4 -> {
+            3 -> {  // jaqueta: costas e frente 100% na cor, camisa branca na frente, zíper, bolsos com aba, barra e punhos de ribana, emblema nas costas
                 b(base, 0f, 0.69f, 0f, bw, 0.5f, 0.3f, tc)
-                b(base, 0f, 0.54f, 0f, bw + 0.02f, 0.06f, 0.32f, gold)
-                b(base, 0f, 0.54f, 0.165f, 0.08f, 0.07f, 0.02f, 0xFFF0A0)
-                b(base, 0f, 0.455f, 0f, bw + 0.03f, 0.05f, 0.33f, trim)
+                band(0.46f, 0.07f, dark, 0.03f); band(0.4975f, 0.012f, lite(tc, 0.3f), 0.034f)
+                F(0f, 0.7f, 0.1f, 0.46f, white, 0.012f)               // camisa por baixo, só na frente
+                F(-0.085f, 0.7f, 0.07f, 0.46f, tc, 0.02f); F(0.085f, 0.7f, 0.07f, 0.46f, tc, 0.02f)   // as duas abas da jaqueta
+                F(0f, 0.68f, 0.012f, 0.44f, 0xC9CED8, 0.026f)        // zíper
+                F(0f, 0.9f, 0.03f, 0.05f, 0xE8E8F0, 0.03f)           // puxador
+                b(base, -0.075f, 0.935f, 0.04f, 0.1f, 0.075f, 0.2f, dark); b(base, 0.075f, 0.935f, 0.04f, 0.1f, 0.075f, 0.2f, dark)   // gola alta
+                b(base, 0f, 0.935f, -0.07f, bw * 0.55f, 0.075f, 0.1f, dark)
+                F(-0.14f, 0.57f, 0.1f, 0.05f, dark, 0.02f); F(0.14f, 0.57f, 0.1f, 0.05f, dark, 0.02f)  // bolsos
+                F(-0.14f, 0.545f, 0.1f, 0.012f, lite(tc, 0.4f), 0.024f); F(0.14f, 0.545f, 0.1f, 0.012f, lite(tc, 0.4f), 0.024f)
+                F(-0.14f, 0.79f, 0.06f, 0.05f, lite(tc, 0.3f), 0.018f)   // patch no peito
+                band(0.86f, 0.018f, lite(tc, 0.3f), 0.006f)           // listra de ombro a ombro
+                K(0f, 0.74f, 0.2f, 0.2f, dark, 0.016f); K(0f, 0.74f, 0.1f, 0.1f, lite(tc, 0.7f), 0.02f); K(0f, 0.74f, 0.03f, 0.2f, tc, 0.024f)   // emblema nas costas
+                K(0f, 0.9f, bw - 0.02f, 0.012f, shadeC(tc, 0.7f)); K(0f, 0.5f, bw - 0.02f, 0.012f, shadeC(tc, 0.7f))
+            }
+            4 -> {  // túnica: gola em V bordada, tabardo central, cinto dourado, barra com bordado
+                b(base, 0f, 0.69f, 0f, bw, 0.5f, 0.3f, tc)
                 b(base, 0f, 0.935f, 0f, bw * 0.6f, 0.04f, 0.32f, trim)
+                F(0f, 0.9f, 0.12f, 0.035f, skin); F(0f, 0.875f, 0.06f, 0.03f, skin)
+                F(-0.07f, 0.875f, 0.02f, 0.1f, gold, 0.018f, 25f); F(0.07f, 0.875f, 0.02f, 0.1f, gold, 0.018f, -25f)
+                F(0f, 0.72f, 0.16f, 0.4f, lite(tc, 0.18f), 0.012f); F(-0.08f, 0.72f, 0.012f, 0.4f, gold, 0.016f); F(0.08f, 0.72f, 0.012f, 0.4f, gold, 0.016f)
+                F(0f, 0.72f, 0.07f, 0.07f, gold, 0.02f); F(0f, 0.72f, 0.03f, 0.03f, tc, 0.024f)
+                K(0f, 0.72f, 0.16f, 0.4f, lite(tc, 0.18f), 0.012f); K(-0.08f, 0.72f, 0.012f, 0.4f, gold, 0.016f); K(0.08f, 0.72f, 0.012f, 0.4f, gold, 0.016f)
+                b(base, 0f, 0.54f, 0f, bw + 0.02f, 0.06f, 0.32f, 0x6F4A29)
+                F(0f, 0.54f, 0.09f, 0.075f, gold, 0.02f); F(0f, 0.54f, 0.04f, 0.04f, 0x6F4A29, 0.024f)
+                b(base, 0f, 0.455f, 0f, bw + 0.03f, 0.05f, 0.33f, trim); band(0.485f, 0.012f, gold, 0.034f)
             }
-            5 -> {
-                val plate = mixC(0xC5CEDA, tc, 0.3f)
+            5 -> {  // armadura: peitoral e dorsal de aço, ombreiras (nos braços), couro, cinto com fivela, tassetes
+                val plate = mixC(steel, tc, 0.3f); val plateD = shadeC(plate, 0.8f)
                 b(base, 0f, 0.69f, 0f, bw, 0.5f, 0.3f, 0x4A5568)
-                b(base, 0f, 0.72f, 0.02f, bw + 0.02f, 0.3f, 0.32f, plate)
-                b(base, 0f, 0.72f, 0.18f, 0.06f, 0.3f, 0.02f, gold)
-                b(base, 0f, 0.5f, 0f, bw + 0.02f, 0.07f, 0.32f, 0x6F4A29)
-                b(base, 0f, 0.5f, 0.165f, 0.08f, 0.07f, 0.02f, gold)
-                b(base, 0f, 0.44f, 0.02f, bw + 0.01f, 0.1f, 0.33f, plate)
+                b(base, 0f, 0.74f, 0.0f, bw + 0.02f, 0.4f, 0.31f, plate)       // peitoral + dorsal (volta inteira)
+                F(0f, 0.74f, 0.012f, 0.4f, plateD, 0.02f)                      // nervura central
+                F(-0.09f, 0.82f, 0.1f, 0.012f, lite(plate, 0.5f), 0.02f, 8f); F(0.09f, 0.82f, 0.1f, 0.012f, lite(plate, 0.5f), 0.02f, -8f)
+                F(0f, 0.8f, 0.05f, 0.05f, gold, 0.026f)
+                K(0f, 0.74f, 0.012f, 0.4f, plateD, 0.02f); K(0f, 0.8f, 0.2f, 0.012f, lite(plate, 0.5f), 0.02f)
+                b(base, 0f, 0.935f, 0f, bw * 0.62f, 0.04f, 0.32f, gold)       // gorjal
+                band(0.945f, 0.015f, lite(plate, 0.4f), 0.0f)
+                b(base, 0f, 0.5f, 0f, bw + 0.02f, 0.07f, 0.32f, leather)
+                F(0f, 0.5f, 0.09f, 0.08f, gold, 0.024f); F(0f, 0.5f, 0.04f, 0.04f, leatherD, 0.028f)
+                b(base, 0f, 0.445f, 0f, bw + 0.02f, 0.085f, 0.32f, plateD)    // faixa de aço na cintura
+                for (i in -1..1) { F(i * 0.14f, 0.455f, 0.012f, 0.07f, lite(plate, 0.4f), 0.02f) }
             }
-            6 -> {
-                b(base, 0f, 0.69f, 0f, bw, 0.5f, 0.3f, white)
-                b(base, 0f, 0.66f, 0.165f, 0.3f, 0.28f, 0.03f, tc)
-                b(base, 0f, 0.7f, 0.185f, 0.15f, 0.1f, 0.02f, dark)
-                b(base, -0.13f, 0.88f, 0f, 0.07f, 0.14f, 0.32f, tc)
-                b(base, 0.13f, 0.88f, 0f, 0.07f, 0.14f, 0.32f, tc)
-                b(base, 0f, 0.62f, -0.165f, bw, 0.34f, 0.03f, tc)
-                b(base, -0.13f, 0.84f, 0.17f, 0.04f, 0.04f, 0.02f, gold)
-                b(base, 0.13f, 0.84f, 0.17f, 0.04f, 0.04f, 0.02f, gold)
+            6 -> {  // macacão (jardineira): camisa branca só em cima, o resto na cor da roupa — costas incluídas, com alças cruzadas
+                b(base, 0f, 0.69f, 0f, bw, 0.5f, 0.3f, white)                  // camisa por baixo
+                b(base, 0f, 0.645f, 0f, bw + 0.012f, 0.4f, 0.308f, tc)         // frente, lados e COSTAS do macacão (da cintura ao peito)
+                b(base, 0f, 0.455f, 0f, bw + 0.02f, 0.05f, 0.318f, dark)
+                F(0f, 0.74f, 0.3f, 0.2f, lite(tc, 0.1f), 0.022f)               // peitilho
+                F(0f, 0.74f, 0.3f, 0.014f, dark, 0.026f); F(-0.15f, 0.74f, 0.014f, 0.2f, dark, 0.026f); F(0.15f, 0.74f, 0.014f, 0.2f, dark, 0.026f)
+                F(0f, 0.775f, 0.14f, 0.1f, dark, 0.03f); F(0f, 0.775f, 0.11f, 0.075f, tc, 0.034f)   // bolsão
+                F(0f, 0.775f, 0.08f, 0.012f, lite(tc, 0.5f), 0.038f)
+                F(-0.11f, 0.915f, 0.07f, 0.17f, tc, 0.02f); F(0.11f, 0.915f, 0.07f, 0.17f, tc, 0.02f)  // alças
+                F(-0.11f, 0.86f, 0.05f, 0.05f, gold, 0.028f); F(0.11f, 0.86f, 0.05f, 0.05f, gold, 0.028f)  // botões
+                K(-0.075f, 0.89f, 0.07f, 0.2f, tc, 0.02f, -18f); K(0.075f, 0.89f, 0.07f, 0.2f, tc, 0.02f, 18f)   // alças cruzando atrás
+                K(0f, 0.8f, 0.1f, 0.06f, dark, 0.024f)
+                K(0f, 0.55f, 0.12f, 0.1f, dark, 0.018f)                        // bolso traseiro
+                F(-0.2f, 0.62f, 0.02f, 0.04f, gold, 0.02f); F(0.2f, 0.62f, 0.02f, 0.04f, gold, 0.02f)
+                b(base, -hw - 0.001f, 0.6f, 0f, 0.012f, 0.03f, 0.2f, gold); b(base, hw + 0.001f, 0.6f, 0f, 0.012f, 0.03f, 0.2f, gold)
             }
-            7 -> {   // camisa social
+            7 -> {  // camisa social: colarinho, botões, bolso, pala e costura nas costas
                 b(base, 0f, 0.69f, 0f, bw, 0.5f, 0.3f, tc)
-                b(base, -0.085f, 0.925f, 0.02f, 0.11f, 0.06f, 0.33f, lite(tc, 0.5f))
-                b(base, 0.085f, 0.925f, 0.02f, 0.11f, 0.06f, 0.33f, lite(tc, 0.5f))
-                b(base, 0f, 0.69f, 0.155f, 0.03f, 0.5f, 0.01f, dark)
-                for (i in 0 until 4) b(base, 0f, 0.85f - i * 0.11f, 0.162f, 0.045f, 0.045f, 0.01f, white)
-                b(base, 0.12f, 0.78f, 0.158f, 0.1f, 0.1f, 0.01f, dark)
+                band(0.462f, 0.03f, shadeC(tc, 0.88f), 0.008f)
+                b(base, -0.085f, 0.93f, 0.025f, 0.11f, 0.065f, 0.32f, lite(tc, 0.55f)); b(base, 0.085f, 0.93f, 0.025f, 0.11f, 0.065f, 0.32f, lite(tc, 0.55f))
+                b(base, 0f, 0.935f, -0.07f, bw * 0.5f, 0.06f, 0.14f, lite(tc, 0.55f))
+                F(-0.055f, 0.895f, 0.06f, 0.05f, lite(tc, 0.7f), 0.02f, -30f); F(0.055f, 0.895f, 0.06f, 0.05f, lite(tc, 0.7f), 0.02f, 30f)
+                F(0f, 0.69f, 0.07f, 0.46f, shadeC(tc, 0.9f), 0.012f)
+                for (i in 0 until 5) F(0f, 0.86f - i * 0.09f, 0.03f, 0.03f, white, 0.02f)
+                F(0.12f, 0.78f, 0.1f, 0.11f, shadeC(tc, 0.85f), 0.016f); F(0.12f, 0.825f, 0.1f, 0.012f, lite(tc, 0.4f), 0.02f)
+                K(0f, 0.84f, bw - 0.01f, 0.012f, shadeC(tc, 0.75f)); K(0f, 0.69f, 0.012f, 0.4f, shadeC(tc, 0.85f)); K(-0.07f, 0.85f, 0.012f, 0.06f, shadeC(tc, 0.85f)); K(0.07f, 0.85f, 0.012f, 0.06f, shadeC(tc, 0.85f))
             }
-            8 -> {   // marinheiro (colegial anime)
+            8 -> {  // marinheiro: blusa branca, gola marinheira grande com listras, laço vermelho
                 b(base, 0f, 0.69f, 0f, bw, 0.5f, 0.3f, white)
-                b(base, 0f, 0.915f, -0.1f, bw + 0.04f, 0.12f, 0.12f, tc)
-                b(base, -0.085f, 0.85f, 0.16f, 0.09f, 0.22f, 0.025f, tc, rz = 22f)
-                b(base, 0.085f, 0.85f, 0.16f, 0.09f, 0.22f, 0.025f, tc, rz = -22f)
-                b(base, 0f, 0.95f, 0.0f, 0.3f, 0.03f, 0.31f, lite(tc, 0.5f))
-                b(base, 0f, 0.775f, 0.17f, 0.06f, 0.06f, 0.04f, 0xE05555)
-                b(base, -0.07f, 0.77f, 0.17f, 0.09f, 0.07f, 0.035f, 0xE05555, rz = 12f)
-                b(base, 0.07f, 0.77f, 0.17f, 0.09f, 0.07f, 0.035f, 0xE05555, rz = -12f)
-                b(base, 0f, 0.465f, 0f, bw + 0.012f, 0.04f, 0.31f, tc)
+                band(0.465f, 0.045f, tc, 0.012f); band(0.5f, 0.012f, lite(tc, 0.6f), 0.008f)
+                b(base, 0f, 0.915f, -0.095f, bw + 0.04f, 0.13f, 0.12f, tc)     // gola traseira (quadrada)
+                b(base, 0f, 0.86f, -0.158f, bw * 0.78f, 0.09f, 0.02f, tc)
+                K(0f, 0.935f, bw + 0.02f, 0.014f, white, 0.14f); K(0f, 0.9f, bw + 0.02f, 0.014f, white, 0.14f)   // listras brancas
+                b(base, -0.09f, 0.945f, 0.075f, 0.11f, 0.05f, 0.18f, tc); b(base, 0.09f, 0.945f, 0.075f, 0.11f, 0.05f, 0.18f, tc)   // ombros da gola
+                F(-0.085f, 0.85f, 0.09f, 0.22f, tc, 0.026f, 22f); F(0.085f, 0.85f, 0.09f, 0.22f, tc, 0.026f, -22f)
+                F(-0.098f, 0.855f, 0.012f, 0.2f, white, 0.03f, 22f); F(0.098f, 0.855f, 0.012f, 0.2f, white, 0.03f, -22f)
+                F(0f, 0.775f, 0.06f, 0.06f, 0xE05555, 0.04f); F(-0.07f, 0.77f, 0.09f, 0.07f, 0xE05555, 0.036f, 12f); F(0.07f, 0.77f, 0.09f, 0.07f, 0xE05555, 0.036f, -12f)
+                F(-0.04f, 0.71f, 0.025f, 0.09f, 0xC03A3A, 0.034f, 8f); F(0.04f, 0.71f, 0.025f, 0.09f, 0xC03A3A, 0.034f, -8f)
             }
-            9 -> {   // gakuran (uniforme escolar)
+            9 -> {  // gakuran: gola alta, botões dourados, bolsos com aba, costura central
                 b(base, 0f, 0.69f, 0f, bw, 0.5f, 0.3f, tc)
-                b(base, -0.09f, 0.945f, 0.0f, 0.1f, 0.07f, 0.33f, dark)
-                b(base, 0.09f, 0.945f, 0.0f, 0.1f, 0.07f, 0.33f, dark)
-                b(base, 0f, 0.69f, 0.155f, 0.03f, 0.5f, 0.01f, dark)
-                for (i in 0 until 4) b(base, 0f, 0.86f - i * 0.12f, 0.162f, 0.045f, 0.045f, 0.01f, gold)
-                b(base, 0f, 0.46f, 0f, bw + 0.02f, 0.05f, 0.315f, dark)
-                b(base, -0.12f, 0.93f, 0.168f, 0.04f, 0.04f, 0.015f, gold)
-                b(base, 0.12f, 0.93f, 0.168f, 0.04f, 0.04f, 0.015f, gold)
+                band(0.463f, 0.05f, dark, 0.02f)
+                b(base, 0f, 0.945f, 0f, bw * 0.58f, 0.07f, 0.33f, dark)        // gola em pé, volta toda
+                F(0f, 0.945f, 0.05f, 0.07f, dark, 0.035f); F(-0.1f, 0.94f, 0.03f, 0.03f, gold, 0.034f); F(0.1f, 0.94f, 0.03f, 0.03f, gold, 0.034f)
+                F(0f, 0.69f, 0.03f, 0.5f, dark, 0.012f)
+                for (i in 0 until 5) F(0f, 0.87f - i * 0.1f, 0.045f, 0.045f, gold, 0.022f)
+                F(-0.13f, 0.58f, 0.1f, 0.07f, dark, 0.018f); F(0.13f, 0.58f, 0.1f, 0.07f, dark, 0.018f)
+                F(-0.13f, 0.545f, 0.1f, 0.012f, gold, 0.022f); F(0.13f, 0.545f, 0.1f, 0.012f, gold, 0.022f)
+                K(0f, 0.69f, 0.03f, 0.42f, dark, 0.012f); K(0f, 0.5f, bw, 0.012f, shadeC(tc, 0.7f)); K(0f, 0.88f, 0.2f, 0.012f, shadeC(tc, 0.7f))
             }
-            10 -> {  // kimono
+            10 -> {  // kimono: sobreposição cruzada (esquerda sobre direita), faixa obi larga, laço atrás, saia em camadas
                 val obi = shadeC(tc, 0.55f)
                 b(base, 0f, 0.69f, 0f, bw, 0.5f, 0.3f, tc)
-                b(base, -0.07f, 0.84f, 0.157f, 0.07f, 0.26f, 0.015f, white, rz = 22f)
-                b(base, 0.07f, 0.84f, 0.157f, 0.07f, 0.26f, 0.015f, white, rz = -22f)
+                b(base, 0f, 0.935f, 0f, bw * 0.6f, 0.035f, 0.32f, white); band(0.95f, 0.012f, lite(tc, 0.6f), 0.0f)
+                F(-0.075f, 0.845f, 0.075f, 0.26f, white, 0.016f, 24f); F(0.075f, 0.845f, 0.075f, 0.26f, white, 0.016f, -24f)    // gola cruzada
+                F(-0.04f, 0.77f, 0.1f, 0.3f, shadeC(tc, 0.9f), 0.012f, 20f)
+                F(-0.09f, 0.66f, 0.012f, 0.2f, lite(tc, 0.45f), 0.014f); F(0.09f, 0.66f, 0.012f, 0.2f, lite(tc, 0.45f), 0.014f)
+                F(0f, 0.7f, 0.04f, 0.04f, lite(tc, 0.6f), 0.016f); F(0.12f, 0.64f, 0.04f, 0.04f, lite(tc, 0.6f), 0.016f); F(-0.12f, 0.8f, 0.04f, 0.04f, lite(tc, 0.6f), 0.016f)   // flores
                 b(base, 0f, 0.53f, 0f, bw + 0.03f, 0.16f, 0.33f, obi)
-                b(base, 0f, 0.53f, 0.17f, 0.2f, 0.03f, 0.01f, gold)
-                b(base, 0f, 0.55f, -0.2f, 0.34f, 0.24f, 0.1f, obi)
+                F(0f, 0.53f, 0.2f, 0.035f, gold, 0.032f); F(0f, 0.585f, 0.3f, 0.012f, lite(obi, 0.3f), 0.032f); F(0f, 0.475f, 0.3f, 0.012f, lite(obi, 0.3f), 0.032f)
+                b(base, 0f, 0.55f, -0.2f, 0.34f, 0.24f, 0.1f, obi)             // laço (musubi)
                 b(base, 0f, 0.55f, -0.265f, 0.1f, 0.1f, 0.04f, gold)
+                b(base, -0.14f, 0.5f, -0.24f, 0.07f, 0.2f, 0.03f, obi, rz = 8f); b(base, 0.14f, 0.5f, -0.24f, 0.07f, 0.2f, 0.03f, obi, rz = -8f)
                 sk(0.36f, bw + 0.05f, 0.24f, 0.4f, tc)
                 sk(0.2f, bw + 0.08f, 0.2f, 0.5f, tc)
                 sk(0.115f, bw + 0.14f, 0.03f, 0.58f, lite(tc, 0.6f))
             }
-            11 -> {  // robe de mago
+            11 -> {  // robe de mago: capa de ombros, cordão, estrelas/luas bordadas, barra dourada
                 b(base, 0f, 0.69f, 0f, bw, 0.5f, 0.3f, tc)
                 b(base, 0f, 0.935f, 0f, bw * 0.7f, 0.04f, 0.32f, gold)
-                b(base, 0f, 0.78f, 0.16f, 0.1f, 0.1f, 0.02f, gold)
-                b(base, 0f, 0.78f, 0.162f, 0.04f, 0.04f, 0.02f, tc)
-                b(base, 0f, 0.52f, 0f, bw + 0.03f, 0.05f, 0.33f, 0x6F4A29)
-                b(base, 0.1f, 0.4f, 0.17f, 0.03f, 0.22f, 0.02f, gold)
+                b(base, 0f, 0.915f, 0f, bw + 0.03f, 0.06f, 0.325f, shadeC(tc, 0.85f))     // mantelete nos ombros (volta toda)
+                F(0f, 0.9f, bw + 0.03f, 0.014f, gold, 0.03f); K(0f, 0.9f, bw + 0.03f, 0.014f, gold, 0.03f)
+                F(0f, 0.78f, 0.1f, 0.1f, gold, 0.02f); F(0f, 0.78f, 0.04f, 0.04f, tc, 0.024f)     // fecho
+                val gs = lite(gold, 0.2f)
+                F(-0.1f, 0.7f, 0.035f, 0.1f, gs, 0.014f); F(-0.1f, 0.7f, 0.1f, 0.035f, gs, 0.014f)        // estrelas bordadas
+                F(0.1f, 0.62f, 0.03f, 0.08f, gs, 0.014f); F(0.1f, 0.62f, 0.08f, 0.03f, gs, 0.014f)
+                K(0f, 0.74f, 0.04f, 0.16f, gs, 0.016f); K(0f, 0.74f, 0.16f, 0.04f, gs, 0.016f); K(0f, 0.74f, 0.1f, 0.1f, lite(tc, 0.3f), 0.02f)   // estrela grande nas costas
+                b(base, 0f, 0.52f, 0f, bw + 0.03f, 0.05f, 0.33f, leather)
+                F(0.1f, 0.4f, 0.03f, 0.22f, gold, 0.02f); F(0.1f, 0.27f, 0.05f, 0.05f, gold, 0.022f)   // ponta do cordão
                 sk(0.4f, bw + 0.08f, 0.28f, 0.38f, tc)
                 sk(0.205f, 0.74f, 0.22f, 0.54f, shadeC(tc, 0.92f))
                 sk(0.115f, 0.76f, 0.04f, 0.56f, gold)
+                sk(0.08f, 0.77f, 0.02f, 0.57f, lite(tc, 0.4f))
             }
-            12 -> {  // terno
+            12 -> {  // terno: lapelas, camisa branca em V, gravata, lenço de bolso, botões, bolsos com aba, abertura traseira
                 b(base, 0f, 0.69f, 0f, bw, 0.5f, 0.3f, tc)
-                b(base, 0f, 0.74f, 0.158f, 0.16f, 0.4f, 0.01f, white)
-                b(base, -0.1f, 0.84f, 0.165f, 0.1f, 0.26f, 0.02f, shadeC(tc, 0.7f), rz = 12f)
-                b(base, 0.1f, 0.84f, 0.165f, 0.1f, 0.26f, 0.02f, shadeC(tc, 0.7f), rz = -12f)
-                b(base, -0.0f, 0.5f, 0.17f, 0.04f, 0.04f, 0.015f, gold)
-                b(base, -0.14f, 0.72f, 0.158f, 0.1f, 0.03f, 0.01f, dark)
-                b(base, 0f, 0.46f, 0f, bw + 0.02f, 0.05f, 0.315f, dark)
+                band(0.462f, 0.04f, dark, 0.014f)
+                F(0f, 0.74f, 0.15f, 0.4f, white, 0.01f)
+                F(0f, 0.74f, 0.04f, 0.3f, 0xC03A3A, 0.02f); F(0f, 0.9f, 0.06f, 0.04f, 0xA82E2E, 0.024f)     // gravata + nó
+                F(0f, 0.7f, 0.014f, 0.3f, 0x8A2222, 0.026f)
+                F(-0.105f, 0.84f, 0.1f, 0.27f, shadeC(tc, 0.72f), 0.022f, 12f); F(0.105f, 0.84f, 0.1f, 0.27f, shadeC(tc, 0.72f), 0.022f, -12f)   // lapelas
+                F(-0.15f, 0.88f, 0.05f, 0.06f, shadeC(tc, 0.62f), 0.028f, 40f); F(0.15f, 0.88f, 0.05f, 0.06f, shadeC(tc, 0.62f), 0.028f, -40f)
+                b(base, -0.07f, 0.94f, 0.03f, 0.1f, 0.05f, 0.3f, shadeC(tc, 0.7f)); b(base, 0.07f, 0.94f, 0.03f, 0.1f, 0.05f, 0.3f, shadeC(tc, 0.7f))
+                F(0.0f, 0.5f, 0.04f, 0.04f, gold, 0.022f); F(0f, 0.6f, 0.04f, 0.04f, gold, 0.022f)
+                F(-0.15f, 0.76f, 0.07f, 0.04f, white, 0.02f); F(-0.15f, 0.77f, 0.04f, 0.02f, 0xC03A3A, 0.024f)   // lenço
+                F(-0.14f, 0.55f, 0.1f, 0.03f, dark, 0.022f); F(0.14f, 0.55f, 0.1f, 0.03f, dark, 0.022f)
+                K(0f, 0.69f, 0.014f, 0.46f, dark, 0.012f); K(0f, 0.52f, 0.05f, 0.1f, shadeC(tc, 0.6f), 0.014f)
             }
-            13 -> {  // regata
+            13 -> {  // regata: alças finas, decote redondo, recorte nas costas, barra e estampa
                 b(base, 0f, 0.69f, 0f, bw, 0.5f, 0.3f, tc)
-                b(base, 0f, 0.905f, 0.155f, 0.2f, 0.09f, 0.01f, skin)
-                b(base, 0f, 0.935f, -0.15f, 0.26f, 0.05f, 0.01f, skin)
-                b(base, 0f, 0.46f, 0f, bw + 0.012f, 0.04f, 0.31f, dark)
+                F(0f, 0.905f, 0.2f, 0.09f, skin, 0.016f); F(0f, 0.865f, 0.14f, 0.03f, skin, 0.016f)
+                F(0f, 0.887f, 0.24f, 0.014f, trim, 0.022f)
+                K(0f, 0.935f, 0.26f, 0.05f, skin, 0.016f); K(0f, 0.9f, 0.1f, 0.03f, skin, 0.016f)
+                band(0.462f, 0.05f, dark, 0.012f)
+                F(0f, 0.7f, 0.12f, 0.02f, lite(tc, 0.6f)); F(0f, 0.665f, 0.07f, 0.02f, lite(tc, 0.6f)); F(0f, 0.63f, 0.16f, 0.02f, lite(tc, 0.35f))
+                K(0f, 0.6f, 0.2f, 0.02f, lite(tc, 0.4f))
+                b(base, -hw + 0.005f, 0.87f, 0f, 0.012f, 0.1f, 0.3f, shadeC(tc, 0.8f)); b(base, hw - 0.005f, 0.87f, 0f, 0.012f, 0.1f, 0.3f, shadeC(tc, 0.8f))
             }
-            14 -> {  // haori samurai
-                b(base, 0f, 0.69f, 0f, bw, 0.5f, 0.3f, white)
-                b(base, -bw * 0.3f, 0.69f, 0.01f, bw * 0.4f + 0.02f, 0.52f, 0.31f, tc)
-                b(base, bw * 0.3f, 0.69f, 0.01f, bw * 0.4f + 0.02f, 0.52f, 0.31f, tc)
-                b(base, -0.1f, 0.945f, 0f, 0.1f, 0.06f, 0.33f, lite(tc, 0.5f))
-                b(base, 0.1f, 0.945f, 0f, 0.1f, 0.06f, 0.33f, lite(tc, 0.5f))
-                b(base, 0f, 0.78f, -0.155f, 0.15f, 0.15f, 0.02f, white)
-                b(base, -bw * 0.3f, 0.33f, 0.01f, bw * 0.4f + 0.04f, 0.26f, 0.35f, tc)
-                b(base, bw * 0.3f, 0.33f, 0.01f, bw * 0.4f + 0.04f, 0.26f, 0.35f, tc)
-                b(base, 0f, 0.33f, -0.17f, bw + 0.04f, 0.26f, 0.03f, tc)
-                b(base, 0f, 0.5f, 0f, bw + 0.02f, 0.05f, 0.32f, 0x3A2A22)
-            }
-            15 -> {  // maid
+            14 -> {  // haori: casaco aberto em cima do kimono branco; costas, frente e lados na cor; aba curta que não atravessa as pernas
                 b(base, 0f, 0.69f, 0f, bw, 0.5f, 0.3f, tc)
-                b(base, 0f, 0.7f, 0.16f, 0.26f, 0.4f, 0.02f, white)
-                b(base, -0.1f, 0.9f, 0.0f, 0.04f, 0.1f, 0.32f, white)
-                b(base, 0.1f, 0.9f, 0.0f, 0.04f, 0.1f, 0.32f, white)
+                F(0f, 0.7f, 0.12f, 0.46f, white, 0.012f)                        // peito do kimono por baixo
+                F(-0.07f, 0.7f, 0.05f, 0.46f, lite(tc, 0.6f), 0.02f); F(0.07f, 0.7f, 0.05f, 0.46f, lite(tc, 0.6f), 0.02f)   // bordas da abertura
+                b(base, -0.1f, 0.945f, 0f, 0.1f, 0.06f, 0.33f, lite(tc, 0.5f)); b(base, 0.1f, 0.945f, 0f, 0.1f, 0.06f, 0.33f, lite(tc, 0.5f))
+                F(0f, 0.9f, 0.1f, 0.03f, white, 0.02f)
+                F(-0.07f, 0.775f, 0.016f, 0.03f, white, 0.026f); F(0.07f, 0.775f, 0.016f, 0.03f, white, 0.026f); F(0f, 0.775f, 0.14f, 0.012f, 0xE8E8F0, 0.022f)   // cordão himo
+                K(0f, 0.76f, 0.15f, 0.15f, white, 0.016f); K(0f, 0.76f, 0.1f, 0.1f, tc, 0.02f); K(0f, 0.76f, 0.04f, 0.04f, white, 0.024f)   // brasão nas costas
+                b(base, 0f, 0.5f, 0f, bw + 0.02f, 0.05f, 0.32f, 0x3A2A22)       // faixa
+                F(0f, 0.5f, 0.08f, 0.06f, gold, 0.026f)
+                // abas: curtinhas, coladas ao quadril (as pernas não passam por dentro)
+                b(base, -0.125f, 0.385f, 0.18f, 0.2f, 0.13f, 0.03f, tc); b(base, 0.125f, 0.385f, 0.18f, 0.2f, 0.13f, 0.03f, tc)
+                b(base, 0f, 0.385f, -0.18f, bw + 0.02f, 0.13f, 0.03f, tc)
+                F(-0.125f, 0.33f, 0.2f, 0.014f, lite(tc, 0.5f), 0.036f, 0f); F(0.125f, 0.33f, 0.2f, 0.014f, lite(tc, 0.5f), 0.036f)
+            }
+            15 -> {  // maid: corpete com avental, babados nos ombros, laço, saia com avental só na frente
+                b(base, 0f, 0.69f, 0f, bw, 0.5f, 0.3f, tc)
+                F(0f, 0.7f, 0.26f, 0.4f, white, 0.016f); F(0f, 0.7f, 0.2f, 0.34f, lite(tc, 0.05f), 0.02f)
+                F(0f, 0.745f, 0.12f, 0.12f, white, 0.024f)
+                F(-0.115f, 0.9f, 0.05f, 0.16f, white, 0.02f); F(0.115f, 0.9f, 0.05f, 0.16f, white, 0.02f)   // alças do avental
+                b(base, -0.1f, 0.9f, 0f, 0.05f, 0.1f, 0.32f, white); b(base, 0.1f, 0.9f, 0f, 0.05f, 0.1f, 0.32f, white)
                 b(base, 0f, 0.945f, 0f, 0.3f, 0.04f, 0.33f, white)
+                F(0f, 0.915f, 0.06f, 0.05f, 0xE05555, 0.03f); F(-0.04f, 0.915f, 0.045f, 0.04f, 0xE05555, 0.026f); F(0.04f, 0.915f, 0.045f, 0.04f, 0xE05555, 0.026f)
                 b(base, 0f, 0.5f, 0f, bw + 0.02f, 0.05f, 0.32f, white)
-                b(base, 0f, 0.5f, -0.18f, 0.2f, 0.1f, 0.05f, white)
+                b(base, 0f, 0.5f, -0.18f, 0.2f, 0.1f, 0.05f, white); b(base, -0.12f, 0.49f, -0.19f, 0.09f, 0.08f, 0.04f, white, rz = 18f); b(base, 0.12f, 0.49f, -0.19f, 0.09f, 0.08f, 0.04f, white, rz = -18f)
+                K(0f, 0.77f, 0.2f, 0.014f, white, 0.012f)
                 sk(0.43f, bw + 0.06f, 0.14f, 0.36f, tc)
                 sk(0.36f, 0.62f, 0.12f, 0.46f, tc)
                 sk(0.27f, 0.74f, 0.1f, 0.54f, tc)
                 sk(0.17f, 0.76f, 0.1f, 0.56f, tc)
                 sk(0.125f, 0.78f, 0.04f, 0.58f, white)
-                sk(0.37f, 0.4f, 0.28f, 0.52f, white)
-                sk(0.2f, 0.4f, 0.2f, 0.575f, white)
+                sk(0.1f, 0.79f, 0.02f, 0.59f, lite(tc, 0.4f))
+                skRows.add(SkR(0f, 0.36f, 0.255f, 0.34f, 0.12f, 0.04f, white, false))   // avental: só na frente (antes dava a volta e as costas ficavam brancas)
+                skRows.add(SkR(0f, 0.27f, 0.30f, 0.38f, 0.1f, 0.04f, white, false))
+                skRows.add(SkR(0f, 0.17f, 0.315f, 0.4f, 0.1f, 0.04f, white, false))
+                skRows.add(SkR(0f, 0.125f, 0.325f, 0.42f, 0.03f, 0.04f, lite(tc, 0.5f), false))
             }
-            16 -> {  // colete de aventureiro
-                b(base, 0f, 0.69f, 0f, bw, 0.5f, 0.3f, white)
-                b(base, -bw * 0.3f, 0.69f, 0.01f, bw * 0.4f + 0.02f, 0.52f, 0.31f, tc)
-                b(base, bw * 0.3f, 0.69f, 0.01f, bw * 0.4f + 0.02f, 0.52f, 0.31f, tc)
-                b(base, 0f, 0.7f, 0.17f, 0.05f, 0.62f, 0.02f, 0x6F4A29, rz = 28f)
-                b(base, 0f, 0.5f, 0f, bw + 0.03f, 0.06f, 0.33f, 0x6F4A29)
-                b(base, 0f, 0.5f, 0.17f, 0.08f, 0.08f, 0.02f, gold)
-                b(base, 0f, 0.935f, 0f, bw * 0.5f, 0.04f, 0.32f, white)
+            16 -> {  // colete de aventureiro: camisa branca só aparece na frente/mangas; colete na cor completo (costas incluídas), cordões de couro, cinto e bolsos
+                b(base, 0f, 0.69f, 0f, bw, 0.5f, 0.3f, tc)
+                F(0f, 0.7f, 0.14f, 0.46f, white, 0.012f)
+                F(-0.115f, 0.7f, 0.1f, 0.48f, tc, 0.026f); F(0.115f, 0.7f, 0.1f, 0.48f, tc, 0.026f)
+                F(-0.115f, 0.7f, 0.012f, 0.48f, shadeC(tc, 0.7f), 0.03f); F(0.115f, 0.7f, 0.012f, 0.48f, shadeC(tc, 0.7f), 0.03f)
+                b(base, -0.1f, 0.935f, 0f, 0.1f, 0.06f, 0.325f, shadeC(tc, 0.85f)); b(base, 0.1f, 0.935f, 0f, 0.1f, 0.06f, 0.325f, shadeC(tc, 0.85f))
+                for (i in 0 until 4) { F(0f, 0.86f - i * 0.1f, 0.15f, 0.014f, leather, 0.034f, if (i % 2 == 0) 14f else -14f) }   // cordões cruzados
+                for (i in 0 until 4) F(-0.075f, 0.86f - i * 0.1f, 0.025f, 0.025f, gold, 0.038f).also { F(0.075f, 0.86f - i * 0.1f, 0.025f, 0.025f, gold, 0.038f) }
+                F(-0.14f, 0.63f, 0.09f, 0.08f, shadeC(tc, 0.75f), 0.034f); F(0.14f, 0.63f, 0.09f, 0.08f, shadeC(tc, 0.75f), 0.034f)   // bolsos do colete
+                F(-0.14f, 0.665f, 0.09f, 0.012f, leather, 0.038f); F(0.14f, 0.665f, 0.09f, 0.012f, leather, 0.038f)
+                K(0f, 0.9f, bw - 0.01f, 0.012f, shadeC(tc, 0.7f)); K(0f, 0.74f, 0.012f, 0.4f, shadeC(tc, 0.75f)); K(0f, 0.74f, 0.2f, 0.2f, shadeC(tc, 0.88f), 0.012f)
+                K(0f, 0.78f, 0.1f, 0.012f, leather, 0.02f); K(0f, 0.74f, 0.1f, 0.012f, leather, 0.02f); K(0f, 0.70f, 0.1f, 0.012f, leather, 0.02f)
+                b(base, 0f, 0.5f, 0f, bw + 0.03f, 0.06f, 0.33f, leather)
+                F(0f, 0.5f, 0.08f, 0.08f, gold, 0.026f); F(0f, 0.5f, 0.04f, 0.04f, leatherD, 0.03f)
+                F(-0.17f, 0.5f, 0.06f, 0.09f, leatherD, 0.03f); F(0.17f, 0.5f, 0.06f, 0.09f, leatherD, 0.03f)   // bolsinhas no cinto
+                band(0.462f, 0.04f, shadeC(tc, 0.7f), 0.012f)
             }
-            else -> {  // casacão (puffer)
+            else -> {  // casacão (puffer): gomos acolchoados, gola alta forrada, zíper, bolsos, barra elástica
                 b(base, 0f, 0.69f, 0f, bw + 0.05f, 0.5f, 0.36f, tc)
-                for (i in 0 until 3) b(base, 0f, 0.56f + i * 0.13f, 0f, bw + 0.06f, 0.025f, 0.37f, dark)
+                for (i in 0 until 4) band(0.555f + i * 0.115f, 0.022f, dark, 0.06f)
+                for (i in 0 until 4) { F(0f, 0.5f + i * 0.115f + 0.058f, bw * 0.9f, 0.01f, lite(tc, 0.15f), 0.022f) }   // brilho dos gomos
                 b(base, 0f, 0.955f, 0f, 0.5f, 0.1f, 0.4f, dark)
-                b(base, 0f, 0.7f, 0.185f, 0.02f, 0.46f, 0.01f, lite(tc, 0.5f))
+                b(base, 0f, 0.97f, 0f, 0.46f, 0.04f, 0.38f, lite(tc, 0.25f))    // forro da gola
+                F(0f, 0.7f, 0.022f, 0.5f, lite(tc, 0.55f), 0.02f); F(0f, 0.9f, 0.04f, 0.05f, 0xE8E8F0, 0.026f)
+                F(-0.145f, 0.57f, 0.1f, 0.016f, dark, 0.026f, -12f); F(0.145f, 0.57f, 0.1f, 0.016f, dark, 0.026f, 12f)   // bolsos
+                K(0f, 0.78f, 0.14f, 0.1f, dark, 0.024f)                          // etiqueta nas costas
                 b(base, 0f, 0.465f, 0f, bw + 0.07f, 0.05f, 0.37f, dark)
             }
         }
@@ -579,7 +673,7 @@ class CharModel {
         for (sd in intArrayOf(-1, 1)) {
             val s = sd.toFloat()
             val rx = if (sd < 0) rxR else rxL; val rz = if (sd < 0) -rzR else -rzL; val el = if (sd < 0) elR else elL   // +x é a ESQUERDA do boneco: o item vai na direita (sd<0)
-            piv(t1, base, s * (bw / 2f + 0.09f), 0.88f, 0f, rx = rx, ry = if (sd < 0) ryR else ryL, rz = rz)
+            piv(t1, base, s * (bw / 2f + 0.09f + (if (top == 1 || top == 17) 0.03f else if (top == 5 || top == 11) 0.015f else 0f)), 0.88f, 0f, rx = rx, ry = if (sd < 0) ryR else ryL, rz = rz)
             piv(t2, t1, 0f, -0.21f, 0f, rx = el, ry = elbowSpin * s)
             run {   // pele só onde não há manga
                 val remS = sl - 0.215f
@@ -615,6 +709,14 @@ class CharModel {
                 15 -> b(t1, 0f, -0.1f, 0f, 0.22f, 0.1f, 0.22f, white)
                 17 -> { b(t1, 0f, -0.1f, 0f, 0.21f, 0.04f, 0.23f, dark); b(t2, 0f, -0.05f, 0f, 0.21f, 0.04f, 0.23f, dark) }
                 9 -> b(t2, 0f, -rnd(sl), 0f, 0.194f, 0.025f, 0.214f, gold)
+                0 -> b(t1, 0f, -su + 0.03f, 0f, 0.186f, 0.03f, 0.206f, dark)
+                1 -> { b(t2, 0f, -0.185f, 0f, 0.195f, 0.06f, 0.215f, dark); b(t2, 0f, -0.14f, 0f, 0.192f, 0.012f, 0.212f, lite(tc, 0.2f)) }
+                3 -> { b(t2, 0f, -0.185f, 0f, 0.196f, 0.07f, 0.216f, dark); b(t1, 0f, -0.04f, 0f, 0.186f, 0.02f, 0.206f, lite(tc, 0.35f)) }
+                4 -> b(t2, 0f, -rnd(sl), 0f, 0.194f, 0.025f, 0.214f, gold)
+                7 -> { b(t2, 0f, -0.18f, 0f, 0.192f, 0.07f, 0.212f, lite(tc, 0.55f)); b(t2, s * 0.0f, -0.16f, 0.108f, 0.025f, 0.025f, 0.012f, white) }
+                12 -> { b(t2, 0f, -0.19f, 0f, 0.192f, 0.04f, 0.212f, white); b(t2, 0f, -0.15f, 0.108f, 0.02f, 0.02f, 0.012f, gold) }
+                13 -> {}
+                16 -> { b(t2, 0f, -0.1f, 0f, 0.17f, 0.12f, 0.19f, leather); b(t2, 0f, -0.04f, 0f, 0.174f, 0.014f, 0.194f, gold) }
             }
             if (sd < 0 && handOut != null) {
                 piv(handOut, t1, 0f, -0.21f, 0f, rx = el, ry = elbowSpin * s)
