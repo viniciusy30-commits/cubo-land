@@ -275,7 +275,11 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onExit: (
     private val S_BAG = arrayOf("...###...", "..#...#..", ".#######.", "#########", "##.....##", "##.###.##", "##.###.##", "#########", ".#######.")
     private val S_EYE = arrayOf("..#####..", ".#######.", ".##...##.", "##..#..##", ".##...##.", ".#######.", "..#####..")
     private val S_PAUSE = arrayOf("###.###", "###.###", "###.###", "###.###", "###.###", "###.###", "###.###", "###.###", "###.###")
-    private val S_POSE = arrayOf("...###...", "...###...", "....#....", ".#######.", "#..###..#", "...###...", "..##.##..", ".##...##.", "##.....##")
+    private val S_STAND = arrayOf("...###...", "...###...", "....#....", "..#####..", ".#.###.#.", "...###...", "...#.#...", "...#.#...", "..##.##..")
+    private val S_CROUCH = arrayOf("....###..", "....###..", "...####..", "..#####..", ".##.###..", "...####..", "..###.#..", ".##...#..", "##...##..")
+    private val S_SIT = arrayOf("..###....", "..###....", "..###....", "..###....", "..###....", "..#######", "..#######", "..##...##", "..##...##")
+    private val S_PRONE = arrayOf("......##.", "#########", "#########", "##.....#.")
+    private fun poseSprite() = when (game.posture) { 1 -> S_CROUCH; 2 -> S_SIT; 3 -> S_PRONE; else -> S_STAND }
     private val S_X = arrayOf("##...##", "###.###", ".#####.", "..###..", ".#####.", "###.###", "##...##")
     private val S_SLIME = arrayOf("..ggggg..", ".ggggggg.", "ggkgggkgg", "ggkgggkgg", "ggggggggg", "gGGGGGGGg", ".ggggggg.")
 
@@ -438,7 +442,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onExit: (
             val R = max(4, (br(i) / u).roundToInt())
             val cx = bx(i); val cy = byy(i) + (if (on) u else 0f)
             pxRound(c, cx, byy(i), R, base, on)
-            val spr = when (i) { 1 -> S_UP; 6 -> S_DOWN; 7 -> S_RUN; 8 -> S_POSE; 3 -> S_EYE; 5 -> S_BAG; else -> S_PAUSE }
+            val spr = when (i) { 1 -> S_UP; 6 -> S_DOWN; 7 -> S_RUN; 8 -> poseSprite(); 3 -> S_EYE; 5 -> S_BAG; else -> S_PAUSE }
             sprite(c, spr, sn(cx), cy, base)
         }
         // barra de carga do golpe poderoso (perto da mira)
