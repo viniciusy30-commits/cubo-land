@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
@@ -63,31 +64,47 @@ object Updater {
     }
 
     private fun offer(a: Activity, remote: Int, cur: Int, url: String) {
-        AlertDialog.Builder(a).setTitle("Nova versão disponível")
-            .setMessage("A versão $remote está pronta (você tem a $cur). Quer atualizar agora?")
-            .setPositiveButton("Atualizar") { _, _ ->
+        a.cozyDialog(400) { p, close ->
+            p.addView(a.cTxt("Nova versão disponível", 20f, Cz.GOLD))
+            p.addView(a.cTxt("A versão $remote está pronta (você tem a $cur). Quer atualizar agora?", 14f, Cz.CREAM, false).apply { setPadding(0, a.dp(8), 0, a.dp(14)) })
+            val row = LinearLayout(a).apply { orientation = LinearLayout.HORIZONTAL }
+            row.addView(a.cBtn("Depois", Cz.STONE, 15f) { close() }, lpW(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { rightMargin = a.dp(6) })
+            row.addView(a.cBtn("Atualizar", Cz.GREEN, 15f) {
+                close()
                 if (Build.VERSION.SDK_INT >= 26 && !a.packageManager.canRequestPackageInstalls()) askPermission(a)
                 else download(a, url)
-            }
-            .setNegativeButton("Depois", null).show()
+            }, lpW(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { leftMargin = a.dp(6) })
+            p.addView(row)
+        }
     }
 
     private fun askPermission(a: Activity) {
-        AlertDialog.Builder(a).setTitle("Permissão necessária")
-            .setMessage("Para instalar a atualização, o Android precisa liberar \"Instalar apps desconhecidos\" para o CuboLand. Toque em Abrir, ative a opção, volte e toque em Verificar atualização de novo.")
-            .setPositiveButton("Abrir") { _, _ ->
+        a.cozyDialog(420) { p, close ->
+            p.addView(a.cTxt("Permissão necessária", 20f, Cz.GOLD))
+            p.addView(a.cTxt("Para instalar a atualização, o Android precisa liberar \"Instalar apps desconhecidos\" para o CuboLand. Toque em Abrir, ative a opção, volte e toque em Verificar atualização de novo.", 13f, Cz.CREAM, false).apply { setPadding(0, a.dp(8), 0, a.dp(14)) })
+            val row = LinearLayout(a).apply { orientation = LinearLayout.HORIZONTAL }
+            row.addView(a.cBtn("Cancelar", Cz.STONE, 15f) { close() }, lpW(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { rightMargin = a.dp(6) })
+            row.addView(a.cBtn("Abrir", Cz.GREEN, 15f) {
+                close()
                 a.startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${a.packageName}")))
-            }
-            .setNegativeButton("Cancelar", null).show()
+            }, lpW(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { leftMargin = a.dp(6) })
+            p.addView(row)
+        }
     }
 
     private fun download(a: Activity, url: String) {
-        val box = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL; setPadding(a.dp(24), a.dp(16), a.dp(24), a.dp(8)) }
-        val tv = TextView(a).apply { text = "Baixando… 0%" }
-        val pb = ProgressBar(a, null, android.R.attr.progressBarStyleHorizontal).apply { max = 100 }
-        box.addView(tv); box.addView(pb)
-        val dlg = AlertDialog.Builder(a).setTitle("Atualizando").setView(box).setCancelable(false).create()
-        dlg.show()
+        var tv: TextView? = null
+        var bar: PixBar? = null
+        val dlg = a.cozyDialog(380) { p, _ ->
+            p.addView(a.cTxt("Atualizando", 20f, Cz.GOLD))
+            val t = a.cTxt("Baixando… 0%", 14f, Cz.CREAM, false).apply { setPadding(0, a.dp(8), 0, a.dp(10)) }
+            val b = PixBar(a)
+            p.addView(t)
+            p.addView(b, lpW(ViewGroup.LayoutParams.MATCH_PARENT, a.dp(26)))
+            tv = t
+            bar = b
+        }
+        dlg.setCancelable(false)
         Thread {
             try {
                 val dir = File(a.cacheDir, "updates"); dir.mkdirs()
@@ -102,7 +119,7 @@ object Updater {
                         while (inp.read(buf).also { n = it } > 0) {
                             out.write(buf, 0, n); done += n
                             val p = if (total > 0) (done * 100 / total).toInt() else 0
-                            if (p != lastP) { lastP = p; a.runOnUiThread { pb.progress = p; tv.text = "Baixando… $p%" } }
+                            if (p != lastP) { lastP = p; a.runOnUiThread { bar?.set(p); tv?.text = "Baixando… $p%" } }
                         }
                     }
                 }

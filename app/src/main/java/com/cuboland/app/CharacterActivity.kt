@@ -22,7 +22,7 @@ class CharacterActivity : CozyActivity() {
     private lateinit var cv: CharView
     private val refreshers = ArrayList<() -> Unit>()
     private val tabViews = ArrayList<TextView>()
-    private val TABS = arrayOf("★ Looks", "☺ Corpo", "✂ Cabelo", "◉ Rosto", "♣ Roupas", "♛ Acessórios")
+    private val TABS = arrayOf("Looks", "Corpo", "Cabelo", "Rosto", "Roupas", "Acessórios")
     private val ANIMS = arrayOf("Parado", "Andando", "Correndo", "Pulando", "Atacando")
     private var current = -1
     private val MATCH = ViewGroup.LayoutParams.MATCH_PARENT
@@ -69,11 +69,7 @@ class CharacterActivity : CozyActivity() {
             tv.text = "$label:  ${names[Look.v[idx].coerceIn(0, names.size - 1)]}"
             for (i in views.indices) {
                 val sel = Look.v[idx] == i
-                views[i].background = GradientDrawable().apply {
-                    shape = GradientDrawable.OVAL
-                    setColor(colors[i] or (0xFF shl 24)); setStroke(if (sel) dp(3) else dp(2), if (sel) Cz.GOLD else Cz.INK)
-                }
-                views[i].scaleX = if (sel) 1.12f else 1f; views[i].scaleY = if (sel) 1.12f else 1f
+                views[i].background = SwatchDrawable(this, colors[i] or (0xFF shl 24), sel)
             }
         }
     }
@@ -98,8 +94,8 @@ class CharacterActivity : CozyActivity() {
                 add(c)
                 val a = cCard("Surpresa")
                 val br = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(8), 0, 0) }
-                br.addView(cBtn("⚄  Aleatório", Cz.LILAC, 15f) { Look.randomize(); changed() }, lpW(0, WRAP, 1f).apply { rightMargin = dp(6) })
-                br.addView(cBtn("↺  Restaurar", Cz.STONE, 15f) { Look.v = Look.DEF.copyOf(); changed() }, lpW(0, WRAP, 1f).apply { leftMargin = dp(6) })
+                br.addView(cBtn("Aleatório", Cz.LILAC, 15f) { Look.randomize(); changed() }, lpW(0, WRAP, 1f).apply { rightMargin = dp(6) })
+                br.addView(cBtn("Restaurar", Cz.STONE, 15f) { Look.v = Look.DEF.copyOf(); changed() }, lpW(0, WRAP, 1f).apply { leftMargin = dp(6) })
                 a.addView(br); add(a)
             }
             1 -> {

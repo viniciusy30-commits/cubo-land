@@ -446,10 +446,6 @@ class MenuScene(
         platformBody(midX - off, true)
         platformBody(midX + off, false)
         tintOn = false
-        crystal(midX - off - 40, platY + 2, 18, 7, cc(255, 200, 255), cc(224, 120, 230), cc(150, 60, 180))
-        crystal(midX - off - 33, platY + 3, 11, 5, cc(150, 255, 250), cc(60, 200, 220), cc(30, 120, 170))
-        crystal(midX + off + 40, platY + 2, 16, 7, cc(150, 255, 250), cc(60, 200, 220), cc(30, 120, 170))
-        crystal(midX + off + 33, platY + 3, 10, 5, cc(255, 200, 255), cc(224, 120, 230), cc(150, 60, 180))
         cnv = oc
         tintOn = ot
     }
@@ -467,23 +463,6 @@ class MenuScene(
         rc(x - 3, y - 5, 7, 2, r); rc(x - 2, y - 6, 5, 1, r)
         rc(x - 3, y - 4, 1, 1, k); rc(x - 2, y - 5, 1, 1, w); rc(x + 1, y - 6, 1, 1, w); rc(x + 2, y - 4, 1, 1, w)
         rc(x - 4, y - 4, 1, 1, k); rc(x + 4, y - 4, 1, 1, k); rc(x - 3, y - 3, 7, 1, k)
-    }
-
-    private fun crystal(x: Int, y: Int, h: Int, w: Int, c1: Int, c2: Int, c3: Int) {
-        val k = cc(40, 16, 64)
-        for (i in 0 until h) {
-            val f = i.toFloat() / h
-            val ww = if (f < 0.5f) (w / 2f * min(1f, f * 1.8f + 0.15f)).toInt() else w / 2
-            val yy = y - h + i
-            rc(x - ww, yy, 2 * ww + 1, 1, c2)
-            if (ww > 0) rc(x - ww, yy, max(1, ww), 1, c1)
-            rc(x + ww / 2, yy, ww - ww / 2 + 1, 1, c3)
-            rc(x - ww - 1, yy, 1, 1, k)
-            rc(x + ww + 1, yy, 1, 1, k)
-        }
-        rc(x, y - h - 1, 1, 1, k)
-        rc(x - 1, y - h + 2, 1, max(1, h / 3), WHITE, 200)
-        rc(x - w / 2 - 1, y, w + 3, 1, k)
     }
 
     private fun platformBody(cx: Int, lit: Boolean) {
@@ -754,7 +733,7 @@ class MenuScene(
 
         val bWs = intArrayOf(112, 96, 96)
         val hs = intArrayOf(28, 16, 16)
-        val ys = intArrayOf(blockY, blockY + 45, blockY + 64)
+        val ys = intArrayOf(blockY, blockY + 38, blockY + 58)
         val bases = intArrayOf(cc(70, 196, 110), cc(150, 100, 230), cc(80, 160, 240))
         val labels = arrayOf("JOGAR", "PERSONAGEM", "AJUSTES")
         for (i in 0 until 3) {
@@ -767,20 +746,6 @@ class MenuScene(
         bx[3] = W - 25; by[3] = 4; bw[3] = 20; bh[3] = 22
         bUp[3] = roundBtn(cc(60, 190, 180), ICO_REFRESH); bDn[3] = bUp[3]
         bx[4] = 0; by[4] = 0; bw[4] = 0; bh[4] = 0
-
-        val st = continueText
-        val stw = PixFont.width(st, 1)
-        scrollBmp = bake(stw + 20, 11, false) {
-            val ox = 4; val y0 = 1; val w = stw + 10
-            val parch = cc(255, 236, 196); val parchD = cc(230, 200, 150); val edge = cc(196, 150, 100)
-            rc(ox, y0, w, 9, INK); rc(ox + 1, y0 + 1, w - 2, 7, parch)
-            rc(ox + 1, y0 + 1, w - 2, 1, cc(255, 250, 226)); rc(ox + 1, y0 + 7, w - 2, 1, parchD)
-            rc(ox - 3, y0 - 1, 4, 11, INK); rc(ox - 2, y0, 2, 9, edge); rc(ox - 2, y0, 1, 9, cc(224, 180, 130))
-            rc(ox + w - 1, y0 - 1, 4, 11, INK); rc(ox + w, y0, 2, 9, edge); rc(ox + w + 1, y0, 1, 9, cc(150, 104, 70))
-            txt(st, ox + 5, y0 + 1, 1, cc(70, 36, 50))
-        }
-        scrollX = midX - (stw + 20) / 2
-        scrollY = blockY + 33 - 1
 
         val nm = playerName.trim().uppercase().take(12)
         plaqueMe = plaqueBmp(if (nm.isEmpty()) "JOGADOR" else nm, true)
@@ -861,7 +826,6 @@ class MenuScene(
         drawRunes()
         drawGhost()
         drawMe()
-        drawSlime()
         drawPlaques()
         drawMotes()
         drawFireflies()
@@ -1048,11 +1012,19 @@ class MenuScene(
         return f
     }
 
+    /** sombra de contato no chão do portal: faz o personagem parecer pisando, não flutuando */
+    private fun footShadow(cx: Int, a: Int) {
+        ell(cx, platY + 1, 17, 4, INK, a * 70 / 255)
+        ell(cx, platY + 1, 12, 3, INK, a * 120 / 255)
+        ell(cx, platY + 1, 7, 2, INK, a * 150 / 255)
+    }
+
     private fun drawMe() {
         val x0 = midX - off - CW / 2
-        val y0 = platY - 1 - CFEET
+        val y0 = platY + 1 - CFEET
         val rev = ((introT - 0.15f) / 0.8f).coerceIn(0f, 1f)
         if (rev <= 0f) return
+        footShadow(midX - off, (255f * rev).toInt())
         val vis = (rev * CH).toInt()
         cnv.save()
         cnv.clipRect(x0.toFloat(), (y0 + CH - vis).toFloat(), (x0 + CW).toFloat(), (y0 + CH).toFloat())
@@ -1062,19 +1034,18 @@ class MenuScene(
         cnv.drawBitmap(me.bitmap, null, dstF, BP)
         BP.colorFilter = null
         cnv.restore()
-        if (rev < 1f) ell(midX - off, y0 + CH - vis, 30, 3, WHITE, 140)
+        if (rev < 1f) ell(midX - off, y0 + CFEET + 7 - vis, 30, 3, WHITE, 140)
     }
 
     private fun drawGhost() {
         val gb = ghostBmp
         val rx = midX + off
-        ell(rx, platY - 1, 18, 4, INK, 70)
+        footShadow(rx, 255)
         if (gb == null) return
         val since = t - pokeT
         val shake = if (since < 0.5f) (sin(since * 50f) * 3f * (1f - since / 0.5f)).roundToInt() else 0
-        val bob = (sin(t * 1.6f) * 2f).roundToInt()
         val x0 = rx - CW / 2 + shake
-        val y0 = platY - 1 - CFEET + bob - 4
+        val y0 = platY + 1 - CFEET
         BP.alpha = (120 + 40 * sin(t * 2.2f)).toInt()
         dstF.set(x0.toFloat(), y0.toFloat(), (x0 + CW).toFloat(), (y0 + CH).toFloat())
         cnv.drawBitmap(gb, null, dstF, BP)
@@ -1095,36 +1066,6 @@ class MenuScene(
         if (q != null && since > 1.6f) cnv.drawBitmap(q, (rx - 36).toFloat(), (platY - 1 - 101 + 2 + (sin(t * 2.4f) * 2f).roundToInt()).toFloat(), BP)
         val sb = bubbleSoon
         if (sb != null && since < 1.6f) cnv.drawBitmap(sb, (rx - sb.width / 2).toFloat(), (platY - 1 - 112).toFloat(), BP)
-    }
-
-    private fun drawSlime() {
-        val ph = t % 2.8f
-        val bx0 = midX - off + 33
-        var w = 9
-        var h = 6
-        var lift = 0
-        if (ph < 0.55f) {
-            lift = (sin(ph / 0.55f * PI.toFloat()) * 10f).toInt(); w = 8; h = 7
-        } else if (ph < 0.7f) {
-            w = 11; h = 4
-        }
-        val x = bx0 - w / 2
-        val y = platY - 3 - h - lift
-        tintOn = true
-        if (lift > 0) ell(bx0, platY - 1, 4, 1, INK, 70)
-        rc(x + 2, y - 1, w - 4, 1, INK)
-        rc(x + 1, y + h, w - 2, 1, INK)
-        for (r in 0 until h) {
-            val ins = if (r == 0) 2 else if (r == 1 || r == h - 1) 1 else 0
-            rc(x + ins - 1, y + r, w - 2 * ins + 2, 1, INK)
-            rc(x + ins, y + r, w - 2 * ins, 1, if (r == h - 1) cc(70, 150, 220) else if (r < h / 2) cc(150, 215, 255) else cc(110, 190, 250))
-        }
-        rc(x + 2, y + 1, 2, 1, WHITE)
-        val blink = (t % 3.3f) < 0.12f
-        val ey = y + h / 2
-        rc(x + w / 3, ey, 1, if (blink) 1 else 2, INK)
-        rc(x + w - w / 3 - 1, ey, 1, if (blink) 1 else 2, INK)
-        tintOn = false
     }
 
     private fun drawPlaques() {
@@ -1248,7 +1189,7 @@ class MenuScene(
         val wl = wingL
         val wr = wingR
         if (wl != null) cnv0.drawBitmap(wl, (titleX - 2 - 21).toFloat(), (titleY + 3 + wb).toFloat(), BP)
-        if (wr != null) cnv0.drawBitmap(wr, (titleX + titleW - 2).toFloat(), (titleY + 3 + wb).toFloat(), BP)
+        if (wr != null) cnv0.drawBitmap(wr, (titleX + titleW + 1).toFloat(), (titleY + 3 + wb).toFloat(), BP)
         val tb = titleBmp
         if (tb != null) {
             val ty = titleY - 1 + (sin(t * 1.4f) * 1f).roundToInt()
@@ -1305,9 +1246,6 @@ class MenuScene(
                 sparkle(sx, sy, r, cc(255, 250, 200), 255)
             }
         }
-        // pergaminho
-        val sb = scrollBmp
-        if (sb != null) cnv0.drawBitmap(sb, scrollX.toFloat(), scrollY.toFloat(), BP)
     }
 
     // ------------------------------------------------------------------ toque

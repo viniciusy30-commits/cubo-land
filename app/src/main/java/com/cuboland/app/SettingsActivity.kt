@@ -17,7 +17,7 @@ class SettingsActivity : CozyActivity() {
     private lateinit var content: LinearLayout
     private lateinit var scroll: ScrollView
     private val tabViews = ArrayList<TextView>()
-    private val TABS = arrayOf("☀  Geral", "✥  Controles", "◆  Gráficos", "✦  Novidades", "ℹ  Sobre")
+    private val TABS = arrayOf("Geral", "Controles", "Gráficos", "Novidades", "Sobre")
     private var current = -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,7 +50,7 @@ class SettingsActivity : CozyActivity() {
         current = i
         for ((k, tv) in tabViews.withIndex()) {
             val on = k == i
-            tv.background = if (on) CozyBox(this, Cz.GOLD, 12f, false, Color.rgb(120, 80, 20)) else null
+            tv.background = if (on) CozyBox(this, Cz.GOLD, 12f, false, Color.rgb(120, 80, 20)) else CozyBox(this, Cz.PANEL2, 12f, false)
             tv.setTextColor(if (on) Cz.INK else Color.WHITE)
         }
         content.removeAllViews(); scroll.scrollTo(0, 0)
@@ -66,15 +66,8 @@ class SettingsActivity : CozyActivity() {
         head.addView(cTxt(title, 15f, Cz.CREAM), lpW(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         val vt = cTxt(valueText(cur), 14f, Cz.GOLD); head.addView(vt)
         card.addView(head)
-        val bar = SeekBar(this).apply {
-            max = 100; progress = ((cur - lo) / (hi - lo) * 100).toInt().coerceIn(0, 100)
-            progressTintList = ColorStateList.valueOf(Cz.GOLD); thumbTintList = ColorStateList.valueOf(Cz.CREAM)
-            progressBackgroundTintList = ColorStateList.valueOf(Color.argb(90, 255, 255, 255))
-            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(s: SeekBar?, p: Int, u: Boolean) { val v = lo + p / 100f * (hi - lo); vt.text = valueText(v); onChange(v) }
-                override fun onStartTrackingTouch(s: SeekBar?) {}
-                override fun onStopTrackingTouch(s: SeekBar?) {}
-            })
+        val bar = PixSlider(this, ((cur - lo) / (hi - lo) * 100).toInt().coerceIn(0, 100)) { p ->
+            val v = lo + p / 100f * (hi - lo); vt.text = valueText(v); onChange(v)
         }
         card.addView(bar, lpW(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(6) })
         return card
@@ -83,13 +76,13 @@ class SettingsActivity : CozyActivity() {
     private fun general() {
         val sp = getSharedPreferences("cfg", 0)
         val c1 = cCard("Meu personagem", "Mude cabelo, roupas, acessórios e muito mais")
-        c1.addView(cBtn("☺  Editar personagem", Cz.ORANGE, 15f) { startActivity(Intent(this, CharacterActivity::class.java)) }, lpW(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(10) })
+        c1.addView(cBtn("Editar personagem", Cz.ORANGE, 15f) { startActivity(Intent(this, CharacterActivity::class.java)) }, lpW(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(10) })
         add(c1)
         val c2 = cCard("Meus mundos", "Crie, edite, duplique e exclua mundos")
-        c2.addView(cBtn("▶  Abrir seleção de mundos", Cz.GREEN, 15f) { startActivity(Intent(this, WorldsActivity::class.java)) }, lpW(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(10) })
+        c2.addView(cBtn("Abrir seleção de mundos", Cz.GREEN, 15f) { startActivity(Intent(this, WorldsActivity::class.java)) }, lpW(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(10) })
         add(c2)
         val c3 = cCard("Atualização", "Versão instalada: ${packageManager.getPackageInfo(packageName, 0).versionName}")
-        c3.addView(cBtn("⟳  Verificar atualização", Cz.TEAL, 15f) { Updater.check(this, true) }, lpW(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(10) })
+        c3.addView(cBtn("Verificar atualização", Cz.TEAL, 15f) { Updater.check(this, true) }, lpW(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(10) })
         add(c3)
         if (sp.getBoolean("creative", false)) { /* ajuste antigo: agora o modo criativo é por mundo */ }
     }
@@ -142,7 +135,7 @@ class SettingsActivity : CozyActivity() {
     private fun about() {
         val c = cCard("CuboLand", "Versão ${packageManager.getPackageInfo(packageName, 0).versionName}")
         c.addView(cTxt("Um mundinho de cubos para construir, explorar e lutar contra slimes. Feito com carinho, um bloco de cada vez. ♥", 13f, Cz.CREAM, false).apply { setPadding(0, dp(8), 0, dp(10)) })
-        c.addView(cBtn("⟳  Verificar atualização", Cz.TEAL, 15f) { Updater.check(this, true) }, lpW(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        c.addView(cBtn("Verificar atualização", Cz.TEAL, 15f) { Updater.check(this, true) }, lpW(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         add(c)
     }
 }

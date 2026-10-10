@@ -1,3 +1,10 @@
+#id 2026-10-11-c
+#titulo Menus mais bonitos e ajustes no menu principal!
+- Telas de Jogar (mundos), Personagem e Ajustes refeitas em pixel art de fantasia, com a mesma fonte, botões dourados e painéis do menu principal
+- Menu principal: tirei o slime e os cristais, os jogadores agora pisam no portal (com sombra no chão), a asa direita do título ficou igual à esquerda e o pergaminho saiu, subindo os botões Personagem e Ajustes
+- O sol agora aparece só no menu principal
+- Barra de ajustes, cores do personagem e janela de atualização também em pixel art
+
 #id 2026-10-11-b
 #titulo Menu principal novo, todo em pixel art!
 - Menu refeito do zero em pixel art de fantasia: título dourado no topo, botões no meio e o céu muda com a hora do seu aparelho

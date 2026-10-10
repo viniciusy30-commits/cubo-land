@@ -33,7 +33,6 @@ class SceneBg(ctx: Context, var dim: Float = 0f) : View(ctx) {
     private var skyBot = 0
     private var skyBmp: Bitmap? = null
     private var landBmp: Bitmap? = null
-    private var sunBmp: Bitmap? = null
     private val cloudBmp = arrayOfNulls<Bitmap>(2)
 
     private val bay = intArrayOf(0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5)
@@ -184,19 +183,6 @@ class SceneBg(ctx: Context, var dim: Float = 0f) : View(ctx) {
             rc(lc, x, y - 7, 1, 5, tn(fc[i % 5]))
             rc(lc, x, y - 5, 1, 1, tn(pc(255, 230, 110)))
         }
-        // sol / lua
-        val isDay = hour >= 6f && hour <= 18f
-        val sn = Bitmap.createBitmap(56, 56, Bitmap.Config.ARGB_8888)
-        val sc2 = Canvas(sn)
-        if (isDay) {
-            disc(sc2, 28, 28, 17, pc(255, 246, 190), 28); disc(sc2, 28, 28, 13, pc(255, 246, 190), 60)
-            disc(sc2, 28, 28, 9, pc(255, 244, 170)); disc(sc2, 28, 28, 7, pc(255, 252, 215))
-        } else {
-            disc(sc2, 28, 28, 20, pc(190, 200, 255), 22); disc(sc2, 28, 28, 15, pc(190, 200, 255), 40)
-            disc(sc2, 28, 28, 10, pc(232, 238, 252))
-            disc(sc2, 25, 25, 2, pc(196, 206, 232)); disc(sc2, 31, 30, 2, pc(196, 206, 232))
-        }
-        sunBmp = sn
         // nuvens
         val tint = if (night > 0.1f && night < 0.6f) mixC(Color.WHITE, pc(255, 190, 200), 0.5f) else Color.WHITE
         val base = mixC(tint, pc(90, 80, 150), night * 0.55f)
@@ -237,10 +223,6 @@ class SceneBg(ctx: Context, var dim: Float = 0f) : View(ctx) {
                 rc(c, sx, sy, 1, 1, pc(255, 255, 235), (night * 255f * (0.4f + 0.6f * tw)).toInt().coerceIn(0, 255))
             }
         }
-        val isDay = hour >= 6f && hour <= 18f
-        val frac = if (isDay) (hour - 6f) / 12f else ((hour + 24f - 18f) % 24f) / 12f
-        val sunB = sunBmp
-        if (sunB != null) c.drawBitmap(sunB, (W * (0.1f + 0.8f * frac)).toInt() - 28f, (H * (0.5f - 0.38f * sin(PI.toFloat() * frac))).toInt() - 28f, BP)
         val cy = intArrayOf(40, 96, 70, 22)
         val sp2 = floatArrayOf(2.0f, 1.4f, 1.0f, 1.7f)
         val bs = intArrayOf(40, 280, 150, 340)

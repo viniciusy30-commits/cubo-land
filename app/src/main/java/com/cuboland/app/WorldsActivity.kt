@@ -26,7 +26,7 @@ class WorldsActivity : CozyActivity() {
         val head = cHeader("Escolha seu mundo", "Crie, edite e organize seus mundos") { finish() }
         countTxt = cTxt("", 13f, Cz.GOLD)
         head.addView(countTxt, lpW(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { rightMargin = dp(14) })
-        head.addView(cBtn("＋  Novo mundo", Cz.GREEN, 15f) { editor(null) })
+        head.addView(cBtn("Novo mundo", Cz.GREEN, 15f) { editor(null) })
         col.addView(head)
         strip = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(4), dp(10), dp(4), dp(10)) }
         val hs = HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; addView(strip) }
@@ -65,11 +65,11 @@ class WorldsActivity : CozyActivity() {
         tags.addView(badge(if (w.creative) "Criativo" else "Sobrevivência", if (w.creative) Cz.GOLD else Cz.ORANGE), lpW(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { leftMargin = dp(6) })
         card.addView(tags)
         card.addView(cTxt((if (last) "★ Último jogado · " else "") + Worlds.agoText(w.played) + " · " + Worlds.sizeText(this, w), 11f, Cz.SOFT, false).apply { setPadding(0, 0, 0, dp(8)) })
-        card.addView(cBtn("▶  Jogar", Cz.GREEN, 16f) { play(w) })
+        card.addView(cBtn("Jogar", Cz.GREEN, 16f) { play(w) })
         val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(6), 0, 0) }
-        row.addView(cBtn("✎ Editar", Cz.SKY, 12f) { editor(w) }, lpW(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { rightMargin = dp(4) })
-        row.addView(cBtn("⧉", Cz.LILAC, 14f) { Worlds.duplicate(this, w); Toast.makeText(this, "Mundo duplicado", Toast.LENGTH_SHORT).show(); refresh() }, lpW(dp(48), ViewGroup.LayoutParams.WRAP_CONTENT).apply { rightMargin = dp(4) })
-        row.addView(cBtn("✕", Cz.RED, 14f) {
+        row.addView(cBtn("Editar", Cz.SKY, 12f) { editor(w) }, lpW(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { rightMargin = dp(4) })
+        row.addView(cBtn("2x", Cz.LILAC, 14f) { Worlds.duplicate(this, w); Toast.makeText(this, "Mundo duplicado", Toast.LENGTH_SHORT).show(); refresh() }, lpW(dp(48), ViewGroup.LayoutParams.WRAP_CONTENT).apply { rightMargin = dp(4) })
+        row.addView(cBtn("X", Cz.RED, 14f) {
             cozyConfirm("Excluir \"${w.name}\"?", "Tudo que você construiu nesse mundo será apagado. Isso não tem volta.", "Excluir", Cz.RED) { Worlds.delete(this, w); refresh() }
         }, lpW(dp(48), ViewGroup.LayoutParams.WRAP_CONTENT))
         card.addView(row)
@@ -81,7 +81,7 @@ class WorldsActivity : CozyActivity() {
         card.gravity = Gravity.CENTER
         card.isClickable = true
         card.setOnClickListener { editor(null) }
-        card.addView(cTxt("＋", 54f, Cz.GOLD))
+        card.addView(cTxt("+", 54f, Cz.GOLD))
         card.addView(cTxt("Criar novo mundo", 16f, Cz.CREAM).apply { gravity = Gravity.CENTER })
         card.addView(cTxt("Ilha ou planície com rio gigante", 11f, Cz.SOFT, false).apply { gravity = Gravity.CENTER; setPadding(0, dp(4), 0, 0) })
         return card
@@ -127,7 +127,7 @@ class WorldsActivity : CozyActivity() {
             }
             p.addView(cTxt("Modo de jogo", 12f, Cz.SOFT, false).apply { setPadding(0, dp(12), 0, dp(4)) })
             val mr = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-            val m0 = cChip("⚔  Sobrevivência") {}; val m1 = cChip("✦  Criativo (voar, tudo quebra)") {}
+            val m0 = cChip("Sobrevivência") {}; val m1 = cChip("Criativo (voar, tudo quebra)") {}
             fun pm() { m0.styleChip(!creative); m1.styleChip(creative) }
             m0.setOnClickListener { creative = false; pm() }; m1.setOnClickListener { creative = true; pm() }
             pm()
@@ -147,7 +147,7 @@ class WorldsActivity : CozyActivity() {
                 p.addView(seedEt)
             } else {
                 p.addView(cTxt("Gerar de novo apaga as construções e cria o terreno do zero.", 11.5f, Cz.SOFT, false).apply { setPadding(0, dp(12), 0, dp(4)) })
-                p.addView(cBtn("↻  Gerar terreno de novo", Cz.ORANGE, 13f) {
+                p.addView(cBtn("Gerar terreno de novo", Cz.ORANGE, 13f) {
                     cozyConfirm("Gerar de novo?", "As construções de \"${w.name}\" serão apagadas e o terreno volta ao começo.", "Gerar", Cz.ORANGE) {
                         Worlds.regenerate(this, w); Toast.makeText(this, "Terreno será recriado ao jogar", Toast.LENGTH_SHORT).show(); refresh()
                     }
