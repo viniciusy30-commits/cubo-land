@@ -46,7 +46,7 @@ class BounceCube(ctx: Context) : android.view.View(ctx) {
 class LoadingView(private val c0: Context, worldName: String, flat: Boolean) : FrameLayout(c0) {
     private fun dp(v: Int) = c0.dp(v)
     private val bar = PixBar(c0)
-    private val msg: android.widget.TextView
+    private lateinit var msg: android.widget.TextView
     private var shown = 0f; private var target = 0.05f
     private val tips = arrayOf("Dica: toque duas vezes em pular pra voar!", "Dica: nade rápido pra fazer ondinhas na água.", "Dica: no modo criativo tudo quebra num toque.", "Dica: cada bloco deixa uma pegada diferente.", "Dica: monte sua hotbar com seus itens favoritos.", "Dica: use a semente pra recriar um mundo.")
     private val steps = arrayOf("Plantando árvores...", "Enchendo os rios...", "Acordando os passarinhos...", "Arrumando a casa...", "Quase lá...")
