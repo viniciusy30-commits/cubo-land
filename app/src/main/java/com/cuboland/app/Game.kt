@@ -214,14 +214,31 @@ class Game(val world: World) {
         }
     }
 
-    private fun dirX() = sin(yaw) * cos(pitch)
-    private fun dirY() = sin(pitch)
-    private fun dirZ() = cos(yaw) * cos(pitch)
+    private fun fwdX() = sin(yaw) * cos(pitch)
+    private fun fwdY() = sin(pitch)
+    private fun fwdZ() = cos(yaw) * cos(pitch)
+    // mira por toque: desvio normalizado (-1..1) a partir do centro da tela; vale só quando aimOn
+    @Volatile var aimOn = false; @Volatile var aimNx = 0f; @Volatile var aimNy = 0f; @Volatile var aspect = 2f
+    @Volatile var sprint = false
+    private fun aimVec(): FloatArray {
+        val fx = fwdX(); val fy = fwdY(); val fz = fwdZ()
+        if (!aimOn) return floatArrayOf(fx, fy, fz)
+        val tv = 0.70021f; val th = tv * aspect
+        val rx = -cos(yaw); val rz = sin(yaw)
+        val ux = -sin(yaw) * sin(pitch); val uy = cos(pitch); val uz = -cos(yaw) * sin(pitch)
+        val a = aimNx * th; val b = -aimNy * tv
+        var x = fx + rx * a + ux * b; var y = fy + uy * b; var z = fz + rz * a + uz * b
+        val l = max(0.0001f, sqrt(x * x + y * y + z * z))
+        return floatArrayOf(x / l, y / l, z / l)
+    }
+    private fun dirX() = aimVec()[0]
+    private fun dirY() = aimVec()[1]
+    private fun dirZ() = aimVec()[2]
 
     private fun updateCamera() {
         val ex = player.x; val ey = player.y + 1.6f; val ez = player.z
         if (!thirdPerson) { camX = ex; camY = ey; camZ = ez; camDist = 0f; return }
-        val dx = -dirX(); val dy = -dirY(); val dz = -dirZ()
+        val dx = -fwdX(); val dy = -fwdY(); val dz = -fwdZ()
         var d = 0.3f
         while (d < 4.6f) {
             val nx = ex + dx * (d + 0.25f); val ny = ey + 0.3f + dy * (d + 0.25f); val nz = ez + dz * (d + 0.25f)
@@ -562,7 +579,7 @@ class Game(val world: World) {
     /** a espada corta o bloco: ele vira, na hora, uma nuvem de folhinhas que escorrem no sentido do corte, girando e planando */
     private fun leafCutFx(x: Int, y: Int, z: Int, k: Int) {
         val cx = x + 0.5f; val cy = y + 0.5f; val cz = z + 0.5f
-        val fx = dirX(); val fz = dirZ(); val hl = max(0.001f, hypot(fx, fz)); val fwx = fx / hl; val fwz = fz / hl
+        val fx = fwdX(); val fz = fwdZ(); val hl = max(0.001f, hypot(fx, fz)); val fwx = fx / hl; val fwz = fz / hl
         val rxv = fwz; val rzv = -fwx; val sg = if (combo == 1) -1f else 1f   // direção lateral do talho
         val n = if (k == 0) 18 else 10
         if (leafFall.size < 260) for (i in 0 until n) {
@@ -825,7 +842,8 @@ class Game(val world: World) {
         val p = player
         if (!creative) flying = false
         if (flying && p.onGround && downHeld) flying = false
-        val sp = (if (p.inWater && !flying) 2.8f else if (flying) 9f else 5f) * (if (charging) 0.55f else 1f)
+        if (hypot(stickX, stickY) < 0.1f) sprint = false   // parou de andar: desliga a corrida
+        val sp = (if (p.inWater && !flying) 2.8f else if (flying) 9f else 5f) * (if (charging) 0.55f else 1f) * (if (sprint && !p.inWater && !flying) 1.55f else 1f)
         val f = sin(yaw); val c = cos(yaw)
         val mx = (f * stickY + (-c) * stickX) * sp; val mz = (c * stickY + f * stickX) * sp
         val k = min(1f, (if (p.onGround) 14f else 5f) * dt)
@@ -1108,5 +1126,5 @@ class Game(val world: World) {
         }
     }
 
-    fun lookDirX() = dirX(); fun lookDirY() = dirY(); fun lookDirZ() = dirZ()
+    fun lookDirX() = fwdX(); fun lookDirY() = fwdY(); fun lookDirZ() = fwdZ()
 }

@@ -92,10 +92,10 @@ class SettingsActivity : CozyActivity() {
         add(slider("Sensibilidade da câmera", { "%.1fx".format(it) }, 0.4f, 2f, sp.getFloat("sens", 1f)) { sp.edit().putFloat("sens", it).apply() })
         add(slider("Tamanho dos botões", { "${(it * 100).toInt()}%" }, 0.8f, 1.25f, sp.getFloat("btn", 1f)) { sp.edit().putFloat("btn", it).apply() })
         val card = cPanel(Cz.PANEL, 16f, 14)
-        card.addView(cToggleRow("Toque na tela como no Minecraft", "Toque rápido bate ou coloca bloco; segurar quebra e ataca; arrastar move a câmera", sp.getBoolean("tap", true)) { sp.edit().putBoolean("tap", it).apply() })
+        card.addView(cToggleRow("Mira no dedo (círculo)", "Desligado: mira fixa no centro (+). Ligado: a mira é onde você toca, com um círculo em volta do dedo", sp.getBoolean("aimTouch", false)) { sp.edit().putBoolean("aimTouch", it).apply() })
         add(card)
         val tips = cCard("Como jogar")
-        for (t in listOf("Lado esquerdo: analógico para andar", "Lado direito: arraste para olhar em volta", "Toque rápido: coloca o bloco (ou ataca com ferramenta)", "Segure: quebra blocos e golpeia sem parar", "Espada e machado: segure o botão de ataque para carregar um golpe forte", "No criativo: toque duas vezes no pulo para voar"))
+        for (t in listOf("Lado esquerdo: analógico para andar", "Lado direito: arraste para olhar em volta; botões de pular e correr", "Toque rápido: coloca o bloco (ou ataca com ferramenta)", "Segure: quebra blocos e golpeia sem parar", "Espada e machado: segure o botão de ataque para carregar um golpe forte", "Correr: toque uma vez para ligar; parar de andar desliga sozinho", "No criativo: toque duas vezes no pulo para voar"))
             tips.addView(cTxt("•  $t", 12.5f, Cz.CREAM, false).apply { setPadding(0, dp(4), 0, 0) })
         add(tips)
     }
