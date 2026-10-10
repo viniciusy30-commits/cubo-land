@@ -291,7 +291,9 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     private val fT2 = arrayOf(floatArrayOf(0f, 1f, 0f), floatArrayOf(0f, 0f, 1f), floatArrayOf(0f, 1f, 0f))
 
     /** retângulo fino colado na face (a = eixo, s = sinal), centrado em (u,v), girado ang, comprimento len x largura wid */
-    private fun decal(bx: Int, by: Int, bz: Int, a: Int, s: Int, u: Float, v: Float, ang: Float, len: Float, wid: Float, col: Int, al: Float) {
+    private var fadeMul = 1f
+    private fun decal(bx: Int, by: Int, bz: Int, a: Int, s: Int, u: Float, v: Float, ang: Float, len: Float, wid: Float, col: Int, al0: Float) {
+        val al = al0 * fadeMul
         if (al < 0.02f || len <= 0.001f || wid <= 0.001f) return
         val t1 = fT1[a]; val t2 = fT2[a]
         val c = cos(ang); val sn = sin(ang)
@@ -425,8 +427,8 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                 sh *= 0.95f + 0.1f * ((hh and 255) / 255f)
                 if (!boundary) {   // miolo exposto: madeira mostra os anéis, grama mostra terra; escurece conforme afunda
                     val shell = min(min(i, n - 1 - i), min(min(j, n - 1 - j), min(k, n - 1 - k)))
-                    sh *= (0.9f - 0.07f * min(shell, 6)).coerceAtLeast(0.45f)
-                    if (d.id == B.WOOD) tile = B.tTop[B.WOOD] else if (d.id == B.GRASS) tile = B.tTop[B.DIRT]
+                    sh *= (0.95f - 0.05f * min(shell, 6)).coerceAtLeast(0.66f)
+                    tile = when (d.id) { B.WOOD -> 23; B.GRASS, B.DIRT -> B.tTop[B.DIRT]; else -> B.tSide[d.id] }
                 }
                 for (q in 0 until 4) {
                     val cu = World.QU[q]; val cv = World.QV[q]
@@ -460,7 +462,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             val it = voxOwned.iterator()
             while (it.hasNext()) { val d = it.next(); if (d.dead) { G.glDeleteBuffers(2, intArrayOf(d.vb, d.ib), 0); d.vb = 0; d.ib = 0; it.remove() } }
         }
-        if (game.dmg.isEmpty()) return
+        if (game.dmg.isEmpty() && game.slashes.isEmpty()) return
         for (d in game.dmg.values) {
             if (!d.carved) continue
             val dx = d.x + 0.5f - game.camX; val dy = d.y + 0.5f - game.camY; val dz = d.z + 0.5f - game.camZ
@@ -477,6 +479,13 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             }
             for (m in d.marks) drawMark(d, m, dt)
         }
+        for (sl in game.slashes) {
+            val dx = sl.d.x + 0.5f - game.camX; val dy = sl.d.y + 0.5f - game.camY; val dz = sl.d.z + 0.5f - game.camZ
+            if (dx * dx + dy * dy + dz * dz > 22f * 22f) continue
+            fadeMul = ((Game.SLASH_LIFE - (game.time - sl.born)) / 25f).coerceIn(0f, 1f)
+            drawMark(sl.d, sl.m, dt)
+        }
+        fadeMul = 1f
         G.glDepthMask(true)
     }
 

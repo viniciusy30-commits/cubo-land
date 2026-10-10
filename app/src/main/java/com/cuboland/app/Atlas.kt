@@ -116,6 +116,13 @@ object Atlas {
         return c
     }
 
+    /** miolo da madeira: tom quente opaco com veios, sem borda */
+    private fun heartwood(u: Float, v: Float): Int {
+        val dx = u - 0.5f; val dy = v - 0.5f
+        val r = sqrt(dx * dx + dy * dy) + (vn(u, v, 3, 3, 23) - 0.5f) * 0.05f
+        return lerp(0xC99A66, 0xDDB583, 0.5f + 0.5f * sin(r * TAU * 4f))
+    }
+
     private fun barkTop(u: Float, v: Float): Int {
         val dx = u - 0.5f; val dy = v - 0.5f
         val r = sqrt(dx * dx + dy * dy) + (vn(u, v, 3, 3, 23) - 0.5f) * 0.04f
@@ -262,6 +269,7 @@ object Atlas {
         20 -> leafCard(u, v, 0)
         21 -> leafCard(u, v, 1)
         22 -> leafVox(u, v)
+        23 -> heartwood(u, v)
         else -> -1
     }
 
@@ -357,7 +365,7 @@ object Atlas {
     private fun build(): Bitmap {
         val w = T * NT
         val out = IntArray(w * T)
-        for (t in 0 until 23) for (y in 0 until T) for (x in 0 until T) {
+        for (t in 0 until 24) for (y in 0 until T) for (x in 0 until T) {
             var a = 0; var r = 0f; var g = 0f; var bl = 0f
             for (sy in 0..1) for (sx in 0..1) {      // antialias 2x2
                 val c = sample(t, (x + 0.25f + sx * 0.5f) / T, (y + 0.25f + sy * 0.5f) / T)

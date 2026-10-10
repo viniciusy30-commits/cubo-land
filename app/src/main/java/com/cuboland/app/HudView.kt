@@ -122,12 +122,29 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
         if (b == 0) { game.attackHeld = false; game.attackRelease = true }
     }
 
-    private fun heart(c: Canvas, cx: Float, cy: Float, s: Float, color: Int) {
-        path.reset()
-        path.moveTo(cx, cy + s * 0.9f)
-        path.cubicTo(cx - s * 1.4f, cy - s * 0.1f, cx - s * 0.7f, cy - s * 1.1f, cx, cy - s * 0.35f)
-        path.cubicTo(cx + s * 0.7f, cy - s * 1.1f, cx + s * 1.4f, cy - s * 0.1f, cx, cy + s * 0.9f)
-        pt.style = Paint.Style.FILL; pt.color = color; c.drawPath(path, pt)
+    private val HEART = arrayOf(".XX...XX.", "XXXX.XXXX", "XXXXXXXXX", "XXXXXXXXX", ".XXXXXXX.", "..XXXXX..", "...XXX...", "....X....")
+    /** coração em pixels (9x8) como no Minecraft: contorno preto, vermelho e brilho; half = só a metade esquerda */
+    private fun pxHeart(c: Canvas, cx: Float, cy: Float, px: Float, fill: Int, half: Boolean = false, empty: Boolean = false) {
+        val x0 = cx - 4.5f * px; val y0 = cy - 4f * px
+        pt.style = Paint.Style.FILL
+        pt.color = Color.BLACK
+        for (r in 0 until 8) for (k in 0 until 9) if (HEART[r][k] == 'X') c.drawRect(x0 + (k - 1) * px, y0 + (r - 1) * px, x0 + (k + 2) * px, y0 + (r + 2) * px, pt)
+        for (r in 0 until 8) for (k in 0 until 9) {
+            if (HEART[r][k] != 'X') continue
+            pt.color = if (empty || (half && k > 4)) Color.rgb(60, 24, 30) else if (r >= 4) shadeC(fill, 0.82f) else fill
+            c.drawRect(x0 + k * px, y0 + r * px, x0 + (k + 1) * px, y0 + (r + 1) * px, pt)
+        }
+        if (!empty) { pt.color = Color.argb(230, 255, 255, 255); c.drawRect(x0 + px, y0 + px, x0 + 3 * px, y0 + 2 * px, pt); c.drawRect(x0 + px, y0 + 2 * px, x0 + 2 * px, y0 + 3 * px, pt) }
+    }
+
+    /** painel quadrado de pedra: borda preta + chanfro */
+    private fun mcPanel(c: Canvas, r: RectF, fill: Int, sel: Boolean) {
+        val u = 2 * d
+        pt.style = Paint.Style.FILL
+        pt.color = if (sel) Color.WHITE else Color.BLACK; c.drawRect(r, pt)
+        pt.color = fill; c.drawRect(r.left + u, r.top + u, r.right - u, r.bottom - u, pt)
+        pt.color = shadeC(fill, 0.55f); c.drawRect(r.left + u, r.bottom - u * 2, r.right - u, r.bottom - u, pt); c.drawRect(r.right - u * 2, r.top + u, r.right - u, r.bottom - u, pt)
+        pt.color = shadeC(fill, 1.35f); c.drawRect(r.left + u, r.top + u, r.right - u, r.top + u * 2, pt); c.drawRect(r.left + u, r.top + u, r.left + u * 2, r.bottom - u, pt)
     }
 
     private fun face(c: Canvas, tile: Int, a: Float, b: Float, cc: Float, dd: Float, ee: Float, ff: Float, f: ColorFilter?) {
@@ -189,8 +206,7 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
     }
 
     private fun pill(c: Canvas, l: Float, t: Float, r: Float, b: Float, a: Int = 110) {
-        rf.set(l, t, r, b); pt.style = Paint.Style.FILL; pt.color = Color.argb(a, 14, 18, 34); c.drawRoundRect(rf, (b - t) / 2, (b - t) / 2, pt)
-        pt.style = Paint.Style.STROKE; pt.strokeWidth = 1.5f * d; pt.color = Color.argb(90, 255, 255, 255); c.drawRoundRect(rf, (b - t) / 2, (b - t) / 2, pt)
+        rf.set(l, t, r, b); mcPanel(c, rf, Color.argb(255, 38, 38, 42).let { Color.rgb(Color.red(it), Color.green(it), Color.blue(it)) }, false)
     }
 
     override fun onDraw(c: Canvas) {
@@ -250,32 +266,24 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
         if (game.sel != lastSel) { lastSel = game.sel; bounce = 1f }
         bounce = max(0f, bounce - 0.08f)
         val left = hbLeft(); val top = hbTop()
-        pill(c, left - 8 * d, top - 8 * d, left + 8 * slot + 7 * 4 * d + 8 * d, top + slot + 6 * d, 95)
+        rf.set(left - 7 * d, top - 7 * d, left + 8 * slot + 7 * 4 * d + 7 * d, top + slot + 7 * d)
+        pt.style = Paint.Style.FILL; pt.color = Color.argb(150, 0, 0, 0); c.drawRect(rf, pt)
         for (i in 0 until 8) {
             val x = left + i * (slot + 4 * d)
             val s = i == game.sel
-            val lift = if (s) 4 * d + 5 * d * sin(bounce * 3.14f) else 0f
+            val lift = if (s) 3 * d + 4 * d * sin(bounce * 3.14f) else 0f
             val rr = RectF(x, top - lift, x + slot, top + slot - lift)
-            if (s) {
-                val gl = 0.55f + 0.45f * sin(clock * 4f)
-                pt.style = Paint.Style.STROKE; pt.strokeWidth = 7f * d; pt.color = Color.argb((60 * gl).toInt(), 255, 214, 90)
-                c.drawRoundRect(rr, 10 * d, 10 * d, pt)
-            }
-            pt.style = Paint.Style.FILL; pt.color = Color.argb(if (s) 215 else 135, if (s) 44 else 24, if (s) 48 else 30, if (s) 72 else 50)
-            c.drawRoundRect(rr, 9 * d, 9 * d, pt)
-            rf.set(rr.left + 3 * d, rr.top + 3 * d, rr.right - 3 * d, rr.top + slot * 0.42f)
-            pt.color = Color.argb(if (s) 40 else 22, 255, 255, 255); c.drawRoundRect(rf, 6 * d, 6 * d, pt)
-            pt.style = Paint.Style.STROKE; pt.strokeWidth = (if (s) 2.8f else 1.4f) * d; pt.color = if (s) gold else Color.argb(110, 255, 255, 255)
-            c.drawRoundRect(rr, 9 * d, 9 * d, pt)
+            mcPanel(c, rr, if (s) Color.rgb(92, 92, 100) else Color.rgb(64, 64, 70), s)
+            if (s) { pt.style = Paint.Style.STROKE; pt.strokeWidth = 2 * d; pt.color = Color.argb((90 + 60 * sin(clock * 4f)).toInt(), 255, 255, 255); c.drawRect(rr.left - 2 * d, rr.top - 2 * d, rr.right + 2 * d, rr.bottom + 2 * d, pt) }
             icon(c, x + slot / 2, rr.top + slot * 0.5f, slot, game.hotbar[i])
             pt.style = Paint.Style.FILL; pt.textSize = 9 * d; pt.textAlign = Paint.Align.LEFT; pt.color = Color.argb(if (s) 255 else 150, 255, 255, 255)
-            pt.typeface = Typeface.DEFAULT_BOLD; c.drawText("${i + 1}", rr.left + 5 * d, rr.top + 11 * d, pt)
+            pt.typeface = Typeface.MONOSPACE; pt.setShadowLayer(0.5f, 1.5f * d, 1.5f * d, Color.BLACK); c.drawText("${i + 1}", rr.left + 6 * d, rr.top + 14 * d, pt); pt.clearShadowLayer()
         }
         if (!invOpen) {
             pt.textSize = 14 * d; pt.typeface = Typeface.DEFAULT_BOLD; pt.textAlign = Paint.Align.CENTER
             val nm = Items.name(game.cur()); val tw = pt.measureText(nm)
-            pill(c, w / 2 - tw / 2 - 14 * d, top - 40 * d, w / 2 + tw / 2 + 14 * d, top - 16 * d, 120)
-            pt.style = Paint.Style.FILL; pt.color = Color.WHITE; c.drawText(nm, w / 2, top - 22 * d, pt)
+            rf.set(w / 2 - tw / 2 - 12 * d, top - 40 * d, w / 2 + tw / 2 + 12 * d, top - 16 * d); pt.style = Paint.Style.FILL; pt.color = Color.argb(140, 0, 0, 0); c.drawRect(rf, pt)
+            pt.typeface = Typeface.MONOSPACE; pt.color = Color.rgb(60, 60, 60); c.drawText(nm, w / 2 + 1.5f * d, top - 22 * d + 1.5f * d, pt); pt.color = Color.WHITE; c.drawText(nm, w / 2, top - 22 * d, pt)
         }
         // corações
         val hp = game.hp
@@ -283,15 +291,9 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
             val full = hp >= (i + 1) * 2; val half = hp == i * 2 + 1
             val cx = w / 2 - 60 * d + i * 30 * d
             val beat = if (hp <= 2 && hp > 0) 1f + 0.08f * sin(clock * 9f) else 1f
-            heart(c, cx, 28 * d, 12.5f * d * beat, Color.argb(190, 20, 10, 25))
-            heart(c, cx, 28 * d, 10.5f * d * beat, Color.argb(120, 80, 40, 60))
-            if (full || half) {
-                if (half) { c.save(); c.clipRect(cx - 16 * d, 0f, cx, 80 * d) }
-                heart(c, cx, 28 * d, 10.5f * d * beat, Color.rgb(255, 72, 96))
-                heart(c, cx, 26 * d, 6f * d * beat, Color.rgb(255, 120, 135))
-                pt.style = Paint.Style.FILL; pt.color = Color.argb(230, 255, 255, 255); c.drawCircle(cx - 4.5f * d, 22.5f * d, 2f * d, pt)
-                if (half) c.restore()
-            }
+            val bob = if (hp <= 2 && hp > 0) sin(clock * 12f + i) * 1.5f * d else 0f
+            pxHeart(c, cx, 28 * d + bob, 2.4f * d * beat, Color.rgb(228, 36, 48), half && !full, !(full || half))
+            if (half && !full) pxHeart(c, cx, 28 * d + bob, 2.4f * d * beat, Color.rgb(228, 36, 48), true, false)
         }
         // contador de slimes
         val ktxt = "${game.kills}"; pt.textSize = 15 * d; pt.typeface = Typeface.DEFAULT_BOLD; pt.textAlign = Paint.Align.LEFT

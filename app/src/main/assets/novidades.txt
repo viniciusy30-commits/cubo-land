@@ -1,3 +1,10 @@
+#id 2026-10-10-h
+#titulo Espada com cortes, blocos sem buraco e visual novo!
+- A espada não destrói mais blocos: ela deixa marcas de corte só visuais, que somem sozinhas depois de alguns minutos
+- Corrigido o bug dos blocos quebrados ficarem transparentes ou com cores estranhas: o interior agora aparece certinho (madeira com miolo quente, grama mostra terra)
+- Menu principal novo, estilo Minecraft: paisagem de blocos em movimento, logo em 3D e botões de pedra
+- Hotbar quadrada, corações pixelados e tela de configurações com fundo de terra
+
 #id 2026-10-10-g
 #titulo Destruição detalhada e tronco com fenda de corte!
 - Blocos agora têm 16x16x16 de detalhe: cada golpe arranca lascas bem menores e mais realistas

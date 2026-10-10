@@ -43,9 +43,14 @@ class FallTree(val px: Float, val py: Float, val pz: Float, val dx: Float, val d
     val kx get() = dz; val kz get() = -dx     // eixo de rotação (horizontal, perpendicular à queda)
 }
 
+/** talho de espada: só visual, some sozinho depois de alguns minutos */
+class Slash(val d: Dmg, val m: Mark, val born: Float)
+
 class Bolt(var x: Float, var y: Float, var z: Float, val vx: Float, val vy: Float, val vz: Float, var life: Float)
 
 class Game(val world: World) {
+    val slashes = java.util.concurrent.CopyOnWriteArrayList<Slash>()
+    companion object { const val SLASH_LIFE = 180f }
     val hotbar = intArrayOf(Items.SWORD, Items.STAFF, Items.PICK, B.GRASS, B.PLANK, B.BRICK, B.PINK, B.LANTERN)
     val bolts = ArrayList<Bolt>()
     @Volatile var shake = 0f
@@ -264,6 +269,17 @@ class Game(val world: World) {
         // coordenadas na face: a=0 -> (z,y); a=1 -> (x,z); a=2 -> (x,y)
         val fu = (if (a == 0) qz else qx) + 0.5f; val fv = (if (a == 1) qz else qy) + 0.5f
 
+        if (item == Items.SWORD) {   // espada não destrói nem esculpe: deixa só uma marca de corte temporária
+            val sd = Dmg(hx, hy, hz, id); sd.prog = 0.7f
+            val sm = makeMark(a, s, fu, fv, item, false, hitStab); sm.blobs = FloatArray(0)
+            slashes.add(Slash(sd, sm, time))
+            while (slashes.size > 48) slashes.removeAt(0)
+            hitPulse = 0.5f; shake = max(shake, 0.04f)
+            val px = hx + 0.5f + qx; val py = hy + 0.5f + qy; val pz = hz + 0.5f + qz
+            val nx = if (a == 0) s.toFloat() else 0f; val ny = if (a == 1) s.toFloat() else 0f; val nz = if (a == 2) s.toFloat() else 0f
+            for (i in 0 until 4) parts.add(Particle(px, py, pz, nx * 2f + (rnd.nextFloat() - 0.5f) * 2.5f, ny * 2f + rnd.nextFloat() * 2f + 0.6f, nz * 2f + (rnd.nextFloat() - 0.5f) * 2.5f, 0xCFF6FF, 0.03f, 0.3f + rnd.nextFloat() * 0.2f))
+            return
+        }
         val key = ((hy.toLong() * World.SZ + hz) * World.SX + hx)
         val d = dmg.getOrPut(key) { Dmg(hx, hy, hz, id) }
         d.idle = 0f; brX = hx; brY = hy; brZ = hz
@@ -663,6 +679,7 @@ class Game(val world: World) {
     }
 
     fun update(dt: Float) {
+    for (sl in slashes) if (time - sl.born > SLASH_LIFE || world.get(sl.d.x, sl.d.y, sl.d.z) != sl.d.id) slashes.remove(sl)
         time += dt
         var ddx: Float; var ddy: Float
         synchronized(this) { ddx = lookDx; ddy = lookDy; lookDx = 0f; lookDy = 0f }

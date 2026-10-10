@@ -435,7 +435,8 @@ class World {
             for (face in 0 until 6) {
                 val a = face shr 1; val s = if ((face and 1) == 0) 1 else -1
                 val nx = x + if (a == 0) s else 0; val ny = y + if (a == 1) s else 0; val nz = z + if (a == 2) s else 0
-                val nid = get(nx, ny, nz)
+                var nid = get(nx, ny, nz)
+                if (nid != B.AIR && hidden.isNotEmpty() && hidden.contains((ny * SZ + nz) * SX + nx)) nid = B.AIR   // bloco esculpido: o vizinho desenha a face voltada pra ele
                 if (isW) { if (nid != B.AIR) continue }
                 else if (id == B.LEAVES) { if (nid != B.AIR && nid != B.WATER && nid != B.LEAVES) continue }
                 else if (nid != B.AIR && nid != B.WATER && nid != B.LEAVES) continue   // folha tem buracos: o que está atrás dela precisa ser desenhado
