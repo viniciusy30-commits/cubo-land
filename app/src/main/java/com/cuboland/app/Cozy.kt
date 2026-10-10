@@ -35,9 +35,9 @@ import kotlin.math.sqrt
 /** Paleta "aconchegante": madeira escura, creme, dourado e cores de natureza. */
 object Cz {
     val INK = Color.rgb(36, 28, 48)
-    val PANEL = Color.rgb(190, 158, 238)
-    val PANEL2 = Color.rgb(164, 130, 218)
-    val PANEL3 = Color.rgb(138, 106, 192)
+    val PANEL = Color.rgb(255, 246, 230)
+    val PANEL2 = Color.rgb(255, 226, 204)
+    val PANEL3 = Color.rgb(238, 220, 198)
     val GOLD = Color.rgb(255, 212, 99)
     val CREAM = Color.rgb(255, 243, 219)
     val GREEN = Color.rgb(88, 196, 92)
@@ -48,6 +48,10 @@ object Cz {
     val STONE = Color.rgb(112, 120, 142)
     val TEAL = Color.rgb(60, 190, 180)
     val SOFT = Color.argb(200, 255, 255, 255)
+    val PINK = Color.rgb(255, 120, 168)
+    val TXT = Color.rgb(84, 52, 72)
+    val TXT_SOFT = Color.rgb(140, 104, 120)
+    val GOLD_D = Color.rgb(214, 118, 28)
 }
 
 fun Context.uiFont(): Typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
@@ -117,7 +121,7 @@ class CozyBox(private val ctx: Context, var fill: Int, private val radiusDp: Flo
             val n = max(1, fh / u)
             for (i in 0 until n) {
                 val f = i / max(1, n - 1).toFloat()
-                rect(c, fx, fy + i * u, fw, if (i == n - 1) fy + fh - (fy + i * u) else u, mixC(shadeC(face, 1.2f), shadeC(face, 0.88f), f))
+                rect(c, fx, fy + i * u, fw, if (i == n - 1) fy + fh - (fy + i * u) else u, mixC(Color.WHITE.let { mixC(face, it, 0.35f) }, shadeC(face, 0.94f), f))
                 if (i < n * 0.4f) rect(c, fx + u, fy + i * u, fw - 2 * u, u, Color.argb((46 * (1f - i / (n * 0.4f))).toInt(), 255, 255, 255))   // brilho de glaze
             }
             var gy = 0
@@ -403,8 +407,14 @@ class SwatchDrawable(private val ctx: Context, private val col: Int, private val
     @Suppress("OVERRIDE_DEPRECATION") override fun getOpacity() = PixelFormat.OPAQUE
 }
 
-fun Context.cTxt(t: String, sp: Float = 14f, color: Int = Color.WHITE, shadow: Boolean = true): TextView = PixText(this).apply {
+fun Context.cTxtL(t: String, sp: Float = 14f, color: Int = Color.WHITE, shadow: Boolean = true): TextView = PixText(this).apply {
     text = t; textSize = sp; setTextColor(color); shadowOn = shadow
+}
+
+/** texto pra painéis claros: branco/creme/suave/dourado viram marrom-ameixa e laranja escuro (sem sombra) */
+fun Context.cTxt(t: String, sp: Float = 14f, color: Int = Color.WHITE, shadow: Boolean = true): TextView {
+    val m = when (color) { Color.WHITE, Cz.CREAM -> Cz.TXT; Cz.SOFT -> Cz.TXT_SOFT; Cz.GOLD -> Cz.GOLD_D; else -> color }
+    return cTxtL(t, sp, m, if (m != color) false else shadow)
 }
 
 private fun View.pressFx(box: CozyBox) {
@@ -419,7 +429,7 @@ private fun View.pressFx(box: CozyBox) {
 
 /** botão fofinho com lábio 3D */
 fun Context.cBtn(t: String, color: Int, sp: Float = 16f, onClick: () -> Unit): TextView {
-    val b = cTxt(t, sp)
+    val b = cTxtL(t, sp)
     val box = CozyBox(this, color, 14f, true)
     b.background = box; b.gravity = Gravity.CENTER; b.isClickable = true; b.isFocusable = true
     b.setPadding(dp(16), dp(10), dp(16), dp(14))
@@ -431,7 +441,7 @@ fun Context.cBtn(t: String, color: Int, sp: Float = 16f, onClick: () -> Unit): T
 
 /** botão redondo com um símbolo */
 fun Context.cIconBtn(sym: String, color: Int, size: Int = 44, onClick: () -> Unit): TextView {
-    val b = cTxt(sym, 19f)
+    val b = cTxtL(sym, 19f)
     val box = CozyBox(this, color, size / 2f, true)
     b.background = box; b.gravity = Gravity.CENTER; b.isClickable = true
     b.setPadding(0, 0, 0, dp(3))
@@ -447,16 +457,19 @@ fun Context.cPanel(fill: Int = Cz.PANEL, radius: Float = 18f, pad: Int = 14): Li
     setPadding(dp(pad), dp(pad), dp(pad), dp(pad))
 }
 
-/** cartão com título dourado */
+/** cartão com faixa colorida no título (cada seção com sua cor) */
+private var cardTick = 0
 fun Context.cCard(title: String, sub: String? = null): LinearLayout {
-    val p = cPanel(Cz.PANEL, 16f, 14)
-    p.addView(cTxt(title, 16f, Cz.GOLD))
-    if (sub != null) p.addView(cTxt(sub, 12f, Cz.SOFT, false).apply { setPadding(0, dp(2), 0, 0) })
+    val p = cPanel(Cz.PANEL, 16f, 12)
+    val accents = intArrayOf(Cz.PINK, Cz.SKY, Cz.GREEN, Cz.ORANGE, Cz.LILAC, Cz.TEAL)
+    val rib = cTxtL(title, 15f).apply { background = CozyBox(this@cCard, accents[cardTick++ % accents.size], 10f, false); setPadding(dp(12), dp(6), dp(12), dp(7)) }
+    p.addView(rib, lpW(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+    if (sub != null) p.addView(cTxt(sub, 12f, Cz.SOFT, false).apply { setPadding(dp(2), dp(6), 0, 0) })
     return p
 }
 
 fun Context.cChip(t: String, onClick: () -> Unit): TextView {
-    val b = cTxt(t, 12f, Color.WHITE, false)
+    val b = cTxtL(t, 12f, Cz.TXT, false)
     b.gravity = Gravity.CENTER; b.isClickable = true
     b.setPadding(dp(10), dp(8), dp(10), dp(8))
     b.setOnClickListener { onClick() }
@@ -465,8 +478,8 @@ fun Context.cChip(t: String, onClick: () -> Unit): TextView {
 }
 
 fun TextView.styleChip(sel: Boolean) {
-    background = CozyBox(context, if (sel) Cz.GOLD else Cz.PANEL2, 12f, false, if (sel) Color.rgb(120, 80, 20) else Cz.INK)
-    setTextColor(if (sel) Cz.INK else Color.WHITE)
+    background = CozyBox(context, if (sel) Cz.GOLD else Cz.PANEL2, 12f, false, if (sel) Color.rgb(214, 118, 28) else Color.rgb(196, 140, 120))
+    setTextColor(if (sel) Cz.INK else Cz.TXT)
 }
 
 fun lpW(w: Int, h: Int, weight: Float = 0f) = LinearLayout.LayoutParams(w, h, weight)
@@ -544,14 +557,14 @@ fun Activity.cozyConfirm(title: String, msg: String, okText: String, okColor: In
     }
 }
 
-/** cabeçalho padrão das telas: botão voltar redondo + título */
+/** cabeçalho padrão: faixa rosa-doce com botão voltar e título branco */
 fun Context.cHeader(title: String, sub: String?, onBack: () -> Unit): LinearLayout {
     val h = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
-        background = CozyBox(this@cHeader, Cz.PANEL, 18f, false); setPadding(dp(12), dp(8), dp(12), dp(10)) }
-    h.addView(cIconBtn("‹", Cz.ORANGE, 46, onBack).apply { textSize = 28f })
+        background = CozyBox(this@cHeader, Cz.PINK, 18f, false); setPadding(dp(12), dp(8), dp(12), dp(10)) }
+    h.addView(cIconBtn("‹", Cz.SKY, 46, onBack).apply { textSize = 28f })
     val tx = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), 0, 0, 0) }
-    tx.addView(cTxt(title, 24f, Cz.GOLD))
-    if (sub != null) tx.addView(cTxt(sub, 12f, Cz.SOFT, false))
+    tx.addView(cTxtL(title, 24f, Color.WHITE))
+    if (sub != null) tx.addView(cTxtL(sub, 12f, Color.rgb(255, 236, 244), false))
     h.addView(tx, lpW(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
     return h
 }

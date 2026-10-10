@@ -23,6 +23,7 @@ class CharacterActivity : CozyActivity() {
     private val refreshers = ArrayList<() -> Unit>()
     private val tabViews = ArrayList<TextView>()
     private val TABS = arrayOf("Looks", "Corpo", "Cabelo", "Rosto", "Roupas", "Acessórios")
+    private val TAB_COL = intArrayOf(Cz.PINK, Cz.ORANGE, Cz.GREEN, Cz.SKY, Cz.LILAC, Cz.TEAL)
     private val ANIMS = arrayOf("Parado", "Andando", "Correndo", "Pulando", "Atacando")
     private var current = -1
     private val MATCH = ViewGroup.LayoutParams.MATCH_PARENT
@@ -78,7 +79,7 @@ class CharacterActivity : CozyActivity() {
         if (i == current) return
         current = i
         refreshers.clear()
-        for ((k, tv) in tabViews.withIndex()) tv.styleChip(k == i)
+        for ((k, tv) in tabViews.withIndex()) { tv.background = CozyBox(this, if (k == i) TAB_COL[k] else Cz.PANEL2, 12f, false, if (k == i) Cz.INK else Color.rgb(196, 140, 120)); tv.setTextColor(if (k == i) Color.WHITE else Cz.TXT) }
         content.removeAllViews(); scroll.scrollTo(0, 0)
         when (i) {
             0 -> {
@@ -128,22 +129,22 @@ class CharacterActivity : CozyActivity() {
         super.onCreate(savedInstanceState)
         Look.load(this)
         val root = FrameLayout(this)
-        root.addView(SceneBg(this, 0.5f))
+        root.addView(SceneBg(this, 0.1f))
         val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(28), dp(18), dp(28), dp(14)) }
         val head = cHeader("Meu personagem", "Tudo é salvo automaticamente") { finish() }
-        col.addView(head)
+        col.addView(head, lpW(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(8) })
         val body = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
 
         // ESQUERDA: pré-visualização 3D + animações
         val leftCol = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        val pv = FrameLayout(this).apply { background = CozyBox(this@CharacterActivity, Cz.PANEL3, 22f, false); setPadding(dp(8), dp(8), dp(8), dp(8)) }
-        cv = CharView(this)
+        val pv = FrameLayout(this).apply { background = CozyBox(this@CharacterActivity, Cz.GOLD, 22f, false); setPadding(dp(6), dp(6), dp(6), dp(6)) }
+        cv = CharView(this); cv.scenic = true
         pv.addView(cv, FrameLayout.LayoutParams(-1, -1))
-        pv.addView(cTxt("Arraste para girar", 11f, Cz.SOFT, false), FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply { bottomMargin = dp(4) })
+        pv.addView(cTxtL("Arraste para girar", 11f, Color.WHITE, true), FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply { bottomMargin = dp(4) })
         leftCol.addView(pv, lpW(MATCH, 0, 1f))
         val nameBox = EditText(this).apply {
             setText(Look.name(this@CharacterActivity)); hint = "Nome do personagem"
-            setTextColor(Color.WHITE); setHintTextColor(Cz.SOFT); typeface = uiFont(); textSize = 15f
+            setTextColor(Cz.TXT); setHintTextColor(Cz.TXT_SOFT); typeface = uiFont(); textSize = 15f
             maxLines = 1; isSingleLine = true; filters = arrayOf(InputFilter.LengthFilter(12))
             background = CozyBox(this@CharacterActivity, Cz.PANEL2, 12f, false)
             setPadding(dp(12), dp(8), dp(12), dp(8))
@@ -170,7 +171,7 @@ class CharacterActivity : CozyActivity() {
         val tabRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         for ((i, t) in TABS.withIndex()) {
             val tv = cChip(t) { select(i) }
-            tv.textSize = 14f
+            tv.textSize = 14f; tv.setPadding(dp(14), dp(10), dp(14), dp(10))
             tabViews.add(tv)
             tabRow.addView(tv, lpW(WRAP, WRAP).apply { if (i > 0) leftMargin = dp(6) })
         }

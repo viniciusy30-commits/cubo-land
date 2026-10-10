@@ -21,13 +21,13 @@ class WorldsActivity : CozyActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val root = FrameLayout(this)
-        root.addView(SceneBg(this, 0.45f))
+        root.addView(SceneBg(this, 0.1f))
         val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(28), dp(18), dp(28), dp(14)) }
         val head = cHeader("Escolha seu mundo", "Crie, edite e organize seus mundos") { finish() }
         countTxt = cTxt("", 13f, Cz.GOLD)
         head.addView(countTxt, lpW(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { rightMargin = dp(14) })
         head.addView(cBtn("Novo mundo", Cz.GREEN, 15f) { editor(null) })
-        col.addView(head)
+        col.addView(head, lpW(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(8) })
         strip = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(4), dp(10), dp(4), dp(10)) }
         val hs = HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; addView(strip) }
         col.addView(hs, lpW(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
@@ -58,6 +58,9 @@ class WorldsActivity : CozyActivity() {
 
     private fun worldCard(w: Worlds.Info, last: Boolean): LinearLayout {
         val card = cPanel(Cz.PANEL, 20f, 10)
+        card.addView(cTxt(if (last) "★ MAIS RECENTE" else if (w.creative) "✦ CRIATIVO" else "♥ SOBREVIVÊNCIA", 10f, Cz.INK, false).apply {
+            gravity = Gravity.CENTER; setPadding(0, dp(3), 0, dp(3)); background = CozyBox(this@WorldsActivity, if (last) Cz.GOLD else if (w.creative) Cz.LILAC else Cz.GREEN, 8f, false) },
+            lpW(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(6) })
         card.addView(WorldThumb(this, w.seed, w.type), lpW(ViewGroup.LayoutParams.MATCH_PARENT, dp(110)))
         card.addView(cTxt(w.name, 18f, Color.WHITE).apply { maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END; setPadding(0, dp(8), 0, 0) })
         val tags = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(6), 0, dp(4)) }
@@ -97,8 +100,8 @@ class WorldsActivity : CozyActivity() {
             p.addView(cTxt(if (w == null) "Novo mundo" else "Editar mundo", 22f, Cz.GOLD))
             p.addView(cTxt("Nome", 12f, Cz.SOFT, false).apply { setPadding(0, dp(10), 0, dp(2)) })
             val name = EditText(this).apply {
-                setText(w?.name ?: ""); hint = "Meu mundo incrível"; setHintTextColor(Color.argb(110, 255, 255, 255))
-                setTextColor(Color.WHITE); typeface = uiFont(); textSize = 16f; maxLines = 1; isSingleLine = true
+                setText(w?.name ?: ""); hint = "Meu mundo incrível"; setHintTextColor(Cz.TXT_SOFT)
+                setTextColor(Cz.TXT); typeface = uiFont(); textSize = 16f; maxLines = 1; isSingleLine = true
                 inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
                 imeOptions = EditorInfo.IME_FLAG_NO_FULLSCREEN or EditorInfo.IME_ACTION_DONE
                 background = CozyBox(this@WorldsActivity, Cz.PANEL3, 12f, false); setPadding(dp(12), dp(10), dp(12), dp(10))
@@ -139,7 +142,7 @@ class WorldsActivity : CozyActivity() {
             if (w == null) {
                 p.addView(cTxt("Semente (opcional — deixe vazio para aleatória)", 12f, Cz.SOFT, false).apply { setPadding(0, dp(12), 0, dp(2)) })
                 seedEt = EditText(this).apply {
-                    hint = "ex: 1234"; setHintTextColor(Color.argb(110, 255, 255, 255)); setTextColor(Color.WHITE); typeface = uiFont(); textSize = 15f
+                    hint = "ex: 1234"; setHintTextColor(Cz.TXT_SOFT); setTextColor(Cz.TXT); typeface = uiFont(); textSize = 15f
                     isSingleLine = true; inputType = InputType.TYPE_CLASS_NUMBER; imeOptions = EditorInfo.IME_FLAG_NO_FULLSCREEN or EditorInfo.IME_ACTION_DONE
                     background = CozyBox(this@WorldsActivity, Cz.PANEL3, 12f, false); setPadding(dp(12), dp(8), dp(12), dp(8))
                     filters = arrayOf(android.text.InputFilter.LengthFilter(8))

@@ -17,20 +17,21 @@ class SettingsActivity : CozyActivity() {
     private lateinit var content: LinearLayout
     private lateinit var scroll: ScrollView
     private val tabViews = ArrayList<TextView>()
+    private val TAB_COL = intArrayOf(Cz.PINK, Cz.SKY, Cz.GREEN, Cz.ORANGE, Cz.LILAC)
     private val TABS = arrayOf("Geral", "Controles", "Gráficos", "Novidades", "Sobre")
     private var current = -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val root = FrameLayout(this)
-        root.addView(SceneBg(this, 0.5f))
+        root.addView(SceneBg(this, 0.1f))
         val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(28), dp(18), dp(28), dp(14)) }
         col.addView(cHeader("Ajustes", "Deixe o jogo do seu jeito") { finish() })
         val body = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        val side = cPanel(Cz.PANEL3, 18f, 8)
+        val side = cPanel(Cz.PANEL, 18f, 8)
         for ((i, t) in TABS.withIndex()) {
-            val tv = cTxt(t, 15f, Color.WHITE, false)
-            tv.setPadding(dp(14), dp(11), dp(14), dp(11)); tv.isClickable = true
+            val tv = cTxt(t, 15f, Color.WHITE, false).also { it.gravity = Gravity.CENTER }
+            tv.setPadding(dp(14), dp(13), dp(14), dp(11)); tv.isClickable = true
             tv.setOnClickListener { select(i) }
             side.addView(tv, lpW(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(4) })
             tabViews.add(tv)
@@ -50,8 +51,8 @@ class SettingsActivity : CozyActivity() {
         current = i
         for ((k, tv) in tabViews.withIndex()) {
             val on = k == i
-            tv.background = if (on) CozyBox(this, Cz.GOLD, 12f, false, Color.rgb(120, 80, 20)) else CozyBox(this, Cz.PANEL2, 12f, false)
-            tv.setTextColor(if (on) Cz.INK else Color.WHITE)
+            tv.background = if (on) CozyBox(this, TAB_COL[k], 12f, false, Cz.INK) else CozyBox(this, Cz.PANEL2, 12f, false, Color.rgb(196, 140, 120))
+            tv.setTextColor(if (on) Color.WHITE else Cz.TXT)
         }
         content.removeAllViews(); scroll.scrollTo(0, 0)
         when (i) { 0 -> general(); 1 -> controls(); 2 -> graphics(); 3 -> news(); else -> about() }

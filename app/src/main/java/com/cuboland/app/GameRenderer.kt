@@ -593,17 +593,26 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val sy = World.WATER_Y + 0.9f
         for (r in game.ripples) {
             if (r.age < 0f) continue
-            val rad = 0.25f + r.age * 1.7f
-            val al = (1f - r.age / 3.2f) * min(1f, r.amp + 0.25f) * 0.75f
-            if (al <= 0.02f) continue
-            val n = (10 + rad * 5f).toInt().coerceAtMost(20)
-            val seg = 6.2832f * rad / n * 1.08f
-            for (k in 0 until n) {
-                val a = k * 6.2832f / n
-                val x = r.x + cos(a) * rad; val z = r.z + sin(a) * rad
-                if (world.get(floor(x).toInt(), World.WATER_Y, floor(z).toInt()) != B.WATER) continue
-                setBase(x, sy, z, a * 57.29578f - 90f)
-                box(base, 0f, 0f, 0f, 0f, 0f, seg, 0.012f, 0.05f, 0f, 0xEAF8FF, al)
+            val life = 1f - r.age / 3.2f
+            if (life <= 0.02f) continue
+            // três anéis por onda: o da frente é forte, os de trás ficam mais finos e transparentes (dá volume/movimento)
+            for (ring in 0 until 3) {
+                val rad = 0.25f + r.age * 1.7f - ring * 0.32f
+                if (rad < 0.15f) continue
+                val al = life * min(1f, r.amp + 0.25f) * (0.8f - ring * 0.22f)
+                if (al <= 0.02f) continue
+                val n = (12 + rad * 6f).toInt().coerceAtMost(28)
+                val seg = 6.2832f * rad / n * 1.08f
+                val wob = r.age * 2f + ring
+                for (k in 0 until n) {
+                    val a = k * 6.2832f / n
+                    val rr = rad * (1f + 0.04f * sin(a * 5f + wob))   // borda levemente ondulada
+                    val x = r.x + cos(a) * rr; val z = r.z + sin(a) * rr
+                    if (world.get(floor(x).toInt(), World.WATER_Y, floor(z).toInt()) != B.WATER) continue
+                    val glint = if ((k + ring) % 3 == 0) 0xFFFFFF else 0xCDEFFF
+                    setBase(x, sy + ring * 0.002f, z, a * 57.29578f - 90f)
+                    box(base, 0f, 0f, 0f, 0f, 0f, seg * (if (ring == 0) 1f else 0.8f), 0.012f, if (ring == 0) 0.06f else 0.035f, 0f, glint, al)
+                }
             }
         }
     }

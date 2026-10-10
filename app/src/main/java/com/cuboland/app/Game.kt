@@ -1056,7 +1056,7 @@ class Game(val world: World) {
 
     // ---------- água, pegadas e itens no chão ----------
     private fun addRipple(x: Float, z: Float, amp: Float, age0: Float = 0f) {
-        ripples.add(Ripple(x, z, amp, age0)); if (ripples.size > 7) ripples.removeAt(0)
+        ripples.add(Ripple(x, z, amp, age0)); if (ripples.size > 18) ripples.removeAt(0)
     }
 
     private fun splash(x: Float, y: Float, z: Float, v: Float) {
@@ -1116,8 +1116,13 @@ class Game(val world: World) {
         if (p.inWater) {
             rippleT -= dt
             if (p.y + 1.9f > surf && rippleT <= 0f) {   // nadando na superfície: marolas contínuas
-                rippleT = if (sp > 0.5f) 0.32f else 0.9f
-                addRipple(p.x + (rnd.nextFloat() - 0.5f) * 0.3f, p.z + (rnd.nextFloat() - 0.5f) * 0.3f, if (sp > 0.5f) 0.42f else 0.18f)
+                rippleT = if (sp > 0.5f) 0.13f else 0.5f
+                val bx = if (sp > 0.5f) -p.vx / sp * 0.35f else 0f; val bz = if (sp > 0.5f) -p.vz / sp * 0.35f else 0f
+                addRipple(p.x + bx + (rnd.nextFloat() - 0.5f) * 0.3f, p.z + bz + (rnd.nextFloat() - 0.5f) * 0.3f, if (sp > 0.5f) 0.62f else 0.3f)
+                if (sp > 0.5f) for (i in 0 until 2) {   // respingos pequenos da braçada
+                    val a = rnd.nextFloat() * 6.2832f
+                    parts.add(Particle(p.x + cos(a) * 0.35f, surf, p.z + sin(a) * 0.35f, cos(a) * 0.9f + p.vx * 0.2f, 1.6f + rnd.nextFloat(), sin(a) * 0.9f + p.vz * 0.2f, 0xDFF4FF, 0.035f, 0.5f))
+                }
             }
             val headUnder = world.get(floor(p.x).toInt(), floor(p.y + 1.55f).toInt(), floor(p.z).toInt()) == B.WATER
             bubbleT -= dt

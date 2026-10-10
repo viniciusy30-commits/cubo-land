@@ -33,6 +33,10 @@ class CharView(ctx: Context, private val W: Int = 300, private val H: Int = 380)
     var mode = 0
     /** fundo transparente (menu principal) e balanço suave em vez de girar sem parar */
     var transparentBg = false
+    /** cenário completo (céu, nuvens, colinas, grama) ocupando a view inteira, sem cortes nos lados */
+    var scenic = false
+    private val sp = Paint()
+    private val tb: Boolean get() = transparentBg || scenic
     var sway = false
     /** desenha a sombrinha no chão (o menu principal desenha a própria) */
     var shadow = true
@@ -108,7 +112,7 @@ class CharView(ctx: Context, private val W: Int = 300, private val H: Int = 380)
     private fun background() {
         val top = Color.rgb(150, 205, 250); val bot = Color.rgb(214, 238, 255)
         for (y in 0 until H) {
-            val c = if (transparentBg) 0 else mixC(top, bot, y / (H - 1f))
+            val c = if (tb) 0 else mixC(top, bot, y / (H - 1f))
             val row = y * W
             for (x in 0 until W) { pix[row + x] = c; zb[row + x] = -1e9f }
         }
@@ -120,7 +124,7 @@ class CharView(ctx: Context, private val W: Int = 300, private val H: Int = 380)
             val dx = (x - W * 0.5f) / (70f * k); val dy = (y - gy) / (12f * k)
             val d = dx * dx + dy * dy
             val i = y * W + x
-            if (d < 1f) pix[i] = if (transparentBg) Color.argb((110 * (1f - d)).toInt(), 20, 24, 20) else mixC(pix[i], Color.rgb(40, 60, 40), 0.35f * (1f - d))
+            if (d < 1f) pix[i] = if (tb) Color.argb((110 * (1f - d)).toInt(), 20, 24, 20) else mixC(pix[i], Color.rgb(40, 60, 40), 0.35f * (1f - d))
         }
     }
 
@@ -165,12 +169,54 @@ class CharView(ctx: Context, private val W: Int = 300, private val H: Int = 380)
         bmp.setPixels(pix, 0, W, 0, 0, W, H)
     }
 
+    private fun r(c: Canvas, x: Float, y: Float, x2: Float, y2: Float, col: Int) { sp.color = col; c.drawRect(x, y, x2, y2, sp) }
+
+    private fun drawScene(c: Canvas, feetY: Float) {
+        val w = width.toFloat(); val h = height.toFloat()
+        val u = max(3f, context.pxU() * 2f)
+        val bands = 14
+        val top = Color.rgb(104, 170, 248); val bot = Color.rgb(255, 226, 214)
+        for (i in 0 until bands) r(c, 0f, h * i / bands, w, h * (i + 1) / bands + 1f, mixC(top, bot, i / (bands - 1f)))
+        r(c, w * 0.76f, h * 0.08f, w * 0.76f + u * 7, h * 0.08f + u * 7, Color.rgb(255, 244, 178))
+        r(c, w * 0.76f - u, h * 0.08f + u, w * 0.76f + u * 8, h * 0.08f + u * 6, Color.argb(70, 255, 244, 178))
+        for (k in 0 until 3) {   // nuvens quadradinhas passando
+            val cx = ((tt * (6f + k * 4f) + k * w * 0.42f) % (w + u * 24)) - u * 12
+            val cy = h * (0.12f + 0.13f * k)
+            r(c, cx, cy, cx + u * 10, cy + u * 2, Color.argb(235, 255, 255, 255)); r(c, cx + u * 2, cy - u * 2, cx + u * 7, cy, Color.argb(235, 255, 255, 255)); r(c, cx + u, cy + u * 2, cx + u * 9, cy + u * 3, Color.argb(120, 200, 215, 245))
+        }
+        val gy = feetY - u * 1.5f
+        var x = 0f; var i = 0
+        while (x < w) {   // colinas distantes em degraus
+            val hh = u * (5f + 3f * sin(i * 0.5f) + 2f * sin(i * 1.3f + 1f))
+            r(c, x, gy - hh - u * 4, x + u * 2, gy, Color.rgb(150, 206, 150)); i++; x += u * 2
+        }
+        x = 0f; i = 0
+        while (x < w) {
+            val hh = u * (3f + 2f * sin(i * 0.8f + 2f))
+            r(c, x, gy - hh, x + u * 2, gy, Color.rgb(104, 184, 104)); i++; x += u * 2
+        }
+        r(c, 0f, gy, w, gy + u, Color.rgb(150, 224, 96)); r(c, 0f, gy + u, w, gy + u * 2, Color.rgb(96, 176, 70))
+        r(c, 0f, gy + u * 2, w, h, Color.rgb(150, 104, 68))
+        x = 0f; i = 0
+        while (x < w) { val yy = gy + u * (3f + (i * 7 % 5)); if (yy < h) r(c, x, yy, x + u, yy + u, Color.rgb(124, 84, 52)); i++; x += u * 3 }
+        for (k in 0 until 6) {   // florzinhas
+            val fx = (k * 0.19f + 0.06f) * w; if (abs(fx - w * 0.5f) < w * 0.12f) continue
+            r(c, fx, gy - u * 2, fx + u, gy, Color.rgb(70, 150, 60))
+            r(c, fx - u, gy - u * 3, fx + u * 2, gy - u * 2, if (k % 2 == 0) Color.rgb(255, 140, 180) else Color.rgb(255, 224, 110))
+        }
+        for (k in 0 until 14) {   // brilhinhos flutuando
+            val px = (hash2(k, 1, 7) * w); val py = h * 0.7f - ((tt * (8f + hash2(k, 2, 7) * 10f) + hash2(k, 3, 7) * h) % (h * 0.6f))
+            sp.color = Color.argb((120 + 100 * abs(sin(tt * 2f + k))).toInt(), 255, 250, 200); c.drawRect(px, py, px + u, py + u, sp)
+        }
+    }
+
     override fun onDraw(c: Canvas) {
         val now = System.nanoTime(); val dt = min(0.1f, (now - lastT) / 1e9f); lastT = now
         step(dt)
         val sc = min(width / W.toFloat(), height / H.toFloat())
         val dw = (W * sc).toInt(); val dh = (H * sc).toInt()
         val l = (width - dw) / 2; val t = (height - dh) / 2
+        if (scenic) drawScene(c, t + dh * 0.95f)
         dst.set(l, t, l + dw, t + dh)
         c.drawBitmap(bmp, null, dst, paint)
         postInvalidateOnAnimation()

@@ -9,6 +9,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import java.io.File
+import kotlin.math.max
 
 class GameActivity : AppCompatActivity() {
     private lateinit var gl: GLSurfaceView
@@ -30,14 +31,34 @@ class GameActivity : AppCompatActivity() {
         if (info == null) { finish(); return }
         Worlds.touch(this, info.id)
         flat = info.type == Worlds.FLAT
-        World.configure(flat)
-        world = World()
         saveFile = Worlds.fileOf(this, info)
-        if (!world.load(saveFile)) { if (flat) world.generateFlat(info.seed) else world.generate(info.seed) }
-        else if (!flat && info.file == "mundo.bin") {
-            val mark = File(filesDir, "arvores_v3")
-            if (!mark.exists()) { world.replantTrees(1234); try { mark.writeText("1") } catch (_: Exception) {} }
-        }
+        val root = FrameLayout(this)
+        val loading = LoadingView(this, info.name, flat)
+        root.addView(loading)
+        setContentView(root)
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() { if (hud != null) hud?.togglePause() }
+        })
+        val t0 = System.currentTimeMillis()
+        Thread {
+            World.configure(flat)
+            val w = World()
+            if (!w.load(saveFile)) { if (flat) w.generateFlat(info.seed) else w.generate(info.seed) }
+            else if (!flat && info.file == "mundo.bin") {
+                val mark = File(filesDir, "arvores_v3")
+                if (!mark.exists()) { w.replantTrees(1234); try { mark.writeText("1") } catch (_: Exception) {} }
+            }
+            loading.setProgress(0.9f)
+            val wait = max(0L, 1500L - (System.currentTimeMillis() - t0))   // mostra a telinha por pelo menos 1,5s
+            loading.postDelayed({
+                if (isFinishing || isDestroyed) return@postDelayed
+                world = w
+                startGame(root, info, loading)
+            }, wait)
+        }.start()
+    }
+
+    private fun startGame(root: FrameLayout, info: Worlds.Info, loading: LoadingView) {
         game = Game(world)
         Look.load(this)
         getSharedPreferences("cfg", 0).getString("hb", null)?.split(",")?.mapNotNull { it.toIntOrNull() }
@@ -48,8 +69,7 @@ class GameActivity : AppCompatActivity() {
         gl.setEGLContextClientVersion(2)
         gl.setEGLConfigChooser(8, 8, 8, 8, 16, 0)
         gl.setRenderer(GameRenderer(game))
-        val root = FrameLayout(this)
-        root.addView(gl)
+        root.addView(gl, 0)
         gl.post {   // renderiza em ~80% da resolução em telas grandes: bem mais fluido, o HUD continua nítido
             val w = gl.width; val h = gl.height
             val q = getSharedPreferences("cfg", 0).getInt("res", 0)   // 0 auto, 1 alta, 2 média, 3 leve
@@ -58,11 +78,9 @@ class GameActivity : AppCompatActivity() {
         }
         val h = HudView(this, game, info.name) { finish() }
         hud = h
-        root.addView(h)
-        setContentView(root)
-        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() { hud?.togglePause() }
-        })
+        root.addView(h, 1)
+        loading.setProgress(1f)
+        loading.postDelayed({ loading.animate().alpha(0f).setDuration(450).withEndAction { root.removeView(loading) }.start() }, 500)
     }
 
     override fun onPause() {

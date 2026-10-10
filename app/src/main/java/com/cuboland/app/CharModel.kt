@@ -140,14 +140,14 @@ class CharModel {
             hipL = lp(hipL, pL, ab); kneeL = lp(kneeL, pKL, ab); hipR = lp(hipR, pR, ab); kneeR = lp(kneeR, pKR, ab)
         }
         if (fl > 0.01f) {
-            val fk = sin(t * 7f) * 8f * fm
-            val fh = -5f + sin(t * 1.6f) * 3f * (1f - fm)   // pairando: as duas pernas iguais (nada de passo), só uma balançadinha junto com o corpo
-            hipL = lp(hipL, fh + fk, fl); hipR = lp(hipR, fh - fk, fl)
-            kneeL = lp(kneeL, 12f + 8f * fm, fl); kneeR = lp(kneeR, 12f + 8f * fm, fl)
+            val fk = sin(t * 7f) * 1.2f * fm   // sem passada: as duas pernas juntas, só um tremidinho de vento
+            val fh = -5f - 16f * fm + sin(t * 1.6f) * 3f * (1f - fm) + sin(t * 5f) * 2.5f * fm   // voando: pernas esticadas pra trás, juntas   // pairando: as duas pernas iguais (nada de passo), só uma balançadinha junto com o corpo
+            hipL = lp(hipL, fh + fk, fl); hipR = lp(hipR, fh + fk, fl)
+            kneeL = lp(kneeL, 12f + 6f * fm, fl); kneeR = lp(kneeR, 12f + 6f * fm, fl)
         }
         if (dashW > 0.001f && fl > 0.01f) {
-            val fk2 = sin(t * 14f) * 6f
-            hipL = lp(hipL, 8f + fk2 + 20f * wind, dashW); hipR = lp(hipR, 8f - fk2 + 20f * wind, dashW)
+            val fk2 = sin(t * 14f) * 1.5f
+            hipL = lp(hipL, 8f + fk2 + 20f * wind, dashW); hipR = lp(hipR, 8f + fk2 + 20f * wind, dashW)
             kneeL = lp(kneeL, 8f + 55f * wind, dashW); kneeR = lp(kneeR, 8f + 55f * wind, dashW)
         }
         if (land > 0f) {
