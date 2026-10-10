@@ -64,6 +64,34 @@ class World {
     val dirty = BooleanArray(CX * CZ) { true }
     /** blocos desenhados à parte (esculpidos pelos golpes): o mesher do chunk pula eles */
     val hidden = HashSet<Int>()
+    /** matinhos/flores cortados pela espada: chave do bloco de grama -> instante do corte (voltam a crescer depois) */
+    val cut = HashMap<Int, Float>()
+
+    fun markDirty(x: Int, z: Int) {
+        for (dx in -1..1) for (dz in -1..1) {
+            val cx = (x + dx).coerceIn(0, SX - 1) / CH; val cz = (z + dz).coerceIn(0, SZ - 1) / CH
+            dirty[cz * CX + cx] = true
+        }
+    }
+
+    /** 0 = sem matinho, 1 = matinho, 2 = flor (igual ao que o mesher desenha em cima da grama) */
+    fun tuftKind(x: Int, y: Int, z: Int): Int {
+        if (get(x, y, z) != B.GRASS || get(x, y + 1, z) != B.AIR) return 0
+        val r = hash(x, z, 3); if (r <= 0.55f) return 0
+        if (cut.containsKey((y * SZ + z) * SX + x)) return 0
+        return if (r > 0.94f) 2 else 1
+    }
+
+    fun cutTuft(x: Int, y: Int, z: Int, now: Float) { cut[(y * SZ + z) * SX + x] = now; markDirty(x, z) }
+
+    fun regrow(now: Float, life: Float) {
+        if (cut.isEmpty()) return
+        val it = cut.entries.iterator()
+        while (it.hasNext()) {
+            val e = it.next()
+            if (now - e.value > life) { val k = e.key; it.remove(); markDirty(k % SX, (k / SX) % SZ) }
+        }
+    }
 
     fun get(x: Int, y: Int, z: Int): Int {
         if (y >= SY) return 0
@@ -412,7 +440,7 @@ class World {
             }
             if (id == B.GRASS && get(x, y + 1, z) == B.AIR) {
                 val r = hash(x, z, 3)
-                if (r > 0.55f) {
+                if (r > 0.55f && (cut.isEmpty() || !cut.containsKey((y * SZ + z) * SX + x))) {
                     val fl = r > 0.94f
                     val tile = if (fl) 17 + (hash(x, z, 4) * 3f).toInt().coerceIn(0, 2) else 16
                     val hh = if (fl) 0.62f else 0.28f + 0.3f * hash(x, z, 9)

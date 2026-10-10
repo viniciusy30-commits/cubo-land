@@ -13,7 +13,7 @@ class Slime(x: Float, y: Float, z: Float) : Ent(x, y, z, 0.42f, 0.85f) {
 }
 
 class Particle(var x: Float, var y: Float, var z: Float, var vx: Float, var vy: Float, var vz: Float,
-               val color: Int, val size: Float, var life: Float)
+               val color: Int, val size: Float, var life: Float) { var grav = 18f }
 
 class LeafP(var x: Float, var y: Float, var z: Float, var vx: Float, var vz: Float, val ph: Float, val color: Int, val size: Float, var life: Float, var landed: Boolean = false, var age: Float = 0f)
 
@@ -40,11 +40,23 @@ class Debris(var x: Float, var y: Float, var z: Float, var vx: Float, var vy: Fl
 /** parte de cima de uma árvore caindo inteira. bl = (dx,dy,dz,id) por bloco, relativo ao bloco cortado */
 class FallTree(val px: Float, val py: Float, val pz: Float, val dx: Float, val dz: Float, val bl: IntArray, val yo: Float = 0f) {
     var ang = 0.03f; var vel = 0.25f; var t = 0f; val n = bl.size / 4
+    var sx = 0; var sy = -99; var sz = 0; var landed = false; var lt = 0f   // sx..sz = bloco do toco (ignorado na colisão)
     val kx get() = dz; val kz get() = -dx     // eixo de rotação (horizontal, perpendicular à queda)
 }
 
 /** talho de espada: só visual, some sozinho depois de alguns minutos */
 class Slash(val d: Dmg, val m: Mark, val born: Float)
+
+/** item que cai no chão quando um bloco quebra: 1 só, flutua girando e vai pro jogador quando perto */
+class Drop(var x: Float, var y: Float, var z: Float, var vx: Float, var vy: Float, var vz: Float, val id: Int) { var age = 0f }
+
+/** onda na água: age cresce com o tempo; amp = força (queda de altura maior = onda maior) */
+class Ripple(val x: Float, val z: Float, val amp: Float, var age: Float)
+
+/** pegada no chão (areia afunda mais, terra marca, grama só amassa) */
+class Foot(val x: Float, val y: Float, val z: Float, val ang: Float, val id: Int, val born: Float) {
+    fun life() = when (id) { B.SAND -> 70f; B.DIRT -> 45f; else -> 16f }
+}
 
 class Bolt(var x: Float, var y: Float, var z: Float, val vx: Float, val vy: Float, val vz: Float, var life: Float)
 
@@ -69,6 +81,9 @@ class Game(val world: World) {
     private var hitT = -1f; private var hitItem = 0; private var hitStab = false
     private var pendingT = -1f; private var pendingPower = 0f
     val leafFall = ArrayList<LeafP>(); private var leafT = 0f; var comboT = 0f
+    val drops = ArrayList<Drop>(); val ripples = ArrayList<Ripple>(); val prints = ArrayList<Foot>(); val picked = IntArray(16)
+    @Volatile var pickMsg = ""; @Volatile var pickT = 0f; @Volatile var swimAmt = 0f
+    private var stepDist = 0f; private var stepLeft = false; private var rippleT = 0f; private var bubbleT = 0f; private var regrowT = 0f
     // entrada (escrita pela UI)
     @Volatile var stickX = 0f; @Volatile var stickY = 0f
     @Volatile var jumpHeld = false; @Volatile var wantAttack = false; @Volatile var wantPlace = false
@@ -133,6 +148,20 @@ class Game(val world: World) {
             move(e, e.vx * dt, e.vy * dt, e.vz * dt)
             return
         }
+        if (e === player && e.inWater) {   // nado: flutua com a cabeça fora, mergulha olhando pra baixo e nadando, sobe olhando pra cima
+            val surf = World.WATER_Y + 0.88f
+            val mg = hypot(stickX, stickY)
+            val tv = when {
+                jumpHeld -> 3.6f
+                mg > 0.15f && pitch < -0.28f -> sin(pitch) * 4.2f
+                mg > 0.15f && pitch > 0.28f -> sin(pitch) * 3.2f
+                else -> (((surf - 1.05f) - e.y) * 1.6f).coerceIn(-1.5f, 1.6f)
+            }
+            e.vy += (tv - e.vy) * min(1f, 6f * dt)
+            e.vx *= 1f - 3f * dt; e.vz *= 1f - 3f * dt
+            move(e, e.vx * dt, e.vy * dt, e.vz * dt)
+            return
+        }
         val g = if (e.inWater) 8f else 26f
         e.vy -= g * dt
         if (e.inWater) { e.vy = max(e.vy, -3f); e.vx *= 1f - 3f * dt; e.vz *= 1f - 3f * dt }
@@ -141,22 +170,23 @@ class Game(val world: World) {
     }
 
     fun burst(x: Float, y: Float, z: Float, color: Int, n: Int, speed: Float) {
+        if (parts.size > 900) return
         for (i in 0 until n) parts.add(Particle(x, y, z, (rnd.nextFloat() - 0.5f) * speed, rnd.nextFloat() * speed * 0.9f + 1f,
             (rnd.nextFloat() - 0.5f) * speed, color, 0.08f + rnd.nextFloat() * 0.1f, 0.6f + rnd.nextFloat() * 0.5f))
     }
 
-    /** partículas fofinhas, só na cor do bloco (com leves variações de tom) */
+    /** só partículas pequenas na cor do bloco (grama mistura verde e terra) */
     fun breakFx(bx: Int, by: Int, bz: Int, id: Int, big: Boolean) {
-        val n = if (big) 22 else 6
-        val base = B.top[id]
+        val n = if (big) 30 else 6
         for (i in 0 until n) {
+            val base = if (id == B.GRASS && rnd.nextFloat() < 0.5f) B.side[id] else if (id == B.WOOD && rnd.nextFloat() < 0.5f) B.side[id] else B.top[id]
             val k = 0.82f + rnd.nextFloat() * 0.36f
             val r = ((base shr 16 and 255) * k).toInt().coerceIn(0, 255); val gg = ((base shr 8 and 255) * k).toInt().coerceIn(0, 255); val b = ((base and 255) * k).toInt().coerceIn(0, 255)
-            val px = bx + 0.15f + rnd.nextFloat() * 0.7f; val py = by + 0.15f + rnd.nextFloat() * 0.7f; val pz = bz + 0.15f + rnd.nextFloat() * 0.7f
+            val px = bx + 0.1f + rnd.nextFloat() * 0.8f; val py = by + 0.1f + rnd.nextFloat() * 0.8f; val pz = bz + 0.1f + rnd.nextFloat() * 0.8f
             val sp = if (big) 2.6f else 1.5f
             parts.add(Particle(px, py, pz, (px - bx - 0.5f) * sp * 2f + (rnd.nextFloat() - 0.5f) * 0.6f, rnd.nextFloat() * sp * 0.8f + 0.9f,
                 (pz - bz - 0.5f) * sp * 2f + (rnd.nextFloat() - 0.5f) * 0.6f, (r shl 16) or (gg shl 8) or b,
-                0.045f + rnd.nextFloat() * (if (big) 0.075f else 0.045f), 0.7f + rnd.nextFloat() * 0.5f))
+                0.035f + rnd.nextFloat() * (if (big) 0.055f else 0.04f), 0.7f + rnd.nextFloat() * 0.6f))
         }
         if (big) shake = max(shake, 0.08f)
     }
@@ -270,6 +300,7 @@ class Game(val world: World) {
         val fu = (if (a == 0) qz else qx) + 0.5f; val fv = (if (a == 1) qz else qy) + 0.5f
 
         if (item == Items.SWORD) {   // espada não destrói nem esculpe: deixa só uma marca de corte temporária
+            if (cutFoliage(hx, hy, hz, id, hx + 0.5f + qx, hy + 0.5f + qy, hz + 0.5f + qz)) return   // folhas são cortadas de verdade
             val sd = Dmg(hx, hy, hz, id); sd.prog = 0.7f
             val sm = makeMark(a, s, fu, fv, item, false, hitStab); sm.blobs = FloatArray(0)
             slashes.add(Slash(sd, sm, time))
@@ -481,7 +512,6 @@ class Game(val world: World) {
             parts.add(Particle(x + nx * 0.03f, y + ny * 0.03f, z + nz * 0.03f, nx * sp + (rnd.nextFloat() - 0.5f) * 1.6f, ny * sp + rnd.nextFloat() * 1.5f + 0.6f, nz * sp + (rnd.nextFloat() - 0.5f) * 1.6f,
                 (r shl 16) or (g shl 8) or b, 0.03f + rnd.nextFloat() * (if (item == Items.AXE) 0.06f else 0.04f), 0.45f + rnd.nextFloat() * 0.4f))
         }
-        spawnPieces(x + nx * 0.05f, y + ny * 0.05f, z + nz * 0.05f, id, if (big) 3 else 2, 0.11f, 0.08f, nx * 2.2f, ny * 2.2f, nz * 2.2f, 1.4f)   // pedacinhos arrancados
         val spark = when { item == Items.SWORD -> 0xCFF6FF; item == Items.PICK && (id == B.STONE || id == B.BRICK) -> 0xFFE7A0; else -> 0 }
         if (spark != 0) for (i in 0 until 3) parts.add(Particle(x, y, z, nx * 2.5f + (rnd.nextFloat() - 0.5f) * 2.5f, ny * 2.5f + rnd.nextFloat() * 2f + 1f, nz * 2.5f + (rnd.nextFloat() - 0.5f) * 2.5f, spark, 0.035f, 0.3f + rnd.nextFloat() * 0.2f))
     }
@@ -505,10 +535,57 @@ class Game(val world: World) {
     private fun breakBlock(x: Int, y: Int, z: Int, id: Int) {
         world.hidden.remove((y * World.SZ + z) * World.SX + x)
         world.set(x, y, z, B.AIR)
-        val away = player.x - (x + 0.5f); val awz = player.z - (z + 0.5f); val l = max(0.1f, hypot(away, awz))
-        spawnPieces(x + 0.5f, y + 0.5f, z + 0.5f, id, if (id == B.LEAVES) 3 else 6, 0.27f, 0.6f, away / l * 0.8f, 1f, awz / l * 0.8f)
         breakFx(x, y, z, id, true)
+        val di = when (id) { B.GRASS -> B.DIRT; B.LEAVES -> if (rnd.nextFloat() < 0.3f) B.LEAVES else 0; else -> id }
+        if (di != 0) dropItem(x + 0.5f, y + 0.4f, z + 0.5f, di, 0f, 0f)
         if (id == B.WOOD) fellTree(x, y, z)
+    }
+
+    /** o bloco que sobra no chão: só 1, pequeno, pra pegar */
+    private fun dropItem(x: Float, y: Float, z: Float, id: Int, vx: Float, vz: Float) {
+        if (id <= 0 || id > 13 || id == B.WATER) return
+        if (drops.size > 60) drops.removeAt(0)
+        var yy = y; var k = 0
+        while (world.solid(floor(x).toInt(), floor(yy).toInt(), floor(z).toInt()) && k < 6) { yy += 0.5f; k++ }
+        drops.add(Drop(x, yy, z, vx + (rnd.nextFloat() - 0.5f) * 1.4f, 3.4f, vz + (rnd.nextFloat() - 0.5f) * 1.4f, id))
+    }
+
+    private fun leafCutFx(x: Int, y: Int, z: Int) {
+        val cols = intArrayOf(0x4FA52E, 0x6CBF3C, 0x8AD453, 0x3E8A25, 0xA3DF6A)
+        for (i in 0 until 6) parts.add(Particle(x + rnd.nextFloat(), y + rnd.nextFloat(), z + rnd.nextFloat(), (rnd.nextFloat() - 0.5f) * 3f, 0.8f + rnd.nextFloat() * 2f, (rnd.nextFloat() - 0.5f) * 3f,
+            cols[rnd.nextInt(cols.size)], 0.04f + rnd.nextFloat() * 0.05f, 0.6f + rnd.nextFloat() * 0.5f))
+        if (leafFall.size < 140) leafFall.add(LeafP(x + 0.5f, y + 0.5f, z + 0.5f, (rnd.nextFloat() - 0.5f) * 1f, (rnd.nextFloat() - 0.5f) * 1f, rnd.nextFloat() * 6.28f, cols[rnd.nextInt(cols.size)], 0.09f, 5f))
+        if (rnd.nextFloat() < 0.12f) dropItem(x + 0.5f, y + 0.5f, z + 0.5f, B.LEAVES, 0f, 0f)
+    }
+
+    private fun tuftFx(x: Float, y: Float, z: Float, kind: Int) {
+        val cols = if (kind == 2) intArrayOf(0xFFD84A, 0xFF8FC8, 0xFFFFFF, 0x66C84C) else intArrayOf(0x66C84C, 0x4FA52E, 0x8AD453, 0x3E8A25)
+        for (i in 0 until 8) parts.add(Particle(x + (rnd.nextFloat() - 0.5f) * 0.4f, y + 0.1f + rnd.nextFloat() * 0.3f, z + (rnd.nextFloat() - 0.5f) * 0.4f,
+            (rnd.nextFloat() - 0.5f) * 3f, 1.5f + rnd.nextFloat() * 2f, (rnd.nextFloat() - 0.5f) * 3f, cols[rnd.nextInt(cols.size)], 0.035f + rnd.nextFloat() * 0.04f, 0.6f + rnd.nextFloat() * 0.5f))
+        if (leafFall.size < 140) for (i in 0 until 2) leafFall.add(LeafP(x, y + 0.3f, z, (rnd.nextFloat() - 0.5f) * 1.2f, (rnd.nextFloat() - 0.5f) * 1.2f, rnd.nextFloat() * 6.28f, cols[rnd.nextInt(cols.size)], 0.08f + rnd.nextFloat() * 0.04f, 4f))
+    }
+
+    /** a espada corta folhas (a atingida e as coladas nela) e matinhos/flores perto do golpe. true = cortou folhas */
+    private fun cutFoliage(bx: Int, by: Int, bz: Int, id: Int, cx: Float, cy: Float, cz: Float): Boolean {
+        var leaves = false; var tufts = 0
+        if (id == B.LEAVES) {
+            leaves = true
+            val offs = if (hitStab) arrayOf(intArrayOf(0, 0, 0)) else arrayOf(intArrayOf(0, 0, 0), intArrayOf(1, 0, 0), intArrayOf(-1, 0, 0), intArrayOf(0, 1, 0), intArrayOf(0, -1, 0), intArrayOf(0, 0, 1), intArrayOf(0, 0, -1))
+            for (o in offs) {
+                val x = bx + o[0]; val y = by + o[1]; val z = bz + o[2]
+                if (world.get(x, y, z) != B.LEAVES) continue
+                world.set(x, y, z, B.AIR); leafCutFx(x, y, z)
+            }
+        }
+        val gx0 = floor(cx - 1.4f).toInt(); val gx1 = floor(cx + 1.4f).toInt(); val gz0 = floor(cz - 1.4f).toInt(); val gz1 = floor(cz + 1.4f).toInt()
+        for (gx in gx0..gx1) for (gz in gz0..gz1) for (gy in by - 1..by + 1) {
+            val kind = world.tuftKind(gx, gy, gz)
+            if (kind == 0) continue
+            if (hypot(gx + 0.5f - cx, gz + 0.5f - cz) > 1.4f) continue
+            world.cutTuft(gx, gy, gz, time); tuftFx(gx + 0.5f, gy + 1f, gz + 0.5f, kind); tufts++
+        }
+        if (leaves || tufts > 0) { hitPulse = 0.5f; shake = max(shake, 0.03f) }
+        return leaves
     }
 
     /** corta o tronco: tudo de madeira/folha conectado acima do corte vira uma árvore que tomba */
@@ -536,8 +613,8 @@ class Game(val world: World) {
         var dx = x + 0.5f - player.x; var dz = z + 0.5f - player.z
         if (hypot(dx, dz) < 0.2f) { dx = sin(yaw); dz = cos(yaw) }
         val an = atan2(dz, dx) + (rnd.nextFloat() - 0.5f) * 0.4f
-        if (cutY.isNaN()) trees.add(FallTree(x + 0.5f, y + 0.5f, z + 0.5f, cos(an), sin(an), arr))
-        else trees.add(FallTree(x + 0.5f, y + 0.5f + cutY, z + 0.5f, cos(an), sin(an), arr, -0.5f))   // pivô no plano do corte, base da árvore assenta nele
+        val ft = if (cutY.isNaN()) FallTree(x + 0.5f, y + 0.5f, z + 0.5f, cos(an), sin(an), arr) else FallTree(x + 0.5f, y + 0.5f + cutY, z + 0.5f, cos(an), sin(an), arr, -0.5f)   // com corte: pivô no plano do corte, base da árvore assenta nele
+        ft.sx = x; ft.sy = y; ft.sz = z; trees.add(ft)
         shake = max(shake, 0.15f)
         return true
     }
@@ -552,7 +629,6 @@ class Game(val world: World) {
         }
         d.vdirty = true
         if (!d.carved) { d.carved = true; world.hidden.add((d.y * World.SZ + d.z) * World.SX + d.x); world.set(d.x, d.y, d.z, d.id) }
-        spawnPieces(d.x + 0.5f, d.y + 0.5f + cutY, d.z + 0.5f, d.id, 8, 0.14f, 0.7f, 0f, 2f, 0f, 2.5f)
         burst(d.x + 0.5f, d.y + 0.5f + cutY, d.z + 0.5f, 0xD9B27A, 14, 3f)
         shake = max(shake, 0.3f)
     }
@@ -567,53 +643,73 @@ class Game(val world: World) {
 
     private val tmpV = FloatArray(3)
 
+    /** a árvore encosta no chão quando a parte de baixo de algum bloco dela entra num bloco sólido (o toco é ignorado) */
     private fun treeHitsGround(f: FallTree): Boolean {
-        if (f.ang < 0.12f) return false
+        if (f.ang < 0.2f) return false
         for (i in 0 until f.n) {
             treeRot(f, f.bl[i * 4].toFloat(), f.bl[i * 4 + 1] + f.yo, f.bl[i * 4 + 2].toFloat(), tmpV)
-            val id = world.get(floor(f.px + tmpV[0]).toInt(), floor(f.py + tmpV[1]).toInt(), floor(f.pz + tmpV[2]).toInt())
+            val wx = floor(f.px + tmpV[0]).toInt(); val wy = floor(f.py + tmpV[1] - 0.42f).toInt(); val wz = floor(f.pz + tmpV[2]).toInt()
+            if (wx == f.sx && wy == f.sy && wz == f.sz) continue
+            val id = world.get(wx, wy, wz)
             if (id != B.AIR && id != B.WATER && id != B.LEAVES && id != B.WOOD) return true
         }
         return false
     }
 
-    /** a árvore bate no chão e vira uma chuva de mini-blocos, folhas e poeira */
+    /** a árvore bateu no chão: baque, poeira e folhas voando; ela fica deitada um instante antes de se desfazer */
+    private fun landTree(f: FallTree) {
+        f.landed = true; f.lt = 0f; f.vel = 0f
+        for (i in 0 until f.n step 3) {
+            val id = f.bl[i * 4 + 3]
+            treeRot(f, f.bl[i * 4].toFloat(), f.bl[i * 4 + 1] + f.yo, f.bl[i * 4 + 2].toFloat(), tmpV)
+            val cx = f.px + tmpV[0]; val cy = f.py + tmpV[1]; val cz = f.pz + tmpV[2]
+            if (id == B.WOOD) burst(cx, cy - 0.3f, cz, 0xC9B28A, 2, 2f)
+            else if (leafFall.size < 140) leafFall.add(LeafP(cx, cy, cz, (rnd.nextFloat() - 0.5f) * 1.6f, (rnd.nextFloat() - 0.5f) * 1.6f, rnd.nextFloat() * 6.28f,
+                intArrayOf(0x4FA52E, 0x6CBF3C, 0x8AD453, 0x3E8A25)[rnd.nextInt(4)], 0.09f, 5f))
+        }
+        shake = max(shake, 0.5f)
+        val dist = hypot(player.x - f.px, player.z - f.pz); if (dist > 18f) shake = 0.1f
+    }
+
+    /** depois de deitada, a árvore vira partículas e só alguns troncos pra pegar */
     private fun shatterTree(f: FallTree) {
-        val kx = f.kx; val kz = f.kz
-        var leaves = 0
+        var leaves = 0; var logs = 0
         for (i in 0 until f.n) {
             val id = f.bl[i * 4 + 3]
             treeRot(f, f.bl[i * 4].toFloat(), f.bl[i * 4 + 1] + f.yo, f.bl[i * 4 + 2].toFloat(), tmpV)
             val cx = f.px + tmpV[0]; val cy = f.py + tmpV[1]; val cz = f.pz + tmpV[2]
-            val vx = f.vel * (-kz * tmpV[1]) * 0.7f; val vy = f.vel * (kz * tmpV[0] - kx * tmpV[2]) * 0.4f; val vz = f.vel * (kx * tmpV[1]) * 0.7f
-            if (id == B.WOOD) spawnPieces(cx, cy, cz, id, 3, 0.36f, 0.5f, vx, vy, vz, 4f)
-            else { spawnPieces(cx, cy, cz, id, 1, 0.34f, 0.5f, vx, vy, vz, 3f); leaves++
-                if (leaves % 3 == 0 && leafFall.size < 140) leafFall.add(LeafP(cx, cy, cz, (rnd.nextFloat() - 0.5f) * 0.8f, (rnd.nextFloat() - 0.5f) * 0.8f, rnd.nextFloat() * 6.28f,
-                    intArrayOf(0x4FA52E, 0x6CBF3C, 0x8AD453, 0x3E8A25, 0xA3DF6A)[rnd.nextInt(5)], 0.08f + rnd.nextFloat() * 0.05f, 7f)) }
-            if (i % 5 == 0) burst(cx, cy, cz, if (id == B.WOOD) 0xC9A06A else 0x7FC84A, 3, 3f)
+            if (id == B.WOOD) {
+                burst(cx, cy, cz, 0xB98A55, 4, 3f); burst(cx, cy, cz, 0x7A5230, 3, 3f)
+                logs++; if (logs % 5 == 1 && logs <= 21) dropItem(cx, cy + 0.2f, cz, B.WOOD, 0f, 0f)
+            } else {
+                leaves++
+                if (leaves % 2 == 0) burst(cx, cy, cz, intArrayOf(0x4FA52E, 0x6CBF3C, 0x8AD453, 0x3E8A25)[rnd.nextInt(4)], 3, 2.5f)
+                if (leaves % 4 == 0 && leafFall.size < 140) leafFall.add(LeafP(cx, cy, cz, (rnd.nextFloat() - 0.5f) * 0.8f, (rnd.nextFloat() - 0.5f) * 0.8f, rnd.nextFloat() * 6.28f,
+                    intArrayOf(0x4FA52E, 0x6CBF3C, 0x8AD453, 0x3E8A25, 0xA3DF6A)[rnd.nextInt(5)], 0.08f + rnd.nextFloat() * 0.05f, 7f))
+            }
         }
-        shake = max(shake, 0.55f)
-        val dist = hypot(player.x - f.px, player.z - f.pz); if (dist > 18f) shake = 0.1f
+        shake = max(shake, 0.25f)
     }
 
     private fun updateTrees(dt: Float) {
         val it = trees.iterator()
         while (it.hasNext()) {
             val f = it.next(); f.t += dt
+            if (f.landed) { f.lt += dt; if (f.lt >= 1.2f) { shatterTree(f); it.remove() }; continue }
             if (f.t < 0.45f) {   // estalo: a árvore treme antes de tombar
                 f.ang = 0.03f + sin(f.t * 45f) * 0.012f
                 if (rnd.nextFloat() < 0.35f && leafFall.size < 140) leafFall.add(LeafP(f.px + (rnd.nextFloat() - 0.5f) * 3f, f.py + 3f + rnd.nextFloat() * 3f, f.pz + (rnd.nextFloat() - 0.5f) * 3f, 0f, 0f, rnd.nextFloat() * 6f, 0x6CBF3C, 0.09f, 5f))
                 continue
             }
             var done = false
-            for (st in 0 until 3) {
-                val h = dt / 3f
-                f.vel += (6.5f * sin(f.ang) + 0.5f) * h; f.ang += f.vel * h
+            for (st in 0 until 4) {
+                val h = dt / 4f
+                f.vel += (5.2f * sin(f.ang) + 0.45f) * h; f.ang += f.vel * h
                 if (f.ang >= 1.5708f) { f.ang = 1.5708f; done = true }
                 else if (treeHitsGround(f)) done = true
                 if (done) break
             }
-            if (done) { shatterTree(f); it.remove() }
+            if (done) landTree(f)
         }
     }
 
@@ -707,7 +803,9 @@ class Game(val world: World) {
         if (jumpHeld && !flying) {
             if (p.inWater) p.vy = 3.6f else if (p.onGround) { p.vy = 8.6f; p.onGround = false }
         }
+        val wasW = p.inWater; val vyPre = p.vy
         for (i in 0 until 2) physics(p, dt / 2f)
+        waterAndSteps(dt, wasW, vyPre)
         p.x = p.x.coerceIn(2f, World.SX - 2f); p.z = p.z.coerceIn(2f, World.SZ - 2f)
         if (p.y < -5f) respawn()
         walkAmt += (min(1f, mag) * (if (p.onGround) 1f else 0.4f) - walkAmt) * min(1f, 10f * dt)
@@ -729,7 +827,7 @@ class Game(val world: World) {
             if (pressing) { pressing = false; if (charging) { val pw = charge; charging = false; charge = 0f; releasePower(pw) } else attack() }
         }
         if (!attackHeld && charging) { charging = false; charge = 0f }
-        hitPulse = max(0f, hitPulse - dt * 4.5f)
+        hitPulse = max(0f, hitPulse - dt * 4.5f); pickT = max(0f, pickT - dt)
         val dI = dmg.values.iterator()
         while (dI.hasNext()) {
             val d = dI.next(); d.idle += dt
@@ -778,7 +876,10 @@ class Game(val world: World) {
             }
             if (gone) { burst(b.x, b.y, b.z, 0x7FE8FF, 14, 5f); bi.remove() }
         }
-        updateTrees(dt)
+        updateTrees(dt); updateDrops(dt)
+        val rpi = ripples.iterator(); while (rpi.hasNext()) { val r = rpi.next(); r.age += dt; if (r.age > 3.2f) rpi.remove() }
+        val fpi = prints.iterator(); while (fpi.hasNext()) { val q = fpi.next(); if (time - q.born > q.life()) fpi.remove() }
+        regrowT -= dt; if (regrowT <= 0f) { regrowT = 2f; world.regrow(time, 80f) }
         val di = debris.iterator()
         while (di.hasNext()) {
             val q = di.next(); q.life -= dt
@@ -802,7 +903,8 @@ class Game(val world: World) {
         val pi = parts.iterator()
         while (pi.hasNext()) {
             val q = pi.next()
-            q.life -= dt; q.vy -= 18f * dt
+            q.life -= dt; q.vy -= q.grav * dt
+            if (q.grav < 0f && q.y > World.WATER_Y + 0.85f) q.life = 0f   // bolhas estouram na superfície
             val nx = q.x + q.vx * dt; val ny = q.y + q.vy * dt; val nz = q.z + q.vz * dt
             if (world.solid(floor(nx).toInt(), floor(ny).toInt(), floor(nz).toInt())) { q.vx *= 0.3f; q.vz *= 0.3f; q.vy = 0f }
             else { q.x = nx; q.y = ny; q.z = nz }
@@ -837,6 +939,94 @@ class Game(val world: World) {
         }
         updateCamera()
         raycast(camX, camY, camZ, dirX(), dirY(), dirZ(), camDist, camDist + 5.5f)
+    }
+
+    // ---------- água, pegadas e itens no chão ----------
+    private fun addRipple(x: Float, z: Float, amp: Float, age0: Float = 0f) {
+        ripples.add(Ripple(x, z, amp, age0)); if (ripples.size > 12) ripples.removeAt(0)
+    }
+
+    private fun splash(x: Float, y: Float, z: Float, v: Float) {
+        val n = (8 + v * 2.2f).toInt().coerceAtMost(42)
+        for (i in 0 until n) {
+            val a = rnd.nextFloat() * 6.2832f; val r = rnd.nextFloat() * 0.5f; val up = 2f + rnd.nextFloat() * 2f + v * 0.28f
+            val col = if (rnd.nextInt(3) == 0) 0xFFFFFF else 0xBFE6FF
+            parts.add(Particle(x + cos(a) * r * 0.4f, y, z + sin(a) * r * 0.4f, cos(a) * r * 2.2f, up, sin(a) * r * 2.2f, col, 0.04f + rnd.nextFloat() * 0.05f, 0.7f + rnd.nextFloat() * 0.5f))
+        }
+        shake = max(shake, min(0.2f, v * 0.012f))
+    }
+
+    private fun waterAndSteps(dt: Float, wasW: Boolean, vyPre: Float) {
+        val p = player
+        val surf = World.WATER_Y + 0.88f
+        val sp = hypot(p.vx, p.vz)
+        swimAmt += ((if (p.inWater && !p.onGround && !flying) 1f else 0f) - swimAmt) * min(1f, 8f * dt)
+        if (p.inWater && !wasW) {   // entrou na água: onda proporcional à velocidade da queda
+            val v = max(0f, -vyPre)
+            val amp = (0.3f + v * 0.1f).coerceAtMost(1.8f)
+            addRipple(p.x, p.z, amp)
+            if (v > 7f) addRipple(p.x, p.z, amp * 0.6f, -0.18f)
+            splash(p.x, surf, p.z, v)
+        } else if (!p.inWater && wasW) { addRipple(p.x, p.z, 0.4f); splash(p.x, surf, p.z, 2.5f) }
+        if (p.inWater) {
+            rippleT -= dt
+            if (p.y + 1.9f > surf && rippleT <= 0f) {   // nadando na superfície: marolas contínuas
+                rippleT = if (sp > 0.5f) 0.32f else 0.9f
+                addRipple(p.x + (rnd.nextFloat() - 0.5f) * 0.3f, p.z + (rnd.nextFloat() - 0.5f) * 0.3f, if (sp > 0.5f) 0.42f else 0.18f)
+            }
+            val headUnder = world.get(floor(p.x).toInt(), floor(p.y + 1.55f).toInt(), floor(p.z).toInt()) == B.WATER
+            bubbleT -= dt
+            if (headUnder && bubbleT <= 0f) {
+                bubbleT = 0.35f + rnd.nextFloat() * 0.5f
+                val b = Particle(p.x + (rnd.nextFloat() - 0.5f) * 0.3f, p.y + 1.5f, p.z + (rnd.nextFloat() - 0.5f) * 0.3f, 0f, 0.6f, 0f, 0xDDF4FF, 0.05f + rnd.nextFloat() * 0.04f, 2.4f)
+                b.grav = -3f; parts.add(b)
+            }
+        }
+        // pegadas: cada bloco reage de um jeito
+        if (p.onGround && !flying && !p.inWater && sp > 0.8f) {
+            stepDist += sp * dt
+            if (stepDist > 0.58f) {
+                stepDist = 0f; stepLeft = !stepLeft
+                val gx = floor(p.x).toInt(); val gy = floor(p.y - 0.06f).toInt(); val gz = floor(p.z).toInt()
+                val gid = world.get(gx, gy, gz)
+                if (gid == B.SAND || gid == B.DIRT || gid == B.GRASS) {
+                    val ang = atan2(p.vx, p.vz); val sd = if (stepLeft) -1f else 1f
+                    prints.add(Foot(p.x + cos(ang) * 0.13f * sd, gy + 1f, p.z - sin(ang) * 0.13f * sd, ang, gid, time))
+                    if (prints.size > 90) prints.removeAt(0)
+                    if (gid == B.SAND) burst(p.x, gy + 1.05f, p.z, 0xF0DE9A, 3, 1.2f)
+                    else if (gid == B.DIRT) burst(p.x, gy + 1.05f, p.z, 0x8C6039, 2, 1f)
+                }
+            }
+        }
+    }
+
+    private fun updateDrops(dt: Float) {
+        val p = player
+        val di = drops.iterator()
+        while (di.hasNext()) {
+            val d = di.next(); d.age += dt
+            val inW = world.get(floor(d.x).toInt(), floor(d.y).toInt(), floor(d.z).toInt()) == B.WATER
+            d.vy -= (if (inW) 4f else 22f) * dt
+            if (inW) d.vy = max(d.vy, -1.2f)
+            val ny = d.y + d.vy * dt
+            if (d.vy <= 0f && world.solid(floor(d.x).toInt(), floor(ny - 0.14f).toInt(), floor(d.z).toInt())) {
+                d.y = floor(ny - 0.14f) + 1f + 0.14f
+                d.vy = if (d.vy < -3f) -d.vy * 0.3f else 0f
+                d.vx *= 0.6f; d.vz *= 0.6f
+            } else d.y = ny
+            val nx = d.x + d.vx * dt; if (!world.solid(floor(nx).toInt(), floor(d.y).toInt(), floor(d.z).toInt())) d.x = nx else d.vx = 0f
+            val nz = d.z + d.vz * dt; if (!world.solid(floor(d.x).toInt(), floor(d.y).toInt(), floor(nz).toInt())) d.z = nz else d.vz = 0f
+            val dx = p.x - d.x; val dy = p.y + 0.9f - d.y; val dz = p.z - d.z
+            val dist2 = dx * dx + dy * dy + dz * dz
+            if (d.age > 0.5f && dist2 < 2.8f) {
+                val k = min(1f, 9f * dt); d.x += dx * k; d.y += dy * k; d.z += dz * k   // puxa pro jogador
+                if (dist2 < 0.5f) {
+                    picked[d.id]++; pickMsg = "+1 " + B.names[d.id]; pickT = 1.6f
+                    burst(d.x, d.y, d.z, B.top[d.id], 4, 1.5f); di.remove(); continue
+                }
+            }
+            if (d.y < -5f || d.age > 300f) di.remove()
+        }
     }
 
     fun lookDirX() = dirX(); fun lookDirY() = dirY(); fun lookDirZ() = dirZ()

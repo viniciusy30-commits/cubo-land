@@ -16,7 +16,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     private var prog = 0
     private var aPos = 0; private var aCol = 0; private var aUV = 0
     private var uVP = 0; private var uModel = 0; private var uCam = 0; private var uTint = 0
-    private var uTime = 0; private var uWind = 0; private var uUnder = 0; private var uAlpha = 0; private var uFog = 0; private var uTex = 0
+    private var uRip = 0; private var uTime = 0; private var uWind = 0; private var uUnder = 0; private var uAlpha = 0; private var uFog = 0; private var uTex = 0
     private val proj = FloatArray(16); private val view = FloatArray(16); private val vp = FloatArray(16)
     private val ident = FloatArray(16)
     private val tmp = FloatArray(16); private val base = FloatArray(16); private val arm = FloatArray(16)
@@ -69,7 +69,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         #else
         precision mediump float;
         #endif
-        uniform vec3 uTint; uniform vec3 uFog; uniform float uAlpha; uniform sampler2D uTex; uniform float uTime; uniform float uUnder; uniform float uWind;
+        uniform vec3 uTint; uniform vec3 uFog; uniform float uAlpha; uniform sampler2D uTex; uniform float uTime; uniform float uUnder; uniform float uWind; uniform vec4 uRip[4];
         varying vec3 vCol; varying float vFog; varying vec2 vUV; varying vec3 vWP; varying float vTile; varying vec3 vView;
 
         // brilho de luz no fundo (cáusticas): rede de linhas que dançam
@@ -100,6 +100,17 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                 g += vec2(-0.50, 0.87) * cos(dot(P, vec2(-0.50, 0.87)) * 2.7 + tm * 1.6) * 0.030 * 2.7;
                 g += vec2(0.95, -0.31) * cos(dot(P, vec2(0.95, -0.31)) * 4.3 + tm * 2.1) * 0.020 * 4.3;
                 g += vec2(-0.20, -0.98) * cos(dot(P, vec2(-0.20, -0.98)) * 6.1 + tm * 2.6) * 0.012 * 6.1;
+                float ripGlow = 0.0;
+                for (int ri = 0; ri < 4; ri++) {   // ondas de quem entra/nada na água
+                    vec4 rp = uRip[ri];
+                    if (rp.w > 0.0) {
+                        vec2 dd = P - rp.xy; float dl = max(length(dd), 0.001);
+                        float xx = dl - rp.z * 1.7;
+                        float env = exp(-xx * xx * 2.2) * rp.w * exp(-rp.z * 0.7);
+                        g += (dd / dl) * cos(xx * 8.0) * env * 1.1;
+                        ripGlow += env * (0.5 + 0.5 * cos(xx * 8.0));
+                    }
+                }
                 vec3 n = normalize(vec3(-g.x * 1.6, 1.0, -g.y * 1.6));
                 vec3 V = normalize(vView);
                 if (dot(n, V) < 0.0) n = -n;
@@ -116,6 +127,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                 float spec = pow(rl, 30.0) * 0.16;
                 vec3 wc = base * (0.84 + 0.26 * dot(n, L));
                 wc = mix(wc, sky, clamp(fres * 1.1 + 0.06, 0.0, 0.9));
+                wc += vec3(0.6) * ripGlow * 0.22;
                 // cintilados do sol nas ondinhas
                 float sp = max(0.0, sin(P.x * 9.0 + tm * 2.2) * sin(P.y * 8.0 - tm * 1.9));
                 wc += vec3(1.0, 0.97, 0.88) * spec;
@@ -124,9 +136,12 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                 wc = mix(wc, vec3(1.0), clamp(foam, 0.0, 1.0) * 0.5);
                 float wa = mix(0.46, 0.74, smoothstep(0.0, 0.5, depth));
                 wa = clamp(wa + fres * 0.35 + foam * 0.3, 0.0, 1.0);
-                if (uUnder > 0.5) {   // vendo a superfície por baixo
-                    wc = mix(vec3(0.30, 0.68, 0.92), sky * 0.9, 0.4) + vec3(1.0) * spec * 0.4;
-                    wa = 0.55;
+                if (uUnder > 0.5) {   // vendo a superfície por baixo: janela de céu no meio, espelho escuro nas bordas
+                    float win = smoothstep(0.56, 0.70, ndv);
+                    vec3 mir = vec3(0.07, 0.36, 0.55) + vec3(0.10, 0.20, 0.22) * (0.5 + 0.5 * sin(P.x * 2.0 + P.y * 1.7 + tm * 1.2));
+                    vec3 winc = vec3(0.62, 0.90, 1.0) + vec3(0.25) * ripGlow + vec3(0.10) * (0.5 + 0.5 * sin(P.x * 5.0 - P.y * 4.0 + tm * 1.6));
+                    wc = mix(mir, winc, win);
+                    wa = mix(0.93, 0.6, win);
                 }
                 c = wc; alpha = wa;
             } else if (uWind > 0.5 && vWP.y < 9.86) {   // tudo que está debaixo d'água: azulado, escuro com a profundidade e luz dançando
@@ -188,7 +203,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         uVP = G.glGetUniformLocation(prog, "uVP"); uModel = G.glGetUniformLocation(prog, "uModel")
         uCam = G.glGetUniformLocation(prog, "uCam"); uTint = G.glGetUniformLocation(prog, "uTint")
         uAlpha = G.glGetUniformLocation(prog, "uAlpha"); uFog = G.glGetUniformLocation(prog, "uFog")
-        uTex = G.glGetUniformLocation(prog, "uTex"); uTime = G.glGetUniformLocation(prog, "uTime"); uWind = G.glGetUniformLocation(prog, "uWind"); uUnder = G.glGetUniformLocation(prog, "uUnder")
+        uTex = G.glGetUniformLocation(prog, "uTex"); uTime = G.glGetUniformLocation(prog, "uTime"); uWind = G.glGetUniformLocation(prog, "uWind"); uUnder = G.glGetUniformLocation(prog, "uUnder"); uRip = G.glGetUniformLocation(prog, "uRip")
         skyProg = G.glCreateProgram()
         G.glAttachShader(skyProg, shader(G.GL_VERTEX_SHADER, SVS)); G.glAttachShader(skyProg, shader(G.GL_FRAGMENT_SHADER, SFS))
         G.glLinkProgram(skyProg)
@@ -489,6 +504,71 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         G.glDepthMask(true)
     }
 
+    private val ripArr = FloatArray(16)
+    private fun fillRip() {
+        java.util.Arrays.fill(ripArr, 0f)
+        var k = 0; var i = game.ripples.size - 1
+        while (i >= 0 && k < 4) {
+            val r = game.ripples[i]; i--
+            if (r.age > 3.1f) continue
+            ripArr[k * 4] = r.x; ripArr[k * 4 + 1] = r.z; ripArr[k * 4 + 2] = r.age; ripArr[k * 4 + 3] = r.amp * (1f - r.age / 3.2f); k++
+        }
+    }
+
+    /** pegadas: areia = funda com borda levantada, terra = marca escura, grama = amassadinho */
+    private fun drawPrints() {
+        for (q in game.prints) {
+            val fade = min(1f, (q.life() - (game.time - q.born)) / 4f)
+            if (fade <= 0f) continue
+            setBase(q.x, q.y + 0.012f, q.z, Math.toDegrees(q.ang.toDouble()).toFloat())
+            when (q.id) {
+                B.SAND -> {
+                    box(base, 0f, 0f, -0.01f, 0f, 0f, 0.19f, 0.012f, 0.42f, 0f, 0xFFF1BE, 0.5f * fade)
+                    box(base, 0f, 0.006f, -0.115f, 0f, 0f, 0.115f, 0.012f, 0.13f, 0f, 0xA8924E, 0.85f * fade)
+                    box(base, 0f, 0.006f, 0.075f, 0f, 0f, 0.15f, 0.012f, 0.22f, 0f, 0xA8924E, 0.85f * fade)
+                    box(base, 0f, 0.012f, 0.085f, 0f, 0f, 0.09f, 0.012f, 0.12f, 0f, 0x8C7840, 0.6f * fade)
+                }
+                B.DIRT -> {
+                    box(base, 0f, 0.004f, -0.115f, 0f, 0f, 0.105f, 0.01f, 0.12f, 0f, 0x4E3320, 0.7f * fade)
+                    box(base, 0f, 0.004f, 0.075f, 0f, 0f, 0.14f, 0.01f, 0.2f, 0f, 0x4E3320, 0.7f * fade)
+                }
+                else -> {
+                    box(base, 0f, 0.004f, -0.115f, 0f, 0f, 0.105f, 0.01f, 0.12f, 0f, 0x3F8A2E, 0.4f * fade)
+                    box(base, 0f, 0.004f, 0.075f, 0f, 0f, 0.14f, 0.01f, 0.2f, 0f, 0x3F8A2E, 0.4f * fade)
+                }
+            }
+        }
+    }
+
+    /** o 1 bloquinho que sobra no chão: gira e balança */
+    private fun drawDrops() {
+        for (q in game.drops) {
+            val bob = sin(game.time * 3f + q.x * 2f) * 0.045f
+            setBase(q.x, q.y + 0.06f + bob, q.z, game.time * 80f + q.z * 40f)
+            box(base, 0f, 0f, 0f, 0f, 0f, 0.28f, 0.28f, 0.28f, 0f, 0xFFFFFF, 1f, 1f, null, q.id)
+        }
+    }
+
+    /** anéis de espuma que se espalham a partir de onde algo entrou na água */
+    private fun drawRipples() {
+        val sy = World.WATER_Y + 0.9f
+        for (r in game.ripples) {
+            if (r.age < 0f) continue
+            val rad = 0.25f + r.age * 1.7f
+            val al = (1f - r.age / 3.2f) * min(1f, r.amp + 0.25f) * 0.75f
+            if (al <= 0.02f) continue
+            val n = (10 + rad * 6f).toInt().coerceAtMost(28)
+            val seg = 6.2832f * rad / n * 1.08f
+            for (k in 0 until n) {
+                val a = k * 6.2832f / n
+                val x = r.x + cos(a) * rad; val z = r.z + sin(a) * rad
+                if (world.get(floor(x).toInt(), World.WATER_Y, floor(z).toInt()) != B.WATER) continue
+                setBase(x, sy, z, a * 57.29578f - 90f)
+                box(base, 0f, 0f, 0f, 0f, 0f, seg, 0.012f, 0.05f, 0f, 0xEAF8FF, al)
+            }
+        }
+    }
+
     private fun drawDebris() {
         for (q in game.debris) {
             val sc = q.size * min(1f, q.life * 2f)
@@ -701,11 +781,17 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     private fun drawPlayer(t: Float) {
         val p = game.player
         val wp = game.walkPhase; val wa = game.walkAmt
-        val sw = sin(wp) * 38f * wa
+        val swm = game.swimAmt
+        val sw = if (swm > 0.2f) sin(t * 8f) * 28f else sin(wp) * 38f * wa
         val air = if (p.onGround) 0f else 1f
         val idle = sin(t * 2f) * 3f * (1f - wa)
         val bob = if (wa < 0.1f) sin(t * 2f) * 0.012f else abs(sin(wp)) * 0.05f * wa
         setBase(p.x, p.y + bob, p.z, Math.toDegrees(game.bodyYaw.toDouble()).toFloat())
+        if (swm > 0.01f) {   // nadando: o corpo deita na água (mais inclinado ao mergulhar)
+            Matrix.translateM(base, 0, 0f, 0.9f, 0f)
+            Matrix.rotateM(base, 0, swm * (78f - Math.toDegrees(game.pitch.toDouble()).toFloat() * 0.35f).coerceIn(40f, 110f), 1f, 0f, 0f)
+            Matrix.translateM(base, 0, 0f, -0.9f, 0f)
+        }
         val skin = 0xF2C29B; val hair = 0x6B3FA0; val shirt = 0x7FD9C8
         // pernas e botas
         box(base, -0.13f, 0.55f, 0f, sw, 0f, 0.24f, 0.55f, 0.26f, -0.275f, 0x4A5BB5)
@@ -1218,7 +1304,8 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val ez = game.camZ + (rnd.nextFloat() - 0.5f) * sh
         Matrix.setLookAtM(view, 0, ex, ey, ez, ex + game.lookDirX(), ey + game.lookDirY(), ez + game.lookDirZ(), 0f, 1f, 0f)
         Matrix.multiplyMM(vp, 0, proj, 0, view, 0)
-        val under = world.get(floor(ex).toInt(), floor(ey).toInt(), floor(ez).toInt()) == B.WATER
+        val uwy = floor(ey).toInt()
+        val under = world.get(floor(ex).toInt(), uwy, floor(ez).toInt()) == B.WATER && (world.get(floor(ex).toInt(), uwy + 1, floor(ez).toInt()) != B.AIR || ey < uwy + 0.88f)
         val fr = if (under) 0.38f else fogR; val fg = if (under) 0.76f else fogG; val fb = if (under) 0.93f else fogB
         // céu: degradê, sol, nuvens suaves
         Matrix.invertM(inv, 0, vp, 0)
@@ -1237,6 +1324,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         G.glUniform3f(uCam, ex, ey, ez)
         G.glUniform3f(uFog, fr, fg, fb)
         G.glUniform1f(uTime, game.time); G.glUniform1f(uWind, 1f); G.glUniform1f(uUnder, if (under) 1f else 0f)
+        fillRip(); G.glUniform4fv(uRip, 4, ripArr, 0)
         G.glDisable(G.GL_BLEND)
 
         G.glUniformMatrix4fv(uModel, 1, false, ident, 0)
@@ -1252,9 +1340,10 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         G.glDepthMask(false)
         for (s in game.slimes) shadow(s.x, s.y, s.z, 0.9f)
         if (game.thirdPerson) shadow(game.player.x, game.player.y, game.player.z, 0.8f)
+        drawPrints()
         G.glDepthMask(true)
         for (s in game.slimes) drawSlime(s)
-        drawDebris(); drawTrees()
+        drawDebris(); drawTrees(); drawDrops()
         for (q in game.parts) {
             setBase(q.x, q.y, q.z, game.time * 200f)
             val ps = q.size * min(1f, 0.35f + q.life * 1.6f)
@@ -1290,6 +1379,8 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             if (cnt[i * 2 + 1] == 0) continue
             bindMesh(vbo[i * 2 + 1], ibo[i * 2 + 1]); G.glDrawElements(G.GL_TRIANGLES, cnt[i * 2 + 1], G.GL_UNSIGNED_SHORT, 0)
         }
+        G.glUniform1f(uWind, 0f); bindMesh(cubeVb, cubeIb)
+        G.glDepthMask(false); drawRipples(); G.glDepthMask(true)
         G.glEnable(G.GL_CULL_FACE)
         G.glUniform1f(uWind, 0f)
         if (!game.thirdPerson && game.deadTimer <= 0f) drawHand(dt)

@@ -1,3 +1,12 @@
+#id 2026-10-10-i
+#titulo Pegadas, água viva, espada que corta folhas e blocos que dropam!
+- Pegadas ao andar: areia afunda mais e fica marcada por bastante tempo, terra deixa marca escura, grama só amassa um pouquinho. Cada pegada some sozinha
+- Água ganhou ondas de verdade: ao entrar pulando a onda cresce conforme a altura da queda, com respingos; nadar deixa marolas
+- Agora você nada: boneco deita na água, olhe pra baixo e nade pra mergulhar, olhe pra cima pra subir, bolhinhas saem da cabeça. Vista de baixo pra cima da água refeita (janela de céu brilhante)
+- A espada corta folhas e os matinhos/flores do chão (eles voltam a crescer depois)
+- Blocos quebrados agora soltam só partículas pequenas e 1 item no chão pra pegar (aparece +1 no meio da tela)
+- A árvore agora cai inteira até bater no chão, deita um instante e só depois se desfaz, deixando alguns troncos pra pegar
+
 #id 2026-10-10-h
 #titulo Espada com cortes, blocos sem buraco e visual novo!
 - A espada não destrói mais blocos: ela deixa marcas de corte só visuais, que somem sozinhas depois de alguns minutos

@@ -284,6 +284,15 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
             val nm = Items.name(game.cur()); val tw = pt.measureText(nm)
             rf.set(w / 2 - tw / 2 - 12 * d, top - 40 * d, w / 2 + tw / 2 + 12 * d, top - 16 * d); pt.style = Paint.Style.FILL; pt.color = Color.argb(140, 0, 0, 0); c.drawRect(rf, pt)
             pt.typeface = Typeface.MONOSPACE; pt.color = Color.rgb(60, 60, 60); c.drawText(nm, w / 2 + 1.5f * d, top - 22 * d + 1.5f * d, pt); pt.color = Color.WHITE; c.drawText(nm, w / 2, top - 22 * d, pt)
+            if (game.pickT > 0f) {   // "+1 Terra" ao pegar um item do chão
+                val al = (kotlin.math.min(1f, game.pickT * 2f) * 255).toInt()
+                pt.textSize = 13 * d; pt.typeface = Typeface.MONOSPACE; pt.textAlign = Paint.Align.CENTER
+                val pm = game.pickMsg; val pw = pt.measureText(pm)
+                val py2 = top - 56 * d - (1.6f - game.pickT) * 14 * d
+                pt.style = Paint.Style.FILL; pt.color = Color.argb(al * 140 / 255, 0, 0, 0)
+                rf.set(w / 2 - pw / 2 - 10 * d, py2 - 16 * d, w / 2 + pw / 2 + 10 * d, py2 + 6 * d); c.drawRect(rf, pt)
+                pt.color = Color.argb(al, 255, 236, 140); c.drawText(pm, w / 2, py2, pt)
+            }
         }
         // corações
         val hp = game.hp
