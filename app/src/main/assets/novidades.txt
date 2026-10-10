@@ -1,3 +1,11 @@
+#id 2026-10-11-f
+#titulo Personagem refeito com texturas de skin!
+- O boneco agora usa uma folha de skin pintada (estilo Minecraft anime/chibi): rosto, cabelo, roupas, sapatos, chapéus, cachecóis e itens de costas com muito mais detalhe
+- 18 roupas, 8 calças/saias, 8 sapatos, 24 chapéus, 13 detalhes de rosto, 10 itens de pescoço e 10 de costas redesenhados
+- Boca Sorriso/Aberta corrigida (não encosta mais no olho) e cabelo com mechas mais suaves
+- Pés e pernas com articulação nos joelhos e cotovelos, sem frestas
+- Preview da tela de personagem e o jogo usam o mesmo desenho
+
 #id 2026-10-11-e
 #titulo Nado e voo mais fluidos!
 - Nado: sem acelerar, na superfície ele só boia batendo de leve os bracinhos e as perninhas (parado ou andando); mergulhado, bate só as pernas com os braços inclinados pra trás. Ao acelerar, aí sim ele bate os braços

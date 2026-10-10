@@ -54,7 +54,14 @@ class CharView(ctx: Context, private val W: Int = 420, private val H: Int = 532)
         return Color.rgb(r, g, b)
     }
 
-    private fun tri(ax: Float, ay: Float, az: Float, bx: Float, by: Float, bz: Float, cx: Float, cy: Float, cz: Float, col: Int, alpha: Float) {
+    private var skd: SkinData? = null
+    private val uvT = FloatArray(2)
+    private val su = FloatArray(4); private val sv = FloatArray(4)
+
+    /** triangulo com UV (afim, projecao ortografica): amostra a folha de skin (vizinho mais proximo) e aplica o sombreamento da face */
+    private fun triUV(ax: Float, ay: Float, az: Float, au: Float, av: Float, bx: Float, by: Float, bz: Float, bu: Float, bv: Float,
+                      cx: Float, cy: Float, cz: Float, cu: Float, cv: Float, shd: Float) {
+        val d = skd ?: return
         val area = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax)
         if (abs(area) < 1e-6f) return
         val x0 = max(0, floor(min(ax, min(bx, cx))).toInt()); val x1 = min(W - 1, ceil(max(ax, max(bx, cx))).toInt())
@@ -68,46 +75,48 @@ class CharView(ctx: Context, private val W: Int = 420, private val H: Int = 532)
             val z = w0 * az + w1 * bz + w2 * cz
             val i = y * W + x
             if (z <= zb[i]) continue
-            if (alpha >= 0.99f) { zb[i] = z; pix[i] = col }
-            else pix[i] = mixC(pix[i], col, alpha)
+            val u = w0 * au + w1 * bu + w2 * cu; val v = w0 * av + w1 * bv + w2 * cv
+            val ui = min(127, max(0, floor(u).toInt())); val vi = min(127, max(0, floor(v).toInt()))
+            val t = d.pix[vi * 128 + ui]
+            val al = (t ushr 24) and 255
+            if (al < 26) continue
+            val r = min(255, (((t shr 16) and 255) * shd).toInt()); val g = min(255, (((t shr 8) and 255) * shd).toInt()); val b = min(255, ((t and 255) * shd).toInt())
+            val col = Color.rgb(r, g, b)
+            if (al >= 250) { zb[i] = z; pix[i] = col }
+            else {
+                val dst = pix[i]
+                pix[i] = if (((dst ushr 24) and 255) == 0) ((al shl 24) or (col and 0xFFFFFF)) else mixC(dst, col, al / 255f)
+            }
         }
     }
 
-    private val boxFn: BoxFn = { m, ox, oy, oz, rx, ry, bsx, bsy, bsz, off, col, a, rz ->
-        System.arraycopy(m, 0, tmp, 0, 16)
-        Matrix.translateM(tmp, 0, ox, oy, oz)
-        if (rz != 0f) Matrix.rotateM(tmp, 0, rz, 0f, 0f, 1f)
-        if (ry != 0f) Matrix.rotateM(tmp, 0, ry, 0f, 1f, 0f)
-        if (rx != 0f) Matrix.rotateM(tmp, 0, rx, 1f, 0f, 0f)
-        Matrix.translateM(tmp, 0, 0f, off, 0f)
-        Matrix.scaleM(tmp, 0, bsx, bsy, bsz)
-        for (i in 0 until 8) {
-            val x = if ((i and 1) != 0) 0.5f else -0.5f
-            val y = if ((i and 2) != 0) 0.5f else -0.5f
-            val z = if ((i and 4) != 0) 0.5f else -0.5f
-            wx[i] = tmp[0] * x + tmp[4] * y + tmp[8] * z + tmp[12]
-            wy[i] = tmp[1] * x + tmp[5] * y + tmp[9] * z + tmp[13]
-            wz[i] = tmp[2] * x + tmp[6] * y + tmp[10] * z + tmp[14]
-        }
-        for (f in faces) {
-            val a0 = f[0]; val a1 = f[1]; val a2 = f[2]
-            val ux = wx[a1] - wx[a0]; val uy = wy[a1] - wy[a0]; val uz = wz[a1] - wz[a0]
-            val vx = wx[a2] - wx[a0]; val vy = wy[a2] - wy[a0]; val vz = wz[a2] - wz[a0]
-            var nx = uy * vz - uz * vy; var ny = uz * vx - ux * vz; var nz = ux * vy - uy * vx
-            val nl = sqrt(nx * nx + ny * ny + nz * nz)
-            if (nl > 1e-8f) {
-                nx /= nl; ny /= nl; nz /= nl
-                if (nz > 0f) {
-                    val lit = max(0f, nx * -0.35f + ny * 0.75f + nz * 0.55f)
-                    val c = shadeCol(col, 0.58f + 0.5f * lit)
-                    for (k in 0 until 4) {
-                        sx[k] = W * 0.5f + wx[f[k]] * S
-                        sy[k] = H * 0.95f - wy[f[k]] * S
-                        sz[k] = wz[f[k]]
-                    }
-                    tri(sx[0], sy[0], sz[0], sx[1], sy[1], sz[1], sx[2], sy[2], sz[2], c, a)
-                    tri(sx[0], sy[0], sz[0], sx[2], sy[2], sz[2], sx[3], sy[3], sz[3], c, a)
+    private val boxFn = object : TexSink {
+        override fun box(m: FloatArray, px: Float, py: Float, pz: Float, rx: Float, ry: Float, rz: Float, sx: Float, sy: Float, sz: Float, oy: Float, id: Int, r0: Float, r1: Float) {
+            val d = skd ?: return
+            if (id < 0 || id >= d.nb) return
+            System.arraycopy(m, 0, tmp, 0, 16)
+            Matrix.translateM(tmp, 0, px, py, pz)
+            if (rz != 0f) Matrix.rotateM(tmp, 0, rz, 0f, 0f, 1f)
+            if (ry != 0f) Matrix.rotateM(tmp, 0, ry, 0f, 1f, 0f)
+            if (rx != 0f) Matrix.rotateM(tmp, 0, rx, 1f, 0f, 0f)
+            if (oy != 0f) Matrix.translateM(tmp, 0, 0f, oy, 0f)
+            Matrix.scaleM(tmp, 0, sx, sy, sz)
+            for (f in 0 until 6) {
+                val cn = BoxFaces.CORN[f]
+                for (k in 0 until 4) {
+                    val x = cn[k * 3] * 0.5f; val y = cn[k * 3 + 1] * 0.5f; val z = cn[k * 3 + 2] * 0.5f
+                    val wx0 = tmp[0] * x + tmp[4] * y + tmp[8] * z + tmp[12]
+                    val wy0 = tmp[1] * x + tmp[5] * y + tmp[9] * z + tmp[13]
+                    this@CharView.sx[k] = W * 0.5f + wx0 * S
+                    this@CharView.sy[k] = H * 0.95f - wy0 * S
+                    this@CharView.sz[k] = tmp[2] * x + tmp[6] * y + tmp[10] * z + tmp[14]
+                    BoxFaces.uv(d, id, f, k, r0, r1, uvT)
+                    su[k] = uvT[0]; sv[k] = uvT[1]
                 }
+                val shd = BoxFaces.SHADE[f]
+                val q = this@CharView
+                q.triUV(q.sx[0], q.sy[0], q.sz[0], su[0], sv[0], q.sx[3], q.sy[3], q.sz[3], su[3], sv[3], q.sx[2], q.sy[2], q.sz[2], su[2], sv[2], shd)
+                q.triUV(q.sx[0], q.sy[0], q.sz[0], su[0], sv[0], q.sx[2], q.sy[2], q.sz[2], su[2], sv[2], q.sx[1], q.sy[1], q.sz[1], su[1], sv[1], shd)
             }
         }
     }
@@ -187,7 +196,9 @@ class CharView(ctx: Context, private val W: Int = 420, private val H: Int = 532)
         hop += 0.5f * flSm * (1f + 0.04f * sin(tt * 1.6f))
         if (hop > 0f) Matrix.translateM(base, 0, 0f, hop, 0f)
         if (swSm > 0.01f) { Matrix.translateM(base, 0, 0f, 0.9f, 0f); Matrix.rotateM(base, 0, tiSm, 1f, 0f, 0f); Matrix.translateM(base, 0, 0f, -0.9f, 0f) }
+        skd = Skin.get()
         model.draw(boxFn, base, an, null)
+        skd = null
         bmp.setPixels(pix, 0, W, 0, 0, W, H)
     }
 
