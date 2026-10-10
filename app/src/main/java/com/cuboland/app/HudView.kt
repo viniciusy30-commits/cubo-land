@@ -28,12 +28,13 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onExit: (
     private val btnId = HashMap<Int, Int>()
     private val press = FloatArray(8)
     private var invOpen = false; private var invSel = -1
+    private var poseDownT = 0L; private var poseFired = false; private var poseTapT = 0L
     private var bounce = 0f; private var lastSel = -1; private var lastItem = -1; private var nameUntil = 0L
     // 1 pular/boiar, 3 câmera, 4 pausa, 5 mochila, 6 afundar, 7 correr
-    private fun bx(i: Int) = when (i) { 1, 6 -> width * 0.858f; 7 -> width * 0.927f; 3 -> width - 40 * d; 5 -> width - 92 * d; else -> 40 * d }
-    private fun byy(i: Int) = when (i) { 1 -> if (wet()) height * 0.753f - 72 * d else height * 0.753f; 6 -> height * 0.753f; 7 -> height * 0.653f; else -> 40 * d }
+    private fun bx(i: Int) = when (i) { 1, 6 -> width * 0.858f; 7 -> width * 0.927f; 8 -> width * 0.934f; 3 -> width - 40 * d; 5 -> width - 92 * d; else -> 40 * d }
+    private fun byy(i: Int) = when (i) { 1 -> if (wet()) height * 0.753f - 72 * d else height * 0.753f; 6 -> height * 0.753f; 7 -> height * 0.653f; 8 -> height * 0.833f; else -> 40 * d }
     private fun wet() = game.flying || game.player.inWater
-    private fun br(i: Int) = (when (i) { 1 -> 32 * d; 7, 6 -> 28 * d; else -> 22 * d }) * (if (i == 1 || i == 6 || i == 7) bs else 1f)
+    private fun br(i: Int) = (when (i) { 1 -> 32 * d; 7, 6 -> 28 * d; 8 -> 26 * d; else -> 22 * d }) * (if (i == 1 || i == 6 || i == 7 || i == 8) bs else 1f)
     private fun sn(v: Float) = (v / u).roundToInt() * u
     private val slot get() = sn(46 * d)
     private val gap get() = max(u, sn(4 * d))
@@ -122,12 +123,13 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onExit: (
             if (x < pl() || x > pr() || y < pt0() || y > pb()) toggleInv()
             return
         }
-        for (i in intArrayOf(1, 3, 4, 6, 7)) if ((i != 6 || wet()) && (i != 7 || !wet()) && hypot(x - bx(i), y - byy(i)) < br(i) * 1.15f) {
+        for (i in intArrayOf(1, 3, 4, 6, 7, 8)) if ((i != 6 || wet()) && (i != 7 || !wet()) && (i != 8 || !wet()) && hypot(x - bx(i), y - byy(i)) < br(i) * 1.15f) {
             btnId[id] = i
             when (i) {
                 1 -> { game.jumpHeld = true; game.jumpTap() }
                 6 -> game.downHeld = true
                 7 -> game.sprint = !game.sprint      // toque liga/desliga; parar de andar desliga sozinho
+                8 -> { poseDownT = System.currentTimeMillis(); poseFired = false }
                 3 -> game.wantCam = true
                 4 -> togglePause()
             }
@@ -169,6 +171,11 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onExit: (
         val b = btnId.remove(id)
         if (b == 1) game.jumpHeld = false
         if (b == 6) game.downHeld = false
+        if (b == 8 && !poseFired) {   // toque: 1x agacha, 2x senta (espera um pouco pra ver se vem o 2º toque)
+            val now = System.currentTimeMillis()
+            if (poseTapT > 0L && now - poseTapT < 320) { poseTapT = 0L; game.requestPosture(2) } else poseTapT = now
+        }
+        if (b == 8) poseFired = false
     }
 
     private val HEART = arrayOf(".XX...XX.", "XXXX.XXXX", "XXXXXXXXX", "XXXXXXXXX", ".XXXXXXX.", "..XXXXX..", "...XXX...", "....X....")
@@ -215,6 +222,22 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onExit: (
         }
     }
 
+    private fun frame(c: Canvas, l: Float, t: Float, r: Float, b: Float, th: Float, color: Int) {
+        rc(c, l, t, r, t + th, color); rc(c, l, b - th, r, b, color); rc(c, l, t + th, l + th, b - th, color); rc(c, r - th, t + th, r, b - th, color)
+    }
+
+    /** moldura transparente: só contorno preto + dourado e um brilho leve de vidro por dentro */
+    private fun pxGlass(c: Canvas, l0: Float, t0: Float, r0: Float, b0: Float, hi: Boolean) {
+        val l = sn(l0); val t = sn(t0); val r = sn(r0); val b = sn(b0)
+        val g = if (hi) Color.rgb(255, 232, 140) else Color.rgb(236, 190, 92); val gl = Color.rgb(255, 244, 186); val gd = Color.rgb(176, 116, 44)
+        val ink = Color.argb(200, 36, 28, 48)
+        rc(c, l + 2 * u, t + 2 * u, r - 2 * u, b - 2 * u, Color.argb(if (hi) 40 else 22, 255, 255, 255))
+        rc(c, l + 2 * u, t + 2 * u, r - 2 * u, t + 3 * u, Color.argb(if (hi) 70 else 40, 255, 255, 255))
+        rc(c, l + u, t, r - u, t + u, ink); rc(c, l + u, b - u, r - u, b, ink); rc(c, l, t + u, l + u, b - u, ink); rc(c, r - u, t + u, r, b - u, ink)
+        rc(c, l + u, t + u, r - u, t + 2 * u, gl); rc(c, l + u, t + 2 * u, l + 2 * u, b - 2 * u, g)
+        rc(c, l + u, b - 2 * u, r - u, b - u, gd); rc(c, r - 2 * u, t + 2 * u, r - u, b - 2 * u, gd)
+    }
+
     private fun pxDisc(c: Canvas, cx: Float, cy: Float, R: Int, color: Int) {
         for (k in -R..R) {
             val hw = floor(sqrt(max(0f, R * R + R * 0.6f - k * k))).toInt()
@@ -246,22 +269,26 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onExit: (
         pxDisc(c, cx - R * 0.28f * u, cy - R * 0.34f * u, max(1, R / 4), mixC(base, Color.WHITE, 0.4f))
     }
 
-    private val S_UP = arrayOf("....#....", "...###...", "..#####..", ".#######.", "...###...", "...###...", "...###...", "...###...")
-    private val S_DOWN = arrayOf("...###...", "...###...", "...###...", "...###...", ".#######.", "..#####..", "...###...", "....#....")
-    private val S_RUN = arrayOf("##..##...", ".##..##..", "..##..##.", "...##..##", "...##..##", "..##..##.", ".##..##..", "##..##...")
-    private val S_BAG = arrayOf("...###...", "..#...#..", ".#######.", "#########", "####.####", "####.####", "#########", ".#######.")
+    private val S_UP = arrayOf("....#....", "...###...", "..#####..", ".#######.", "...###...", "...###...", "...###...", "...###...", "...###...")
+    private val S_DOWN = arrayOf("...###...", "...###...", "...###...", "...###...", "...###...", ".#######.", "..#####..", "...###...", "....#....")
+    private val S_RUN = arrayOf("##..##...", ".##..##..", "..##..##.", "...##..##", "..##..##.", ".##..##..", "##..##...")
+    private val S_BAG = arrayOf("...###...", "..#...#..", ".#######.", "#########", "##.....##", "##.###.##", "##.###.##", "#########", ".#######.")
     private val S_EYE = arrayOf("..#####..", ".#######.", ".##...##.", "##..#..##", ".##...##.", ".#######.", "..#####..")
-    private val S_PAUSE = arrayOf("###.###", "###.###", "###.###", "###.###", "###.###", "###.###", "###.###", "###.###")
+    private val S_PAUSE = arrayOf("###.###", "###.###", "###.###", "###.###", "###.###", "###.###", "###.###", "###.###", "###.###")
+    private val S_POSE = arrayOf("...###...", "...###...", "....#....", ".#######.", "#..###..#", "...###...", "..##.##..", ".##...##.", "##.....##")
     private val S_X = arrayOf("##...##", "###.###", ".#####.", "..###..", ".#####.", "###.###", "##...##")
     private val S_SLIME = arrayOf("..ggggg..", ".ggggggg.", "ggkgggkgg", "ggkgggkgg", "ggggggggg", "gGGGGGGGg", ".ggggggg.")
 
+    /** desenha o sprite centralizado pela caixa dos pixels realmente usados (cx,cy = centro do botão) */
     private fun sprite(c: Canvas, rows: Array<String>, cx: Float, cy: Float, base: Int, white: Int = Color.WHITE) {
-        val w = rows[0].length; val h = rows.size
-        val x0 = sn(cx - w * u / 2f); val y0 = sn(cy - h * u / 2f)
+        var minC = 99; var maxC = -1; var minR = 99; var maxR = -1
+        for (r in rows.indices) for (k in rows[r].indices) if (rows[r][k] != '.') { minC = min(minC, k); maxC = max(maxC, k); minR = min(minR, r); maxR = max(maxR, r) }
+        val wb = maxC - minC + 1; val hb = maxR - minR + 1
+        val x0 = cx - wb * u / 2f - minC * u; val y0 = cy - hb * u / 2f - minR * u - u / 2f   // -u/2: compensa a sombra de baixo
         for (pass in 0..1) for (r in rows.indices) for (k in rows[r].indices) {
             val ch = rows[r][k]; if (ch == '.') continue
-            val color = when (ch) { '#' -> if (pass == 0) shadeC(base, 0.4f) else white; 'g' -> Color.rgb(120, 225, 110); 'G' -> Color.rgb(70, 170, 80); else -> Color.rgb(20, 60, 30) }
             if (pass == 0 && ch != '#') continue
+            val color = when (ch) { '#' -> if (pass == 0) shadeC(base, 0.4f) else white; 'g' -> Color.rgb(120, 225, 110); 'G' -> Color.rgb(70, 170, 80); else -> Color.rgb(20, 60, 30) }
             val oy = if (pass == 0) u else 0f
             rc(c, x0 + k * u, y0 + r * u + oy, x0 + (k + 1) * u, y0 + (r + 1) * u + oy, color)
         }
@@ -287,10 +314,12 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onExit: (
     }
 
     /** texto em fonte pixelada; align 0 esquerda, 1 centro, 2 direita; y = topo das letras */
-    private fun pxText(c: Canvas, s: String, x: Float, y: Float, sc: Int, color: Int, align: Int = 0, shadow: Boolean = true) {
+    private fun pxText(c: Canvas, s: String, x: Float, y: Float, sc: Int, color: Int, align: Int = 0, shadow: Boolean = true, outline: Boolean = false) {
         val w = PixFont.width(s, sc).toFloat()
         val x0 = when (align) { 1 -> x - w / 2f; 2 -> x - w; else -> x }
-        if (shadow) drawCells(c, s, x0 + sc, y + sc, sc, Color.argb(210, 20, 14, 30))
+        if (outline) { val oc = Color.argb(220, 20, 14, 30); val p = sc.toFloat()
+            drawCells(c, s, x0 - p, y, sc, oc); drawCells(c, s, x0 + p, y, sc, oc); drawCells(c, s, x0, y - p, sc, oc); drawCells(c, s, x0, y + p, sc, oc); drawCells(c, s, x0 + p, y + p, sc, oc) }
+        else if (shadow) drawCells(c, s, x0 + sc, y + sc, sc, Color.argb(210, 20, 14, 30))
         drawCells(c, s, x0, y, sc, color)
     }
     private fun tsc(f: Float) = max(1, (f * d).roundToInt())
@@ -335,7 +364,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onExit: (
     }
 
 
-    private fun accent(i: Int) = when (i) { 1, 6 -> Cz.SKY; 3 -> Cz.TEAL; 5 -> Cz.GOLD; 7 -> Cz.ORANGE; else -> Cz.LILAC }
+    private fun accent(i: Int) = when (i) { 8 -> Cz.LILAC; 1, 6 -> Cz.SKY; 3 -> Cz.TEAL; 5 -> Cz.GOLD; 7 -> Cz.ORANGE; else -> Cz.LILAC }
     private val rf = RectF()
     private val ip = Paint(Paint.ANTI_ALIAS_FLAG).apply { isFilterBitmap = true }
     private val shadowF = LightingColorFilter(0x000000, 0x000000)
@@ -370,6 +399,10 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onExit: (
                 game.attackHeld = true; game.attackPress = true
             } else if (lookHold && game.cur() != Items.SWORD && game.cur() != Items.AXE) game.attackPress = true
         }
+        val nowP = System.currentTimeMillis()
+        if (poseTapT > 0L && nowP - poseTapT >= 320) { poseTapT = 0L; game.requestPosture(1) }
+        if (btnId.containsValue(8) && !poseFired && nowP - poseDownT > 380) { poseFired = true; poseTapT = 0L; game.requestPosture(3) }
+        if (wet() && game.posture != 0) game.posture = 0
         // ponto de mira (centro, ou no dedo no modo de mira por toque)
         val ax: Float; val ay: Float
         if (aimTouch) { ax = lx; ay = ly } else { ax = w / 2; ay = h / 2 }
@@ -394,19 +427,19 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onExit: (
             pxDisc(c, kx, ky, KR - 1, Color.rgb(255, 208, 96)); pxDisc(c, kx, ky, KR - 2, Color.rgb(222, 232, 248)); pxDisc(c, kx - u, ky - u, max(1, KR / 3), Color.WHITE)
         }
         // botões
-        for (i in intArrayOf(7, 1, 6, 3, 5, 4)) {
+        for (i in intArrayOf(7, 8, 1, 6, 3, 5, 4)) {
             if (invOpen && i != 5) continue
             if (i == 6 && !wet()) continue
-            if (i == 7 && wet()) continue
-            val active = btnId.containsValue(i) || (i == 5 && invOpen) || (i == 7 && game.sprint)
+            if ((i == 7 || i == 8) && wet()) continue
+            val active = btnId.containsValue(i) || (i == 5 && invOpen) || (i == 7 && game.sprint) || (i == 8 && game.posture != 0)
             press[i] += ((if (active) 1f else 0f) - press[i]) * 0.5f
             val on = press[i] > 0.5f
-            val base = if (i == 7 && game.sprint) Cz.GREEN else accent(i)
+            val base = if ((i == 7 && game.sprint) || (i == 8 && game.posture != 0)) Cz.GREEN else accent(i)
             val R = max(4, (br(i) / u).roundToInt())
             val cx = bx(i); val cy = byy(i) + (if (on) u else 0f)
             pxRound(c, cx, byy(i), R, base, on)
-            val spr = when (i) { 1 -> S_UP; 6 -> S_DOWN; 7 -> S_RUN; 3 -> S_EYE; 5 -> S_BAG; else -> S_PAUSE }
-            sprite(c, spr, cx, cy - u / 2, base)
+            val spr = when (i) { 1 -> S_UP; 6 -> S_DOWN; 7 -> S_RUN; 8 -> S_POSE; 3 -> S_EYE; 5 -> S_BAG; else -> S_PAUSE }
+            sprite(c, spr, sn(cx), cy, base)
         }
         // barra de carga do golpe poderoso (perto da mira)
         if (game.charging && !invOpen) {
@@ -425,21 +458,19 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onExit: (
             val s = i == game.sel
             val lift = if (s) sn(3 * d + 4 * d * sin(bounce * 3.14f)) else 0f
             val rr = RectF(x, top - lift, x + slot, top + slot - lift)
-            if (s) { val g = (110 + 80 * sin(clock * 4f)).toInt(); outer(c, rr.left - u, rr.top - u, rr.right + u, rr.bottom + 2 * u, Color.argb(g, 255, 214, 90)) }
-            pxPanel(c, rr.left, rr.top, rr.right, rr.bottom, if (s) Cz.PANEL2 else Cz.PANEL, s)
+            if (s) { val g = (110 + 80 * sin(clock * 4f)).toInt(); frame(c, sn(rr.left) - u, sn(rr.top) - u, sn(rr.right) + u, sn(rr.bottom) + u, u, Color.argb(g, 255, 214, 90)) }
+            pxGlass(c, rr.left, rr.top, rr.right, rr.bottom, s)
             icon(c, x + slot / 2, rr.top + slot * 0.5f, slot, game.hotbar[i])
             pxText(c, "${i + 1}", rr.left + 3 * u, rr.top + 3 * u, tsc(1.1f), Color.argb(if (s) 255 else 170, 255, 255, 255))
         }
         if (!invOpen) {
             if (System.currentTimeMillis() < nameUntil) {
-                val nm = Items.name(game.cur()); val sc = tsc(1.2f); val tw = PixFont.width(nm, sc)
-                val py = top - 34 * d - 7 * sc - 6 * u
-                pxPanel(c, w / 2 - tw / 2 - 4 * u, py, w / 2 + tw / 2 + 4 * u, py + 7 * sc + 6 * u, Cz.PANEL3, false, false, 235)
-                pxText(c, nm, w / 2, py + 3 * u, sc, Color.WHITE, 1)
+                val nm = Items.name(game.cur())
+                pxText(c, nm, w / 2, top - 24 * d, 2, Color.WHITE, 1, outline = true)
             }
             if (game.pickT > 0f) {
                 val al = (min(1f, game.pickT * 2f) * 255).toInt()
-                val py2 = top - 84 * d - (1.6f - game.pickT) * 14 * d
+                val py2 = top - 74 * d - (1.6f - game.pickT) * 14 * d
                 pxText(c, game.pickMsg, w / 2, py2, tsc(1.6f), Color.argb(al, 255, 236, 140), 1)
             }
         }
@@ -447,7 +478,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onExit: (
         val hp = game.hp
         for (i in 0 until 5) {
             val full = hp >= (i + 1) * 2; val half = hp == i * 2 + 1
-            val cx = w / 2 - 60 * d + i * 30 * d; val hy = top - 20 * d
+            val cx = w / 2 - 60 * d + i * 30 * d; val hy = top - 40 * d
             val beat = if (hp <= 2 && hp > 0) 1f + 0.08f * sin(clock * 9f) else 1f
             val bob = if (hp <= 2 && hp > 0) sin(clock * 12f + i) * 1.5f * d else 0f
             pxHeart(c, cx, hy + bob, 2.4f * d * beat, Color.rgb(228, 36, 48), half && !full, !(full || half))
@@ -466,7 +497,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onExit: (
         pxText(c, "Mochila", pl() + 18 * d, pt0() + 16 * d, tsc(3f), Color.WHITE)
         // fechar
         val xx = pr() - 20 * d; val yy = pt0() + 22 * d
-        pxRound(c, xx, yy, 5, Cz.RED, false); sprite(c, S_X, xx, yy - u / 2, Cz.RED)
+        pxRound(c, xx, yy, 5, Cz.RED, false); sprite(c, S_X, sn(xx), sn(yy), Cz.RED)
         // info do item selecionado no cabeçalho
         val sel = if (invSel > 0) invSel else game.cur()
         val ix = pl() + 150 * d; val avail = (pr() - 50 * d - ix).toInt()

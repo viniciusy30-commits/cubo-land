@@ -3,7 +3,7 @@ package com.cuboland.app
 import java.util.Random
 import kotlin.math.*
 
-open class Ent(var x: Float, var y: Float, var z: Float, val hw: Float, val h: Float) {
+open class Ent(var x: Float, var y: Float, var z: Float, val hw: Float, var h: Float) {
     var vx = 0f; var vy = 0f; var vz = 0f
     var onGround = false; var inWater = false
 }
@@ -110,7 +110,7 @@ class Game(val world: World) {
         val x = World.SX / 2; val z = World.SZ / 2
         player.x = x + 0.5f; player.z = z + 0.5f; player.y = world.surfaceY(x, z) + 0.05f
         player.vx = 0f; player.vy = 0f; player.vz = 0f
-        hp = 10; slimes.clear()
+        hp = 10; slimes.clear(); posture = 0; player.h = 1.8f
     }
 
     @Synchronized fun addLook(dx: Float, dy: Float) { lookDx += dx; lookDy += dy }
@@ -220,6 +220,18 @@ class Game(val world: World) {
     // mira por toque: desvio normalizado (-1..1) a partir do centro da tela; vale só quando aimOn
     @Volatile var aimOn = false; @Volatile var aimNx = 0f; @Volatile var aimNy = 0f; @Volatile var aspect = 2f
     @Volatile var sprint = false
+    // postura: 0 em pé, 1 agachado, 2 sentado, 3 deitado (valores suavizados pra animação/câmera)
+    @Volatile var posture = 0
+    var crouchA = 0f; var sitA = 0f; var lieA = 0f
+    private val postH = floatArrayOf(1.8f, 1.45f, 1.1f, 0.6f)
+    /** pede uma postura; repetir a mesma volta pra em pé. Não levanta se tiver teto em cima. */
+    fun requestPosture(k: Int) {
+        val target = if (posture == k) 0 else k
+        if (postH[target] > player.h && collides(player.x, player.y, player.z, player.hw, postH[target])) return
+        posture = target; player.h = postH[target]
+        if (target != 0) { sprint = false; jumpHeld = false }
+    }
+    fun eyeH() = 1.6f - 0.35f * crouchA - 0.65f * sitA - 1.15f * lieA
     private fun aimVec(): FloatArray {
         val fx = fwdX(); val fy = fwdY(); val fz = fwdZ()
         if (!aimOn) return floatArrayOf(fx, fy, fz)
@@ -236,7 +248,7 @@ class Game(val world: World) {
     private fun dirZ() = aimVec()[2]
 
     private fun updateCamera() {
-        val ex = player.x; val ey = player.y + 1.6f; val ez = player.z
+        val ex = player.x; val ey = player.y + eyeH(); val ez = player.z
         if (!thirdPerson) { camX = ex; camY = ey; camZ = ez; camDist = 0f; return }
         val dx = -fwdX(); val dy = -fwdY(); val dz = -fwdZ()
         var d = 0.3f
@@ -842,8 +854,14 @@ class Game(val world: World) {
         val p = player
         if (!creative) flying = false
         if (flying && p.onGround && downHeld) flying = false
-        if (hypot(stickX, stickY) < 0.1f) sprint = false   // parou de andar: desliga a corrida
-        val sp = (if (p.inWater && !flying) 2.8f else if (flying) 9f else 5f) * (if (charging) 0.55f else 1f) * (if (sprint && !p.inWater && !flying) 1.55f else 1f)
+        if (flying || player.inWater) { if (posture != 0) { posture = 0; player.h = 1.8f } }
+        if (posture >= 2) { stickX = 0f; stickY = 0f }
+        val pk = min(1f, 10f * dt)
+        crouchA += ((if (posture == 1) 1f else 0f) - crouchA) * pk
+        sitA += ((if (posture == 2) 1f else 0f) - sitA) * pk
+        lieA += ((if (posture == 3) 1f else 0f) - lieA) * pk
+        if (hypot(stickX, stickY) < 0.1f || posture != 0) sprint = false   // parou de andar: desliga a corrida
+        val sp = (if (p.inWater && !flying) 2.8f else if (flying) 9f else 5f) * (if (charging) 0.55f else 1f) * (if (sprint && !p.inWater && !flying) 1.55f else 1f) * (1f - 0.45f * crouchA)
         val f = sin(yaw); val c = cos(yaw)
         val mx = (f * stickY + (-c) * stickX) * sp; val mz = (c * stickY + f * stickX) * sp
         val k = min(1f, (if (p.onGround) 14f else 5f) * dt)
@@ -855,7 +873,7 @@ class Game(val world: World) {
             while (diff > PI) diff -= (2 * PI).toFloat(); while (diff < -PI) diff += (2 * PI).toFloat()
             bodyYaw += diff * min(1f, 12f * dt)
         } else if (!thirdPerson) bodyYaw = yaw
-        if (jumpHeld && !flying) {
+        if (jumpHeld && !flying && posture == 0) {
             if (p.inWater) { if (p.y > World.WATER_Y + 0.88f - 1.4f) p.vy = max(p.vy, 4.2f) } else if (p.onGround) { p.vy = 8.6f; p.onGround = false }
         }
         val wasW = p.inWater; val vyPre = p.vy

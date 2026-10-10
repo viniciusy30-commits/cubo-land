@@ -858,7 +858,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val tiltTarget = swm * (32f + (((78f - pitchDeg * 0.35f).coerceIn(40f, 110f)) - 32f) * diveSm)
         tiltSm += (tiltTarget - tiltSm) * min(1f, 9f * dtp)
         an.t = t; an.phase = phaseA; an.move = wa; an.run = runA; an.vy = vyHold; an.air = airNow; an.airA = airSm; an.fly = flySm; an.flySpd = flySp
-        an.landT = landSm; an.swim = swm; an.dive = diveSm; an.tilt = tiltSm
+        an.crouch = game.crouchA; an.sit = game.sitA; an.lie = game.lieA; an.landT = landSm; an.swim = swm; an.dive = diveSm; an.tilt = tiltSm
         an.atk = game.swing; an.atkArm = swingDelta(id, game.swing); an.hasTool = id > 0
         // mesmos keyframes de golpe/carga da 1ª pessoa, aplicados no braço do boneco
         if (game.charging) { chargePose(tpP, id, game.charge, t); an.charge = min(1f, game.charge) }
