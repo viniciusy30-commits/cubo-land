@@ -255,7 +255,7 @@ class Game(val world: World) {
     private fun attack() {
         val item = cur()
         if (atkCd > 0f) return
-        atkCd = Items.cooldown(item); swing = 0f; bodyYaw = yaw; swingDur = Items.swingTime(item); powerSwing = false
+        atkCd = Items.cooldown(item); swing = 0f; if (!thirdPerson) bodyYaw = yaw; swingDur = Items.swingTime(item); powerSwing = false
         if (item == Items.SWORD) { combo = if (comboT > 0f) (combo + 1) % 3 else 0; comboT = 1.1f }   // combo: corte diagonal -> corte horizontal -> estocada
         updateCamera()
         if (item == Items.STAFF) { shoot(); return }
@@ -749,7 +749,7 @@ class Game(val world: World) {
 
     private fun releasePower(power: Float) {
         val item = cur()
-        swing = 0f; swingDur = if (item == Items.AXE) 0.58f else 0.46f; powerSwing = true; bodyYaw = yaw
+        swing = 0f; swingDur = if (item == Items.AXE) 0.58f else 0.46f; powerSwing = true; if (!thirdPerson) bodyYaw = yaw
         atkCd = Items.cooldown(item) * 1.3f; comboT = 0f; combo = 0
         pendingPower = max(0.25f, power); pendingT = swingDur * (if (item == Items.AXE) 0.4f else 0.36f)
         updateCamera()

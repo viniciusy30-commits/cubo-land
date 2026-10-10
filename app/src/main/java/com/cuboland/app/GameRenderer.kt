@@ -843,11 +843,12 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         if (id > 0) {   // mesmo modelo 3D da 1ª pessoa e dos ícones: cabo pra cima, fio pra frente
             System.arraycopy(handM, 0, base2, 0, 16)
             if (id in 1..13) {
+                Matrix.translateM(base2, 0, 0f, -0.16f, 0.04f)
                 Matrix.scaleM(base2, 0, 0.8f, 0.8f, 0.8f)
                 drawItem(base2, id, t)
             } else {
                 Matrix.rotateM(base2, 0, 180f, 0f, 1f, 0f)
-                Matrix.rotateM(base2, 0, -10f, 1f, 0f, 0f)
+                Matrix.rotateM(base2, 0, -58f, 1f, 0f, 0f)
                 Matrix.scaleM(base2, 0, 0.7f, 0.7f, 0.7f)
                 drawTool3D(base2, id, t, 0f)
             }
@@ -873,7 +874,10 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         box(base, 0.3f * sxz, y - 0.1f * sy, 0.4f * sxz, 0f, 0f, 0.1f, 0.05f, 0.03f, 0f, 0xFF8FA8, 0.8f)
     }
 
-    private val SKIN = 0xF2C29B; private val SKIN_D = 0xD9A07A
+    private val SKIN: Int get() = Look.skin()
+    private val SKIN_D: Int get() = shadeC(Look.skin(), 0.85f)
+    private val SLEEVE: Int get() = when (Look.v[Look.TOP]) { 5 -> 0x4A5568; 6 -> 0xF4F4F4; else -> Look.pal(Look.TOPC) }
+    private val SLEEVE_L: Int get() = mixC(SLEEVE, 0xFFFFFF, 0.35f)
     private val showLeftHand = false   // mão esquerda vazia no canto, como no Minecraft (false = esconde)
 
     /** Base do braço: origem no ombro (sx,sy,sz), eixo Z apontando pra mão (hx,hy,hz), Y pra cima. Retorna o comprimento. */
@@ -894,27 +898,27 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     private fun drawArm(m: FloatArray, len: Float, w: Float = 0.17f, fist: Boolean = true) {
         if (!fist) {   // ferramenta: só a manga; o punho é desenhado alinhado com o cabo (drawToolFist)
             val sl = len - 0.08f
-            box(m, 0f, 0f, sl / 2f, 0f, 0f, w, w, sl, 0f, 0x7FD9C8)
+            box(m, 0f, 0f, sl / 2f, 0f, 0f, w, w, sl, 0f, SLEEVE)
             return
         }
         val sl = len - 0.17f
-        box(m, 0f, 0f, sl / 2f, 0f, 0f, w, w, sl, 0f, 0x7FD9C8)                                   // manga
-        box(m, 0f, 0f, sl + 0.02f, 0f, 0f, w * 1.14f, w * 1.14f, 0.05f, 0f, 0xA6EBDD)             // barra da manga
+        box(m, 0f, 0f, sl / 2f, 0f, 0f, w, w, sl, 0f, SLEEVE)                                   // manga
+        box(m, 0f, 0f, sl + 0.02f, 0f, 0f, w * 1.14f, w * 1.14f, 0.05f, 0f, SLEEVE_L)             // barra da manga
         val fw = w * 1.25f; val fh = w * 1.15f
         box(m, 0f, 0f, len, 0f, 0f, fw, fh, 0.24f, 0f, SKIN)                                      // punho
         box(m, 0f, -fh * 0.5f + 0.013f, len, 0f, 0f, fw * 1.003f, 0.028f, 0.243f, 0f, SKIN_D)     // sombra por baixo
-        box(m, 0f, fh * 0.5f - 0.01f, len + 0.02f, 0f, 0f, fw * 0.92f, 0.02f, 0.18f, 0f, 0xF8D9BC) // luz em cima
+        box(m, 0f, fh * 0.5f - 0.01f, len + 0.02f, 0f, 0f, fw * 0.92f, 0.02f, 0.18f, 0f, mixC(SKIN, 0xFFFFFF, 0.35f)) // luz em cima
     }
 
     /** braço + punho RETOS, mesma seção, face com face. Origem = ponto fixo ATRÁS da câmera (nunca aparece), Z aponta pro punho; len = distância até o centro do punho. */
     private fun drawToolArm(m: FloatArray, len: Float) {
         val fz = 0.12f
         val sl = len - fz - 0.06f
-        box(m, 0f, 0f, sl / 2f, 0f, 0f, 0.21f, 0.19f, sl, 0f, 0x7FD9C8)                  // manga
-        box(m, 0f, 0f, sl + 0.03f, 0f, 0f, 0.225f, 0.205f, 0.06f, 0f, 0xA6EBDD)          // barra da manga
+        box(m, 0f, 0f, sl / 2f, 0f, 0f, 0.21f, 0.19f, sl, 0f, SLEEVE)                  // manga
+        box(m, 0f, 0f, sl + 0.03f, 0f, 0f, 0.225f, 0.205f, 0.06f, 0f, SLEEVE_L)          // barra da manga
         box(m, 0f, 0f, len, 0f, 0f, 0.21f, 0.19f, 0.24f, 0f, SKIN)                       // punho
         box(m, 0f, -0.095f + 0.014f, len, 0f, 0f, 0.213f, 0.03f, 0.243f, 0f, SKIN_D)     // sombra de baixo
-        box(m, 0f, 0.095f - 0.008f, len, 0f, 0f, 0.213f, 0.02f, 0.243f, 0f, 0xF8D9BC)    // luz de cima
+        box(m, 0f, 0.095f - 0.008f, len, 0f, 0f, 0.213f, 0.02f, 0.243f, 0f, mixC(SKIN, 0xFFFFFF, 0.35f))    // luz de cima
     }
 
     private val tmp2 = FloatArray(16); private val restM = FloatArray(16); private val restInv = FloatArray(16); private val camBlk = FloatArray(16)
