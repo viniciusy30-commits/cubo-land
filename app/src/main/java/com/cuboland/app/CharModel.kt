@@ -2,10 +2,12 @@ package com.cuboland.app
 
 import android.opengl.Matrix
 import kotlin.math.abs
+import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
+import kotlin.math.sqrt
 
 /** (matriz-pai, px,py,pz, rx,ry, sx,sy,sz, oy, cor, alpha, rz) -> desenha uma caixa */
 typealias BoxFn = (FloatArray, Float, Float, Float, Float, Float, Float, Float, Float, Float, Int, Float, Float) -> Unit
@@ -33,6 +35,7 @@ class Anim {
     @JvmField var crouch = 0f; @JvmField var sit = 0f; @JvmField var lie = 0f   // posturas 0..1
     @JvmField var dash = 0f; @JvmField var imp = 0f; @JvmField var swimPh = 0f; @JvmField var armFwdR = 0f   // voo rápido, impulso, fase da braçada, (saída) quanto o braço do item está esticado
     @JvmField var tilt = 0f       // graus que o corpo deita ao nadar (o jogo aplica na matriz)
+    @JvmField var toolA = 0f      // (saída) graus extras em X no item da mão, pra ele não furar o corpo/chão (nado e voo rápido)
 }
 
 /** Modelo chibi do personagem, montado só com caixas. Usado no jogo (OpenGL) e na tela de personagem (preview). */
@@ -64,6 +67,18 @@ class CharModel {
     companion object {
         const val HEAD_SCALE = 0.7f
         private fun lp(a: Float, b: Float, k: Float) = a + (b - a) * k
+        // braçada de peito (nado mergulhado): (yaw pra fora, elevação, cotovelo) em cada instante da volta
+        private val STROKE_KF = arrayOf(floatArrayOf(26f, -10f, -6f), floatArrayOf(52f, -18f, -26f), floatArrayOf(84f, -30f, -62f),
+            floatArrayOf(64f, -42f, -72f), floatArrayOf(26f, -10f, -6f), floatArrayOf(26f, -10f, -6f))
+        private val STROKE_T = floatArrayOf(0f, 0.22f, 0.46f, 0.68f, 0.92f, 1f)
+        /** direção do braço no corpo (x lateral, y cabeça, z frente) a partir de yaw/elevação -> (rx, rz) do pivô do ombro; s = +1 esquerda, -1 direita */
+        private fun armIk(yaw: Float, ev: Float, s: Float, out: FloatArray) {
+            val y = Math.toRadians(yaw.toDouble()).toFloat(); val e = Math.toRadians(ev.toDouble()).toFloat()
+            val dx = s * sin(y) * cos(e); val dy = cos(y) * cos(e); val dz = -sin(e)
+            val h = sqrt(dx * dx + dy * dy)
+            var rx = Math.toDegrees(atan2(-dz, -h).toDouble()).toFloat(); if (rx > 0f) rx -= 360f
+            out[0] = rx; out[1] = Math.toDegrees(atan2(-dx, dy).toDouble()).toFloat()
+        }
         /** graus extras do braço no golpe padrão */
         fun atkDelta(sp: Float): Float {
             if (sp >= 1f) return 0f
@@ -93,7 +108,7 @@ class CharModel {
         val trim = lite(tc, 0.35f); val dark = shadeC(tc, 0.78f)
 
         // ================= ANIMAÇÃO =================
-        val mv = an.move.coerceIn(0f, 1f); val rn = an.run.coerceIn(0f, 1f); val ph = an.phase
+        val mv = an.move.coerceIn(0f, 1f); val li = an.lie.coerceIn(0f, 1f); val rn = an.run.coerceIn(0f, 1f) * (1f - li); val ph = an.phase   // rastejando não usa o modo corrida
         val swimming = an.swim > 0.2f
         val fl = if (swimming) 0f else an.fly.coerceIn(0f, 1f); val fm = an.flySpd.coerceIn(0f, 1f)
         val ab = if (swimming) 0f else an.airA.coerceIn(0f, 1f) * (1f - fl)
@@ -142,14 +157,15 @@ class CharModel {
             hipL *= kk; hipR *= kk; kneeL *= kk + 0.05f; kneeR *= kk + 0.05f
         }
         // posturas: agachar (pernas dobradas, tronco inclinado), sentar (pernas à frente, no chão), deitar (de costas)
-        val cr = an.crouch.coerceIn(0f, 1f); val si = an.sit.coerceIn(0f, 1f); val li = an.lie.coerceIn(0f, 1f)
+        val cr = an.crouch.coerceIn(0f, 1f); val si = an.sit.coerceIn(0f, 1f)
+        var qLegL = 0f; var qLegR = 0f
         if (cr > 0f) { hipL = lp(hipL, -55f + sw * 0.4f, cr); hipR = lp(hipR, -55f - sw * 0.4f, cr); kneeL = lp(kneeL, 95f + kneeL * 0.3f, cr); kneeR = lp(kneeR, 95f + kneeR * 0.3f, cr) }
         if (si > 0f) { val br = sin(t * 1.6f) * 2f; hipL = lp(hipL, -88f + br, si); hipR = lp(hipR, -86f - br, si); kneeL = lp(kneeL, 4f, si); kneeR = lp(kneeR, 8f, si) }
-        if (li > 0f) { val mc = min(1f, mv * 3f); val qL = (0.5f + 0.5f * sin(ph + 3.1416f)) * mc; val qR = (0.5f + 0.5f * sin(ph)) * mc
-            hipL = lp(hipL, 4f + 26f * qL, li); hipR = lp(hipR, 4f + 26f * qR, li)
-            kneeL = lp(kneeL, 8f + 75f * qL, li); kneeR = lp(kneeR, 8f + 75f * qR, li) }
+        if (li > 0f) { val mc = min(1f, mv * 3f); qLegL = (0.5f + 0.5f * sin(ph + 3.1416f)) * mc; qLegR = (0.5f + 0.5f * sin(ph)) * mc
+            hipL = lp(hipL, 2f + 7f * qLegL, li); hipR = lp(hipR, 2f + 7f * qLegR, li)
+            kneeL = lp(kneeL, 4f + 26f * qLegL, li); kneeR = lp(kneeR, 4f + 26f * qLegR, li) }
         val drop = 0.1f * land + 0.145f * cr + 0.31f * si
-        val bob = sin(t * 2f) * 0.012f * (1f - stride) + abs(sin(ph)) * (0.035f + 0.04f * rn) * stride
+        val bob = sin(t * 2f) * 0.012f * (1f - stride) + abs(sin(ph)) * (0.035f + 0.04f * rn) * stride * (1f - 0.85f * li)
         val move = stride * (1f + rn * 0.6f) + ab * lp(0.4f, 1.2f, fs)
 
         System.arraycopy(root, 0, r2, 0, 16)
@@ -159,10 +175,10 @@ class CharModel {
             Matrix.rotateM(r2, 0, 90f * li, 1f, 0f, 0f)
         }
 
-        val lean = 28f * an.dash.coerceIn(0f, 1f) * fl - 30f * wind * dashW + 18f * cr + 6f * si + 3f * stride + 12f * rn * stride + ab * lp(-5f, 7f, fs) + 16f * land + fl * (8f + 52f * fm) - 10f * chg +
+        val lean = 30f * an.dash.coerceIn(0f, 1f) * fl - 30f * wind * dashW + 18f * cr + 6f * si + 3f * stride * (1f - li) - 7f * li + 12f * rn * stride + ab * lp(-5f, 7f, fs) + 16f * land + fl * (8f + 52f * fm) - 10f * chg +
             (if (atking) 9f * sin(atk * 3.1416f) else 0f)
-        val twist = sin(ph) * (5f + 9f * rn) * stride + 11f * li * sin(ph) * min(1f, mv * 3f) + 14f * chg + (if (atking) 18f * sin(atk * 6.2832f) else 0f)
-        val roll = sin(ph) * 2.2f * stride * (1f - rn) + (if (air) 0f else sin(t * 0.9f) * 1.3f * (1f - stride))
+        val twist = sin(ph) * (5f + 9f * rn) * stride * (1f - li) + 14f * chg + (if (atking) 18f * sin(atk * 6.2832f) else 0f)
+        val roll = sin(ph) * 2.2f * stride * (1f - rn) + 8f * li * min(1f, mv * 3f) * sin(ph) + (if (air) 0f else sin(t * 0.9f) * 1.3f * (1f - stride))
         System.arraycopy(r2, 0, bm, 0, 16)
         Matrix.translateM(bm, 0, 0f, 0.46f, 0f)
         if (roll != 0f) Matrix.rotateM(bm, 0, roll, 0f, 0f, 1f)
@@ -203,7 +219,7 @@ class CharModel {
         for (sd in intArrayOf(-1, 1)) {
             val s = sd.toFloat()
             val hip = if (sd < 0) hipL else hipR; val kn = if (sd < 0) kneeL else kneeR
-            piv(t1, r2, s * 0.11f, 0.44f, 0f, rx = hip + lean * fl)   // voando: as pernas acompanham a inclinação do corpo
+            piv(t1, r2, s * 0.11f, 0.44f, 0f, rx = hip + lean * fl, rz = s * (5f + 7f * (if (sd < 0) qLegL else qLegR)) * li)   // rastejando: pernas abertas pro lado   // voando: as pernas acompanham a inclinação do corpo
             piv(t2, t1, 0f, -0.22f, 0f, rx = kn)
             b(t1, 0f, -0.115f, 0f, 0.19f, 0.23f, 0.21f, skin)
             b(t2, 0f, -0.11f, 0f, 0.19f, 0.22f, 0.21f, skin)
@@ -468,31 +484,39 @@ class CharModel {
         val sl = when (top) { 0 -> 0.16f; 1 -> 0.36f; 2 -> 0.13f; 3 -> 0.36f; 4 -> 0.30f; 5 -> 0.2f; 6 -> 0.16f; 7 -> 0.32f; 8 -> 0.18f; 9 -> 0.36f; 10 -> 0.34f; 11 -> 0.36f; 12 -> 0.36f; 13 -> 0f; 14 -> 0.30f; 15 -> 0.14f; 16 -> 0.16f; else -> 0.36f }
         val slCol = when (top) { 5 -> 0x4A5568; 6, 8, 15, 16 -> white; else -> tc }
         val asw = sw * (0.95f + 0.5f * rn)
-        var armFwd = 0f
         var rxL = asw - 4f; var rxR = -asw - 4f   // braço direito (sd<0) balança contra a perna direita
         var elL = -(8f + 6f * stride + 58f * rn * stride); var elR = elL
         var rzL = -(4f + sin(t * 2f) * 1.5f * (1f - stride)); var rzR = -rzL
         val aa = an.atkArm
+        val ikL = FloatArray(2); val ikR = FloatArray(2)
         val atkRx = if (an.poseOn) -an.pP * 0.95f else aa
-        var ryR = 0f
+        var ryR = 0f; var ryL = 0f
         if (toolArm) { rxR = -22f + atkRx - sw * 0.25f * (1f - rn * 0.5f); elR = -6f - 6f * rn * stride; rzR = 20f
             if (an.poseOn) { ryR = an.pY * 0.9f; elR = (elR + an.pW * 0.5f).coerceIn(-70f, 10f) } }
         else if (atking || chg > 0.01f) { rxR += atkRx; if (an.poseOn) ryR = an.pY * 0.9f }
+        var swimToolA = 0f
         if (swimming) {
-            // cabeça fora: nado crawl (braços alternados). Mergulhado: braços atrás parados; ao avançar, braçada de peito (V à frente, puxa os dois pra trás).
+            // cabeça fora: braçada alternada e calma (alcança, puxa pra baixo, volta com o cotovelo dobrado). Mergulhado: braçada de peito (V à frente, abre, puxa pros lados e volta).
             val mc2 = min(1f, mv * 3f); val sa = an.swimPh; val pi = 3.1416f
             val sl2 = sin(t * 2.3f)
             val lSurfX = -25f + sl2 * 14f; val lSurfZ = -(38f + sin(t * 2.3f + 1.2f) * 16f); val lSurfE = -20f + sl2 * 8f
-            val sXL = lp(lSurfX, -55f - 100f * sin(sa), mc2); val sXR = lp(lSurfX, -50f - 85f * sin(sa + pi), mc2) + atkRx
-            val sZL = lp(lSurfZ, -14f, mc2); val sZR = lp(-lSurfZ, 22f, mc2)
-            val sEL = lp(lSurfE, -(8f + 32f * max(0f, cos(sa))), mc2); val sER = lp(lSurfE, -(8f + 32f * max(0f, cos(sa + pi))), mc2)
-            val e0 = 0.5f - 0.5f * cos(sa); val e = e0 * e0 * (3f - 2f * e0); val sweep = sin(pi * e)
-            val dXL = lp(15f, lp(-160f, 10f, e), mc2); val dXR = lp(15f, lp(-160f, 10f, e), mc2) + atkRx
-            val dZL = -lp(8f, lp(38f, 10f, e) + 35f * sweep, mc2); val dZR = lp(8f, lp(46f, 14f, e) + 35f * sweep, mc2)
-            val dE = lp(-5f, -(6f + 18f * sweep), mc2)
-            rxL = lp(sXL, dXL, dv); rzL = lp(sZL, dZL, dv); elL = lp(sEL, dE, dv)
-            rxR = lp(sXR, dXR, dv); rzR = lp(sZR, dZR, dv); elR = lp(sER, dE, dv)
-            ryR = if (an.poseOn && toolArm) an.pY * 0.9f else 0f
+            val recL = max(0f, cos(sa)); val recR = max(0f, cos(sa + pi))
+            val sXL = lp(lSurfX, -67f - 55f * sin(sa), mc2); val sXR = lp(lSurfX, -67f - 55f * sin(sa + pi), mc2) + atkRx
+            val sZL = lp(lSurfZ, -8f, mc2); val sZR = lp(-lSurfZ, 8f, mc2)
+            val sEL = lp(lSurfE, -(7f + 30f * recL), mc2); val sER = lp(lSurfE, -(7f + 30f * recR), mc2)
+            val sYL = (16f + 10f * recL) * mc2; val sYR = -(16f + 10f * recR) * mc2
+            var e = (sa / 6.2832f) % 1f; if (e < 0f) e += 1f
+            var ki = 0; while (ki < 4 && e >= STROKE_T[ki + 1]) ki++
+            val ue = (e - STROKE_T[ki]) / (STROKE_T[ki + 1] - STROKE_T[ki]); val u = ue * ue * (3f - 2f * ue)
+            val ka = STROKE_KF[ki]; val kb = STROKE_KF[ki + 1]
+            val yw = lp(ka[0], kb[0], u); val ev = lp(ka[1], kb[1], u); val dE0 = lp(ka[2], kb[2], u)
+            armIk(yw, ev, 1f, ikL); armIk(yw, ev, -1f, ikR)
+            val dXL = lp(15f, ikL[0], mc2); val dZL = lp(-8f, -ikL[1], mc2); val dEL = lp(-5f, dE0, mc2)
+            val dXR = lp(15f, ikR[0], mc2) + atkRx; val dZR = lp(8f, -ikR[1], mc2)
+            rxL = lp(sXL, dXL, dv); rzL = lp(sZL, dZL, dv); elL = lp(sEL, dEL, dv); ryL = lp(sYL, 0f, dv)
+            rxR = lp(sXR, dXR, dv); rzR = lp(sZR, dZR, dv); elR = lp(sER, dEL, dv); ryR = lp(sYR, 0f, dv)
+            if (an.poseOn && toolArm) ryR += an.pY * 0.9f
+            swimToolA = -(an.tilt - 14f) - (rxR - atkRx + elR)   // o item acompanha o corpo deitado e não entra na cabeça
         }
         if (ab > 0.01f) {
             val flapA = sin(t * 12f) * 6f * (1f - abs(vk))
@@ -509,24 +533,30 @@ class CharModel {
             if (toolArm) { rxR = lp(rxR, lp(-24f, -40f, fm) + atkRx, fl); rzR = lp(rzR, 20f, fl) }
             else { rxR = lp(rxR, dn - sin(t * 2.6f) * 3f, fl); rzR = lp(rzR, 16f + fw, fl); elR = lp(elR, -8f, fl) }
         }
-        if (dashW > 0.001f && fl > 0.01f) {   // voo de herói: braços esticados à frente (impulso: puxa pra trás e dispara)
-            val ax = lp(-170f, 45f, wind)
-            rxL = lp(rxL, ax, dashW); rxR = lp(rxR, ax, dashW)
-            rzL = lp(rzL, -7f, dashW); rzR = lp(rzR, 16f, dashW); elL = lp(elL, -4f, dashW); elR = lp(elR, -4f, dashW)
+        var dashToolA = 0f
+        if (dashW > 0.001f && fl > 0.01f) {   // voo rápido: braços pra trás, rentes ao corpo (puxa mais no impulso)
+            val ax = lp(14f, 36f, wind); val fl2 = sin(t * 9f) * 3f
+            rxL = lp(rxL, ax + fl2, dashW); rxR = lp(rxR, ax - fl2, dashW)
+            rzL = lp(rzL, -9f, dashW); rzR = lp(rzR, 9f, dashW); elL = lp(elL, -5f, dashW); elR = lp(elR, -5f, dashW)
+            dashToolA = dashW * (-lean + 180f - (rxR + elR))   // item fica pra trás, longe da cabeça
         }
-        armFwd = if (swimming || fl > 0.01f) ((-rxR - 80f) / 70f).coerceIn(0f, 1f) else 0f
-        an.armFwdR = armFwd
+        an.armFwdR = 0f
+        an.toolA = if (swimming) swimToolA else dashToolA
         if (land > 0f) { rzL -= 25f * land; if (!toolArm) rzR += 25f * land }
-        if (li > 0.001f) {   // rastejar: braços rentes ao chão, puxando alternados pra frente (no plano do chão)
+        var elbowSpin = 0f
+        if (li > 0.001f) {   // rastejar: cada braço alcança pra frente no plano do chão (levantado), apoia e puxa com o cotovelo dobrado no plano
             val mc = min(1f, mv * 3f); val pl = (0.5f + 0.5f * sin(ph)) * mc; val pr = (0.5f + 0.5f * sin(ph + 3.1416f)) * mc
-            rxL = lp(rxL, 0f, li); rxR = lp(rxR, 0f, li); rzL = lp(rzL, -(25f + 95f * pl), li); rzR = lp(rzR, 25f + 95f * pr, li)
-            elL = lp(elL, -6f, li); elR = lp(elR, -6f, li); ryR = lp(ryR, 0f, li)
+            val fwdL = max(0f, cos(ph)) * mc; val fwdR = max(0f, cos(ph + 3.1416f)) * mc
+            rxL = lp(rxL, 3f + 17f * fwdL, li); rxR = lp(rxR, 3f + 17f * fwdR, li)
+            rzL = lp(rzL, -(32f + 68f * pl), li); rzR = lp(rzR, 32f + 68f * pr, li)
+            elL = lp(elL, -(14f + 36f * (1f - pl)), li); elR = lp(elR, -(14f + 36f * (1f - pr)), li)
+            ryR = lp(ryR, 0f, li); ryL = lp(ryL, 0f, li); elbowSpin = 90f * li
         }
         for (sd in intArrayOf(-1, 1)) {
             val s = sd.toFloat()
             val rx = if (sd < 0) rxR else rxL; val rz = if (sd < 0) -rzR else -rzL; val el = if (sd < 0) elR else elL   // +x é a ESQUERDA do boneco: o item vai na direita (sd<0)
-            piv(t1, base, s * (bw / 2f + 0.09f), 0.88f, 0f, rx = rx, ry = if (sd < 0) ryR else 0f, rz = rz)
-            piv(t2, t1, 0f, -0.21f, 0f, rx = el)
+            piv(t1, base, s * (bw / 2f + 0.09f), 0.88f, 0f, rx = rx, ry = if (sd < 0) ryR else ryL, rz = rz)
+            piv(t2, t1, 0f, -0.21f, 0f, rx = el, ry = elbowSpin * s)
             b(t1, 0f, -0.1f, 0f, 0.15f, 0.23f, 0.17f, skin)
             b(t2, 0f, -0.1f, 0f, 0.15f, 0.22f, 0.17f, skin)
             b(t2, 0f, -0.16f, 0.005f, 0.165f, 0.12f, 0.185f, skin)
@@ -557,7 +587,7 @@ class CharModel {
                 9 -> b(t2, 0f, -rnd(sl), 0f, 0.194f, 0.025f, 0.214f, gold)
             }
             if (sd < 0 && handOut != null) {
-                piv(handOut, t1, 0f, -0.21f, 0f, rx = el)
+                piv(handOut, t1, 0f, -0.21f, 0f, rx = el, ry = elbowSpin * s)
                 Matrix.translateM(handOut, 0, 0f, -0.16f, 0.02f)
             }
         }

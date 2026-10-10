@@ -1,3 +1,12 @@
+#id 2026-10-11-d
+#titulo Poses novas: rastejar, nado e voo rápido com vento de herói!
+- Rastejar refeito: o corpo não gira mais de lado nem afunda no chão, as pernas ficam baixas e abertas e os braços puxam alternados no plano do chão
+- Bloco e ferramenta na mão não entram mais no chão quando você rasteja
+- Nado na superfície: braçada alternada mais calma, com o braço varrendo menos e a ferramenta sem furar a cabeça
+- Nado mergulhado: braçada de peito de verdade, os braços abrem em V, puxam pros lados e voltam sem se cruzar
+- Voo rápido: braços pra trás rentes ao corpo, corpo mais inclinado e a ferramenta fica atrás, longe da cabeça
+- Rastro de vento novo no voo rápido: riscos finos na direção do voo, hélice dupla saindo das mãos, anéis de vento se abrindo e um anel grande quando você dispara
+
 #id 2026-10-11-c
 #titulo Menus mais bonitos e ajustes no menu principal!
 - Telas de Jogar (mundos), Personagem e Ajustes refeitas em pixel art de fantasia, com a mesma fonte, botões dourados e painéis do menu principal

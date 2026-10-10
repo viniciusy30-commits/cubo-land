@@ -15,6 +15,11 @@ class Slime(x: Float, y: Float, z: Float) : Ent(x, y, z, 0.42f, 0.85f) {
 class Particle(var x: Float, var y: Float, var z: Float, var vx: Float, var vy: Float, var vz: Float,
                val color: Int, val size: Float, var life: Float) { var grav = 18f; var dust = false; var age = 0f }
 
+/** rastro de vento do voo rápido (parado no mundo, só envelhece). kind: 0 risco fino ao longo do voo, 1 ponto da hélice (gira em volta do eixo), 2 anel que se abre.
+ *  (dx,dy,dz) = direção do voo (unitária); len = comprimento do risco; rad = raio final da hélice/anel; ph = fase da hélice */
+class WindP(val kind: Int, var x: Float, var y: Float, var z: Float, val dx: Float, val dy: Float, val dz: Float,
+            val color: Int, val life: Float, val len: Float, val rad: Float, val ph: Float) { var age = 0f }
+
 class LeafP(var x: Float, var y: Float, var z: Float, var vx: Float, var vz: Float, val ph: Float, val color: Int, val size: Float, var life: Float, var landed: Boolean = false, var age: Float = 0f) {
     var vy = 0f; var burst = 0f; var spin = 0f   // burst > 0: folhinha lançada por um corte (voa pra fora e depois flutua)
 }
@@ -78,6 +83,8 @@ class Game(val world: World) {
     val player = Ent(World.SX / 2f + 0.5f, 20f, World.SZ / 2f + 0.5f, 0.3f, 1.8f)
     val slimes = ArrayList<Slime>()
     val parts = ArrayList<Particle>()
+    val wind = ArrayList<WindP>()   // rastro de vento do voo rápido (até WIND_MAX elementos)
+    private var windT = 0f; private var helixT = 0f; private var ringT = 0f
     @Volatile var attackHeld = false; @Volatile var attackPress = false; @Volatile var attackRelease = false
     @Volatile var charging = false; @Volatile var charge = 0f
     private var pressT = 0f; private var pressing = false; var swingDur = 0.46f; @Volatile var powerSwing = false
@@ -885,10 +892,11 @@ class Game(val world: World) {
         // voo rápido: impulso de herói no começo e rastro luminoso atrás (sem tremer a tela)
         val spdF = hypot(p.vx, p.vz)
         val fastFly = flying && spdF > 11f
-        if (fastFly && !wasFast) flyImp = 1f
+        if (fastFly && !wasFast) { flyImp = 1f; windBurst(p) }
         wasFast = fastFly; flyImp = max(0f, flyImp - dt / 0.6f)
+        updateWind(dt, p, fastFly)
         trailT -= dt
-        if ((fastFly || (p.inWater && !flying && sprint && spdF > 4.5f)) && trailT <= 0f && parts.size < 480) {
+        if ((p.inWater && !flying && sprint && spdF > 4.5f) && trailT <= 0f && parts.size < 480) {
             trailT = 0.025f
             val l = max(0.1f, spdF); val bx = -p.vx / l; val bz = -p.vz / l
             val col = if (flying) (if (rnd.nextFloat() < 0.5f) 0xFFFFFF else 0x9FE6FF) else 0xD8F4FF
@@ -1129,6 +1137,66 @@ class Game(val world: World) {
                     else if (gid == B.DIRT) burst(p.x, gy + 1.05f, p.z, 0x8C6039, 2, 1f)
                 }
             }
+        }
+    }
+
+    // ---------- rastro de vento do voo rápido ----------
+    private val WIND_MAX = 260
+    private fun windAdd(w: WindP) { if (wind.size < WIND_MAX) wind.add(w) }
+
+    /** anel grande + riscos em volta no instante em que o voo rápido dispara */
+    private fun windBurst(p: Ent) {
+        val sp = max(0.1f, sqrt(p.vx * p.vx + p.vy * p.vy + p.vz * p.vz)); val dx = p.vx / sp; val dy = p.vy / sp; val dz = p.vz / sp
+        windAdd(WindP(2, p.x + dx * 0.4f, p.y + 0.8f + dy * 0.4f, p.z + dz * 0.4f, dx, dy, dz, 0xFFFFFF, 0.75f, 0f, 4.6f, 0f))
+        windAdd(WindP(2, p.x - dx * 0.2f, p.y + 0.8f - dy * 0.2f, p.z - dz * 0.2f, dx, dy, dz, 0x9FE6FF, 0.6f, 0f, 3.0f, 0f))
+        val rx = if (abs(dy) < 0.9f) 0f else 1f; val ry = if (abs(dy) < 0.9f) 1f else 0f
+        var ux = dy * 0f - dz * ry; var uy = dz * rx - dx * 0f; var uz = dx * ry - dy * rx
+        val ul = max(0.001f, sqrt(ux * ux + uy * uy + uz * uz)); ux /= ul; uy /= ul; uz /= ul
+        val vx = dy * uz - dz * uy; val vy = dz * ux - dx * uz; val vz = dx * uy - dy * ux
+        for (i in 0 until 14) {
+            val a = i * 0.4488f + rnd.nextFloat() * 0.3f; val r = 1.0f + rnd.nextFloat() * 1.6f
+            windAdd(WindP(0, p.x + (ux * cos(a) + vx * sin(a)) * r - dx * rnd.nextFloat() * 1.2f, p.y + 0.8f + (uy * cos(a) + vy * sin(a)) * r - dy * rnd.nextFloat() * 1.2f,
+                p.z + (uz * cos(a) + vz * sin(a)) * r - dz * rnd.nextFloat() * 1.2f, dx, dy, dz, if (i % 2 == 0) 0xFFFFFF else 0xBFEFFF, 0.5f + rnd.nextFloat() * 0.2f, 2.2f + rnd.nextFloat() * 1.6f, 0f, 0f))
+        }
+    }
+
+    private fun updateWind(dt: Float, p: Ent, fast: Boolean) {
+        val it = wind.iterator()
+        while (it.hasNext()) { val w = it.next(); w.age += dt; if (w.age >= w.life) it.remove() }
+        if (!fast) return
+        val sp = max(0.1f, sqrt(p.vx * p.vx + p.vy * p.vy + p.vz * p.vz)); val dx = p.vx / sp; val dy = p.vy / sp; val dz = p.vz / sp
+        val up = abs(dy) < 0.9f   // eixo de referência: cima (ou X se o voo for quase vertical); u = d x ref
+        var ux = if (up) -dz else 0f; var uy = if (up) 0f else dz; var uz = if (up) dx else -dy
+        val ul = max(0.001f, sqrt(ux * ux + uy * uy + uz * uz)); ux /= ul; uy /= ul; uz /= ul
+        val vx = dy * uz - dz * uy; val vy = dz * ux - dx * uz; val vz = dx * uy - dy * ux
+        // riscos finos e longos, parados no mundo em volta do corpo
+        windT -= dt
+        if (windT <= 0f) {
+            windT = 0.03f
+            for (i in 0 until 2) {
+                val a = rnd.nextFloat() * 6.2832f; val r = 0.8f + rnd.nextFloat() * 1.5f; val back = rnd.nextFloat() * 1.4f - 0.9f
+                windAdd(WindP(0, p.x + (ux * cos(a) + vx * sin(a)) * r + dx * back, p.y + 0.8f + (uy * cos(a) + vy * sin(a)) * r + dy * back,
+                    p.z + (uz * cos(a) + vz * sin(a)) * r + dz * back, dx, dy, dz, if (rnd.nextFloat() < 0.5f) 0xFFFFFF else 0xBFEFFF, 0.35f + rnd.nextFloat() * 0.25f, 1.3f + rnd.nextFloat() * 1.5f, 0f, 0f))
+            }
+        }
+        // hélice dupla: um fio de cada mão, em fases opostas, abrindo em espiral
+        helixT -= dt
+        if (helixT <= 0f) {
+            helixT = 0.02f
+            val a0 = time * 22f
+            for (sd in 0 until 2) {
+                val sgn = if (sd == 0) 1f else -1f
+                // mão = ao lado do corpo (perpendicular ao voo, no plano horizontal), um pouco atrás
+                val hx = -dz; val hz = dx; val hl = max(0.001f, sqrt(hx * hx + hz * hz))
+                val hX = p.x + hx / hl * 0.38f * sgn - dx * 0.3f; val hY = p.y + 0.72f - dy * 0.3f; val hZ = p.z + hz / hl * 0.38f * sgn - dz * 0.3f
+                windAdd(WindP(1, hX, hY, hZ, dx, dy, dz, if (sd == 0) 0xFFFFFF else 0x9FE6FF, 0.5f, 0f, 0.6f, a0 + (if (sd == 0) 0f else 3.1416f)))
+            }
+        }
+        // anéis de vento se abrindo atrás do corpo
+        ringT -= dt
+        if (ringT <= 0f) {
+            ringT = 0.11f
+            windAdd(WindP(2, p.x - dx * 0.5f, p.y + 0.8f - dy * 0.5f, p.z - dz * 0.5f, dx, dy, dz, 0xDDF6FF, 0.5f, 0f, 1.7f, 0f))
         }
     }
 

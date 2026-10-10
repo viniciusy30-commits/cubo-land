@@ -851,7 +851,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         flySm += ((if (flyNow) 1f else 0f) - flySm) * min(1f, 6f * dtp)
         flySp += (min(1f, spdH / 10f) - flySp) * min(1f, 5f * dtp)
         dashSm += ((if (flyNow && spdH > 11f) 1f else 0f) - dashSm) * min(1f, 6f * dtp)
-        swimPhA += dtp * (2.4f + 4.2f * min(1f, wa * 2f)) * (if (game.sprint) 1.3f else 1f)
+        swimPhA += dtp * (2.2f + 1.8f * min(1f, wa * 2f)) * (if (game.sprint) 1.3f else 1f)
         val surfY = World.WATER_Y + 0.88f
         val diveTarget = ((surfY - (p.y + 1.55f)) / 0.45f).coerceIn(0f, 1f)
         diveSm += (diveTarget - diveSm) * min(1f, 6f * dtp)
@@ -876,8 +876,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         cm.draw(charBox, base, an, handM)
         if (id > 0) {   // mesmo modelo 3D da 1ª pessoa e dos ícones: cabo pra cima, fio pra frente
             System.arraycopy(handM, 0, base2, 0, 16)
-            if (an.armFwdR > 0.01f) Matrix.rotateM(base2, 0, 180f * an.armFwdR, 1f, 0f, 0f)   // braço esticado pra frente: o item aponta pra longe da cabeça
-            if (game.lieA > 0.01f) Matrix.rotateM(base2, 0, -90f * game.lieA, 0f, 1f, 0f)   // rastejando: o item fica deitado, sem furar chão nem cabeça
+            if (an.toolA != 0f) Matrix.rotateM(base2, 0, an.toolA, 1f, 0f, 0f)   // nado e voo rápido: o item acompanha o corpo e não fura a cabeça
             if (id in 1..13) {
                 Matrix.translateM(base2, 0, 0f, -0.16f, 0.04f)
                 Matrix.scaleM(base2, 0, 0.8f, 0.8f, 0.8f)
@@ -890,6 +889,55 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                 drawTool3D(base2, id, t, 0f)
             }
         }
+    }
+
+    /** rastro de vento do voo rápido: riscos finos ao longo do voo, hélice dupla saindo das mãos e anéis se abrindo */
+    private val wu = FloatArray(3); private val wv = FloatArray(3)
+    private fun windAxes(w: WindP) {
+        val up = abs(w.dy) < 0.9f
+        var ux = if (up) -w.dz else 0f; var uy = if (up) 0f else w.dz; var uz = if (up) w.dx else -w.dy
+        val ul = max(0.001f, sqrt(ux * ux + uy * uy + uz * uz)); ux /= ul; uy /= ul; uz /= ul
+        wu[0] = ux; wu[1] = uy; wu[2] = uz
+        wv[0] = w.dy * uz - w.dz * uy; wv[1] = w.dz * ux - w.dx * uz; wv[2] = w.dx * uy - w.dy * ux
+    }
+    private fun yawOf(dx: Float, dz: Float) = Math.toDegrees(atan2(dx, dz).toDouble()).toFloat()
+    private fun pitchOf(dy: Float) = -Math.toDegrees(asin(dy.coerceIn(-1f, 1f).toDouble())).toFloat()
+    private fun drawWind() {
+        if (game.wind.isEmpty()) return
+        G.glDepthMask(false)
+        for (w in game.wind) {
+            if (!seen(w.x, w.y, w.z, 44f)) continue
+            val k = w.age / w.life; val fade = 1f - k
+            when (w.kind) {
+                0 -> {   // risco fino, esticado na direção do voo
+                    val grow = min(1f, 0.4f + w.age * 8f)
+                    setBase(w.x, w.y, w.z, yawOf(w.dx, w.dz))
+                    box(base, 0f, 0f, 0f, pitchOf(w.dy), 0f, 0.028f, 0.028f, w.len * grow, 0f, w.color, min(0.85f, fade * 1.7f) * min(1f, w.age * 14f), 1.1f)
+                }
+                1 -> {   // ponto da hélice: gira em volta do eixo do voo e vai abrindo
+                    windAxes(w)
+                    val ang = w.ph + w.age * 9f; val r = w.rad * min(1f, 0.12f + w.age * 2.4f)
+                    val c = cos(ang) * r; val s = sin(ang) * r
+                    setBase(w.x + wu[0] * c + wv[0] * s, w.y + wu[1] * c + wv[1] * s, w.z + wu[2] * c + wv[2] * s, yawOf(w.dx, w.dz))
+                    val ps = 0.075f * (1f - 0.5f * k)
+                    box(base, 0f, 0f, 0f, pitchOf(w.dy), 0f, ps, ps, ps * 3f, 0f, w.color, min(0.9f, fade * 1.8f) * min(1f, w.age * 20f), 1.1f)
+                }
+                else -> {   // anel de vento: segmentos finos ao redor do eixo, raio abrindo com desaceleração
+                    windAxes(w)
+                    val e = 1f - (1f - k) * (1f - k); val r = w.rad * (0.22f + 0.78f * e)
+                    val n = (10 + w.rad * 5f).toInt().coerceAtMost(34)
+                    val seg = 6.2832f * r / n * 0.85f; val th = 0.05f + 0.03f * min(1f, w.rad / 3f) * fade
+                    val al = min(0.75f, fade * 1.3f) * min(1f, w.age * 16f)
+                    for (i in 0 until n) {
+                        val a = 6.2832f * i / n; val ca = cos(a); val sa = sin(a)
+                        val tx = -wu[0] * sa + wv[0] * ca; val ty = -wu[1] * sa + wv[1] * ca; val tz = -wu[2] * sa + wv[2] * ca
+                        setBase(w.x + (wu[0] * ca + wv[0] * sa) * r, w.y + (wu[1] * ca + wv[1] * sa) * r, w.z + (wu[2] * ca + wv[2] * sa) * r, yawOf(tx, tz))
+                        box(base, 0f, 0f, 0f, pitchOf(ty), 0f, th, th, seg, 0f, w.color, al, 1.1f)
+                    }
+                }
+            }
+        }
+        G.glDepthMask(true)
     }
 
     private fun drawSlime(s: Slime) {
@@ -1441,6 +1489,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             val ps = q.size * min(1f, 0.35f + q.life * 1.6f)
             box(base, 0f, 0f, 0f, 0f, 0f, ps, ps, ps, 0f, q.color, min(1f, q.life * 2.2f))
         }
+        drawWind()
         for (l in game.leafFall) {
             if (!seen(l.x, l.y, l.z, 30f)) continue
             val sp = if (l.spin > 0f) l.spin else 1f
