@@ -210,7 +210,6 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         skyP = G.glGetAttribLocation(skyProg, "aP"); skyInv = G.glGetUniformLocation(skyProg, "uInv")
         skyCam = G.glGetUniformLocation(skyProg, "uCam"); skyHor = G.glGetUniformLocation(skyProg, "uHor")
         skyTime = G.glGetUniformLocation(skyProg, "uTime")
-        skinGL.init()
         Matrix.setIdentityM(ident, 0)
         G.glEnable(G.GL_DEPTH_TEST); G.glEnable(G.GL_CULL_FACE); G.glCullFace(G.GL_BACK); G.glFrontFace(G.GL_CCW)
         G.glBlendFunc(G.GL_SRC_ALPHA, G.GL_ONE_MINUS_SRC_ALPHA)
@@ -832,8 +831,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     private val TOOL_TILT = -93f; private val TOOL_OUT = 0f
     private val cm = CharModel()
     private val handM = FloatArray(16)
-    private val skinGL = SkinGL()
-    private var skEx = 0f; private var skEy = 0f; private var skEz = 0f; private var skFr = 1f; private var skFg = 1f; private var skFb = 1f; private var skUnder = false
+    private val charBox: BoxFn = { m, px, py, pz, rx, ry, sx, sy, sz, oy, col, a, rz -> box(m, px, py, pz, rx, ry, sx, sy, sz, oy, col, a, 1f, null, 0, rz) }
 
     private val an = Anim()
     private var lastPT = 0f; private var phaseA = 0f; private var runA = 0f; private var landA = 0f
@@ -886,14 +884,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             Matrix.rotateM(base, 0, tiltSm, 1f, 0f, 0f)
             Matrix.translateM(base, 0, 0f, -0.9f, 0f)
         }
-        skinGL.begin(vp, skEx, skEy, skEz, skFr, skFg, skFb, skUnder)
-        cm.draw(skinGL, base, an, handM)
-        skinGL.end()
-        // devolve o estado do programa principal (o skin usa programa e textura proprios)
-        G.glUseProgram(prog)
-        G.glActiveTexture(G.GL_TEXTURE0); G.glBindTexture(G.GL_TEXTURE_2D, atlasTex); G.glUniform1i(uTex, 0)
-        G.glDisable(G.GL_BLEND); G.glEnable(G.GL_CULL_FACE)
-        bindMesh(cubeVb, cubeIb)
+        cm.draw(charBox, base, an, handM)
         if (id > 0) {   // mesmo modelo 3D da 1ª pessoa e dos ícones: cabo pra cima, fio pra frente
             System.arraycopy(handM, 0, base2, 0, 16)
             if (an.toolA != 0f) Matrix.rotateM(base2, 0, an.toolA, 1f, 0f, 0f)   // nado e voo rápido: o item acompanha o corpo e não fura a cabeça
@@ -1488,7 +1479,6 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         }
         G.glUniform1f(uWind, 0f)
         bindMesh(cubeVb, cubeIb)
-        skEx = ex; skEy = ey; skEz = ez; skFr = fr; skFg = fg; skFb = fb; skUnder = under
         if (game.thirdPerson && game.deadTimer <= 0f) drawPlayer(game.time)
         G.glEnable(G.GL_BLEND)
         G.glDepthMask(false)
