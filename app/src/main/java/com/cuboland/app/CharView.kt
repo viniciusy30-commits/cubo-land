@@ -18,8 +18,8 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 /** Preview 3D do personagem: rasterizador próprio (z-buffer) em baixa resolução, usando o MESMO modelo do jogo. Arraste pra girar. */
-class CharView(ctx: Context) : View(ctx) {
-    private val W = 300; private val H = 380; private val S = 140f
+class CharView(ctx: Context, private val W: Int = 300, private val H: Int = 380) : View(ctx) {
+    private val S = 140f * H / 380f
     private val bmp = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888)
     private val pix = IntArray(W * H)
     private val zb = FloatArray(W * H)
@@ -34,6 +34,9 @@ class CharView(ctx: Context) : View(ctx) {
     /** fundo transparente (menu principal) e balanço suave em vez de girar sem parar */
     var transparentBg = false
     var sway = false
+    /** desenha a sombrinha no chão (o menu principal desenha a própria) */
+    var shadow = true
+    private var m0 = 0f
     private val an = Anim(); private var ph = 0f
     private val wx = FloatArray(8); private val wy = FloatArray(8); private val wz = FloatArray(8)
     private val faces = arrayOf(intArrayOf(4, 5, 7, 6), intArrayOf(1, 0, 2, 3), intArrayOf(5, 1, 3, 7), intArrayOf(0, 4, 6, 2), intArrayOf(6, 7, 3, 2), intArrayOf(0, 1, 5, 4))
@@ -110,17 +113,28 @@ class CharView(ctx: Context) : View(ctx) {
             for (x in 0 until W) { pix[row + x] = c; zb[row + x] = -1e9f }
         }
         // chão e sombrinha
+        if (!shadow) return
         val gy = (H * 0.95f).toInt()
-        for (y in gy - 6..min(H - 1, gy + 14)) for (x in 0 until W) {
-            val dx = (x - W * 0.5f) / 70f; val dy = (y - gy) / 12f
+        val k = H / 380f
+        for (y in gy - (6 * k).toInt()..min(H - 1, gy + (14 * k).toInt())) for (x in 0 until W) {
+            val dx = (x - W * 0.5f) / (70f * k); val dy = (y - gy) / (12f * k)
             val d = dx * dx + dy * dy
             val i = y * W + x
             if (d < 1f) pix[i] = if (transparentBg) Color.argb((110 * (1f - d)).toInt(), 20, 24, 20) else mixC(pix[i], Color.rgb(40, 60, 40), 0.35f * (1f - d))
         }
     }
 
-    override fun onDraw(c: Canvas) {
-        val now = System.nanoTime(); val dt = min(0.1f, (now - lastT) / 1e9f); lastT = now
+    /** toque rápido no personagem: um pulinho */
+    fun hopNow() { mode = 5; m0 = tt }
+    fun setYaw(v: Float) { yaw = v }
+    fun dragStart(x: Float) { drag = true; lastX = x }
+    fun dragMove(x: Float, k: Float) { yaw += (x - lastX) * k; lastX = x }
+    fun dragEnd() { drag = false }
+    /** imagem pronta (W x H, fundo transparente se transparentBg) */
+    val bitmap: Bitmap get() = bmp
+
+    /** avança a animação e redesenha o personagem no bitmap */
+    fun step(dt: Float) {
         tt += dt
         if (!drag) { if (sway) yaw += (-20f + 24f * sin(tt * 0.7f) - yaw) * min(1f, dt * 2f) else yaw += dt * 28f }
         background()
@@ -138,11 +152,22 @@ class CharView(ctx: Context) : View(ctx) {
                 else if (jt < 1.2f) an.landT = 1f - (jt - 0.9f) / 0.3f
             }
             4 -> { val cyc = (tt % 0.9f) / 0.9f; an.atk = cyc; an.atkArm = CharModel.atkDelta(cyc); an.hasTool = true }
+            5 -> {
+                val jt = tt - m0
+                if (jt >= 1.2f) mode = 0
+                else if (jt < 0.9f) { an.air = true; an.airA = 1f; an.vy = 6f * kotlin.math.cos(jt / 0.9f * 3.1416f); hop = sin(jt / 0.9f * 3.1416f) * 0.3f }
+                else an.landT = 1f - (jt - 0.9f) / 0.3f
+            }
         }
         an.phase = ph
         if (hop > 0f) Matrix.translateM(base, 0, 0f, hop, 0f)
         model.draw(boxFn, base, an, null)
         bmp.setPixels(pix, 0, W, 0, 0, W, H)
+    }
+
+    override fun onDraw(c: Canvas) {
+        val now = System.nanoTime(); val dt = min(0.1f, (now - lastT) / 1e9f); lastT = now
+        step(dt)
         val sc = min(width / W.toFloat(), height / H.toFloat())
         val dw = (W * sc).toInt(); val dh = (H * sc).toInt()
         val l = (width - dw) / 2; val t = (height - dh) / 2
