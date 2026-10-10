@@ -185,6 +185,10 @@ class CharModel {
             piv(t2, t1, 0f, -0.22f, 0f, rx = kn)
             b(t1, 0f, -0.115f, 0f, 0.19f, 0.23f, 0.21f, skin)
             b(t2, 0f, -0.11f, 0f, 0.19f, 0.22f, 0.21f, skin)
+            // juntas: quadril e joelho com a cor da roupa (ou da pele) pra não abrir vão ao dobrar
+            val hipC = if (seg > 0f) legCol else skin
+            b(t1, 0f, 0.025f, 0f, (if (seg > 0f) legW else 0.19f) - 0.004f, 0.11f, (if (seg > 0f) legD else 0.21f) - 0.004f, hipC)
+            if (seg <= 0.22f) b(t2, 0f, 0f, 0f, 0.192f, 0.07f, 0.212f, skin)
             if (seg > 0f) {
                 val st = min(seg, 0.22f); val sn = seg - st
                 b(t1, 0f, 0.005f - st / 2f, 0f, legW, st + 0.01f, legD, legCol)
@@ -473,11 +477,12 @@ class CharModel {
             }
         }
         if (fl > 0.01f) {
-            val fw = sin(t * 3f) * 10f * (1f - fm)
-            val fx = lp(-12f, -158f, fm)
-            rxL = lp(rxL, fx, fl); rzL = lp(rzL, lp(-42f - fw, -8f, fm), fl); elL = lp(elL, -6f, fl)
-            if (toolArm) { rxR = lp(rxR, lp(-24f, -80f, fm) + atkRx, fl); rzR = lp(rzR, 20f, fl) }
-            else { rxR = lp(rxR, fx, fl); rzR = lp(rzR, lp(42f + fw, 8f, fm), fl); elR = lp(elR, -6f, fl) }
+            // os dois braços ficam pra baixo, iguais ao do item: só um balanço leve
+            val fw = sin(t * 3f) * 4f * (1f - fm)
+            val dn = lp(-14f, -26f, fm)
+            rxL = lp(rxL, dn + sin(t * 2.6f) * 3f, fl); rzL = lp(rzL, -(16f + fw), fl); elL = lp(elL, -8f, fl)
+            if (toolArm) { rxR = lp(rxR, lp(-24f, -40f, fm) + atkRx, fl); rzR = lp(rzR, 20f, fl) }
+            else { rxR = lp(rxR, dn - sin(t * 2.6f) * 3f, fl); rzR = lp(rzR, 16f + fw, fl); elR = lp(elR, -8f, fl) }
         }
         if (land > 0f) { rzL -= 25f * land; if (!toolArm) rzR += 25f * land }
         for (sd in intArrayOf(-1, 1)) {
@@ -488,6 +493,9 @@ class CharModel {
             b(t1, 0f, -0.1f, 0f, 0.15f, 0.23f, 0.17f, skin)
             b(t2, 0f, -0.1f, 0f, 0.15f, 0.22f, 0.17f, skin)
             b(t2, 0f, -0.16f, 0.005f, 0.165f, 0.12f, 0.185f, skin)
+            // juntas do braço: cotovelo e ombro na cor da manga (ou da pele, sem manga)
+            if (sl >= 0.19f) b(t2, 0f, 0f, 0f, 0.181f, 0.08f, 0.201f, slCol) else b(t2, 0f, 0f, 0f, 0.152f, 0.07f, 0.172f, skin)
+            if (sl > 0f) b(t1, 0f, 0.0f, 0f, 0.184f, 0.1f, 0.204f, slCol)
             val su = min(sl, 0.215f)
             if (sl > 0f) {
                 b(t1, 0f, (0.03f - su) / 2f, 0f, 0.18f, su + 0.03f, 0.2f, slCol)

@@ -3,7 +3,8 @@
 - 3ª pessoa agora usa os mesmos golpes da 1ª pessoa (combo da espada, machado, picareta, soco) e o ataque carregado
 - Ferramenta com o cabo quase horizontal, apontando pra frente e levemente pra cima, longe da cabeça
 - Nado: mergulhado só as pernas batem (braço do item aberto e parado, outro esticado pro corpo); de cabeça fora o outro braço rema devagar
-- Voo: as pernas acompanham a inclinação do corpo
+- Voo: pernas acompanham o corpo e os dois braços ficam pra baixo
+- Juntas do boneco (ombro, cotovelo, quadril, joelho) agora têm a cor da roupa ou da pele, sem vãos ao dobrar
 - Animação de voar (pairando e voando rápido)
 - Pulo e aterrissagem sem pulos de frame; braço da ferramenta se mexe no ar
 - Andar devagar sem deslizar: a passada acompanha a velocidade do chão
