@@ -28,10 +28,11 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onExit: (
     private val btnId = HashMap<Int, Int>()
     private val press = FloatArray(8)
     private var invOpen = false; private var invSel = -1
-    private var bounce = 0f; private var lastSel = -1
+    private var bounce = 0f; private var lastSel = -1; private var lastItem = -1; private var nameUntil = 0L
     // 1 pular/boiar, 3 câmera, 4 pausa, 5 mochila, 6 afundar, 7 correr
-    private fun bx(i: Int) = when (i) { 1, 6, 7 -> width - 62 * d; 3 -> width - 40 * d; 5 -> width - 92 * d; else -> 40 * d }
-    private fun byy(i: Int) = when (i) { 1 -> height / 2f; 7 -> height / 2f - 76 * d; 6 -> height / 2f + 76 * d; else -> 40 * d }
+    private fun bx(i: Int) = when (i) { 1, 6 -> width * 0.858f; 7 -> width * 0.927f; 3 -> width - 40 * d; 5 -> width - 92 * d; else -> 40 * d }
+    private fun byy(i: Int) = when (i) { 1 -> if (wet()) height * 0.753f - 72 * d else height * 0.753f; 6 -> height * 0.753f; 7 -> height * 0.653f; else -> 40 * d }
+    private fun wet() = game.flying || game.player.inWater
     private fun br(i: Int) = (when (i) { 1 -> 32 * d; 7, 6 -> 28 * d; else -> 22 * d }) * (if (i == 1 || i == 6 || i == 7) bs else 1f)
     private fun sn(v: Float) = (v / u).roundToInt() * u
     private val slot get() = sn(46 * d)
@@ -121,7 +122,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onExit: (
             if (x < pl() || x > pr() || y < pt0() || y > pb()) toggleInv()
             return
         }
-        for (i in intArrayOf(1, 3, 4, 6, 7)) if ((i != 6 || game.flying || game.player.inWater) && hypot(x - bx(i), y - byy(i)) < br(i) * 1.15f) {
+        for (i in intArrayOf(1, 3, 4, 6, 7)) if ((i != 6 || wet()) && (i != 7 || !wet()) && hypot(x - bx(i), y - byy(i)) < br(i) * 1.15f) {
             btnId[id] = i
             when (i) {
                 1 -> { game.jumpHeld = true; game.jumpTap() }
@@ -395,7 +396,8 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onExit: (
         // botões
         for (i in intArrayOf(7, 1, 6, 3, 5, 4)) {
             if (invOpen && i != 5) continue
-            if (i == 6 && !game.flying && !game.player.inWater) continue
+            if (i == 6 && !wet()) continue
+            if (i == 7 && wet()) continue
             val active = btnId.containsValue(i) || (i == 5 && invOpen) || (i == 7 && game.sprint)
             press[i] += ((if (active) 1f else 0f) - press[i]) * 0.5f
             val on = press[i] > 0.5f
@@ -414,7 +416,8 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onExit: (
             rc(c, ax - bw / 2, by, ax - bw / 2 + sn(bw * ch), by + u, if (ch >= 1f) Color.rgb(255, 214, 90) else Color.rgb(255, (255 - 60 * ch).toInt(), (255 - 170 * ch).toInt()))
         }
         // hotbar
-        if (game.sel != lastSel) { lastSel = game.sel; bounce = 1f }
+        if (game.sel != lastSel) { lastSel = game.sel; bounce = 1f; nameUntil = System.currentTimeMillis() + 2000 }
+        if (game.cur() != lastItem) { lastItem = game.cur(); nameUntil = System.currentTimeMillis() + 2000 }
         bounce = max(0f, bounce - 0.08f)
         val left = hbLeft(); val top = sn(hbTop())
         for (i in 0 until 8) {
@@ -428,13 +431,15 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onExit: (
             pxText(c, "${i + 1}", rr.left + 3 * u, rr.top + 3 * u, tsc(1.1f), Color.argb(if (s) 255 else 170, 255, 255, 255))
         }
         if (!invOpen) {
-            val nm = Items.name(game.cur()); val sc = tsc(1.7f); val tw = PixFont.width(nm, sc)
-            val py = top - 44 * d
-            pxPanel(c, w / 2 - tw / 2 - 4 * u, py, w / 2 + tw / 2 + 4 * u, py + 7 * sc + 6 * u, Cz.PANEL3, false, false, 235)
-            pxText(c, nm, w / 2, py + 3 * u, sc, Color.WHITE, 1)
-            if (game.pickT > 0f) {   // "+1 Terra" ao pegar um item do chão
+            if (System.currentTimeMillis() < nameUntil) {
+                val nm = Items.name(game.cur()); val sc = tsc(1.2f); val tw = PixFont.width(nm, sc)
+                val py = top - 34 * d - 7 * sc - 6 * u
+                pxPanel(c, w / 2 - tw / 2 - 4 * u, py, w / 2 + tw / 2 + 4 * u, py + 7 * sc + 6 * u, Cz.PANEL3, false, false, 235)
+                pxText(c, nm, w / 2, py + 3 * u, sc, Color.WHITE, 1)
+            }
+            if (game.pickT > 0f) {
                 val al = (min(1f, game.pickT * 2f) * 255).toInt()
-                val py2 = top - 78 * d - (1.6f - game.pickT) * 14 * d
+                val py2 = top - 84 * d - (1.6f - game.pickT) * 14 * d
                 pxText(c, game.pickMsg, w / 2, py2, tsc(1.6f), Color.argb(al, 255, 236, 140), 1)
             }
         }
@@ -442,19 +447,12 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onExit: (
         val hp = game.hp
         for (i in 0 until 5) {
             val full = hp >= (i + 1) * 2; val half = hp == i * 2 + 1
-            val cx = w / 2 - 60 * d + i * 30 * d
+            val cx = w / 2 - 60 * d + i * 30 * d; val hy = top - 20 * d
             val beat = if (hp <= 2 && hp > 0) 1f + 0.08f * sin(clock * 9f) else 1f
             val bob = if (hp <= 2 && hp > 0) sin(clock * 12f + i) * 1.5f * d else 0f
-            pxHeart(c, cx, 28 * d + bob, 2.4f * d * beat, Color.rgb(228, 36, 48), half && !full, !(full || half))
-            if (half && !full) pxHeart(c, cx, 28 * d + bob, 2.4f * d * beat, Color.rgb(228, 36, 48), true, false)
+            pxHeart(c, cx, hy + bob, 2.4f * d * beat, Color.rgb(228, 36, 48), half && !full, !(full || half))
+            if (half && !full) pxHeart(c, cx, hy + bob, 2.4f * d * beat, Color.rgb(228, 36, 48), true, false)
         }
-        pxText(c, worldName, 70 * d, 34 * d, tsc(1.5f), Color.argb(230, 255, 255, 255))
-        // contador de slimes
-        val ktxt = "${game.kills}"; val ksc = tsc(2f); val kt = PixFont.width(ktxt, ksc)
-        val kr = w - 118 * d; val kw = 9 * u + 2 * u + kt + 8 * u; val ky0 = 18 * d
-        pxPanel(c, kr - kw, ky0, kr, ky0 + 11 * u, Cz.PANEL3)
-        sprite(c, S_SLIME, kr - kw + 4 * u + 4.5f * u, ky0 + 5.5f * u, Color.BLACK)
-        pxText(c, ktxt, kr - kw + 4 * u + 11 * u, ky0 + 5.5f * u - 3.5f * ksc, ksc, Color.WHITE)
         if (game.deadTimer > 0f) pxText(c, "Você desmaiou! Renascendo...", w / 2, h / 2 - 40 * d, tsc(2.6f), Color.WHITE, 1)
         if (invOpen) drawInventory(c)
         if (paused) drawPause(c)
