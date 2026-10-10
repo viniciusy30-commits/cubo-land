@@ -158,8 +158,8 @@ class CharModel {
             kneeL += (80f - kneeL) * land; kneeR += (80f - kneeR) * land
         }
         if (full || overalls.not() && skirtBot) {   // roupa longa/saia: pernas não atravessam o tecido
-            val kk = if (full) 0.7f else 0.85f   // a saia agora acompanha as coxas, então pode balançar bem mais
-            val cap = if (full) 20f else 26f
+            val kk = if (full) 0.5f else 0.85f   // a saia agora acompanha as coxas, então pode balançar bem mais
+            val cap = if (full) 13f else 26f
             hipL = (hipL * kk).coerceIn(-cap, cap); hipR = (hipR * kk).coerceIn(-cap, cap)
             kneeL = (kneeL * kk).coerceIn(0f, if (full) 36f else 60f); kneeR = (kneeR * kk).coerceIn(0f, if (full) 36f else 60f)
         }
@@ -211,7 +211,7 @@ class CharModel {
 
         // saia balançando (preso ao quadril)
         val flare = 1f + ab * lp(0.06f, 0.1f, fs) + 0.05f * rn * stride
-        piv(sm, bm, 0f, 0.5f, 0f, rx = sin(t * 2.2f) * 1.5f + sin(ph * 2f) * 3f * stride - 62f * an.sit.coerceIn(0f, 1f) - 34f * an.crouch.coerceIn(0f, 1f))
+        piv(sm, bm, 0f, 0.5f, 0f, rx = sin(t * 2.2f) * 1.5f + sin(ph * 2f) * 3f * stride - (if (full) 82f else 62f) * an.sit.coerceIn(0f, 1f) - (if (full) 48f else 34f) * an.crouch.coerceIn(0f, 1f))
         Matrix.scaleM(sm, 0, flare, 1f, flare)
         val skRows = ArrayList<SkR>()
         fun sk(py: Float, sx: Float, sy: Float, sz: Float, col: Int) { skRows.add(SkR(0f, py, 0f, sx, sy, sz, col, true)) }
@@ -498,7 +498,7 @@ class CharModel {
         // ---- saias e vestidos: cintura fixa no corpo; o resto é UMA peça só presa ao quadril (não divide com as pernas) ----
         for (r in skRows) {
             if (r.py > 0.42f) b(base, r.x, r.py, r.z, r.sx, r.sy, r.sz, r.col)
-            else b(sm, r.x, r.py - 0.5f, r.z, r.sx, r.sy, r.sz, r.col)
+            else b(sm, r.x, r.py - 0.5f, r.z, r.sx, r.sy, r.sz + (if (full) 0.05f else 0f), r.col)   // vestido longo: um pouco mais fundo, o pé não fura na frente
         }
 
         // ================= BRAÇOS (ombro + cotovelo) =================
