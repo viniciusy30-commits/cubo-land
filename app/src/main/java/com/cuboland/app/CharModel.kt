@@ -708,12 +708,12 @@ class CharModel {
         // posturas: agachar (pernas dobradas, tronco inclinado), sentar (pernas à frente, no chão), deitar (de costas)
         val cr = an.crouch.coerceIn(0f, 1f); val si = an.sit.coerceIn(0f, 1f)
         var qLegL = 0f; var qLegR = 0f
-        if (cr > 0f) { hipL = lp(hipL, -55f + sw * 0.4f, cr); hipR = lp(hipR, -55f - sw * 0.4f, cr); kneeL = lp(kneeL, 95f + kneeL * 0.3f, cr); kneeR = lp(kneeR, 95f + kneeR * 0.3f, cr) }
+        if (cr > 0f) { hipL = lp(hipL, -62f + sw * 0.4f, cr); hipR = lp(hipR, -62f - sw * 0.4f, cr); kneeL = lp(kneeL, 72f + kneeL * 0.3f, cr); kneeR = lp(kneeR, 72f + kneeR * 0.3f, cr) }
         if (si > 0f) { val br = sin(t * 1.6f) * 2f; hipL = lp(hipL, -87f + br, si); hipR = lp(hipR, -87f + br, si); kneeL = lp(kneeL, 4f, si); kneeR = lp(kneeR, 4f, si) }
         if (li > 0f) { val mc = min(1f, mv * 3f); qLegL = (0.5f + 0.5f * sin(ph + 3.1416f)) * mc; qLegR = (0.5f + 0.5f * sin(ph)) * mc
             hipL = lp(hipL, 2f + 7f * qLegL, li); hipR = lp(hipR, 2f + 7f * qLegR, li)
             kneeL = lp(kneeL, 4f + 26f * qLegL, li); kneeR = lp(kneeR, 4f + 26f * qLegR, li) }
-        val drop = 0.1f * land + 0.145f * cr + 0.31f * si
+        val drop = 0.1f * land + 0.12f * cr + 0.31f * si
         val bob = sin(t * 2f) * 0.012f * (1f - stride) + abs(sin(ph)) * (0.035f + 0.04f * rn) * stride * (1f - 0.85f * li) + fl * (1f - fm) * sin(t * 1.6f) * 0.09f   // pairando: sobe e desce devagar
         val move = stride * (1f + rn * 0.6f) + ab * lp(0.4f, 1.2f, fs)
 
@@ -753,7 +753,7 @@ class CharModel {
 
         // saia balançando (preso ao quadril)
         val flare = 1f + ab * lp(0.06f, 0.1f, fs) + 0.05f * rn * stride
-        piv(sm, bm, 0f, 0.5f, 0f, rx = sin(t * 2.2f) * 1.5f + sin(ph * 2f) * 3f * stride - (if (full || skirtBot) (lean * (1f - fl)).coerceIn(-20f, 20f) * 0.7f else 0f) - (if (full) 82f else 62f) * an.sit.coerceIn(0f, 1f) - (if (full) 48f else 34f) * an.crouch.coerceIn(0f, 1f))
+        piv(sm, bm, 0f, 0.5f, 0f, rx = sin(t * 2.2f) * 1.5f + sin(ph * 2f) * 3f * stride - (if (full || skirtBot) (lean * (1f - fl)).coerceIn(-20f, 20f) * 0.7f else 0f) - (if (full) 82f else 62f) * an.sit.coerceIn(0f, 1f) - (if (full) 56f else 40f) * an.crouch.coerceIn(0f, 1f))
         Matrix.scaleM(sm, 0, flare, 1f, flare)
         val skRows = ArrayList<SkR>()
         fun sk(py: Float, sx: Float, sy: Float, sz: Float, col: Int) { skRows.add(SkR(0f, py, 0f, sx, sy, sz, col, true)) }
@@ -762,6 +762,7 @@ class CharModel {
         var seg = when (bot) { 0 -> 0.40f; 1 -> 0.17f; 2 -> 0f; 3 -> 0.30f; 4 -> 0.40f; 5 -> 0f; 6 -> 0.44f; else -> 0.30f }
         var legCol = bc
         if (full) seg = 0f
+        if (bot == 6) seg = 0.42f
         if (overalls) { seg = 0.40f; legCol = tc }
         val legW = when (bot) { 4 -> 0.31f; 6 -> 0.2f; else -> 0.205f }
         val legD = when (bot) { 4 -> 0.31f; 6 -> 0.215f; else -> 0.225f }
@@ -776,7 +777,7 @@ class CharModel {
                 val tBot = -0.23f
                 if (tTop - tBot > 0.012f && seg < 0.22f) b(t1, 0f, (tTop + tBot) / 2f, 0f, 0.19f, tTop - tBot, 0.21f, skin)   // coxa toda vestida: sem miolo de pele (ele aparecia na dobra do joelho)
                 val sTop = if (seg > 0.22f) 0.02f - (seg - 0.22f) else 0.01f
-                val sBot = -0.22f
+                val sBot = -0.17f   // termina dentro do calçado; antes ia até o chão (-0.22) e aparecia embaixo da sola
                 if (sTop - sBot > 0.012f) b(t2, 0f, (sTop + sBot) / 2f, 0f, 0.19f, sTop - sBot, 0.21f, skin)
             }
             // juntas: quadril e joelho com a cor da roupa (ou da pele) pra não abrir vão ao dobrar
@@ -1229,10 +1230,6 @@ class CharModel {
         for (r in skRows) {
             if (r.py > 0.42f) b(base, r.x, r.py, r.z, r.sx, r.sy, r.sz, r.col)
             else b(sm, r.x, r.py - 0.5f, r.z, r.sx, r.sy, r.sz + (if (full) 0.05f else 0f), r.col)   // vestido longo: um pouco mais fundo, o pé não fura na frente
-        }
-        if (full && cr > 0.02f) {   // agachado: a saia gira pra frente e abria as costas; este pano fecha por trás e esconde os pés
-            val dh = 0.56f * cr
-            b(r2, 0f, 0.43f - dh / 2f, -0.18f, bw + 0.03f, dh, 0.05f, shadeC(tc, 0.92f))
         }
 
         // ================= BRAÇOS (ombro + cotovelo) =================

@@ -96,6 +96,10 @@ class Game(val world: World) {
     val leafFall = ArrayList<LeafP>(); private var leafT = 0f; var comboT = 0f
     val drops = ArrayList<Drop>(); val ripples = ArrayList<Ripple>(); val prints = ArrayList<Foot>(); val picked = IntArray(16)
     @Volatile var pickMsg = ""; @Volatile var pickT = 0f; @Volatile var swimAmt = 0f; @Volatile var wetT = 0f; private var inWaterT = 0f   // wetT: efeito de "molhado" na tela ao sair da água (3s)
+    // água: direção desejada (pro degrau), escorrer ao quebrar bloco, controle do efeito de tela molhada
+    private var wishX = 0f; private var wishZ = 0f
+    private val waterQ = LinkedHashSet<Int>(); private var waterT = 0f
+    private var headWas = false; private var headWetT = 0f
     private var stepDist = 0f; private var stepLeft = false; private var rippleT = 0f; private var bubbleT = 0f; private var regrowT = 0f
     // entrada (escrita pela UI)
     @Volatile var stickX = 0f; @Volatile var stickY = 0f
@@ -160,6 +164,61 @@ class Game(val world: World) {
         lastDownT = time
     }
 
+    /** o ponto está mesmo dentro d'água (a camada de cima da água é mais baixa que o bloco cheio) */
+    private fun waterAtPt(x: Float, y: Float, z: Float): Boolean {
+        val bx = floor(x).toInt(); val by = floor(y).toInt(); val bz = floor(z).toInt()
+        if (world.get(bx, by, bz) != B.WATER) return false
+        return world.get(bx, by + 1, bz) == B.WATER || y < by + 0.88f
+    }
+
+    private fun groundBelow(e: Ent): Float {
+        val bx = floor(e.x).toInt(); val bz = floor(e.z).toInt()
+        var y = floor(e.y + 0.05f).toInt()
+        while (y >= 0) { if (world.solid(bx, y, bz)) return y + 1f; y-- }
+        return 0f
+    }
+
+    /** topo do degrau à frente (altura absoluta) se der pra subir nele a partir daqui (com espaço pra cabeça), senão -1 */
+    private fun ledgeAhead(e: Ent, reach: Float): Float {
+        val l = hypot(wishX, wishZ); if (l < 0.5f) return -1f
+        val ax = e.x + wishX / l * (e.hw + 0.25f); val az = e.z + wishZ / l * (e.hw + 0.25f)
+        val bx = floor(ax).toInt(); val bz = floor(az).toInt()
+        var by = floor(e.y + 0.05f).toInt()
+        while (by <= floor(e.y + reach).toInt()) {
+            if (world.solid(bx, by, bz) && !world.solid(bx, by + 1, bz) && !world.solid(bx, by + 2, bz)) {
+                val top = by + 1f
+                if (top - e.y > 0.08f && top - e.y <= reach) return top
+            }
+            by++
+        }
+        return -1f
+    }
+
+    private fun hasWaterNear(x: Int, y: Int, z: Int) =
+        world.get(x + 1, y, z) == B.WATER || world.get(x - 1, y, z) == B.WATER ||
+        world.get(x, y, z + 1) == B.WATER || world.get(x, y, z - 1) == B.WATER || world.get(x, y + 1, z) == B.WATER
+
+    /** um bloco sumiu: se tem água encostada (e é abaixo do nível do mar), ela escorre pra cobrir o buraco */
+    private fun waterTouch(x: Int, y: Int, z: Int) {
+        if (y < 0 || y > World.WATER_Y || world.get(x, y, z) != B.AIR) return
+        if (hasWaterNear(x, y, z) && waterQ.size < 3000) waterQ.add((y * World.SZ + z) * World.SX + x)
+    }
+
+    private fun waterStep(dt: Float) {
+        waterT -= dt
+        if (waterQ.isEmpty() || waterT > 0f) return
+        waterT = 0.09f
+        val cur = ArrayList(waterQ); waterQ.clear()
+        var n = 0
+        for (k in cur) {
+            if (n >= 36) { waterQ.add(k); continue }
+            val x = k % World.SX; val z = (k / World.SX) % World.SZ; val y = k / (World.SX * World.SZ)
+            if (world.get(x, y, z) != B.AIR || y > World.WATER_Y || !hasWaterNear(x, y, z)) continue
+            world.set(x, y, z, B.WATER); n++
+            waterTouch(x + 1, y, z); waterTouch(x - 1, y, z); waterTouch(x, y, z + 1); waterTouch(x, y, z - 1); waterTouch(x, y - 1, z)
+        }
+    }
+
     private fun physics(e: Ent, dt: Float) {
         if (flying && e === player) {
             val tv = (if (jumpHeld) 7f else 0f) - (if (downHeld) 7f else 0f)
@@ -177,10 +236,18 @@ class Game(val world: World) {
             else if (jumpHeld) acc += 17f
             else if (mg > 0.15f && pitch < -0.28f) acc = sin(pitch) * 16f
             else if (mg > 0.15f && pitch > 0.28f) acc = sin(pitch) * 12f
+            // degrau: tem bloco na frente que dá pra subir (1 de altura sem pular, até a margem com o botão de pular) -> empurra pra cima
+            val ledge = if (e === player) ledgeAhead(e, if (jumpHeld) 2.4f else 1.3f) else -1f
+            if (ledge > 0f && !downHeld && e.y < ledge) acc = max(acc, 15f)
             e.vy += (acc - 3.4f * e.vy) * dt
             e.vy = e.vy.coerceIn(-4.6f, 4.4f)
             e.vx *= 1f - 3f * dt; e.vz *= 1f - 3f * dt
             move(e, e.vx * dt, e.vy * dt, e.vz * dt)
+            if (e === player) {   // teto: o máximo é a cabeça pra fora (nada de ficar "em pé" na água), a não ser que o fundo seja raso ou tenha degrau
+                var cap = max(surf - 1.05f + 0.1f, groundBelow(e) + 0.9f)
+                if (ledge > 0f) cap = max(cap, ledge + 0.06f)
+                if (e.y > cap) { e.y = cap; if (e.vy > 0f) e.vy = 0f }
+            }
             return
         }
         val g = if (e.inWater) 8f else 26f
@@ -586,6 +653,7 @@ class Game(val world: World) {
     private fun breakBlock(x: Int, y: Int, z: Int, id: Int) {
         world.hidden.remove((y * World.SZ + z) * World.SX + x)
         world.set(x, y, z, B.AIR)
+        waterTouch(x, y, z)
         breakFx(x, y, z, id, true)
         val di = when (id) { B.GRASS -> B.DIRT; B.LEAVES -> if (rnd.nextFloat() < 0.3f) B.LEAVES else 0; else -> id }
         if (di != 0) dropItem(x + 0.5f, y + 0.4f, z + 0.5f, di, 0f, 0f)
@@ -865,6 +933,7 @@ class Game(val world: World) {
         if (swing < 1f) swing = min(1f, swing + dt / swingDur)
         if (deadTimer > 0f) { deadTimer -= dt; if (deadTimer <= 0f) respawn(); updateCamera(); return }
 
+        waterStep(dt)
         val p = player
         if (!creative) flying = false
         if (flying && p.onGround && downHeld) flying = false
@@ -878,6 +947,7 @@ class Game(val world: World) {
         val sp = (if (p.inWater && !flying) 3.6f else if (flying) 10f else 5f) * (if (charging) 0.55f else 1f) * (if (sprint) (if (flying) 1.9f else if (p.inWater) 1.7f else 1.55f) else 1f) * (1f - 0.45f * crouchA) * (1f - 0.72f * lieA)
         val f = sin(yaw); val c = cos(yaw)
         val mx = (f * stickY + (-c) * stickX) * sp; val mz = (c * stickY + f * stickX) * sp
+        wishX = mx; wishZ = mz
         val k = min(1f, (if (p.onGround) 14f else 5f) * dt)
         p.vx += (mx - p.vx) * k; p.vz += (mz - p.vz) * k
         val mag = hypot(stickX, stickY).coerceAtMost(1f)
@@ -888,7 +958,7 @@ class Game(val world: World) {
             bodyYaw += diff * min(1f, 12f * dt)
         } else if (!thirdPerson) bodyYaw = yaw
         if (jumpHeld && !flying && posture == 0) {
-            if (p.inWater) { if (p.y > World.WATER_Y + 0.88f - 1.4f) p.vy = max(p.vy, 4.2f) } else if (p.onGround) { p.vy = 8.6f; p.onGround = false }
+            if (p.inWater) { if (p.onGround) { p.vy = max(p.vy, 5.5f); p.onGround = false } } else if (p.onGround) { p.vy = 8.6f; p.onGround = false }
         }
         val wasW = p.inWater; val vyPre = p.vy
         for (i in 0 until 2) physics(p, dt / 2f)
@@ -1107,6 +1177,10 @@ class Game(val world: World) {
         val sp = hypot(p.vx, p.vz)
         swimAmt += ((if (p.inWater && !p.onGround && !flying) 1f else 0f) - swimAmt) * min(1f, 8f * dt)
         if (p.inWater) inWaterT += dt
+        val hu = waterAtPt(p.x, p.y + 1.55f, p.z)   // cabeça (olhos) dentro d'água
+        if (hu) { headWetT += dt; wetT = 0f }
+        else { if (headWas && headWetT > 0.25f) wetT = 3f; headWetT = 0f }   // tela molhada só quando a cabeça sai da água
+        headWas = hu
         if (p.inWater && !wasW) {   // entrou na água
             wetT = 0f   // onda proporcional à velocidade da queda
             val v = max(0f, -vyPre)
@@ -1116,7 +1190,6 @@ class Game(val world: World) {
             splash(p.x, surf, p.z, v)
         } else if (!p.inWater && wasW) {
             addRipple(p.x, p.z, 0.4f); splash(p.x, surf, p.z, 2.5f)
-            if (inWaterT > 0.5f) wetT = 3f
             inWaterT = 0f
         }
         if (p.inWater) {
@@ -1130,7 +1203,7 @@ class Game(val world: World) {
                     parts.add(Particle(p.x + cos(a) * 0.35f, surf, p.z + sin(a) * 0.35f, cos(a) * 0.9f + p.vx * 0.2f, 1.6f + rnd.nextFloat(), sin(a) * 0.9f + p.vz * 0.2f, 0xDFF4FF, 0.035f, 0.5f))
                 }
             }
-            val headUnder = world.get(floor(p.x).toInt(), floor(p.y + 1.55f).toInt(), floor(p.z).toInt()) == B.WATER
+            val headUnder = headWas
             bubbleT -= dt
             if (headUnder && bubbleT <= 0f) {
                 bubbleT = 0.35f + rnd.nextFloat() * 0.5f

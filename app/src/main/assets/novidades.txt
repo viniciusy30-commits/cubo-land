@@ -1,3 +1,12 @@
+#id 2026-10-11-l
+#titulo Pés, agachar e água corrigidos!
+- Acabou o pé aparecendo embaixo de todos os calçados (dentro e fora do jogo)
+- Agachado: o pano da cor da roupa saiu; agora as pernas ficam embaixo do corpo e os pés não atravessam mais as costas
+- Tela molhada só aparece quando a cabeça sai da água
+- Na água o personagem não fica mais em pé: o máximo é com a cabeça pra fora
+- Ao quebrar um bloco perto da água, ela escorre e cobre o buraco
+- Dá pra subir blocos estando dentro da água (1 de altura sozinho; margens mais altas com o botão de pular)
+
 #id 2026-10-11-k
 #titulo Câmera molhada ao sair da água!
 - Ao sair da água a tela fica molhada por uns 3 segundos: brilho rápido, véu azulado e gotas escorrendo (1ª e 3ª pessoa)
