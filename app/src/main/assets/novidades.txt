@@ -1,3 +1,8 @@
+#id 2026-10-11-q
+#titulo Personagem pisando no portal!
+- No menu, o personagem ficou menor (80%) e os pés agora ficam no centro do portal, com sombra e brilho embaixo, sem flutuar
+- O fantasma do jogador 2 também encolheu e usa o mesmo ponto
+
 #id 2026-10-11-p
 #titulo Árvores de verdade, com galhinhos e folhas!
 - Galhos finíssimos (bem mais finos que um bloco) saem da madeira das árvores, com curvas, raminhos e tufos de folhinhas pontudas
