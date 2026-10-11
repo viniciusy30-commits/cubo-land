@@ -64,6 +64,10 @@ object Blk {
     /** tile pixel art da NatArt (paleta própria, alpha por cor) */
     private fun pt(art: Int, leaf: Boolean = false, glow: Boolean = false): Int = tl(if (leaf) K_PLEAF else K_PAL, art, glow = glow)
     /** tile da folhagem -> tile do sprite 3D dessa espécie (0 = sem folha 3D) */
+    /** tiles dos cabinhos da abóbora e da melancia (Shapes) */
+    private var tStemPump = 0; private var tStemMel = 0
+    val stemPump: Int get() { defs; return tStemPump }
+    val stemMel: Int get() { defs; return tStemMel }
     val spriteOf = IntArray(MAXT)
     val fruitOf = IntArray(MAXT)
     fun fruitFor(tile: Int): Int { defs; return if (tile in 0 until MAXT) fruitOf[tile] else 0 }
@@ -282,6 +286,7 @@ object Blk {
         blk("Bloco de Feno", C_NAT, pt(NatArt.FENO_TOP), pt(NatArt.FENO_SIDE), pt(NatArt.FENO_TOP), 0xE6C65A, M_SOFT, 3f)
         blk("Melancia", C_NAT, pt(NatArt.MELANCIA_TOP), pt(NatArt.MELANCIA_SIDE), pt(NatArt.MELANCIA_TOP), 0x5FA84A, M_SOFT, 3f, F_SHAPE or (2 shl 5))
         blk("Abóbora", C_NAT, pt(NatArt.ABOBORA_TOP), pt(NatArt.ABOBORA_SIDE), pt(NatArt.ABOBORA_TOP), 0xF29A2A, M_SOFT, 3f, F_SHAPE or (3 shl 5))
+        tStemPump = pt(NatArt.ABOBORA_CABO); tStemMel = pt(NatArt.MELANCIA_CABO)
         uni("Esponja", C_NAT, pt(NatArt.ESPONJA), 0xE8D86A, M_SOFT, 2f)
         uni("Favo de Mel", C_NAT, pt(NatArt.FAVO), 0xF2A22A, M_SOFT, 2f)
         uni("Bloco de Mel", C_NAT, pt(NatArt.MEL), 0xF8B83A, M_GLASS, 2f, F_GLASS, "Mel translúcido e docinho.")

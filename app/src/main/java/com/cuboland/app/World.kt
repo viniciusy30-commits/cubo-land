@@ -988,9 +988,10 @@ class World {
             quad(o, tile, cx + sx[i] * r, y0, cz + sz[i] * r, cx + sx[j] * r, y0, cz + sz[j] * r, cx + sx[j] * r, y1, cz + sz[j] * r, cx + sx[i] * r, y1, cz + sz[i] * r, sh[i] * 0.9f, sh[i])
         }
         if (get(x, y + 1, z) != id) {   // ponta de cima
-            val t = Blk.pickTile(B.tTop[id], 0f); val u0 = (t + 0.01f) / Atlas.NT; val u1 = (t + 0.99f) / Atlas.NT
-            o.vert(cx - r, y1, cz - r, vr, vr, vr, u0, 0.01f / Atlas.ROWS); o.vert(cx + r, y1, cz - r, vr, vr, vr, u1, 0.01f / Atlas.ROWS)
-            o.vert(cx + r, y1, cz + r, vr, vr, vr, u1, 0.99f / Atlas.ROWS); o.vert(cx - r, y1, cz + r, vr, vr, vr, u0, 0.99f / Atlas.ROWS)
+            val t = Blk.pickTile(B.tTop[id], 0f); val tc = (t % Atlas.NT).toFloat(); val tr = (t / Atlas.NT).toFloat()
+            val u0 = (tc + 0.01f) / Atlas.NT; val u1 = (tc + 0.99f) / Atlas.NT; val vt = (tr + 0.01f) / Atlas.ROWS; val vb = (tr + 0.99f) / Atlas.ROWS
+            o.vert(cx - r, y1, cz - r, vr, vr, vr, u0, vt); o.vert(cx + r, y1, cz - r, vr, vr, vr, u1, vt)
+            o.vert(cx + r, y1, cz + r, vr, vr, vr, u1, vb); o.vert(cx - r, y1, cz + r, vr, vr, vr, u0, vb)
             o.tri(0, 1, 2); o.tri(0, 2, 3); o.tri(0, 2, 1); o.tri(0, 3, 2); o.vc += 4
         }
         // nó (anel um pouco mais grosso) a cada 3 blocos
@@ -1010,9 +1011,11 @@ class World {
     // galhos finos com folhagem e folhinhas soltas: tudo é calculado a partir dos blocos na hora de montar a malha (nada vai pro arquivo do mundo)
 
     private fun quad(o: MeshBuf, tile: Int, ax: Float, ay: Float, az: Float, bx: Float, by: Float, bz: Float, cx: Float, cy: Float, cz: Float, dx: Float, dy: Float, dz: Float, s0: Float, s1: Float) {
-        val u0 = (tile + 0.01f) / Atlas.NT; val u1 = (tile + 0.99f) / Atlas.NT
-        o.vert(ax, ay, az, s0, s0, s0, u0, 0.99f / Atlas.ROWS); o.vert(bx, by, bz, s0, s0, s0, u1, 0.99f / Atlas.ROWS)
-        o.vert(cx, cy, cz, s1, s1, s1, u1, 0.01f / Atlas.ROWS); o.vert(dx, dy, dz, s1, s1, s1, u0, 0.01f / Atlas.ROWS)
+        val tc = (tile % Atlas.NT).toFloat(); val tr = (tile / Atlas.NT).toFloat()   // coluna e linha do tile no atlas (antes só valia pra linha 0: o bambu saía cinza)
+        val u0 = (tc + 0.01f) / Atlas.NT; val u1 = (tc + 0.99f) / Atlas.NT
+        val vb = (tr + 0.99f) / Atlas.ROWS; val vt = (tr + 0.01f) / Atlas.ROWS
+        o.vert(ax, ay, az, s0, s0, s0, u0, vb); o.vert(bx, by, bz, s0, s0, s0, u1, vb)
+        o.vert(cx, cy, cz, s1, s1, s1, u1, vt); o.vert(dx, dy, dz, s1, s1, s1, u0, vt)
         o.tri(0, 1, 2); o.tri(0, 2, 3); o.tri(0, 2, 1); o.tri(0, 3, 2); o.vc += 4
     }
 

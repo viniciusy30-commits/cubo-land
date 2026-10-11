@@ -808,6 +808,18 @@ object Atlas {
                 for (y in 0 until 4) for (x in 0 until 4) out[(qy * 4 + y) * w + t * T + qx * 4 + x] = pc
             }
         }
+        // tronco do carvalho (tiles 6 = casca, 7 = topo): mesmos desenhos 16x16 dos outros troncos (Pix.BARK / Pix.LOGTOP), só com a paleta do carvalho
+        val oakBark = intArrayOf(0x3F2B17, 0x5E4023, 0x7C5732, lerp(0x7C5732, 0xFFFFFF, 0.12f))
+        val oakRings = intArrayOf(0x5E4426, 0xB08555, 0xC9A06B, lerp(0xC9A06B, 0xFFFFFF, 0.15f))
+        for (t in 6..7) {
+            val pat = if (t == 6) Pix.BARK else Pix.LOGTOP
+            val cs = if (t == 6) oakBark else oakRings
+            for (qy in 0 until 16) for (qx in 0 until 16) {
+                val k = (Pix.P[pat][qy][qx] - '0').coerceIn(0, 3)
+                val pc = (255 shl 24) or (cs[k] and 0xFFFFFF)
+                for (y in 0 until 4) for (x in 0 until 4) out[(qy * 4 + y) * w + t * T + qx * 4 + x] = pc
+            }
+        }
         for (t in 0 until 24) bleed(out, w, t * T, 0)
         // blocos novos (receitas em Blk): 1 amostra por pixel, as formas já são suaves
         val nDefs = Blk.defs.size

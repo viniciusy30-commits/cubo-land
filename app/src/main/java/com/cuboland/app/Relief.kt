@@ -15,6 +15,14 @@ object Relief {
 
     /** mapa escrito à mão desse tile (tipo K_PAL da NatArt ou padrão Pix de K_PIX), ou null se o bloco usa o automático */
     private fun hand(tile: Int): Map? {
+        if (tile == 6 || tile == 7) {   // tronco do carvalho: mesmo relevo da casca / topo dos outros troncos
+            val rows = NatRelief.pix.getOrNull(if (tile == 6) Pix.BARK else Pix.LOGTOP)
+            if (rows != null && rows.size == 16) {
+                val out = ByteArray(256)
+                for (y in 0 until 16) for (x in 0 until 16) out[y * 16 + x] = (rows[y][x] - '0' - 2).coerceIn(-2, 2).toByte()
+                return Map(16, out)
+            }
+        }
         val sp = Blk.specs.getOrNull(tile) ?: return null
         if (sp[0] == Blk.K_PALV) return NatVar.relief(sp[1], sp[2])
         val rows: Array<String>? = when (sp[0]) {

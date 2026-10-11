@@ -54,10 +54,10 @@ object Shapes {
         val side = B.tSide[id]; val top = B.tTop[id]; val lit = B.light(id)
         val R = if (pump) 0.47f else 0.43f; val RY = if (pump) 0.36f else 0.40f
         val cx = x + 0.5f; val cz = z + 0.5f; val cy = y + RY + 0.005f
-        val N = if (pump) 20 else 14
-        val ribs = if (pump) 10 else 0
+        val N = if (pump) 32 else 24   // abóbora: 8 gomos x 4 pedaços (a crista cai no centro de um pixel da textura)
+        val ribs = if (pump) 8 else 0
         val phis = floatArrayOf(-55f, -27f, 0f, 27f, 55f, 80f).map { it * P / 180f }
-        fun rr(phi: Float, th: Float) = R * cos(phi) * (1f + (if (ribs > 0) 0.075f * cos(ribs * th) else 0.02f * cos(3f * th)))
+        fun rr(phi: Float, th: Float) = R * cos(phi) * (1f + (if (ribs > 0) 0.075f * sin(ribs * th) else 0.02f * cos(3f * th)))
         fun shade(phi: Float, th: Float): Float {
             if (lit) return 1f
             val ny = sin(phi)
@@ -98,10 +98,17 @@ object Shapes {
             vtx(o, side, cx, cy - RY * 0.99f, cz, 0.55f, 0.95f, shade(b, t1)); vtx(o, side, cx, cy - RY * 0.99f, cz, 0.55f, 0.95f, shade(b, t0))
             fin(o)
         }
-        // cabinho
-        val stemTile = if (pump) B.tSide[B.WOOD] else B.tTop[B.GRASS]
-        val sw = if (pump) 0.075f else 0.05f
-        box(o, stemTile, stemTile, cx - sw + 0.02f, cy + RY - 0.03f, cz - sw, cx + sw + 0.02f, cy + RY + (if (pump) 0.17f else 0.12f), cz + sw, if (lit) 1f else vr)
+        // cabinho (textura própria; o da abóbora é grosso e entortado na ponta)
+        val sv = if (lit) 1f else vr
+        if (pump) {
+            val sw = 0.08f; val st = Blk.stemPump
+            box(o, st, st, cx - sw, cy + RY - 0.03f, cz - sw, cx + sw, cy + RY + 0.09f, cz + sw, sv)
+            box(o, st, st, cx - 0.055f + 0.045f, cy + RY + 0.09f, cz - 0.055f, cx + 0.055f + 0.045f, cy + RY + 0.17f, cz + 0.055f, sv)
+        } else {
+            val sw = 0.04f; val st = Blk.stemMel
+            box(o, st, st, cx - sw, cy + RY - 0.03f, cz - sw, cx + sw, cy + RY + 0.07f, cz + sw, sv)
+            box(o, st, st, cx - 0.03f + 0.035f, cy + RY + 0.07f, cz - 0.03f, cx + 0.03f + 0.035f, cy + RY + 0.12f, cz + 0.03f, sv)
+        }
     }
 
     // ---------- cacto ----------

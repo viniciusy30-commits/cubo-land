@@ -1,3 +1,11 @@
+#id 2026-10-11-zzzzzzzzzzzzzz
+#titulo Tronco do carvalho, bambu verde, abóbora e melancia caprichadas!
+- Tronco do carvalho refeito no mesmo estilo pixel art dos outros troncos (casca com veios e topo com anéis)
+- Bambu voltou a ficar verde (a textura estava sendo lida no lugar errado do atlas), com os nós visíveis
+- Melancia nova: listras escuras e claras de verdade, topo com listras saindo do cabinho, mais redondinha
+- Abóbora nova: 8 gomos bem marcados com sombra entre eles, topo com folhinhas ao redor do cabo, cabinho próprio entortado na ponta
+- Cabinhos da abóbora e da melancia com textura própria (a abóbora usava a casca do tronco)
+
 #id 2026-10-11-zzzzzzzzzzzzz
 #titulo Sem limite de tiles e de blocos!
 - O atlas de texturas agora cresce sozinho: quando acabam os espaços ele ganha mais linhas, sem teto fixo de 448 tiles
