@@ -69,12 +69,12 @@ class WorldsActivity : CozyActivity() {
         card.addView(tags)
         card.addView(cTxt(Worlds.agoText(w.played) + "  ·  " + Worlds.sizeText(this, w), 12f, Cz.SOFT, false).apply { setPadding(0, 0, 0, dp(10)) })
         val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-        row.addView(cBtn("Jogar", Cz.GREEN, 16f) { play(w) }, lpW(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.4f).apply { rightMargin = dp(6) })
-        row.addView(cBtn("Editar", Cz.SKY, 12f) { editor(w) }, lpW(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { rightMargin = dp(6) })
-        row.addView(cBtn("2x", Cz.LILAC, 12f) { Worlds.duplicate(this, w); Toast.makeText(this, "Mundo duplicado", Toast.LENGTH_SHORT).show(); refresh() }, lpW(dp(46), ViewGroup.LayoutParams.WRAP_CONTENT).apply { rightMargin = dp(6) })
-        row.addView(cBtn("X", Cz.RED, 12f) {
+        row.addView(cBtn("Jogar", Cz.GREEN, 16f) { play(w) }.apply { minHeight = dp(48) }, lpW(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { rightMargin = dp(6) })
+        row.addView(cPixBtn(PixIcons.EDIT, Cz.SKY, "Editar") { editor(w) }, lpW(dp(48), dp(48)).apply { rightMargin = dp(6) })
+        row.addView(cPixBtn(PixIcons.COPY, Cz.LILAC, "Duplicar") { Worlds.duplicate(this, w); Toast.makeText(this, "Mundo duplicado", Toast.LENGTH_SHORT).show(); refresh() }, lpW(dp(48), dp(48)).apply { rightMargin = dp(6) })
+        row.addView(cPixBtn(PixIcons.TRASH, Cz.RED, "Excluir") {
             cozyConfirm("Excluir \"${w.name}\"?", "Tudo que você construiu nesse mundo será apagado. Isso não tem volta.", "Excluir", Cz.RED) { Worlds.delete(this, w); refresh() }
-        }, lpW(dp(46), ViewGroup.LayoutParams.WRAP_CONTENT))
+        }, lpW(dp(48), dp(48)))
         card.addView(row)
         return card
     }

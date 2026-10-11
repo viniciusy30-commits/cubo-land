@@ -6,7 +6,7 @@ import android.view.MotionEvent
 import android.view.View
 import kotlin.math.*
 
-class HudView(ctx: Context, val game: Game, val worldName: String, val onExit: () -> Unit) : View(ctx) {
+class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (Boolean) -> Unit, val onExit: () -> Unit) : View(ctx) {
     private val prefs = ctx.getSharedPreferences("cfg", 0)
     private val aimTouch = prefs.getBoolean("aimTouch", false)   // mira no ponto do toque (círculo no dedo)
     private val bs = prefs.getFloat("btn", 1f).coerceIn(0.8f, 1.25f)
@@ -79,12 +79,12 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onExit: (
         if (invOpen) invOpen = false
     }
 
-    private fun pbox() = RectF(width / 2f - 150 * d, height / 2f - 118 * d, width / 2f + 150 * d, height / 2f + 118 * d)
-    private fun pbtn(k: Int): RectF { val b = pbox(); val t = b.top + 70 * d + k * 56 * d; return RectF(b.left + 22 * d, t, b.right - 22 * d, t + 46 * d) }
+    private fun pbox() = RectF(width / 2f - 160 * d, height / 2f - 142 * d, width / 2f + 160 * d, height / 2f + 142 * d)
+    private fun pbtn(k: Int): RectF { val b = pbox(); val t = b.top + 98 * d + k * 56 * d; return RectF(b.left + 22 * d, t, b.right - 22 * d, t + 48 * d) }
 
     private fun pauseDown(x: Float, y: Float) {
         if (pbtn(0).contains(x, y)) { togglePause(); return }
-        if (pbtn(1).contains(x, y)) { game.thirdPerson = !game.thirdPerson; return }
+        if (pbtn(1).contains(x, y)) { game.creative = !game.creative; if (!game.creative) game.flying = false; onMode(game.creative); return }
         if (pbtn(2).contains(x, y)) { onExit(); return }
     }
 
@@ -370,22 +370,66 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onExit: (
     private val shadowF = LightingColorFilter(0x000000, 0x000000)
     private val gold = Color.rgb(255, 214, 90)
 
-    private fun drawPause(c: Canvas) {
-        val w = width.toFloat(); val h = height.toFloat()
-        rc(c, 0f, 0f, w, h, Color.argb(150, 8, 8, 24))
-        val b = pbox()
-        pxPanel(c, b.left, b.top, b.right, b.bottom, Cz.PANEL)
-        pxText(c, "Pausado", w / 2, b.top + 20 * d, tsc(3.4f), Cz.GOLD_D, 1, false)
-        pxText(c, worldName, w / 2, b.top + 48 * d, tsc(1.6f), Cz.TXT, 1, false)
-        pxBtn(c, pbtn(0), Cz.GREEN, "Continuar")
-        pxBtn(c, pbtn(1), Cz.SKY, if (game.thirdPerson) "Câmera: 3ª pessoa" else "Câmera: 1ª pessoa")
-        pxBtn(c, pbtn(2), Cz.RED, "Salvar e sair")
+    private val ICO_PLAY = arrayOf("##.......", "####.....", "######...", "########.", "#########", "########.", "######...", "####.....", "##.......")
+    private val ICO_HEART = arrayOf(".##...##.", "####.####", "#########", "#########", "#########", ".#######.", "..#####..", "...###...", "....#....")
+    private val ICO_STAR = arrayOf("....#....", "....#....", "...###...", "#########", ".#######.", "..#####..", "..##.##..", ".##...##.", ".#.....#.")
+    private val ICO_SWAP = arrayOf("...#.....", "..##.....", ".#######.", "..##.....", "...#.....", ".....#...", ".....##..", ".#######.", ".....##..", ".....#...")
+    private val ICO_EXIT = arrayOf("#####..#.", "#...#..##", "#...#####", "#...#..##", "#...#..#.", "#...#....", "#...#....", "#####....")
+    private val ICO_PAUSE = arrayOf("##.##", "##.##", "##.##", "##.##", "##.##", "##.##", "##.##")
+
+    /** ícone pixelado com sombra; '#' = cor, 'o' = escuro */
+    private fun pxIcon(c: Canvas, rows: Array<String>, cx: Float, cy: Float, color: Int, p: Float = (u * 3f / 2f).roundToInt().toFloat()) {
+        val x0 = (cx - rows[0].length * p / 2f).roundToInt().toFloat(); val y0 = (cy - rows.size * p / 2f).roundToInt().toFloat()
+        for (pass in 0..1) for (r in rows.indices) for (q in 0 until rows[r].length) {
+            val ch = rows[r][q]; if (ch == '.') continue
+            val o = if (pass == 0) p * 0.6f else 0f
+            rc(c, x0 + q * p + o, y0 + r * p + o, x0 + (q + 1) * p + o, y0 + (r + 1) * p + o, if (pass == 0) Color.argb(110, 20, 10, 30) else if (ch == 'o') Cz.INK else color)
+        }
     }
 
-    private fun pxBtn(c: Canvas, r: RectF, base: Int, label: String) {
+    private fun drawPause(c: Canvas) {
+        val w = width.toFloat(); val h = height.toFloat()
+        rc(c, 0f, 0f, w, h, Color.argb(160, 8, 8, 24))
+        val b = pbox()
+        pxPanel(c, b.left, b.top, b.right, b.bottom, Cz.PANEL)
+        // faixa do título
+        val tl = b.left + 16 * d; val tr = b.right - 16 * d; val tt = b.top + 14 * d; val tb = b.top + 48 * d
+        rc(c, sn(tl), sn(tt), sn(tr), sn(tb), Color.argb(46, 196, 128, 48))
+        rc(c, sn(tl), sn(tb) - u, sn(tr), sn(tb), Color.argb(120, 196, 128, 48))
+        pxText(c, "Pausado", w / 2, b.top + 24 * d, tsc(3.4f), Cz.GOLD_D, 1, false)
+        pxIcon(c, ICO_PAUSE, b.left + 42 * d, (tt + tb) / 2f, Cz.GOLD_D); pxIcon(c, ICO_PAUSE, b.right - 42 * d, (tt + tb) / 2f, Cz.GOLD_D)
+        // nome do mundo numa plaquinha escura
+        val nm = if (worldName.length > 18) worldName.take(17) + "." else worldName
+        val sc = tsc(1.6f); val nw = PixFont.width(nm, sc) + 28 * d
+        val cy0 = b.top + 66 * d
+        rc(c, sn(w / 2 - nw / 2), sn(cy0 - 9 * d), sn(w / 2 + nw / 2), sn(cy0 + 9 * d), Color.argb(215, 58, 36, 54))
+        rc(c, sn(w / 2 - nw / 2), sn(cy0 - 9 * d), sn(w / 2 + nw / 2), sn(cy0 - 9 * d) + u, Color.argb(255, 255, 208, 96))
+        rc(c, sn(w / 2 - nw / 2), sn(cy0 + 9 * d) - u, sn(w / 2 + nw / 2), sn(cy0 + 9 * d), Color.argb(255, 196, 128, 48))
+        pxText(c, nm, w / 2, cy0 - 3.5f * sc, sc, Cz.CREAM, 1)
+        // divisor com losango
+        val dy = sn(b.top + 86 * d)
+        rc(c, sn(b.left + 28 * d), dy, sn(w / 2 - 8 * d), dy + u, Color.argb(130, 196, 128, 48)); rc(c, sn(w / 2 + 8 * d), dy, sn(b.right - 28 * d), dy + u, Color.argb(130, 196, 128, 48))
+        rc(c, w / 2 - u / 2, dy - u, w / 2 + u / 2, dy + 2 * u, Cz.GOLD_D); rc(c, w / 2 - u * 1.5f, dy, w / 2 + u * 1.5f, dy + u, Cz.GOLD_D)
+
+        pxBtn(c, pbtn(0), Cz.GREEN, "Continuar", null, ICO_PLAY, null)
+        val cre = game.creative
+        pxBtn(c, pbtn(1), if (cre) Cz.LILAC else Cz.ORANGE, if (cre) "Criativo" else "Sobrevivência", "MODO DE JOGO", if (cre) ICO_STAR else ICO_HEART, ICO_SWAP)
+        pxBtn(c, pbtn(2), Cz.RED, "Salvar e sair", null, ICO_EXIT, null)
+        pxText(c, if (cre) "Toque para ir ao modo sobrevivência" else "Toque para ir ao modo criativo", w / 2, pbtn(2).bottom + 12 * d, tsc(1f), Cz.TXT_SOFT, 1, false)
+    }
+
+    private fun pxBtn(c: Canvas, r: RectF, base: Int, label: String, sub: String?, icon: Array<String>, right: Array<String>?) {
         pxPanel(c, r.left, r.top, r.right, r.bottom, base)
-        val sc = tsc(2.2f)
-        pxText(c, label.replace("ª", "A"), r.centerX(), r.centerY() - 3.5f * sc, sc, Color.WHITE, 1)
+        val sc = tsc(2.1f)
+        val label2 = label.replace("ª", "A")
+        if (sub == null) pxText(c, label2, r.centerX(), r.centerY() - 3.5f * sc, sc, Color.WHITE, 1)
+        else {
+            val s1 = tsc(1.1f); val tot = 7f * s1 + 4 * d + 7f * sc; val y0 = r.centerY() - tot / 2f - 1.5f * d
+            pxText(c, sub, r.centerX(), y0, s1, mixC(base, Color.WHITE, 0.8f), 1)
+            pxText(c, label2, r.centerX(), y0 + 7f * s1 + 4 * d, sc, Color.WHITE, 1)
+        }
+        pxIcon(c, icon, r.left + 28 * d, r.centerY() - 1.5f * d, Color.WHITE)
+        if (right != null) pxIcon(c, right, r.right - 28 * d, r.centerY() - 1.5f * d, mixC(base, Color.WHITE, 0.85f))
     }
 
     private fun rnd(i: Int, k: Int): Float { val v = sin(i * 12.9898f + k * 78.233f) * 43758.547f; return v - floor(v) }

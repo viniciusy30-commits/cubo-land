@@ -236,18 +236,50 @@ class World {
         if (g == B.AIR || g == B.LEAVES) set(x, y, z, B.WOOD)
     }
 
-    /** galho torto que sobe; termina numa bolota de folhas. Retorna a ponta [x,y,z] */
-    private fun branch(x: Int, y: Int, z: Int, len: Int, rnd: Random): IntArray {
-        val dirs = arrayOf(intArrayOf(1, 0), intArrayOf(-1, 0), intArrayOf(0, 1), intArrayOf(0, -1), intArrayOf(1, 1), intArrayOf(-1, 1), intArrayOf(1, -1), intArrayOf(-1, -1))
-        val d = dirs[rnd.nextInt(8)]
+    private val DX8 = intArrayOf(1, 1, 0, -1, -1, -1, 0, 1)
+    private val DZ8 = intArrayOf(0, 1, 1, 1, 0, -1, -1, -1)
+
+    /** galho fino: sai do tronco na direção d (0..7), anda um eixo por vez (blocos sempre encostados) e sobe devagar.
+     *  Com fork, brota um raminho no meio. Retorna a ponta [x,y,z] */
+    private fun limb(x: Int, y: Int, z: Int, d: Int, len: Int, rnd: Random, fork: Boolean): IntArray {
+        val dx = DX8[d and 7]; val dz = DZ8[d and 7]
         var bx = x; var by = y; var bz = z
         for (i in 1..len) {
-            bx += d[0]; bz += d[1]
-            if (i % 2 == 0 || rnd.nextInt(3) == 0) by++
+            if (dx != 0 && dz != 0) { if (i % 2 == 1) bx += dx else bz += dz } else { bx += dx; bz += dz }
             wood(bx, by, bz)
-            if (i == len) { by++; wood(bx, by, bz) }
+            if (i % 2 == 0 || i == len) { by++; wood(bx, by, bz) }
+            if (fork && len >= 4 && i == len / 2 + 1) {
+                val t = limb(bx, by, bz, d + (if (rnd.nextBoolean()) 2 else -2) + 8, 2, rnd, false)
+                blob(t[0], t[1], t[2], 1.5f, 1.2f, 1.5f, rnd)
+            }
         }
         return intArrayOf(bx, by, bz)
+    }
+
+    /** copa cheia de volume: bola central + gomos em volta (não fica uma bola lisa) */
+    private fun crown(cx: Int, cy: Int, cz: Int, r: Float, rnd: Random) {
+        blob(cx, cy, cz, r, r * 0.8f, r, rnd)
+        val n = 3 + r.toInt()
+        val a0 = rnd.nextFloat() * 6.283f
+        for (k in 0 until n) {
+            val a = a0 + k * 6.283f / n + (rnd.nextFloat() - 0.5f) * 0.6f
+            val dist = r * (0.7f + rnd.nextFloat() * 0.2f)
+            blob(cx + Math.round(Math.cos(a.toDouble()) * dist).toInt(), cy + rnd.nextInt(3) - 1, cz + Math.round(Math.sin(a.toDouble()) * dist).toInt(),
+                r * 0.55f, r * 0.45f, r * 0.55f, rnd)
+        }
+    }
+
+    /** n galhos espalhados em volta do tronco, em alturas diferentes, cada um com uma folhagem na ponta */
+    private fun limbs(tx: Int, tz: Int, y0: Int, y1: Int, n: Int, minLen: Int, maxLen: Int, leafR: Float, rnd: Random, thick: Boolean = false, bx: Int = tx, bz: Int = tz) {
+        val d0 = rnd.nextInt(8)
+        for (k in 0 until n) {
+            val d = (d0 + k * 8 / n + rnd.nextInt(2)) and 7
+            val sx = if (thick && DX8[d] > 0) bx + 1 else bx
+            val sz = if (thick && DZ8[d] > 0) bz + 1 else bz
+            val yy = y0 + (if (n > 1) (y1 - y0) * k / (n - 1) else 0) + rnd.nextInt(2)
+            val e = limb(sx, yy, sz, d, minLen + rnd.nextInt(maxLen - minLen + 1), rnd, true)
+            blob(e[0], e[1] + 1, e[2], leafR, leafR * 0.8f, leafR, rnd)
+        }
     }
 
     /** tipo: 0 pequena, 1 média, 2 grande (tronco grosso), 3 alta e fina, 4 pinheiro, 5 arbusto, 6 tronco caído */
@@ -255,7 +287,7 @@ class World {
         val r = rnd.nextInt(24)
         return when { r < 5 -> 0; r < 11 -> 1; r < 14 -> 2; r < 16 -> 3; r < 19 -> 4; r < 22 -> 5; else -> 6 }
     }
-    private val treeRadius = intArrayOf(2, 4, 6, 3, 4, 2, 3)
+    private val treeRadius = intArrayOf(3, 5, 7, 3, 4, 2, 3)
 
     /** tronco com curvas leves: a cada "kink" o tronco desvia 1 bloco pro lado. Retorna a coluna do topo [x,z] */
     private fun trunk(x: Int, y: Int, z: Int, h: Int, kinks: Int, rnd: Random): IntArray {
@@ -307,8 +339,8 @@ class World {
             0 -> {
                 val th = 3 + rnd.nextInt(2)
                 val tp = trunk(x, y, z, th, rnd.nextInt(2), rnd)
-                blob(tp[0], y + th + 1, tp[1], 2.4f, 1.9f, 2.4f, rnd)
-                if (rnd.nextBoolean()) { val e = branch(tp[0], y + th - 1, tp[1], 2, rnd); blob(e[0], e[1], e[2], 1.5f, 1.3f, 1.5f, rnd) }
+                limbs(tp[0], tp[1], y + th - 1, y + th - 1, 1, 2, 2, 1.7f, rnd)
+                crown(tp[0], y + th + 1, tp[1], 2.4f, rnd)
                 droop(tp[0], y + th, tp[1], 3, 3, rnd)
             }
             1 -> {
@@ -316,37 +348,33 @@ class World {
                 val tp = trunk(x, y, z, th, 1 + rnd.nextInt(2), rnd)
                 root(x, y, z, 1, 0); root(x, y, z, 0, 1)
                 if (rnd.nextBoolean()) root(x, y, z, -1, 0)
-                for (k in 0 until 2 + rnd.nextInt(2)) {
-                    val e = branch(tp[0], y + th - 3 + rnd.nextInt(3), tp[1], 2 + rnd.nextInt(2), rnd)
-                    blob(e[0], e[1], e[2], 2.2f, 1.8f, 2.2f, rnd)
-                }
-                blob(tp[0], y + th + 1, tp[1], 3.2f, 2.6f, 3.2f, rnd)
-                blob(tp[0] + 2 - rnd.nextInt(5), y + th, tp[1] + 2 - rnd.nextInt(5), 2.2f, 1.7f, 2.2f, rnd)
+                if (rnd.nextBoolean()) root(x, y, z, 0, -1)
+                limbs(tp[0], tp[1], y + th - 3, y + th - 1, 3 + rnd.nextInt(2), 3, 4, 2.0f, rnd)
+                crown(tp[0], y + th + 1, tp[1], 3.1f, rnd)
                 droop(tp[0], y + th, tp[1], 5, 5, rnd)
             }
             2 -> {
-                val th = 8 + rnd.nextInt(4)
+                val th = 9 + rnd.nextInt(4)
                 val thick = get(x + 1, y, z) == B.GRASS && get(x, y, z + 1) == B.GRASS && get(x + 1, y, z + 1) == B.GRASS
                 var tx = x; var tz = z
-                if (thick) {
-                    for (t in 1..th) { wood(x, y + t, z); if (t <= th - 2) { wood(x + 1, y + t, z); wood(x, y + t, z + 1); wood(x + 1, y + t, z + 1) } }
+                if (thick) {   // tronco grosso que afina perto do topo
+                    for (t in 1..th) { wood(x, y + t, z); if (t <= th - 3) { wood(x + 1, y + t, z); wood(x, y + t, z + 1); wood(x + 1, y + t, z + 1) } }
                 } else { val tp = trunk(x, y, z, th, 2, rnd); tx = tp[0]; tz = tp[1] }
                 for (dx in -1..2) for (dz in -1..2) {   // raízes aparentes, com pé no chão
                     if ((dx == 0 || dx == 1) && (dz == 0 || dz == 1)) continue
-                    if (rnd.nextInt(3) == 0 && get(x + dx, y, z + dz) == B.GRASS && air(x + dx, y + 1, z + dz)) wood(x + dx, y + 1, z + dz)
+                    if (rnd.nextInt(3) == 0 && get(x + dx, y, z + dz) == B.GRASS && air(x + dx, y + 1, z + dz)) {
+                        wood(x + dx, y + 1, z + dz)
+                        if (rnd.nextInt(3) == 0 && air(x + dx * 2, y + 1, z + dz * 2) && get(x + dx * 2, y, z + dz * 2) == B.GRASS) wood(x + dx * 2, y + 1, z + dz * 2)
+                    }
                 }
-                for (k in 0 until 5 + rnd.nextInt(3)) {
-                    val e = branch(tx, y + th - 5 + rnd.nextInt(4), tz, 3 + rnd.nextInt(2), rnd)
-                    blob(e[0], e[1], e[2], 2.8f, 2.2f, 2.8f, rnd)
-                }
-                blob(tx, y + th + 2, tz, 4.6f, 3.2f, 4.6f, rnd)
-                blob(tx + 2, y + th + 3, tz - 1, 2.4f, 2.0f, 2.4f, rnd); blob(tx - 2, y + th + 2, tz + 2, 2.4f, 2.0f, 2.4f, rnd)
-                blob(tx - 3, y + th + 1, tz - 2, 2.2f, 1.7f, 2.2f, rnd); blob(tx + 3, y + th + 1, tz + 2, 2.2f, 1.7f, 2.2f, rnd)
+                limbs(tx, tz, y + th - 6, y + th - 2, 6 + rnd.nextInt(2), 3, 5, 2.7f, rnd, thick, x, z)
+                crown(tx, y + th + 2, tz, 4.6f, rnd)
                 droop(tx, y + th, tz, 7, 6, rnd)
             }
             3 -> {
                 val th = 8 + rnd.nextInt(3)
                 val tp = trunk(x, y, z, th + 1, 1, rnd)
+                limbs(tp[0], tp[1], y + th - 5, y + th - 3, 2, 2, 3, 1.5f, rnd)
                 for (k in 0..3) { val r = 3.1f - k * 0.7f; blob(tp[0], y + th - 4 + k * 2, tp[1], r, 1.7f, r, rnd) }
                 blob(tp[0], y + th + 3, tp[1], 1.1f, 1.4f, 1.1f, rnd)
                 droop(tp[0], y + th - 2, tp[1], 3, 6, rnd)

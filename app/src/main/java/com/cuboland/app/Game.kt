@@ -47,6 +47,9 @@ class Debris(var x: Float, var y: Float, var z: Float, var vx: Float, var vy: Fl
 /** parte de cima de uma árvore caindo inteira. bl = (dx,dy,dz,id) por bloco, relativo ao bloco cortado */
 class FallTree(val px: Float, val py: Float, val pz: Float, val dx: Float, val dz: Float, val bl: IntArray, val yo: Float = 0f) {
     var ang = 0.03f; var vel = 0.25f; var t = 0f; val n = bl.size / 4
+    val gone = BooleanArray(bl.size / 4)   // folhas e galhos que já bateram no chão e se quebraram
+    /** só o tronco (perto do eixo do corte) segura a árvore; folhas e galhos finos se quebram ao tocar o chão */
+    fun holds(i: Int) = bl[i * 4 + 3] == B.WOOD && abs(bl[i * 4]) <= 2 && abs(bl[i * 4 + 2]) <= 2
     var drop = 0f; var dvy = 0f; var dropping = false   // depois de deitar sem tocar chão, ela despenca até encostar
     var sx = 0; var sy = -99; var sz = 0; var landed = false; var lt = 0f   // sx..sz = bloco do toco (ignorado na colisão)
     val kx get() = dz; val kz get() = -dx     // eixo de rotação (horizontal, perpendicular à queda)
@@ -788,23 +791,41 @@ class Game(val world: World) {
 
     private val tmpV = FloatArray(3)
 
-    /** a árvore encosta no chão quando a parte de baixo de algum bloco dela entra num bloco sólido (o toco é ignorado) */
+    /** a árvore encosta no chão quando o tronco entra num bloco sólido (o toco é ignorado).
+     *  Folhas e galhos que tocam o chão antes disso se quebram e a árvore continua caindo até o tronco assentar. */
     private fun treeHitsGround(f: FallTree): Boolean {
         if (f.ang < 0.2f) return false
+        var hit = false
         for (i in 0 until f.n) {
+            if (f.gone[i]) continue
             treeRot(f, f.bl[i * 4].toFloat(), f.bl[i * 4 + 1] + f.yo, f.bl[i * 4 + 2].toFloat(), tmpV)
             val wx = floor(f.px + tmpV[0]).toInt(); val wy = floor(f.py - f.drop + tmpV[1] - 0.42f).toInt(); val wz = floor(f.pz + tmpV[2]).toInt()
             if (f.drop <= 0f && wx == f.sx && wy == f.sy && wz == f.sz) continue
             val id = world.get(wx, wy, wz)
-            if (id != B.AIR && id != B.WATER && id != B.LEAVES && id != B.WOOD) return true
+            if (id == B.AIR || id == B.WATER || id == B.LEAVES || id == B.WOOD) continue
+            if (f.holds(i)) hit = true else smashPiece(f, i)
         }
-        return false
+        return hit
+    }
+
+    /** um bloco de folha (ou galho fino) bateu no chão: quebra em pedacinhos e some, sem segurar a árvore */
+    private fun smashPiece(f: FallTree, i: Int) {
+        f.gone[i] = true
+        val cx = f.px + tmpV[0]; val cy = f.py - f.drop + tmpV[1]; val cz = f.pz + tmpV[2]
+        if (f.bl[i * 4 + 3] == B.WOOD) { burst(cx, cy, cz, 0xB98A55, 4, 3f); burst(cx, cy, cz, 0x7A5230, 2, 3f) }
+        else {
+            burst(cx, cy, cz, leafCols[rnd.nextInt(leafCols.size)], 4, 3f)
+            if (leafFall.size < 140) leafFall.add(LeafP(cx, cy, cz, (rnd.nextFloat() - 0.5f) * 1.6f, (rnd.nextFloat() - 0.5f) * 1.6f, rnd.nextFloat() * 6.28f,
+                leafCols[rnd.nextInt(leafCols.size)], 0.08f + rnd.nextFloat() * 0.05f, 5f))
+        }
+        shake = max(shake, 0.12f)
     }
 
     /** a árvore bateu no chão: baque, poeira e folhas voando; ela fica deitada um instante antes de se desfazer */
     private fun landTree(f: FallTree) {
         f.landed = true; f.lt = 0f; f.vel = 0f
         for (i in 0 until f.n step 3) {
+            if (f.gone[i]) continue
             val id = f.bl[i * 4 + 3]
             treeRot(f, f.bl[i * 4].toFloat(), f.bl[i * 4 + 1] + f.yo, f.bl[i * 4 + 2].toFloat(), tmpV)
             val cx = f.px + tmpV[0]; val cy = f.py - f.drop + tmpV[1]; val cz = f.pz + tmpV[2]
@@ -820,6 +841,7 @@ class Game(val world: World) {
     private fun shatterTree(f: FallTree) {
         var leaves = 0; var logs = 0
         for (i in 0 until f.n) {
+            if (f.gone[i]) continue
             val id = f.bl[i * 4 + 3]
             treeRot(f, f.bl[i * 4].toFloat(), f.bl[i * 4 + 1] + f.yo, f.bl[i * 4 + 2].toFloat(), tmpV)
             val cx = f.px + tmpV[0]; val cy = f.py - f.drop + tmpV[1]; val cz = f.pz + tmpV[2]

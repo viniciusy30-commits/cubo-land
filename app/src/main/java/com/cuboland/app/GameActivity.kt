@@ -76,7 +76,7 @@ class GameActivity : AppCompatActivity() {
             val f = when (q) { 1 -> 1f; 2 -> 0.8f; 3 -> 0.6f; else -> if (w > 1500) 0.8f else 1f }
             if (f < 1f) gl.holder.setFixedSize((w * f).toInt(), (h * f).toInt())
         }
-        val h = HudView(this, game, info.name) { finish() }
+        val h = HudView(this, game, info.name, { cr -> info.creative = cr; Worlds.update(this, info) }) { finish() }
         hud = h
         root.addView(h, 1)
         loading.setProgress(1f)

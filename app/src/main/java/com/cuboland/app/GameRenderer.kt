@@ -632,7 +632,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         for (f in game.trees) {
             Matrix.setIdentityM(base2, 0); Matrix.translateM(base2, 0, f.px, f.py, f.pz)
             Matrix.rotateM(base2, 0, f.ang * 57.29578f, f.kx, 0f, f.kz)
-            for (i in 0 until f.n) box(base2, f.bl[i * 4].toFloat(), f.bl[i * 4 + 1] + f.yo, f.bl[i * 4 + 2].toFloat(), 0f, 0f, 1f, 1f, 1f, 0f, 0xFFFFFF, 1f, 1f, null, f.bl[i * 4 + 3])
+            for (i in 0 until f.n) if (!f.gone[i]) box(base2, f.bl[i * 4].toFloat(), f.bl[i * 4 + 1] + f.yo, f.bl[i * 4 + 2].toFloat(), 0f, 0f, 1f, 1f, 1f, 0f, 0xFFFFFF, 1f, 1f, null, f.bl[i * 4 + 3])
         }
     }
 

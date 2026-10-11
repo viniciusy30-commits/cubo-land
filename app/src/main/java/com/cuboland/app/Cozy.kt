@@ -439,6 +439,39 @@ fun Context.cBtn(t: String, color: Int, sp: Float = 16f, onClick: () -> Unit): T
     return b
 }
 
+/** ícones pixelados 9x9 dos botões: '#' = traço claro, 'o' = detalhe escuro */
+object PixIcons {
+    val EDIT = arrayOf("......##.", ".....####", "....####.", "...####..", "..####...", ".####....", ".###.....", ".oo......", "o........")
+    val COPY = arrayOf("######...", "#....#...", "#....#...", "#..######", "#..#....#", "####....#", "...#....#", "...#....#", "...######")
+    val TRASH = arrayOf("...###...", "#########", ".#######.", ".#.#.#.#.", ".#.#.#.#.", ".#.#.#.#.", ".#.#.#.#.", ".#.#.#.#.", ".#######.")
+}
+
+/** botão quadrado com um ícone pixelado no lugar do texto */
+fun Context.cPixBtn(icon: Array<String>, color: Int, desc: String, sizeDp: Int = 48, onClick: () -> Unit): View {
+    val ctx = this
+    val box = CozyBox(this, color, 14f, true)
+    val v = object : View(ctx) {
+        private val p = Paint()
+        override fun onDraw(c: Canvas) {
+            val rows = icon.size; val cols = icon[0].length
+            val u = max(2, (min(width, height) * 0.46f / cols).toInt())
+            val ox = (width - cols * u) / 2; val oy = (height - rows * u) / 2 - ctx.dp(3)
+            for (pass in 0..1) for (r in 0 until rows) for (q in 0 until cols) {
+                val ch = icon[r][q]; if (ch == '.') continue
+                val sh = pass == 0
+                p.color = if (sh) Color.argb(120, 20, 10, 30) else if (ch == 'o') Cz.INK else Color.WHITE
+                val x = ox + q * u + (if (sh) u / 2 else 0); val y = oy + r * u + (if (sh) u / 2 else 0)
+                c.drawRect(x.toFloat(), y.toFloat(), (x + u).toFloat(), (y + u).toFloat(), p)
+            }
+        }
+    }
+    v.background = box; v.isClickable = true; v.isFocusable = true; v.contentDescription = desc
+    v.pressFx(box)
+    v.setOnClickListener { onClick() }
+    v.layoutParams = LinearLayout.LayoutParams(dp(sizeDp), dp(sizeDp))
+    return v
+}
+
 /** botão redondo com um símbolo */
 fun Context.cIconBtn(sym: String, color: Int, size: Int = 44, onClick: () -> Unit): TextView {
     val b = cTxtL(sym, 19f)

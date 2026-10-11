@@ -1,3 +1,16 @@
+#id 2026-10-11-o
+#titulo Menu de pausa renovado!
+- Pausa redesenhada: título com faixa, plaquinha com o nome do mundo, divisor e ícones nos botões
+- Agora dá pra trocar entre criativo e sobrevivência direto na pausa (fica salvo no mundo)
+- A troca de câmera saiu da pausa (continua no botão da tela)
+
+#id 2026-10-11-n
+#titulo Árvores novas e menu de mundos com ícones!
+- Menu de mundos: só o JOGAR continua com texto; editar, duplicar e excluir viraram ícones
+- Árvores mais bonitas: copas com volume, galhos finos espalhados em volta do tronco com raminhos e folhas nas pontas
+- Mundos novos já vêm com as árvores novas (mundos antigos mantêm as que já tinham)
+- Ao cortar, a árvore cai inteira: folhas e galhos que batem no chão se quebram e o tronco continua até encostar no chão
+
 #id 2026-10-11-m
 #titulo Subir e descer na água, e água escorrendo!
 - Dentro da água agora sobe sozinho em blocos de até 2 de altura (nada de ficar preso embaixo da margem)
