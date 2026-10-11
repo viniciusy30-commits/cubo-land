@@ -1108,7 +1108,7 @@ class Game(val world: World) {
         swimAmt += ((if (p.inWater && !p.onGround && !flying) 1f else 0f) - swimAmt) * min(1f, 8f * dt)
         if (p.inWater) inWaterT += dt
         if (p.inWater && !wasW) {   // entrou na água
-            wetT = 0f: onda proporcional à velocidade da queda
+            wetT = 0f   // onda proporcional à velocidade da queda
             val v = max(0f, -vyPre)
             val amp = (0.3f + v * 0.1f).coerceAtMost(1.8f)
             addRipple(p.x, p.z, amp)
