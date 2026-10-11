@@ -53,6 +53,28 @@ class CharacterActivity : CozyActivity() {
         }
     }
 
+    /** estilos de cabelo só do tipo escolhido (menino ou menina) */
+    private fun hairGrid(card: LinearLayout) {
+        val list = Look.hairList()
+        val tv = cTxt("", 13f, Cz.SOFT, false).apply { setPadding(0, dp(10), 0, dp(2)) }
+        card.addView(tv)
+        val chips = ArrayList<TextView>()
+        var row: LinearLayout? = null
+        val perRow = 3
+        for ((n, id) in list.withIndex()) {
+            if (n % perRow == 0) { row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }; card.addView(row, lpW(MATCH, WRAP).apply { topMargin = dp(4) }) }
+            val c = cChip(Look.HAIR_STYLES[id]) { Look.set(Look.HAIR, id); changed() }
+            chips.add(c)
+            row!!.addView(c, lpW(0, WRAP, 1f).apply { if (n % perRow != 0) leftMargin = dp(4) })
+        }
+        val rem = list.size % perRow
+        if (rem != 0) for (k in rem until perRow) row!!.addView(View(this), lpW(0, 1, 1f).apply { leftMargin = dp(4) })
+        refreshers.add {
+            tv.text = "Estilo:  ${Look.HAIR_STYLES[Look.v[Look.HAIR].coerceIn(0, Look.HAIR_STYLES.size - 1)]}"
+            for ((n, c) in chips.withIndex()) c.styleChip(Look.v[Look.HAIR] == list[n])
+        }
+    }
+
     /** bolinhas de cor */
     private fun swatch(card: LinearLayout, label: String, idx: Int, colors: IntArray, names: Array<String>, perRow: Int = 8) {
         val tv = cTxt("", 13f, Cz.SOFT, false).apply { setPadding(0, dp(10), 0, dp(2)) }
@@ -103,7 +125,7 @@ class CharacterActivity : CozyActivity() {
                 val c = cCard("Corpo"); grid(c, "Tipo", Look.GENDER, Look.GENDER_NAMES, 2); swatch(c, "Pele", Look.SKIN, Look.SKINS, Look.SKIN_NAMES, 6); add(c)
             }
             2 -> {
-                val c = cCard("Cabelo"); grid(c, "Estilo", Look.HAIR, Look.HAIR_STYLES, 3); swatch(c, "Cor", Look.HAIRC, Look.HAIRS, Look.HAIR_NAMES); add(c)
+                val c = cCard(if (Look.v[Look.GENDER] == 1) "Cabelo feminino" else "Cabelo masculino"); hairGrid(c); swatch(c, "Cor", Look.HAIRC, Look.HAIRS, Look.HAIR_NAMES); add(c)
             }
             3 -> {
                 val c1 = cCard("Olhos"); grid(c1, "Estilo", Look.EYES, Look.EYE_STYLES, 3); swatch(c1, "Cor dos olhos", Look.EYEC, Look.EYE_COLORS, Look.EYE_COLOR_NAMES, 10); add(c1)

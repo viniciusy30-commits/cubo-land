@@ -23,7 +23,18 @@ object Look {
     val PAL_NAMES = arrayOf("Menta", "Rosa", "Branco", "Preto", "Vermelho", "Laranja", "Amarelo", "Verde", "Azul", "Roxo", "Marrom", "Marinho", "Bege", "Vinho", "Cinza", "Turquesa")
 
     val GENDER_NAMES = arrayOf("Menino", "Menina")
-    val HAIR_STYLES = arrayOf("Curto", "Espetado", "Chanel", "Maria-chiquinha", "Rabo de cavalo", "Coque", "Longo", "Fofo", "Undercut", "Franja de lado", "Bagunçado", "Topete", "Saiyajin", "Raspado", "Moicano", "Repartido", "Hime", "Trança", "Dois coques", "Twintail alto", "Ahoge", "Degradê", "Social", "Pompadour", "Cacheado curto", "Black power", "Dreads", "Mullet", "Coque samurai", "Cortina", "Pra trás", "Lobo", "Longo liso", "Ondulado", "Cacheado longo", "Tranças box", "Emo", "Militar", "Cogumelo", "Rabo baixo")
+    val HAIR_STYLES = arrayOf("Curto", "Espetado", "Chanel", "Maria-chiquinha", "Rabo de cavalo", "Coque", "Longo", "Fofo", "Undercut", "Franja de lado", "Bagunçado", "Topete", "Saiyajin", "Raspado", "Moicano", "Repartido", "Hime", "Trança", "Dois coques", "Twintail alto", "Ahoge", "Degradê", "Social", "Pompadour", "Cacheado curto", "Black power", "Dreads", "Mullet", "Coque samurai", "Cortina", "Pra trás", "Lobo", "Longo liso", "Ondulado", "Cacheado longo", "Tranças box", "Emo", "Militar", "Cogumelo", "Rabo baixo", "Pixie", "Bob assimétrico", "Rabo alto", "Coque bailarina", "Princesa", "Trança lateral", "Tranças duplas", "Meio preso", "Cachos de princesa", "Twin drills")
+    /** cabelos masculinos e femininos (índices de HAIR_STYLES) */
+    val HAIR_MALE = intArrayOf(0, 1, 8, 9, 10, 11, 12, 13, 14, 15, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 35, 36, 37, 38)
+    val HAIR_FEM = intArrayOf(2, 3, 4, 5, 6, 7, 16, 17, 18, 19, 20, 33, 34, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49)
+    fun hairList(g: Int = v[GENDER]): IntArray = if (g == 1) HAIR_FEM else HAIR_MALE
+    private val HAIR_SWAP = mapOf(6 to 32, 32 to 6, 0 to 40, 40 to 0, 5 to 28, 28 to 5, 24 to 34, 34 to 24, 39 to 30, 30 to 39, 36 to 41, 41 to 36)
+    /** troca o cabelo por um equivalente quando o tipo (menino/menina) muda */
+    private fun hairFor(g: Int, id: Int): Int {
+        if (hairList(g).contains(id)) return id
+        val m = HAIR_SWAP[id]
+        return if (m != null && hairList(g).contains(m)) m else if (g == 1) 2 else 0
+    }
     val EYE_STYLES = arrayOf("Grandes", "Felizes", "Bolinhas", "Sonolentos", "Brilhantes", "Sérios", "Estrelas", "Gato", "Cansados")
     val ONOFF = arrayOf("Não", "Sim")
     val TOPS = arrayOf("Camiseta", "Moletom", "Vestido", "Jaqueta", "Túnica", "Armadura", "Macacão", "Camisa social", "Marinheiro", "Gakuran", "Kimono", "Robe de mago", "Terno", "Regata", "Haori samurai", "Maid", "Colete aventureiro", "Casacão")
@@ -35,7 +46,7 @@ object Look {
     val MOUTHS = arrayOf("Sorriso", "Neutra", "Biquinho", "Aberta", "Dentinho", "Gatinho")
     val NECKS = arrayOf("Nada", "Cachecol", "Laço", "Colar", "Gravata", "Gravata borboleta", "Coleira de sino", "Lenço", "Gargantilha", "Medalha")
 
-    val COUNTS = intArrayOf(2, 6, 40, 16, 9, 10, 2, 18, 16, 8, 16, 8, 16, 24, 16, 13, 10, 16, 10, 16, 6)
+    val COUNTS = intArrayOf(2, 6, 50, 16, 9, 10, 2, 18, 16, 8, 16, 8, 16, 24, 16, 13, 10, 16, 10, 16, 6)
 
 
     /** looks prontos: 21 valores na ordem dos índices acima */
@@ -43,13 +54,13 @@ object Look {
     val PRESETS = arrayOf(
         intArrayOf(0, 1, 8, 4, 5, 5, 0, 1, 3, 0, 3, 0, 3, 11, 4, 8, 5, 3, 7, 4, 1),
         intArrayOf(1, 0, 16, 4, 4, 0, 1, 8, 11, 5, 11, 6, 3, 0, 4, 0, 9, 4, 0, 4, 0),
-        intArrayOf(0, 0, 6, 8, 3, 3, 0, 11, 9, 0, 11, 0, 10, 1, 9, 0, 1, 11, 0, 6, 1),
-        intArrayOf(0, 2, 4, 4, 5, 5, 0, 14, 11, 4, 3, 5, 10, 0, 4, 5, 5, 10, 0, 4, 1),
+        intArrayOf(0, 0, 32, 8, 3, 3, 0, 11, 9, 0, 11, 0, 10, 1, 9, 0, 1, 11, 0, 6, 1),
+        intArrayOf(0, 2, 28, 4, 5, 5, 0, 14, 11, 4, 3, 5, 10, 0, 4, 5, 5, 10, 0, 4, 1),
         intArrayOf(1, 0, 6, 2, 4, 0, 1, 2, 1, 0, 1, 2, 1, 15, 6, 0, 3, 2, 3, 8, 0),
         intArrayOf(1, 0, 19, 1, 0, 4, 1, 15, 3, 0, 3, 6, 3, 20, 2, 0, 0, 3, 5, 4, 5),
         intArrayOf(0, 1, 11, 2, 0, 0, 1, 12, 11, 0, 11, 6, 3, 4, 6, 0, 1, 4, 4, 4, 0),
-        intArrayOf(1, 0, 15, 8, 7, 6, 1, 1, 2, 1, 3, 1, 2, 5, 2, 7, 4, 2, 6, 4, 5),
-        intArrayOf(0, 1, 20, 10, 6, 6, 1, 10, 4, 0, 3, 5, 10, 14, 5, 0, 8, 5, 0, 4, 4),
+        intArrayOf(1, 0, 41, 8, 7, 6, 1, 1, 2, 1, 3, 1, 2, 5, 2, 7, 4, 2, 6, 4, 5),
+        intArrayOf(0, 1, 10, 10, 6, 6, 1, 10, 4, 0, 3, 5, 10, 14, 5, 0, 8, 5, 0, 4, 4),
         intArrayOf(0, 0, 15, 4, 0, 5, 0, 9, 11, 0, 11, 6, 3, 0, 4, 9, 9, 10, 0, 4, 1))
 
     fun applyPreset(i: Int) { v = PRESETS[((i % PRESETS.size) + PRESETS.size) % PRESETS.size].copyOf() }
@@ -73,13 +84,16 @@ object Look {
     }
 
     fun set(i: Int, value: Int) {
-        val n = v.copyOf(); n[i] = ((value % COUNTS[i]) + COUNTS[i]) % COUNTS[i]; v = n
+        val n = v.copyOf(); n[i] = ((value % COUNTS[i]) + COUNTS[i]) % COUNTS[i]
+        if (i == GENDER) n[HAIR] = hairFor(n[GENDER], n[HAIR])
+        v = n
     }
 
     fun randomize() {
         val r = java.util.Random()
         val n = DEF.copyOf()
         for (i in 0 until N) n[i] = r.nextInt(COUNTS[i])
+        n[HAIR] = hairList(n[GENDER])[r.nextInt(hairList(n[GENDER]).size)]
         n[BLUSH] = 1
         v = n
     }
