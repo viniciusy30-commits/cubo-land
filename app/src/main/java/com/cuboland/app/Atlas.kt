@@ -602,8 +602,13 @@ object Atlas {
                 val ch = art.rows[py][px]
                 if (ch == '.') a = 0 else { val p = art.pal[Character.digit(ch, 16)]; c = p and 0xFFFFFF; a = p ushr 24 }
             }
+            Blk.K_PALV -> {
+                val p = NatVar.pixel(c1, c2, floor(u * 16f).toInt().coerceIn(0, 15), floor(v * 16f).toInt().coerceIn(0, 15))
+                if ((p ushr 24) == 0) a = 0 else { c = p and 0xFFFFFF; a = p ushr 24 }
+            }
             Blk.K_SPRITE -> {
-                val p = Leaf3D.pixel(c1, c2, floor(u * 16f).toInt().coerceIn(0, 15), floor(v * 16f).toInt().coerceIn(0, 15))
+                val spx = floor(u * 16f).toInt().coerceIn(0, 15); val spy = floor(v * 16f).toInt().coerceIn(0, 15)
+                val p = if (c1 >= 20) Leaf3D.fruitPixel(c1 - 20, spx, spy) else Leaf3D.pixel(c1, c2, spx, spy)
                 if ((p ushr 24) == 0) a = 0 else { c = p and 0xFFFFFF; a = 255 }
             }
             Blk.K_PLEAF -> {
@@ -762,8 +767,8 @@ object Atlas {
         val a = (c ushr 24) and 255
         if (a == 0) return c
         val r0 = h(px, py, sd)
-        var k = 1f + (r0 - 0.5f) * 0.18f + (h(px / 2, py / 2, sd + 9) - 0.5f) * 0.1f
-        if (r0 > 0.93f) k *= 0.88f else if (r0 < 0.06f) k *= 1.1f
+        var k = 1f + (r0 - 0.5f) * 0.09f + (h(px / 2, py / 2, sd + 9) - 0.5f) * 0.06f   // ruído suave: antes parecia estática de TV
+        if (r0 > 0.95f) k *= 0.94f else if (r0 < 0.05f) k *= 1.05f
         if (px == 0 || py == 0) k *= 1.07f
         if (px == 15 || py == 15) k *= 0.9f
         val lv = 14f
@@ -789,6 +794,19 @@ object Atlas {
             out[y * w + t * T + x] = if (a == 0) CLEAR
                 else ((a / 4) shl 24) or ((r / a).toInt() shl 16) or ((g / a).toInt() shl 8) or (bl / a).toInt()
         }
+        // terreno básico (grama, terra, pedra, areia, madeira, tábua, tijolo, cores): vira pixel art 16x16 como os blocos novos
+        for (t in intArrayOf(1, 2, 3, 4, 5, 6, 7, 9, 11, 12, 13, 14)) {
+            var opaque = true
+            for (y in 0 until T) for (x in 0 until T) if ((out[y * w + t * T + x] ushr 24) != 255) { opaque = false; break }
+            if (!opaque) continue
+            for (qy in 0 until 16) for (qx in 0 until 16) {
+                var r = 0; var g = 0; var bl = 0
+                for (y in 0 until 4) for (x in 0 until 4) { val c = out[(qy * 4 + y) * w + t * T + qx * 4 + x]; r += (c shr 16) and 255; g += (c shr 8) and 255; bl += c and 255 }
+                val avg = (255 shl 24) or ((r / 16) shl 16) or ((g / 16) shl 8) or (bl / 16)
+                val pc = pixelArt(avg, qx, qy, t * 31 + 7)
+                for (y in 0 until 4) for (x in 0 until 4) out[(qy * 4 + y) * w + t * T + qx * 4 + x] = pc
+            }
+        }
         for (t in 0 until 24) bleed(out, w, t * T, 0)
         // blocos novos (receitas em Blk): 1 amostra por pixel, as formas já são suaves
         val nDefs = Blk.defs.size
@@ -798,7 +816,7 @@ object Atlas {
             for (y in 0 until T) for (x in 0 until T) {
                 val qx = x / 4; val qy = y / 4   // grade de 16x16 pixels grandes (pixel art)
                 val g0 = genNew(sp, (qx + 0.5f) / 16f, (qy + 0.5f) / 16f)
-                val c = if (sp[0] == Blk.K_PIX || sp[0] == Blk.K_LEAF || sp[0] == Blk.K_PAL || sp[0] == Blk.K_PLEAF || sp[0] == Blk.K_SPRITE) g0 else pixelArt(g0, qx, qy, sp[5])
+                val c = if (sp[0] == Blk.K_PIX || sp[0] == Blk.K_LEAF || sp[0] == Blk.K_PAL || sp[0] == Blk.K_PLEAF || sp[0] == Blk.K_SPRITE || sp[0] == Blk.K_PALV) g0 else pixelArt(g0, qx, qy, sp[5])
                 out[(y0 + y) * w + x0 + x] = if ((c ushr 24) == 0) CLEAR else c
             }
             bleed(out, w, x0, y0)

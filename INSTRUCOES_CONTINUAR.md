@@ -15,6 +15,11 @@ AVISO: nada disso foi compilado (sem Android SDK/Maven no ambiente). Só checei 
 - **Atlas.kt**: caso `K_SPRITE` em `genNew` e na lista "sem pixelArt".
 - **World.kt `buildChunk`**: depois da casca + cubo interno chama `Leaf3D.emit` (só se `o.vc < 46000`).
 - **Mundo de testes travado**: `World.locked` (BitSet preenchido no fim de `generateTest`) + `isLocked()`; `Game.blockHit`, `cutFoliage` e `fellTree` ignoram blocos travados. Só quebra o que o jogador colocar.
+- **Folhas em toda a copa**: `buildChunk` junta os blocos de folha numa lista e emite os cartões num passe só no fim, de cima pra baixo, com menos cartões (4/2/1) conforme `o.vc` sobe (antes o orçamento acabava nos blocos de baixo).
+- **Frutinhas** (`Leaf3D.fruitPixel` + `emit`): dois quads cruzados pendurados; `Style.fruit/fsize` por espécie (bambu não tem); `Blk.fruitOf[tile]`.
+- **Grãos variáveis** (`NatVar.kt`, tipo `K_PALV`): 6 variantes do topo de Podzol, Grama Nevada, Micélio e Terra Grossa (nenhum/poucos/mais/todos, deslocados e espelhados), com relevo derivado; `Blk.pickTile` escolhe por posição em `buildChunk`.
+- **Estática**: ruído do `pixelArt` reduzido pela metade e filtro de minificação trilinear (`GameRenderer`).
+- **Terreno básico em pixel art** (tiles 1-7,9,11-14 opacos) em `Atlas.build`.
 - novidades.txt com entrada nova.
 
 ## FALTA

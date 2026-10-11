@@ -21,6 +21,7 @@ object Blk {
     const val K_SHELF = 20; const val K_BAND = 21; const val K_GRAD = 22; const val K_CANDY = 23; const val K_SWIRL = 24
     const val K_BORDER = 25; const val K_RING = 26; const val K_CELLS = 27; const val K_JELLY = 28; const val K_ICE = 29
     const val K_BLOCKY = 30; const val K_GLAZE = 31; const val K_CACTUS = 32; const val K_LEAFY = 33; const val K_PIX = 34; const val K_LEAF = 35
+    const val K_PALV = 39   // variante do topo com grãos em posição/quantidade diferentes (NatVar): c1 = índice da NatArt, c2 = variante
     const val K_SPRITE = 38   // folha desenhada por espécie (Leaf3D): c1 = estilo, c2 = índice da NatArt (paleta; -1 = carvalho)
     const val K_PAL = 36; const val K_PLEAF = 37   // pixel art com paleta própria (NatArt); K_PLEAF = folhagem com buracos transparentes
 
@@ -62,12 +63,26 @@ object Blk {
     private fun pt(art: Int, leaf: Boolean = false, glow: Boolean = false): Int = tl(if (leaf) K_PLEAF else K_PAL, art, glow = glow)
     /** tile da folhagem -> tile do sprite 3D dessa espécie (0 = sem folha 3D) */
     val spriteOf = IntArray(512)
+    val fruitOf = IntArray(512)
+    fun fruitFor(tile: Int): Int { defs; return if (tile in 0..511) fruitOf[tile] else 0 }
+    /** tile base -> primeiro tile das NatVar.V variantes (0 = sem variantes) */
+    val varBase = IntArray(512)
+    /** tile do topo com variantes de grãos: cada bloco do mundo sorteia uma (h = número 0..1 por posição) */
+    fun pickTile(tile: Int, h: Float): Int { val b = varBase[tile and 511]; return if (b == 0) tile else b + (h * NatVar.V).toInt().coerceAtMost(NatVar.V - 1) }
+    private fun ptv(art: Int): Int {
+        val t = pt(art)
+        var first = 0
+        for (v in 0 until NatVar.V) { val vt = tl(K_PALV, art, v); if (v == 0) first = vt }
+        if (t >= 24 && first >= 24) varBase[t] = first
+        return t
+    }
     fun spriteFor(tile: Int): Int { defs; return if (tile in 0..511) spriteOf[tile] else 0 }
     /** bloco de folhagem com folha 3D própria: tile da casca (NatArt) + tile do sprite logo depois (ficam no mesmo trecho de leafRuns) */
     private fun leaf3(name: String, art: Int, kind: Int, color: Int, desc: String = ""): Int {
         val t = pt(art, true)
         val sp = tl(K_SPRITE, kind, art)
         if (t >= 24 && sp >= 24) spriteOf[t] = sp
+        if (Leaf3D.hasFruit(kind)) { val fr = tl(K_SPRITE, 20 + kind, -2); if (t >= 24 && fr >= 24) fruitOf[t] = fr }
         return uni(name, C_NAT, t, color, M_SOFT, 2f, F_LEAF, desc)
     }
     private fun legacy(id: Int, canon: String) { hidden.add(id); aliasName[id] = canon }
@@ -245,11 +260,11 @@ object Blk {
         blk("Abóbora Luminosa", C_DEC, pt(NatArt.ABOBORA_LUM_TOP, glow = true), pt(NatArt.ABOBORA_LUM_SIDE, glow = true), pt(NatArt.ABOBORA_LUM_TOP, glow = true), 0xF29A2A, M_WOOD, 4f, F_LIGHT, "Abóbora que brilha por dentro.")
 
         // ================= NATUREZA =================
-        uni("Terra Grossa", C_NAT, pt(NatArt.TERRA_GROSSA), 0xA37748, M_SOFT, 3f)
+        uni("Terra Grossa", C_NAT, ptv(NatArt.TERRA_GROSSA), 0xA37748, M_SOFT, 3f)
         val tDirt = pt(NatArt.TERRA_BASE)
-        blk("Podzol", C_NAT, pt(NatArt.PODZOL_TOP), pt(NatArt.PODZOL_SIDE), tDirt, 0x7A5B38, M_SOFT, 3f)
-        blk("Micélio", C_NAT, pt(NatArt.MICELIO_TOP), pt(NatArt.MICELIO_SIDE), tDirt, 0x9A8AA8, M_SOFT, 3f)
-        blk("Grama Nevada", C_NAT, pt(NatArt.GRAMA_NEVADA_TOP), pt(NatArt.GRAMA_NEVADA_SIDE), tDirt, 0xF2F8FF, M_SOFT, 3f)
+        blk("Podzol", C_NAT, ptv(NatArt.PODZOL_TOP), pt(NatArt.PODZOL_SIDE), tDirt, 0x7A5B38, M_SOFT, 3f)
+        blk("Micélio", C_NAT, ptv(NatArt.MICELIO_TOP), pt(NatArt.MICELIO_SIDE), tDirt, 0x9A8AA8, M_SOFT, 3f)
+        blk("Grama Nevada", C_NAT, ptv(NatArt.GRAMA_NEVADA_TOP), pt(NatArt.GRAMA_NEVADA_SIDE), tDirt, 0xF2F8FF, M_SOFT, 3f)
         uni("Lama", C_NAT, pt(NatArt.LAMA), 0x5A4A42, M_SOFT, 3f)
         uni("Argila", C_NAT, pt(NatArt.ARGILA), 0xA8B4C4, M_SOFT, 3f)
         uni("Cascalho", C_NAT, pt(NatArt.CASCALHO), 0x8E8A88, M_SOFT, 3f)
@@ -290,7 +305,7 @@ object Blk {
         metal("Cobre Oxidado", 0x4FB59A)
 
         // ================= FOLHAGEM DE TODAS AS ÁRVORES =================
-        run { val sp = tl(K_SPRITE, Leaf3D.OAK, -1); if (sp >= 24) spriteOf[8] = sp }   // carvalho (Folhas): tile 8 do atlas original
+        run { val sp = tl(K_SPRITE, Leaf3D.OAK, -1); if (sp >= 24) spriteOf[8] = sp; val fr = tl(K_SPRITE, 20 + Leaf3D.OAK, -2); if (fr >= 24) fruitOf[8] = fr }   // carvalho (Folhas): tile 8 do atlas original
         leaf3("Folhas de Abeto", NatArt.F_ABETO, Leaf3D.ABETO, 0x3C7A3A, "Folhas de abeto: verde bem escuro, de pinheiro.")
         leaf3("Folhas de Bétula", NatArt.F_BETULA, Leaf3D.BETULA, 0x8FBF4A, "Folhas de bétula: verde clarinho e fresco.")
         leaf3("Folhas de Selva", NatArt.F_SELVA, Leaf3D.SELVA, 0x45B02A, "Folhas de selva: verde vivo e cheio.")

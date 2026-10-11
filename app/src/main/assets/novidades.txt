@@ -2,6 +2,9 @@
 #titulo Folhas 3D de cada árvore!
 - Cada folhagem da Natureza agora tem a sua própria folha em 3D, dobrada na nervura e com a ponta caindo: carvalho oval, abeto com agulhas, bétula miudinha, selva enorme, acácia achatada, mangue pontudo, cerejeira florida, outono em bordo, amarelas em leque, bambu em lâminas, verrugas e musgo em tufos
 - No mundo de testes os blocos de apresentação (chão, árvores) não quebram mais: só dá pra quebrar o que você mesmo colocar
+- As folhas 3D agora aparecem em toda a copa (antes só nas de baixo) e as árvores ganharam frutinhas e florzinhas: maçãs no carvalho, pinhas no abeto, florzinhas na cerejeira, bolotas, vagens no mangue, verrugas brilhantes e mais
+- Podzol, grama nevada, micélio e terra grossa: os grãos do topo mudam de lugar e de quantidade de bloco pra bloco (às vezes sem nenhum)
+- Menos "estática" nas texturas, e o terreno básico (grama, terra, pedra, areia, madeira...) ganhou textura pixelada como os outros
 - As copas ficam mais cheias e com a silhueta cada uma de um jeito
 
 #id 2026-10-11-zzzzzzzz

@@ -814,7 +814,7 @@ class World {
 
     fun buildChunk(cx: Int, cz: Int, o: MeshBuf, w: MeshBuf) {
         o.clear(); w.clear()
-        val c = IntArray(3); val p = FloatArray(3); val col = FloatArray(3); val ao = FloatArray(4); val lop = BooleanArray(6)
+        val c = IntArray(3); val p = FloatArray(3); val col = FloatArray(3); val ao = FloatArray(4); val lop = BooleanArray(6); val leafPos = ArrayList<Int>()
         for (y in 0 until SY) for (z in cz * CH until cz * CH + CH) for (x in cx * CH until cx * CH + CH) {
             val id = get(x, y, z)
             if (id == B.AIR) continue
@@ -840,16 +840,7 @@ class World {
                 }
                 leafFaces(o, x, y, z, 0f, 1f, true, vr, 1f, lt)        // casca externa (só faces expostas)
                 leafFaces(o, x, y, z, 0.16f, 0.84f, false, vr, 0.72f, lt)   // cubo interno: dá profundidade pelos buracos
-                if (o.vc < 46000) {   // folhas 3D da espécie (cartões dobrados na nervura) saindo das faces expostas
-                    var any = false
-                    for (f in 0 until 6) {
-                        val aa = f shr 1; val ss = if ((f and 1) == 0) 1 else -1
-                        val nid = get(x + if (aa == 0) ss else 0, y + if (aa == 1) ss else 0, z + if (aa == 2) ss else 0)
-                        lop[f] = nid == B.AIR || nid == B.WATER
-                        if (lop[f]) any = true
-                    }
-                    if (any) Leaf3D.emit(o, x, y, z, lt, lop, vr)
-                }
+                leafPos.add((y * SZ + z) * SX + x)   // folhas 3D e frutinhas saem num passe só no fim (de cima pra baixo)
                 continue
             }
             if (id == B.GRASS && get(x, y + 1, z) == B.AIR) {
@@ -886,7 +877,7 @@ class World {
                 val shade = when { B.light(id) -> 1f; id == B.LEAVES -> (if (a == 1) (if (s > 0) 1f else 0.8f) else if (a == 0) 0.92f else 0.86f); a == 1 -> if (s > 0) 1f else 0.55f; a == 0 -> 0.82f; else -> 0.7f }
                 val buf = if (isW || isG) w else o
                 if (!isW && !isG && B.relief[id and 1023] && o.vc < 42000) {
-                    val rt = if (a == 1) (if (s > 0) B.tTop[id] else B.tBot[id]) else B.tSide[id]
+                    val rt = if (a == 1) (if (s > 0) Blk.pickTile(B.tTop[id], hash(x, z, y * 7 + 11)) else B.tBot[id]) else B.tSide[id]
                     for (q in 0 until 4) ao[q] = cornerAo(c, a, s, u, v, QU[q], QV[q])
                     reliefFace(o, c, a, s, rt, shade * vr, ao)
                     continue
@@ -909,7 +900,7 @@ class World {
                         val lvl = if (a1 == 1 && a2 == 1) 0 else 3 - (a1 + a2 + a3)
                         ao[q] = AOB[lvl]; aob = ao[q]
                     } else ao[q] = 1f
-                    val tile = if (a == 1) (if (s > 0) B.tTop[id] else B.tBot[id]) else B.tSide[id]
+                    val tile = if (a == 1) (if (s > 0) Blk.pickTile(B.tTop[id], hash(x, z, y * 7 + 11)) else B.tBot[id]) else B.tSide[id]
                     var tu = cu.toFloat(); var tv = cv.toFloat()
                     if (a == 0) { tu = cv.toFloat(); tv = 1f - cu } else if (a == 2) { tv = 1f - cv }
                     val gr = shade * vr * aob
@@ -928,6 +919,23 @@ class World {
                 }
                 buf.vc += 4
             }
+        }
+        // folhas 3D da espécie + frutinhas, de cima pra baixo; quanto menos orçamento de vértices, menos cartões por bloco
+        var li = leafPos.size - 1
+        while (li >= 0) {
+            val e = leafPos[li]; li--
+            if (o.vc > 61000) break
+            val ex = e % SX; val ez = (e / SX) % SZ; val ey = e / (SX * SZ)
+            var any = false
+            for (f in 0 until 6) {
+                val aa = f shr 1; val ss = if ((f and 1) == 0) 1 else -1
+                val nid = get(ex + if (aa == 0) ss else 0, ey + if (aa == 1) ss else 0, ez + if (aa == 2) ss else 0)
+                lop[f] = nid == B.AIR || nid == B.WATER
+                if (lop[f]) any = true
+            }
+            if (!any) continue
+            val mc = if (o.vc < 30000) 4 else if (o.vc < 44000) 2 else 1
+            Leaf3D.emit(o, ex, ey, ez, B.tSide[get(ex, ey, ez)], lop, 0.94f + 0.06f * hash(ex, ez, ey), mc)
         }
         decorate(cx, cz, o)
     }

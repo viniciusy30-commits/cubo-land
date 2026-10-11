@@ -16,6 +16,7 @@ object Relief {
     /** mapa escrito à mão desse tile (tipo K_PAL da NatArt ou padrão Pix de K_PIX), ou null se o bloco usa o automático */
     private fun hand(tile: Int): Map? {
         val sp = Blk.specs.getOrNull(tile) ?: return null
+        if (sp[0] == Blk.K_PALV) return NatVar.relief(sp[1], sp[2])
         val rows: Array<String>? = when (sp[0]) {
             Blk.K_PAL -> NatRelief.art.getOrNull(sp[1])
             Blk.K_PIX -> NatRelief.pix.getOrNull(sp[6] and 255)
