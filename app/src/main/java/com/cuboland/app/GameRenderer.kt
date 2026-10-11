@@ -43,11 +43,11 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         varying vec3 vCol; varying float vFog; varying vec2 vUV; varying vec3 vWP; varying float vTile; varying vec3 vView;
         void main() {
             vec4 wp = uModel * vec4(aPos, 1.0);
-            float tile = floor(aUV.x * 32.0) + 32.0 * floor(aUV.y * 16.0);
+            float tile = floor(aUV.x * 32.0) + 32.0 * floor(aUV.y * ${Atlas.ROWS}.0);
             if (uWind > 0.5) {
                 float gust = 0.6 + 0.4 * sin(wp.x * 0.12 + wp.z * 0.08 + uTime * 0.7);
                 if (tile >= 16.0 && tile < 20.0) {
-                    float w = clamp((0.99 - aUV.y * 16.0) / 0.98, 0.0, 1.0); w = w * w;
+                    float w = clamp((0.99 - aUV.y * ${Atlas.ROWS}.0) / 0.98, 0.0, 1.0); w = w * w;
                     wp.x += (sin(uTime * 2.3 + wp.x * 0.9 + wp.z * 0.6) * 0.07 + 0.04) * w * gust * 1.4;
                     wp.z += cos(uTime * 1.8 + wp.x * 0.5 + wp.z * 0.9) * 0.05 * w * gust * 1.4;
                 } else if (tile == 8.0 || tile == 20.0 || tile == 21.0 || tile == 22.0 || ${leafCond("tile")}) {
@@ -237,7 +237,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         java.util.Arrays.fill(world.dirty, true)
         // cubos unitários: 0 = branco (entidades), 1..255 = blocos com textura
         val cb = MeshBuf(); val p = FloatArray(3)
-        for (id in 0 until B.N) for (face in 0 until 6) {
+        for (id in 0 until B.used) for (face in 0 until 6) {
             val a = face shr 1; val s = if ((face and 1) == 0) 1 else -1
             val u = (a + 1) % 3; val v = (a + 2) % 3
             val sh = when { a == 1 -> if (s > 0) 1f else 0.55f; a == 0 -> 0.82f; else -> 0.7f }
@@ -1592,9 +1592,10 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             G.glDepthMask(true)
         }
         if (game.hasHit && game.deadTimer <= 0f) {
-            setBase(game.hx + 0.5f, game.hy + 0.5f, game.hz + 0.5f, 0f)
+            val hb = game.world.boxOf(game.hx, game.hy, game.hz)
+            if (hb != null) setBase(game.hx + (hb[0] + hb[3]) / 2f, game.hy + (hb[1] + hb[4]) / 2f, game.hz + (hb[2] + hb[5]) / 2f, 0f) else setBase(game.hx + 0.5f, game.hy + 0.5f, game.hz + 0.5f, 0f)
             G.glDepthMask(false)
-            box(base, 0f, 0f, 0f, 0f, 0f, 1.01f, 1.01f, 1.01f, 0f, 0xFFFFFF, 0.18f + 0.1f * sin(game.time * 6f))
+            box(base, 0f, 0f, 0f, 0f, 0f, if (hb != null) hb[3] - hb[0] + 0.01f else 1.01f, if (hb != null) hb[4] - hb[1] + 0.01f else 1.01f, if (hb != null) hb[5] - hb[2] + 0.01f else 1.01f, 0f, 0xFFFFFF, 0.18f + 0.1f * sin(game.time * 6f))
             G.glDepthMask(true)
         }
         if (game.deadTimer <= 0f) drawDamage(dt)

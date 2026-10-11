@@ -3,10 +3,10 @@ package com.cuboland.app
 /**
  * Registro dos blocos novos (id >= 14). Cada bloco é uma linha em build().
  * ATENÇÃO: os ids vão pro arquivo do mundo. NUNCA reordene nem apague linhas: só adicione no FIM de build().
- * Ids 100..103 são das ferramentas (pulados). Máximo: id 1023 (o mundo guarda 4 bytes por bloco; os arrays de B têm N = 1024 — aumente N se precisar de mais).
+ * Ids 100..103 são das ferramentas (pulados). Máximo: id 16383 (o mundo guarda 4 bytes por bloco; os arrays de B têm N = 16384).
  */
 object Blk {
-    const val GLOW0 = 448          // primeiro tile emissivo: o shader deixa tiles >= 448 sempre brilhando
+    const val MAXT = 4096          // teto técnico de tiles (o atlas cresce sozinho em linhas de 32 tiles; GPU comum aguenta 8192 px)
     const val F_LIGHT = 1          // brilha (sem sombra/AO)
     const val F_GLASS = 2          // translúcido: desenhado junto com a água, vizinhos continuam visíveis
     const val F_SHAPE = 16         // formato próprio (Shapes): tipo nos bits 5-7 (1 cacto, 2 melancia, 3 abóbora)
@@ -31,21 +31,22 @@ object Blk {
               val color: Int, val flags: Int, val hard: Float, val mat: Int, val desc: String)
 
     /** receita de cada tile novo: [tipo, c1, c2, c3, c4, semente, par | (flags shl 8)] */
-    val specs = arrayOfNulls<IntArray>(512)
+    val specs = arrayOfNulls<IntArray>(MAXT)
     private var nextTile = 24
-    private var nextGlow = GLOW0
+    /** quantos tiles já foram usados (o atlas ajusta as linhas a isso) */
+    val tileCount: Int get() { defs; return nextTile }
     private var nextId = 14
     /** blocos que só existem pra mundos antigos abrirem: não aparecem na mochila e viram o bloco equivalente ao carregar */
     val hidden = HashSet<Int>()
     private val aliasName = HashMap<Int, String>()
-    val alias: IntArray by lazy { defs; val a = IntArray(1024); for ((id, n) in aliasName) { val t = list.firstOrNull { it.name == n }; if (t != null) a[id] = t.id }; a }
+    val alias: IntArray by lazy { defs; val a = IntArray(16384); for ((id, n) in aliasName) { val t = list.firstOrNull { it.name == n }; if (t != null) a[id] = t.id }; a }
     private val list = ArrayList<Def>()
     val defs: List<Def> by lazy { build(); list }
     /** trechos de tiles seguidos de folhagem (K_LEAF): o shader usa pra balançar no vento e iluminar como folha */
     val leafRuns: List<IntArray> by lazy {
         defs; val out = ArrayList<IntArray>(); var s = -1
-        for (i in 24..GLOW0) {
-            val on = i < GLOW0 && (specs[i]?.get(0) == K_LEAF || specs[i]?.get(0) == K_PLEAF || specs[i]?.get(0) == K_SPRITE)
+        for (i in 24..nextTile) {
+            val on = i < nextTile && (specs[i]?.get(0) == K_LEAF || specs[i]?.get(0) == K_PLEAF || specs[i]?.get(0) == K_SPRITE)
             if (on && s < 0) s = i
             if (!on && s >= 0) { out.add(intArrayOf(s, i - 1)); s = -1 }
         }
@@ -53,9 +54,8 @@ object Blk {
     }
 
     private fun tl(kind: Int, c1: Int, c2: Int = c1, c3: Int = c1, c4: Int = 0, seed: Int = 0, par: Int = 0, fl: Int = 0, glow: Boolean = false): Int {
-        val i = if (glow) nextGlow else nextTile
-        if (glow) nextGlow++ else nextTile++
-        if (i >= 512 || (!glow && i >= GLOW0)) return 1
+        val i = nextTile; nextTile++   // brilhantes e normais na mesma fila: sem região reservada
+        if (i >= MAXT) return 1
         val sd = if (seed != 0) seed else i * 13 + 5
         specs[i] = intArrayOf(kind, c1, c2, c3, c4, sd, par or (fl shl 8))
         return i
@@ -64,13 +64,13 @@ object Blk {
     /** tile pixel art da NatArt (paleta própria, alpha por cor) */
     private fun pt(art: Int, leaf: Boolean = false, glow: Boolean = false): Int = tl(if (leaf) K_PLEAF else K_PAL, art, glow = glow)
     /** tile da folhagem -> tile do sprite 3D dessa espécie (0 = sem folha 3D) */
-    val spriteOf = IntArray(512)
-    val fruitOf = IntArray(512)
-    fun fruitFor(tile: Int): Int { defs; return if (tile in 0..511) fruitOf[tile] else 0 }
+    val spriteOf = IntArray(MAXT)
+    val fruitOf = IntArray(MAXT)
+    fun fruitFor(tile: Int): Int { defs; return if (tile in 0 until MAXT) fruitOf[tile] else 0 }
     /** tile base -> primeiro tile das NatVar.V variantes (0 = sem variantes) */
-    val varBase = IntArray(512)
+    val varBase = IntArray(MAXT)
     /** tile do topo com variantes de grãos: cada bloco do mundo sorteia uma (h = número 0..1 por posição) */
-    fun pickTile(tile: Int, h: Float): Int { val b = varBase[tile and 511]; return if (b == 0) tile else b + (h * NatVar.V).toInt().coerceAtMost(NatVar.V - 1) }
+    fun pickTile(tile: Int, h: Float): Int { val b = varBase[tile and (MAXT - 1)]; return if (b == 0) tile else b + (h * NatVar.V).toInt().coerceAtMost(NatVar.V - 1) }
     private fun ptv(art: Int): Int {
         val t = pt(art)
         var first = 0
@@ -78,7 +78,7 @@ object Blk {
         if (t >= 24 && first >= 24) varBase[t] = first
         return t
     }
-    fun spriteFor(tile: Int): Int { defs; return if (tile in 0..511) spriteOf[tile] else 0 }
+    fun spriteFor(tile: Int): Int { defs; return if (tile in 0 until MAXT) spriteOf[tile] else 0 }
     /** bloco de folhagem com folha 3D própria: tile da casca (NatArt) + tile do sprite logo depois (ficam no mesmo trecho de leafRuns) */
     private fun leaf3(name: String, art: Int, kind: Int, color: Int, desc: String = ""): Int {
         val t = pt(art, true)
@@ -91,7 +91,7 @@ object Blk {
 
     private fun blk(name: String, cat: Int, top: Int, side: Int, bot: Int, color: Int, mat: Int = 0, hard: Float = 4f, fl: Int = 0, desc: String = ""): Int {
         if (nextId == 100) nextId = 104
-        if (nextId > 1023) return 0
+        if (nextId > 16383) return 0
         val id = nextId
         nextId++
         list.add(Def(id, name, cat, top, side, bot, color, fl, hard, mat, desc))
@@ -157,7 +157,8 @@ object Blk {
         log("Caule Carmesim", 0x7A2A52, 0x5E1F3E, 0x4A1530, 0x8B3B5E, 0x7A3252)
         log("Caule Distorcido", 0x2A7E7A, 0x1F615E, 0x174A47, 0x2F7F7A, 0x286E6A)
         blk("Bloco de Bambu", C_BUILD, tl(K_PIX, 0x8DB03E, 0xD0B54A, 0xE1C75B, 0xF0DA80, 0, Pix.LOGTOP), tl(K_PIX, 0x6E9430, 0x8DB03E, 0xA5C94E, 0xC4E070, 0, Pix.BAMBOO), tl(K_PIX, 0x8DB03E, 0xD0B54A, 0xE1C75B, 0xF0DA80, 0, Pix.LOGTOP), 0xA5C94E, M_WOOD, 6f)
-        blk("Colmo de Bambu", C_NAT, tl(K_PIX, 0x8DB03E, 0xD0B54A, 0xE1C75B, 0xF0DA80, 0, Pix.LOGTOP), tl(K_PIX, 0x6E9430, 0x8DB03E, 0xA5C94E, 0xC4E070, 0, Pix.BAMBOO), tl(K_PIX, 0x8DB03E, 0xD0B54A, 0xE1C75B, 0xF0DA80, 0, Pix.LOGTOP), 0xA5C94E, M_WOOD, 2f, F_THIN, "Haste fina de bambu, com nós e folhinhas.")
+        val bamD = list[list.size - 1]   // o colmo reaproveita as texturas do Bloco de Bambu (não gasta tiles novos: o limite é 448)
+        blk("Colmo de Bambu", C_NAT, bamD.top, bamD.side, bamD.bot, 0xA5C94E, M_WOOD, 2f, F_THIN, "Haste fina de bambu, com nós e folhinhas.")
         uni("Bambu Trançado", C_BUILD, pal(Pix.MOSAIC, 0xE1C75B), 0xE1C75B, M_WOOD, 5f)
         fun strip(n: String, c: Int) {
             val tp = tl(K_PIX, dk(c, 0.35f), dk(c, 0.15f), c, lt(c, 0.2f), 0, Pix.LOGTOP)

@@ -13,7 +13,9 @@ object B {
     const val AIR = 0; const val GRASS = 1; const val DIRT = 2; const val STONE = 3; const val SAND = 4
     const val WOOD = 5; const val LEAVES = 6; const val PLANK = 7; const val WATER = 8; const val BRICK = 9
     const val PINK = 10; const val BLUE = 11; const val YELLOW = 12; const val LANTERN = 13
-    const val N = 1024
+    const val N = 16384
+    /** maior id definido + 1 (a malha de cubos por tipo só vai até aqui) */
+    @JvmField var used = 14
     val top = IntArray(N); val side = IntArray(N); val bot = IntArray(N)
     val names = Array(N) { "" }
     val hotbar = intArrayOf(GRASS, STONE, PLANK, BRICK, PINK, BLUE, YELLOW, LANTERN)
@@ -27,7 +29,7 @@ object B {
     val isLog = BooleanArray(N)
     /** blocos com relevo em geometria (peças saindo e entrando na face); terreno básico (ids 1..13) continua liso pra não pesar */
     val relief = BooleanArray(N)
-    fun log(id: Int) = isLog[id and 1023]
+    fun log(id: Int) = isLog[id and 16383]
     val byName = HashMap<String, Int>()
     private fun s(id: Int, t: Int, sd: Int, b: Int) { top[id] = t; side[id] = sd; bot[id] = b }
     private fun t(id: Int, a: Int, b: Int, c: Int) { tTop[id] = a; tSide[id] = b; tBot[id] = c }
@@ -52,7 +54,7 @@ object B {
             val id = d.id
             names[id] = d.name; s(id, d.color, d.color, d.color); t(id, d.top, d.side, d.bot)
             flags[id] = d.flags; hard[id] = d.hard; mat[id] = d.mat; cat[id] = d.cat; desc[id] = d.desc
-            defined[id] = true
+            defined[id] = true; if (id + 1 > used) used = id + 1
             byName[d.name] = id
             if (d.name.startsWith("Tronco ") || d.name.startsWith("Caule ")) isLog[id] = true
             relief[id] = (d.flags and (Blk.F_GLASS or Blk.F_LIGHT or Blk.F_LEAF)) == 0 && !d.name.startsWith("Lã ") && !d.name.startsWith("Concreto") && !d.name.startsWith("Gesso")
@@ -60,15 +62,15 @@ object B {
     }
     fun solid(id: Int) = id != AIR && id != WATER
     /** bloco que brilha: sem sombra nem oclusão */
-    fun light(id: Int) = (flags[id and 1023] and Blk.F_LIGHT) != 0
+    fun light(id: Int) = (flags[id and 16383] and Blk.F_LIGHT) != 0
     /** bloco translúcido (vidro, gelo, gelatina): desenhado junto com a água */
-    fun glass(id: Int) = (flags[id and 1023] and Blk.F_GLASS) != 0
+    fun glass(id: Int) = (flags[id and 16383] and Blk.F_GLASS) != 0
     /** dá pra ver através: a face do vizinho precisa ser desenhada */
     /** folhagem: o carvalho (LEAVES) e os blocos com F_LEAF usam a malha de folha */
-    fun leafy(id: Int) = id == LEAVES || (flags[id and 1023] and Blk.F_LEAF) != 0
-    fun shape(id: Int): Int { val f = flags[id and 1023]; return if ((f and Blk.F_SHAPE) != 0) (f shr 5) and 7 else 0 }
-    fun thin(id: Int) = (flags[id and 1023] and Blk.F_THIN) != 0
-    fun see(id: Int) = id == AIR || id == WATER || leafy(id) || thin(id) || shape(id) != 0 || (flags[id and 1023] and Blk.F_GLASS) != 0
+    fun leafy(id: Int) = id == LEAVES || (flags[id and 16383] and Blk.F_LEAF) != 0
+    fun shape(id: Int): Int { val f = flags[id and 16383]; return if ((f and Blk.F_SHAPE) != 0) (f shr 5) and 7 else 0 }
+    fun thin(id: Int) = (flags[id and 16383] and Blk.F_THIN) != 0
+    fun see(id: Int) = id == AIR || id == WATER || leafy(id) || thin(id) || shape(id) != 0 || (flags[id and 16383] and Blk.F_GLASS) != 0
 }
 
 class MeshBuf {
@@ -146,6 +148,21 @@ class World {
 
     fun solid(x: Int, y: Int, z: Int) = B.solid(get(x, y, z))
 
+    /** caixa real (coords locais do bloco: x0,y0,z0,x1,y1,z1) dos blocos com formato próprio; null = cubo inteiro */
+    fun boxOf(x: Int, y: Int, z: Int): FloatArray? = Shapes.box(this, get(x, y, z), x, z)
+    /** o bloco (x,y,z) é sólido dentro da caixa de mundo dada? (respeita o formato real) */
+    fun solidBox(x: Int, y: Int, z: Int, ax0: Float, ay0: Float, az0: Float, ax1: Float, ay1: Float, az1: Float): Boolean {
+        val id = get(x, y, z); if (!B.solid(id)) return false
+        val b = Shapes.box(this, id, x, z) ?: return true
+        return ax1 > x + b[0] && ax0 < x + b[3] && ay1 > y + b[1] && ay0 < y + b[4] && az1 > z + b[2] && az0 < z + b[5]
+    }
+    /** o ponto de mundo está dentro do bloco real? (mira/raio) */
+    fun solidPt(x: Int, y: Int, z: Int, px: Float, py: Float, pz: Float): Boolean {
+        val id = get(x, y, z); if (!B.solid(id)) return false
+        val b = Shapes.box(this, id, x, z) ?: return true
+        return px >= x + b[0] && px <= x + b[3] && py >= y + b[1] && py <= y + b[4] && pz >= z + b[2] && pz <= z + b[5]
+    }
+
     /** mundo de testes: blocos da apresentação (chão, árvores, vitrines) ficam travados; só dá pra quebrar o que o jogador colocar */
     var locked: java.util.BitSet? = null
     fun isLocked(x: Int, y: Int, z: Int): Boolean {
@@ -168,7 +185,7 @@ class World {
         return 0
     }
 
-    private fun hash(x: Int, z: Int, s: Int): Float {
+    fun hash(x: Int, z: Int, s: Int): Float {
         var h = x * 374761393 + z * 668265263 + s * 1442695041.toInt()
         h = (h xor (h ushr 13)) * 1274126177
         h = h xor (h ushr 16)
@@ -683,7 +700,7 @@ class World {
                 bb.asIntBuffer().get(blocks)
             } else return false
             val al = Blk.alias
-            for (i in blocks.indices) { val b = blocks[i]; if (b in 14..1023 && al[b] != 0) blocks[i] = al[b] }
+            for (i in blocks.indices) { val b = blocks[i]; if (b in 14..16383 && al[b] != 0) blocks[i] = al[b] }
             java.util.Arrays.fill(dirty, true); true
         } catch (_: Exception) { false }
     }
@@ -891,7 +908,7 @@ class World {
                 val u = (a + 1) % 3; val v = (a + 2) % 3
                 val shade = when { B.light(id) -> 1f; id == B.LEAVES -> (if (a == 1) (if (s > 0) 1f else 0.8f) else if (a == 0) 0.92f else 0.86f); a == 1 -> if (s > 0) 1f else 0.55f; a == 0 -> 0.82f; else -> 0.7f }
                 val buf = if (isW || isG) w else o
-                if (!isW && !isG && B.relief[id and 1023]) {
+                if (!isW && !isG && B.relief[id and 16383]) {
                     val rt = if (a == 1) (if (s > 0) Blk.pickTile(B.tTop[id], hash(x, z, y * 7 + 11)) else B.tBot[id]) else B.tSide[id]
                     for (q in 0 until 4) ao[q] = cornerAo(c, a, s, u, v, QU[q], QV[q])
                     reliefFace(o, c, a, s, rt, shade * vr, ao)

@@ -14,7 +14,8 @@ import kotlin.math.sqrt
 object Atlas {
     const val T = 64
     const val NT = 32          // colunas do atlas (potência de 2)
-    const val ROWS = 16        // linhas: 32 x 16 = 512 tiles. 0..23 = tiles originais, 24..447 = blocos novos, 448..511 = brilhantes (Blk)
+    /** linhas do atlas: começa em 16 (512 tiles) e dobra sozinho quando faltar espaço (potência de 2 pros mipmaps); 0..23 = tiles originais, depois os blocos novos (Blk) */
+    val ROWS: Int by lazy { var r = 16; val n = Blk.tileCount; while (r * NT < n && r < 512) r *= 2; r }
     val bmp: Bitmap by lazy { build() }
     @Volatile var raw: IntArray? = null   // preenchido por build()
     private val tileCache = arrayOfNulls<Bitmap>(NT * ROWS)

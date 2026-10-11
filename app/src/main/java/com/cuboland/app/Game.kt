@@ -139,22 +139,38 @@ class Game(val world: World) {
         for (bx in floor(x - hw).toInt()..floor(x + hw).toInt())
             for (bz in floor(z - hw).toInt()..floor(z + hw).toInt())
                 for (by in floor(y).toInt()..floor(y + h).toInt())
-                    if (world.solid(bx, by, bz)) return true
+                    if (world.solidBox(bx, by, bz, x - hw, y, z - hw, x + hw, y + h, z + hw)) return true
         return false
+    }
+
+    /** borda mais próxima (no eixo 0=x,1=y,2=z) dos blocos reais que a caixa do corpo atravessa; dir>0: face de baixo/trás, dir<0: face de cima/frente */
+    private fun edgeAt(e: Ent, axis: Int, dir: Float): Float {
+        var best = if (dir > 0) Float.MAX_VALUE else -Float.MAX_VALUE
+        val x = e.x; val y = e.y; val z = e.z; val hw = e.hw; val h = e.h
+        for (bx in floor(x - hw).toInt()..floor(x + hw).toInt())
+            for (bz in floor(z - hw).toInt()..floor(z + hw).toInt())
+                for (by in floor(y).toInt()..floor(y + h).toInt()) {
+                    if (!world.solidBox(bx, by, bz, x - hw, y, z - hw, x + hw, y + h, z + hw)) continue
+                    val b = world.boxOf(bx, by, bz)
+                    val o = when (axis) { 0 -> bx; 1 -> by; else -> bz }
+                    val lo = o + (b?.get(axis) ?: 0f); val hi = o + (b?.get(axis + 3) ?: 1f)
+                    best = if (dir > 0) min(best, lo) else max(best, hi)
+                }
+        return best
     }
 
     private fun move(e: Ent, dx: Float, dy: Float, dz: Float) {
         e.x += dx
         if (collides(e.x, e.y, e.z, e.hw, e.h)) {
-            e.x = if (dx > 0) floor(e.x + e.hw) - e.hw - 0.001f else floor(e.x - e.hw) + 1 + e.hw + 0.001f; e.vx = 0f
+            e.x = if (dx > 0) edgeAt(e, 0, 1f) - e.hw - 0.001f else edgeAt(e, 0, -1f) + e.hw + 0.001f; e.vx = 0f
         }
         e.z += dz
         if (collides(e.x, e.y, e.z, e.hw, e.h)) {
-            e.z = if (dz > 0) floor(e.z + e.hw) - e.hw - 0.001f else floor(e.z - e.hw) + 1 + e.hw + 0.001f; e.vz = 0f
+            e.z = if (dz > 0) edgeAt(e, 2, 1f) - e.hw - 0.001f else edgeAt(e, 2, -1f) + e.hw + 0.001f; e.vz = 0f
         }
         e.y += dy; e.onGround = false
         if (collides(e.x, e.y, e.z, e.hw, e.h)) {
-            if (dy < 0) { e.y = floor(e.y) + 1.001f; e.onGround = true } else e.y = floor(e.y + e.h) - e.h - 0.002f
+            if (dy < 0) { e.y = edgeAt(e, 1, -1f) + 0.001f; e.onGround = true } else e.y = edgeAt(e, 1, 1f) - e.h - 0.002f
             e.vy = 0f
         }
         if (!e.onGround && dy <= 0f && e.vy <= 0f && collides(e.x, e.y - 0.03f, e.z, e.hw, e.h)) { e.onGround = true; e.vy = 0f }
@@ -183,7 +199,7 @@ class Game(val world: World) {
     private fun groundBelow(e: Ent): Float {
         val bx = floor(e.x).toInt(); val bz = floor(e.z).toInt()
         var y = floor(e.y + 0.05f).toInt()
-        while (y >= 0) { if (world.solid(bx, y, bz)) return y + 1f; y-- }
+        while (y >= 0) { if (world.solid(bx, y, bz)) return y + (world.boxOf(bx, y, bz)?.get(4) ?: 1f); y-- }
         return 0f
     }
 
@@ -195,7 +211,7 @@ class Game(val world: World) {
         var by = floor(e.y - 0.1f).toInt(); val minD = if (climbT > 0f && !e.onGround) -0.08f else 0.08f   // já subindo: continua até passar do topo
         while (by <= floor(e.y + reach).toInt()) {
             if (world.solid(bx, by, bz) && !world.solid(bx, by + 1, bz) && !world.solid(bx, by + 2, bz)) {
-                val top = by + 1f
+                val top = by + (world.boxOf(bx, by, bz)?.get(4) ?: 1f)
                 if (top - e.y > minD && top - e.y <= reach) return top
             }
             by++
@@ -300,7 +316,7 @@ class Game(val world: World) {
         var lx = Int.MIN_VALUE; var ly = 0; var lz = 0
         while (t < t1) {
             val cx = floor(ox + dx * t).toInt(); val cy = floor(oy + dy * t).toInt(); val cz = floor(oz + dz * t).toInt()
-            if (world.solid(cx, cy, cz)) {
+            if (world.solidPt(cx, cy, cz, ox + dx * t, oy + dy * t, oz + dz * t)) {
                 if (lx != Int.MIN_VALUE) { hasHit = true; hx = cx; hy = cy; hz = cz; px = lx; py = ly; pz = lz; rT = t }
                 return
             }

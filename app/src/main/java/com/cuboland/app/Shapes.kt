@@ -16,6 +16,21 @@ object Shapes {
         when (kind) { 1 -> cactus(o, w, x, y, z, id, vr); else -> fruit(o, x, y, z, id, kind == 3, vr) }
     }
 
+    /** caixa de colisão/seleção (x0,y0,z0,x1,y1,z1 locais) do bloco com formato; null = cubo inteiro */
+    fun box(w: World, id: Int, x: Int, z: Int): FloatArray? {
+        if (B.thin(id)) {
+            val cx = 0.5f + (w.hash(x, z, 31) - 0.5f) * 0.4f; val cz = 0.5f + (w.hash(x, z, 32) - 0.5f) * 0.4f
+            val r = 0.105f + 0.03f * w.hash(x, z, 33) + 0.035f
+            return floatArrayOf(cx - r, 0f, cz - r, cx + r, 1f, cz + r)
+        }
+        return when (B.shape(id)) {
+            1 -> { val cx = 0.5f + (h(x, z, 1) - 0.5f) * 0.08f; val cz = 0.5f + (h(x, z, 2) - 0.5f) * 0.08f; floatArrayOf(cx - 0.3f, 0f, cz - 0.3f, cx + 0.3f, 1f, cz + 0.3f) }
+            2 -> floatArrayOf(0.08f, 0f, 0.08f, 0.92f, 0.81f, 0.92f)
+            3 -> floatArrayOf(0.04f, 0f, 0.04f, 0.96f, 0.73f, 0.96f)
+            else -> null
+        }
+    }
+
     // ---------- helpers ----------
     private fun vtx(o: MeshBuf, tile: Int, x: Float, y: Float, z: Float, u: Float, v: Float, s: Float) =
         o.vert(x, y, z, s, s, s, Atlas.u(tile, u.coerceIn(0f, 1f)), Atlas.v(tile, v.coerceIn(0f, 1f)))

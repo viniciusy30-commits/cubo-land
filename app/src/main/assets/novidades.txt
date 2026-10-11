@@ -1,3 +1,15 @@
+#id 2026-10-11-zzzzzzzzzzzzz
+#titulo Sem limite de tiles e de blocos!
+- O atlas de texturas agora cresce sozinho: quando acabam os espaços ele ganha mais linhas, sem teto fixo de 448 tiles
+- Os tiles brilhantes não têm mais região separada
+- Limite de tipos de bloco subiu de 1.024 para 16.384
+
+#id 2026-10-11-zzzzzzzzzzzz
+#titulo Hitbox do tamanho certo e bambu verde!
+- Bambu, cacto, melancia e abóbora agora têm colisão e seleção do tamanho exato deles (haste fina, coluna, fruta redonda), não mais um bloco inteiro
+- Dá pra passar do lado do bambu e do cacto, e a caixa de mira acompanha o formato
+- Colmo de bambu com a textura verde do bloco de bambu
+
 #id 2026-10-11-zzzzzzzzzzz
 #titulo Cacto, melancia, abóbora e musgo de verdade!
 - Cacto novo: coluna com costelas, topo arredondado, espinhos clarinhos, florzinha no topo e braços que saem de vez em quando
