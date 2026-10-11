@@ -2,6 +2,7 @@
 #titulo Subir e descer na água, e água escorrendo!
 - Dentro da água agora sobe sozinho em blocos de até 2 de altura (nada de ficar preso embaixo da margem)
 - Descer da margem pra água ficou suave
+- Em cima de bloco submerso agora dá pra andar até a borda e descer (antes travava na beirada)
 - Buracos secos abaixo do nível do mar encostados na água (inclusive de mundos antigos) agora enchem
 
 #id 2026-10-11-l

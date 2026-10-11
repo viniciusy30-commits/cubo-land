@@ -183,7 +183,7 @@ class Game(val world: World) {
         val l = hypot(wishX, wishZ); if (l < 0.5f) return -1f
         val ax = e.x + wishX / l * (e.hw + 0.25f); val az = e.z + wishZ / l * (e.hw + 0.25f)
         val bx = floor(ax).toInt(); val bz = floor(az).toInt()
-        var by = floor(e.y - 0.1f).toInt(); val minD = if (climbT > 0f && !e.onGround) -0.1f else 0.08f   // já subindo: continua até passar do topo
+        var by = floor(e.y - 0.1f).toInt(); val minD = if (climbT > 0f && !e.onGround) -0.08f else 0.08f   // já subindo: continua até passar do topo
         while (by <= floor(e.y + reach).toInt()) {
             if (world.solid(bx, by, bz) && !world.solid(bx, by + 1, bz) && !world.solid(bx, by + 2, bz)) {
                 val top = by + 1f
@@ -244,7 +244,7 @@ class Game(val world: World) {
             else if (mg > 0.15f && pitch > 0.28f) acc = sin(pitch) * 12f
             // degrau: tem bloco na frente que dá pra subir (1 de altura sem pular, até a margem com o botão de pular) -> empurra pra cima
             val ledge = if (e === player) ledgeAhead(e, if (jumpHeld || e.y >= surf - 1.4f) 2.4f else 1.3f) else -1f
-            if (ledge > 0f && !downHeld) { climbT = 0.3f; if (e.y < ledge + 0.1f) acc = max(acc, 15f) }
+            if (ledge > 0f && !downHeld) { climbT = 0.3f; if (e.y < ledge + 0.01f) acc = max(acc, 3.4f * ((ledge + 0.01f - e.y) * 7f).coerceIn(1f, 4.4f)) }   // sobe até passar do topo, sem passar muito
             e.vy += (acc - 3.4f * e.vy) * dt
             e.vy = e.vy.coerceIn(-4.6f, 4.4f)
             e.vx *= 1f - 3f * dt; e.vz *= 1f - 3f * dt
@@ -252,7 +252,7 @@ class Game(val world: World) {
             if (e === player) {   // teto: o máximo é a cabeça pra fora (nada de ficar "em pé" na água), a não ser que o fundo seja raso ou tenha degrau
                 var cap = max(surf - 1.05f + 0.1f, groundBelow(e) + 0.9f)
                 if (ledge > 0f) cap = max(cap, ledge + 0.06f)
-                if (e.y > cap) { e.y = cap + (e.y - cap) * (1f - min(1f, 12f * dt)); if (e.vy > 0f) e.vy = 0f }
+                if (e.y > cap) e.vy = min(e.vy, -min(6f, (e.y - cap) * 8f))   // acima do teto: empurra pra baixo por velocidade (a colisão cuida do resto; mexer no y direto enterrava na borda do bloco)
             }
             return
         }
