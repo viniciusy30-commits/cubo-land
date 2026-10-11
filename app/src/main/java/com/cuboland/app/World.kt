@@ -25,6 +25,8 @@ object B {
     val defined = BooleanArray(N)
     /** troncos de qualquer árvore (carvalho + Tronco/Caule dos blocos novos): o machado/espada derruba a árvore inteira */
     val isLog = BooleanArray(N)
+    /** blocos com relevo em geometria (peças saindo e entrando na face); terreno básico (ids 1..13) continua liso pra não pesar */
+    val relief = BooleanArray(N)
     fun log(id: Int) = isLog[id and 1023]
     val byName = HashMap<String, Int>()
     private fun s(id: Int, t: Int, sd: Int, b: Int) { top[id] = t; side[id] = sd; bot[id] = b }
@@ -53,6 +55,7 @@ object B {
             defined[id] = true
             byName[d.name] = id
             if (d.name.startsWith("Tronco ") || d.name.startsWith("Caule ")) isLog[id] = true
+            relief[id] = (d.flags and (Blk.F_GLASS or Blk.F_LIGHT or Blk.F_LEAF)) == 0 && !d.name.startsWith("Lã ") && !d.name.startsWith("Concreto") && !d.name.startsWith("Gesso")
         }
     }
     fun solid(id: Int) = id != AIR && id != WATER
@@ -687,6 +690,81 @@ class World {
         return n
     }
 
+
+    /** oclusão do canto (mesma conta das faces lisas) */
+    private fun cornerAo(c: IntArray, a: Int, s: Int, u: Int, v: Int, cu: Int, cv: Int): Float {
+        val du = if (cu == 1) 1 else -1; val dv = if (cv == 1) 1 else -1
+        val bx = IntArray(3); bx[0] = c[0]; bx[1] = c[1]; bx[2] = c[2]; bx[a] += s
+        val s1 = bx.clone(); s1[u] += du
+        val s2 = bx.clone(); s2[v] += dv
+        val cc = s1.clone(); cc[v] += dv
+        val a1 = if (solid(s1[0], s1[1], s1[2])) 1 else 0
+        val a2 = if (solid(s2[0], s2[1], s2[2])) 1 else 0
+        val a3 = if (solid(cc[0], cc[1], cc[2])) 1 else 0
+        val lvl = if (a1 == 1 && a2 == 1) 0 else 3 - (a1 + a2 + a3)
+        return AOB[lvl]
+    }
+
+    /** face com relevo de verdade: grade 8x8 de peças, cada uma sai ou entra até 2 degraus (Relief.map), com paredinhas entre alturas diferentes */
+    private fun reliefFace(o: MeshBuf, c: IntArray, a: Int, s: Int, tile: Int, shade: Float, ao: FloatArray) {
+        val G = Relief.G
+        val map = Relief.map(tile)
+        val u = (a + 1) % 3; val v = (a + 2) % 3
+        val lv = IntArray(G * G)
+        for (iv in 0 until G) for (iu in 0 until G) {
+            val ti: Int; val tj: Int
+            when (a) { 0 -> { ti = iv; tj = G - 1 - iu }; 2 -> { ti = iu; tj = G - 1 - iv }; else -> { ti = iu; tj = iv } }
+            lv[iv * G + iu] = map[tj * G + ti].toInt()
+        }
+        val pos = FloatArray(3)
+        fun emit(fu: Float, fv: Float, h: Float, sh: Float, tu: Float, tv: Float) {
+            pos[0] = c[0].toFloat(); pos[1] = c[1].toFloat(); pos[2] = c[2].toFloat()
+            pos[a] += (if (s > 0) 1f else 0f) + s * h
+            pos[u] += fu; pos[v] += fv
+            val k = sh * ((1f - fu) * (1f - fv) * ao[0] + fu * (1f - fv) * ao[1] + fu * fv * ao[2] + (1f - fu) * fv * ao[3])
+            o.vert(pos[0], pos[1], pos[2], k, k, k, Atlas.u(tile, tu), Atlas.v(tile, tv))
+        }
+        fun tx(fu: Float, fv: Float): Float = when (a) { 0 -> fv; else -> fu }
+        fun ty(fu: Float, fv: Float): Float = when (a) { 0 -> 1f - fu; 2 -> 1f - fv; else -> fv }
+        fun quadV(f0u: Float, f0v: Float, h0: Float, f1u: Float, f1v: Float, h1: Float, f2u: Float, f2v: Float, h2: Float, f3u: Float, f3v: Float, h3: Float, sh: Float, both: Boolean) {
+            emit(f0u, f0v, h0, sh, tx(f0u, f0v), ty(f0u, f0v)); emit(f1u, f1v, h1, sh, tx(f1u, f1v), ty(f1u, f1v))
+            emit(f2u, f2v, h2, sh, tx(f2u, f2v), ty(f2u, f2v)); emit(f3u, f3v, h3, sh, tx(f3u, f3v), ty(f3u, f3v))
+            if (both) { o.tri(0, 1, 2); o.tri(0, 2, 3); o.tri(0, 2, 1); o.tri(0, 3, 2) }
+            else if (s > 0) { o.tri(0, 1, 2); o.tri(0, 2, 3) } else { o.tri(0, 2, 1); o.tri(0, 3, 2) }
+            o.vc += 4
+        }
+        val inv = 1f / G
+        val step = Relief.STEP
+        fun hOf(iu: Int, iv: Int): Float = if (iu < 0 || iv < 0 || iu >= G || iv >= G) 0f else lv[iv * G + iu] * step
+        for (iv in 0 until G) {
+            var iu = 0
+            while (iu < G) {
+                val l = lv[iv * G + iu]
+                var e = iu
+                while (e + 1 < G && lv[iv * G + e + 1] == l) e++
+                val h = l * step
+                val sh = shade * (1f + 0.07f * l)
+                val fu0 = iu * inv; val fu1 = (e + 1) * inv; val fv0 = iv * inv; val fv1 = (iv + 1) * inv
+                quadV(fu0, fv0, h, fu1, fv0, h, fu1, fv1, h, fu0, fv1, h, sh, false)
+                iu = e + 1
+            }
+        }
+        // paredinhas: sempre da peça mais alta pra mais baixa
+        for (iv in 0 until G) for (iu in 0 until G) {
+            val h = hOf(iu, iv)
+            val fu0 = iu * inv; val fu1 = (iu + 1) * inv; val fv0 = iv * inv; val fv1 = (iv + 1) * inv
+            val wsh = shade * (if (h < 0f) 0.62f else 0.8f)
+            var n = hOf(iu - 1, iv)
+            if (n < h) quadV(fu0, fv0, h, fu0, fv1, h, fu0, fv1, n, fu0, fv0, n, wsh, true)
+            n = hOf(iu + 1, iv)
+            if (n < h) quadV(fu1, fv0, h, fu1, fv1, h, fu1, fv1, n, fu1, fv0, n, wsh * 0.92f, true)
+            n = hOf(iu, iv - 1)
+            if (n < h) quadV(fu0, fv0, h, fu1, fv0, h, fu1, fv0, n, fu0, fv0, n, wsh * 0.96f, true)
+            n = hOf(iu, iv + 1)
+            if (n < h) quadV(fu0, fv1, h, fu1, fv1, h, fu1, fv1, n, fu0, fv1, n, wsh * 0.88f, true)
+        }
+    }
+
     fun buildChunk(cx: Int, cz: Int, o: MeshBuf, w: MeshBuf) {
         o.clear(); w.clear()
         val c = IntArray(3); val p = FloatArray(3); val col = FloatArray(3); val ao = FloatArray(4)
@@ -750,6 +828,12 @@ class World {
                 val u = (a + 1) % 3; val v = (a + 2) % 3
                 val shade = when { B.light(id) -> 1f; id == B.LEAVES -> (if (a == 1) (if (s > 0) 1f else 0.8f) else if (a == 0) 0.92f else 0.86f); a == 1 -> if (s > 0) 1f else 0.55f; a == 0 -> 0.82f; else -> 0.7f }
                 val buf = if (isW || isG) w else o
+                if (!isW && !isG && B.relief[id and 1023] && o.vc < 42000) {
+                    val rt = if (a == 1) (if (s > 0) B.tTop[id] else B.tBot[id]) else B.tSide[id]
+                    for (q in 0 until 4) ao[q] = cornerAo(c, a, s, u, v, QU[q], QV[q])
+                    reliefFace(o, c, a, s, rt, shade * vr, ao)
+                    continue
+                }
                 for (q in 0 until 4) {
                     val cu = QU[q]; val cv = QV[q]
                     p[0] = c[0].toFloat(); p[1] = c[1].toFloat(); p[2] = c[2].toFloat()

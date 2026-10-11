@@ -1,3 +1,9 @@
+#id 2026-10-11-zzzzzzz
+#titulo Profundidade de verdade!
+- Chega do relevo borrado: as texturas voltaram nítidas (pixel bem definido, sem embaçar de perto)
+- Os blocos agora têm relevo em 3D de verdade: pepitas dos minérios saem da pedra, rejunte e frestas entram, nervuras de troncos, pedrinhas da terra, gomos de melancia e abóbora, favo e esponja ficam em alto e baixo relevo, com sombra nas paredinhas
+- Vale pra todos os blocos novos (Natureza, Construção e Decoração); o terreno básico (grama, terra, pedra, areia) continua liso pra não pesar
+
 #id 2026-10-11-zzzzzz
 #titulo Reverter atualização!
 - Novo botão em Ajustes > Geral: Reverter atualização. Antes de confirmar ele mostra a entrega que vai sair (data, título, o que trouxe e a lista de arquivos que voltam, são apagados ou são restaurados)

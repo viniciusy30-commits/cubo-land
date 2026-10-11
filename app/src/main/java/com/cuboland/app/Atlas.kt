@@ -785,7 +785,6 @@ object Atlas {
             out[y * w + t * T + x] = if (a == 0) CLEAR
                 else ((a / 4) shl 24) or ((r / a).toInt() shl 16) or ((g / a).toInt() shl 8) or (bl / a).toInt()
         }
-        for (t in intArrayOf(1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 23)) depth(out, w, t * T, 0, if (t == 8) 1f else 0.85f, t == 8, t * 17)
         for (t in 0 until 24) bleed(out, w, t * T, 0)
         // blocos novos (receitas em Blk): 1 amostra por pixel, as formas já são suaves
         val nDefs = Blk.defs.size
@@ -798,9 +797,6 @@ object Atlas {
                 val c = if (sp[0] == Blk.K_PIX || sp[0] == Blk.K_LEAF || sp[0] == Blk.K_PAL || sp[0] == Blk.K_PLEAF) g0 else pixelArt(g0, qx, qy, sp[5])
                 out[(y0 + y) * w + x0 + x] = if ((c ushr 24) == 0) CLEAR else c
             }
-            val k0 = sp[0]
-            val dst = if (k0 == Blk.K_GLASS || k0 == Blk.K_JELLY || k0 == Blk.K_ICE) 0.4f else if (t >= Blk.GLOW0) 0.55f else 1f
-            depth(out, w, x0, y0, dst, true, sp[5])
             bleed(out, w, x0, y0)
         }
         raw = out.clone()   // cópia com a cor preservada nos pixels transparentes: vai direto pra GPU (o Bitmap do Android zera essa cor)
