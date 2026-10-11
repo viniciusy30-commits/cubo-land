@@ -484,6 +484,11 @@ object Atlas {
                 else if (wd1 < 0.09f) b = lerp(b, 0xFFFFFF, 0.22f)
                 c = b
             }
+            Blk.K_PIX -> {
+                val px = floor(u * 16f).toInt().coerceIn(0, 15); val py = floor(v * 16f).toInt().coerceIn(0, 15)
+                val t = Pix.P[par][py][px] - '0'
+                c = if (t <= 0) c1 else if (t == 1) c2 else if (t == 2) c3 else c4
+            }
             else -> c = c1
         }
         if (k == Blk.K_PLANK) {
@@ -664,7 +669,8 @@ object Atlas {
             val x0 = (t % NT) * T; val y0 = (t / NT) * T
             for (y in 0 until T) for (x in 0 until T) {
                 val qx = x / 4; val qy = y / 4   // grade de 16x16 pixels grandes (pixel art)
-                val c = pixelArt(genNew(sp, (qx + 0.5f) / 16f, (qy + 0.5f) / 16f), qx, qy, sp[5])
+                val g0 = genNew(sp, (qx + 0.5f) / 16f, (qy + 0.5f) / 16f)
+                val c = if (sp[0] == Blk.K_PIX) g0 else pixelArt(g0, qx, qy, sp[5])
                 out[(y0 + y) * w + x0 + x] = if ((c ushr 24) == 0) CLEAR else c
             }
             bleed(out, w, x0, y0)

@@ -19,7 +19,7 @@ object Blk {
     const val K_LAVA = 15; const val K_LAMP = 16; const val K_GRAVEL = 17; const val K_SHINGLE = 18; const val K_CRYSTAL = 19
     const val K_SHELF = 20; const val K_BAND = 21; const val K_GRAD = 22; const val K_CANDY = 23; const val K_SWIRL = 24
     const val K_BORDER = 25; const val K_RING = 26; const val K_CELLS = 27; const val K_JELLY = 28; const val K_ICE = 29
-    const val K_BLOCKY = 30; const val K_GLAZE = 31; const val K_CACTUS = 32; const val K_LEAFY = 33
+    const val K_BLOCKY = 30; const val K_GLAZE = 31; const val K_CACTUS = 32; const val K_LEAFY = 33; const val K_PIX = 34
 
     class Def(val id: Int, val name: String, val cat: Int, val top: Int, val side: Int, val bot: Int,
               val color: Int, val flags: Int, val hard: Float, val mat: Int, val desc: String)
@@ -121,47 +121,48 @@ object Blk {
         strip("Cerejeira Descascada", 0xDDA5A0)
 
         // ================= PEDRAS E MINERAIS =================
-        fun rough(n: String, c: Int, grout: Int) { uni(n, C_BUILD, tl(K_STONE, lt(c, 0.08f), dk(c, 0.04f), grout), c, M_STONE, 10f) }
-        fun smooth(n: String, c: Int) { uni(n, C_BUILD, tl(K_BORDER, c, lt(c, 0.06f), dk(c, 0.22f)), c, M_STONE, 10f) }
-        fun bricks(n: String, c: Int, grout: Int, fl: Int = 0) { uni(n, C_BUILD, tl(K_BRICK, lt(c, 0.05f), dk(c, 0.08f), grout, 0, 0, 0, fl), c, M_STONE, 10f) }
+        fun pal(pat: Int, c: Int, fl: Int = 0): Int = tl(K_PIX, dk(c, 0.5f), dk(c, 0.22f), c, lt(c, 0.2f), 0, pat, fl)
+        fun rough(n: String, c: Int, grout: Int) { uni(n, C_BUILD, pal(Pix.STONE0 + n.length % 3, c), c, M_STONE, 10f) }
+        fun smooth(n: String, c: Int) { uni(n, C_BUILD, pal(Pix.SMOOTH, c), c, M_STONE, 10f) }
+        fun bricks(n: String, c: Int, grout: Int, fl: Int = 0) { uni(n, C_BUILD, pal(if ((fl and 1) != 0) Pix.CRACKBRICK else Pix.BRICK, c, fl and 2), c, M_STONE, 10f) }
         val cobC = intArrayOf(0x9AA0AA, 0xB6BCC6, 0x666C78)
-        uni("Pedregulho", C_BUILD, tl(K_COBBLE, cobC[0], cobC[1], cobC[2]), 0x9AA0AA, M_STONE, 10f)
-        uni("Pedregulho Musgoso", C_BUILD, tl(K_COBBLE, cobC[0], cobC[1], cobC[2], 0, 0, 0, 2), 0x8CA07A, M_STONE, 10f)
+        uni("Pedregulho", C_BUILD, pal(Pix.COBBLE, 0x9AA0AA), 0x9AA0AA, M_STONE, 10f)
+        uni("Pedregulho Musgoso", C_BUILD, pal(Pix.COBBLE, 0x9AA0AA, 2), 0x8CA07A, M_STONE, 10f)
         smooth("Pedra Lisa", 0xC9CED8)
         bricks("Tijolos de Pedra", 0xB4BAC4, 0x7F8590)
         bricks("Tijolos de Pedra Musgosos", 0xB4BAC4, 0x7F8590, 2)
         bricks("Tijolos de Pedra Rachados", 0xB4BAC4, 0x7F8590, 1)
-        uni("Tijolos Cinzelados", C_BUILD, tl(K_RING, 0xB4BAC4, 0xC6CCD6, 0x7F8590, 0, 0, 3), 0xB4BAC4, M_STONE, 10f)
-        uni("Granito", C_BUILD, tl(K_SPECK, 0xB8786A, 0xC98B7C, 0x8F5648, 0x9C6254), 0xB8786A, M_STONE, 10f)
+        uni("Tijolos Cinzelados", C_BUILD, pal(Pix.CHISEL, 0xB4BAC4), 0xB4BAC4, M_STONE, 10f)
+        uni("Granito", C_BUILD, pal(Pix.SPECK, 0xB8786A), 0xB8786A, M_STONE, 10f)
         smooth("Granito Polido", 0xBE8071)
-        uni("Diorito", C_BUILD, tl(K_SPECK, 0xDCDCD8, 0xEAEAE6, 0x8C8C88, 0xA8A8A4, 0, 1), 0xDCDCD8, M_STONE, 10f)
+        uni("Diorito", C_BUILD, pal(Pix.SPECK, 0xDCDCD8), 0xDCDCD8, M_STONE, 10f)
         smooth("Diorito Polido", 0xE2E2DE)
         rough("Andesito", 0xA2A29E, 0x7A7A76)
         smooth("Andesito Polido", 0xA8A8A4)
         rough("Ardósia", 0x50525A, 0x33343A)
         smooth("Ardósia Polida", 0x565861)
         bricks("Tijolos de Ardósia", 0x50525A, 0x2C2D33)
-        uni("Ladrilhos de Ardósia", C_BUILD, tl(K_TILES, 0x555760, 0x4A4C54, 0x2C2D33, 0, 0, 4), 0x50525A, M_STONE, 10f)
-        uni("Pedregulho de Ardósia", C_BUILD, tl(K_COBBLE, 0x50525A, 0x666872, 0x2C2D33), 0x50525A, M_STONE, 10f)
+        uni("Ladrilhos de Ardósia", C_BUILD, pal(Pix.TILES, 0x555760), 0x50525A, M_STONE, 10f)
+        uni("Pedregulho de Ardósia", C_BUILD, pal(Pix.COBBLE, 0x50525A), 0x50525A, M_STONE, 10f)
         rough("Tufo", 0x7E8274, 0x5A5E50)
         rough("Pedra Negra", 0x3A3540, 0x221E28)
         smooth("Pedra Negra Polida", 0x413C48)
         bricks("Tijolos de Pedra Negra", 0x3A3540, 0x1E1A24)
-        blk("Arenito", C_BUILD, tl(K_BORDER, 0xF1E3AE, 0xF8EDC4, 0xD9C68A), tl(K_STRIPE, 0xF0DFA8, 0xE6D49A, 0xD9C68A, 0, 0, 0), tl(K_BORDER, 0xE9D9A0, 0xF1E3AE, 0xD9C68A), 0xF0DFA8, M_STONE, 7f)
-        uni("Arenito Liso", C_BUILD, tl(K_FLAT, 0xF3E6B4, 0xEBDCA6, 0xF3E6B4, 0, 0, 0, 4), 0xF3E6B4, M_STONE, 7f)
-        uni("Arenito Cinzelado", C_BUILD, tl(K_RING, 0xF0DFA8, 0xF8EDC4, 0xD0BC80, 0, 0, 3), 0xF0DFA8, M_STONE, 7f)
-        blk("Arenito Vermelho", C_BUILD, tl(K_BORDER, 0xD9904E, 0xE4A262, 0xB8723A), tl(K_STRIPE, 0xD58A48, 0xCB7E3E, 0xB8723A, 0, 0, 0), tl(K_BORDER, 0xCC8444, 0xD9904E, 0xB8723A), 0xD58A48, M_STONE, 7f)
+        blk("Arenito", C_BUILD, pal(Pix.SMOOTH, 0xF0DFA8), pal(Pix.SANDSIDE, 0xF0DFA8), pal(Pix.SMOOTH, 0xE9D9A0), 0xF0DFA8, M_STONE, 7f)
+        uni("Arenito Liso", C_BUILD, pal(Pix.SMOOTH, 0xF3E6B4), 0xF3E6B4, M_STONE, 7f)
+        uni("Arenito Cinzelado", C_BUILD, pal(Pix.CHISEL, 0xF0DFA8), 0xF0DFA8, M_STONE, 7f)
+        blk("Arenito Vermelho", C_BUILD, pal(Pix.SMOOTH, 0xD58A48), pal(Pix.SANDSIDE, 0xD58A48), pal(Pix.SMOOTH, 0xCC8444), 0xD58A48, M_STONE, 7f)
         bricks("Tijolos do Nether", 0x5A2830, 0x2E1216)
         bricks("Tijolos Vermelhos do Nether", 0x8A2A36, 0x3E1218)
         rough("Netherrack", 0x8E3C3C, 0x6A2828)
         rough("Pedra do Fim", 0xE8EAB6, 0xC4C68A)
-        uni("Purpur", C_BUILD, tl(K_TILES, 0xB58AC0, 0xA67AB2, 0x8A5E98, 0, 0, 2), 0xB58AC0, M_STONE, 9f)
+        uni("Purpur", C_BUILD, pal(Pix.TILES, 0xB58AC0), 0xB58AC0, M_STONE, 9f)
         rough("Prismarinho", 0x6BB6A0, 0x4A8F7D)
         bricks("Tijolos de Prismarinho", 0x6FBBA6, 0x4A8F7D)
         smooth("Quartzo", 0xF0ECE4)
-        blk("Pilar de Quartzo", C_BUILD, tl(K_BORDER, 0xF0ECE4, 0xF8F4EC, 0xCFC8BC), tl(K_STRIPE, 0xF0ECE4, 0xE6E1D6, 0xCFC8BC, 0, 0, 1), tl(K_BORDER, 0xF0ECE4, 0xF8F4EC, 0xCFC8BC), 0xF0ECE4, M_STONE, 9f)
+        blk("Pilar de Quartzo", C_BUILD, pal(Pix.SMOOTH, 0xF0ECE4), pal(Pix.PILLAR, 0xF0ECE4), pal(Pix.SMOOTH, 0xF0ECE4), 0xF0ECE4, M_STONE, 9f)
         bricks("Tijolos de Quartzo", 0xF2EEE6, 0xD2CCC0)
-        uni("Obsidiana", C_BUILD, tl(K_CRYSTAL, 0x1C1030, 0x2E1B50, 0x5B3A9A), 0x2E1B50, M_STONE, 24f)
+        uni("Obsidiana", C_BUILD, tl(K_PIX, 0x0E081C, 0x1C1030, 0x5B3A9A, 0x8A66CC, 0, Pix.OBS), 0x2E1B50, M_STONE, 24f)
 
         // ================= BLOCOS NOVOS E DOCES =================
         uni("Nuvem", C_DEC, tl(K_FLAT, 0xFFFFFF, 0xDCEBFA, 0xFFFFFF, 0, 0, 0, 4), 0xF2F8FF, M_SOFT, 2f, 0, "Fofa e branquinha, perfeita pro céu.")

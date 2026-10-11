@@ -1,3 +1,7 @@
+#id 2026-10-11-x
+#titulo Pedras em pixel art de verdade!
+- Pedregulho, tijolos, granito, diorito, andesito, ardósia, tufo, arenitos, quartzo, nether, fim, purpur e obsidiana redesenhados em pixel art 16x16, com contorno, brilho e sombra em cada pedrinha
+
 #id 2026-10-11-w
 #titulo Blocos com mais detalhe!
 - Cacto com costelas e espinhos, moitas e musgo com folhinhas de contorno e brilho
