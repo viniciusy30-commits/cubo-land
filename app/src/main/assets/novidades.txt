@@ -1,3 +1,13 @@
+#id 2026-10-11-w
+#titulo Blocos com mais detalhe!
+- Cacto com costelas e espinhos, moitas e musgo com folhinhas de contorno e brilho
+- Tábuas com veios e pregos, troncos com casca em relevo, esponja furadinha
+- Minérios, metais, gelo e cristais com brilhinhos
+
+#id 2026-10-11-v
+#titulo Blocos em pixel art!
+- Todos os blocos novos agora têm textura em pixel art estilo Minecraft, mais fofinha: pixels grandes, pintinhas de detalhe e brilho no cantinho de cima
+
 #id 2026-10-11-u
 #titulo Centenas de blocos novos!
 - Mais de 230 blocos novos na mochila: lãs, concretos, terracotas, terracotas vitrificadas e vidros coloridos em 16 cores

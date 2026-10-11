@@ -462,8 +462,41 @@ object Atlas {
                     else -> { val tri = abs(fr(v * 2f) - 0.5f); val z = fr(u * 2f + tri); c = lerp(c1, c2, sm(0.3f, 0.36f, z) - sm(0.8f, 0.86f, z)); c = lerp(c, c3, sm(0.09f, 0f, abs(z - 0.58f))) }
                 }
             }
+            Blk.K_CACTUS -> {
+                val px = floor(u * 16f).toInt(); val py = floor(v * 16f).toInt()
+                if (par == 1) {
+                    val e = min(min(px, py), min(15 - px, 15 - py))
+                    c = if (e < 2) c3 else lerp(c1, c2, vn(u, v, 4, 4, s))
+                    if (e == 2) c = lerp(c, 0xFFFFFF, 0.15f)
+                    if ((px == 4 || px == 11) && (py == 4 || py == 11)) c = 0xF4EBC8
+                } else {
+                    c = lerp(c1, c2, vn(u, v, 4, 4, s) * 0.6f)
+                    if (px == 0 || px == 5 || px == 10 || px == 15) c = c3
+                    else if (px == 1 || px == 6 || px == 11) c = lerp(c, 0xFFFFFF, 0.22f)
+                    if ((px == 5 || px == 10) && py % 4 == 2) c = 0xF4EBC8
+                    if ((px == 0 || px == 15) && py % 4 == 0) c = 0xF4EBC8
+                }
+            }
+            Blk.K_LEAFY -> {
+                worley(u, v, 5, s + 3)
+                var b = if (wid < 0.25f) c1 else if (wid < 0.5f) c2 else if (wid < 0.78f) c3 else c4
+                if (wd2 - wd1 < 0.05f) b = mul(c1, 0.8f)
+                else if (wd1 < 0.09f) b = lerp(b, 0xFFFFFF, 0.22f)
+                c = b
+            }
             else -> c = c1
         }
+        if (k == Blk.K_PLANK) {
+            if (vn(u, v, 2, 16, s + 9) > 0.64f) c = mul(c, 0.9f)
+            val nx = min(abs(u - 0.1f), abs(u - 0.9f)); val nf = fr(v * 4f)
+            if (nx < 0.035f && abs(nf - 0.5f) < 0.07f) c = mul(c, 0.6f)
+        }
+        if (k == Blk.K_LOGSIDE) {
+            val rg = fr(u * 7f + vn(u, v, 2, 4, s + 3) * 1.5f)
+            if (rg < 0.14f) c = mul(c, 0.8f) else if (rg > 0.86f) c = lerp(c, 0xFFFFFF, 0.12f)
+        }
+        if ((fl and 8) != 0) { worley(u, v, 5, s + 201); if (wd1 < 0.1f && wid > 0.4f) c = mul(c, 0.55f) }
+        if ((fl and 16) != 0) { if (h(floor(u * 16f).toInt(), floor(v * 16f).toInt(), s + 55) > 0.95f) c = lerp(c, 0xFFFFFF, 0.6f) }
         if ((fl and 1) != 0) { worley(u, v, 3, s + 101); c = lerp(c, mul(c, 0.45f), sm(0.05f, 0f, wd2 - wd1) * 0.9f) }
         if ((fl and 2) != 0) { val m = vn(u, v, 5, 5, s + 77); c = lerp(c, lerp(0x5E8F3C, 0x7FB04A, vn(u, v, 9, 9, s + 78)), sm(0.52f, 0.62f, m)) }
         if ((fl and 4) != 0) {
@@ -591,6 +624,25 @@ object Atlas {
         return b
     }
 
+    /** estilo Minecraft fofinho: ruído por pixel, pintinhas claras/escuras, brilho no canto de cima e poucos tons de cor */
+    private fun pixelArt(c: Int, px: Int, py: Int, sd: Int): Int {
+        val a = (c ushr 24) and 255
+        if (a == 0) return c
+        val r0 = h(px, py, sd)
+        var k = 1f + (r0 - 0.5f) * 0.18f + (h(px / 2, py / 2, sd + 9) - 0.5f) * 0.1f
+        if (r0 > 0.93f) k *= 0.88f else if (r0 < 0.06f) k *= 1.1f
+        if (px == 0 || py == 0) k *= 1.07f
+        if (px == 15 || py == 15) k *= 0.9f
+        val lv = 14f
+        var out = a shl 24
+        for (sh in intArrayOf(16, 8, 0)) {
+            val v = (((c shr sh) and 255) * k).coerceIn(0f, 255f)
+            val q = (Math.round(v / 255f * lv) / lv * 255f).toInt().coerceIn(0, 255)
+            out = out or (q shl sh)
+        }
+        return out
+    }
+
     private fun build(): Bitmap {
         val w = T * NT; val hh = T * ROWS
         val out = IntArray(w * hh)
@@ -611,7 +663,8 @@ object Atlas {
             val sp = Blk.specs[t] ?: continue
             val x0 = (t % NT) * T; val y0 = (t / NT) * T
             for (y in 0 until T) for (x in 0 until T) {
-                val c = genNew(sp, (x + 0.5f) / T, (y + 0.5f) / T)
+                val qx = x / 4; val qy = y / 4   // grade de 16x16 pixels grandes (pixel art)
+                val c = pixelArt(genNew(sp, (qx + 0.5f) / 16f, (qy + 0.5f) / 16f), qx, qy, sp[5])
                 out[(y0 + y) * w + x0 + x] = if ((c ushr 24) == 0) CLEAR else c
             }
             bleed(out, w, x0, y0)

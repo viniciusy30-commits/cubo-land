@@ -19,7 +19,7 @@ object Blk {
     const val K_LAVA = 15; const val K_LAMP = 16; const val K_GRAVEL = 17; const val K_SHINGLE = 18; const val K_CRYSTAL = 19
     const val K_SHELF = 20; const val K_BAND = 21; const val K_GRAD = 22; const val K_CANDY = 23; const val K_SWIRL = 24
     const val K_BORDER = 25; const val K_RING = 26; const val K_CELLS = 27; const val K_JELLY = 28; const val K_ICE = 29
-    const val K_BLOCKY = 30; const val K_GLAZE = 31
+    const val K_BLOCKY = 30; const val K_GLAZE = 31; const val K_CACTUS = 32; const val K_LEAFY = 33
 
     class Def(val id: Int, val name: String, val cat: Int, val top: Int, val side: Int, val bot: Int,
               val color: Int, val flags: Int, val hard: Float, val mat: Int, val desc: String)
@@ -174,10 +174,10 @@ object Blk {
         uni("Gelatina Rosa", C_DEC, tl(K_JELLY, 0xFF9CC8, 0xF06FA8), 0xFF9CC8, M_GLASS, 2f, F_GLASS, "Gelatina fofinha e translúcida.")
         uni("Gelatina Verde", C_DEC, tl(K_JELLY, 0x8EE07A, 0x5FBF4F), 0x8EE07A, M_GLASS, 2f, F_GLASS, "Gelatina fofinha e translúcida.")
         uni("Gelatina Roxa", C_DEC, tl(K_JELLY, 0xB896F0, 0x8F68D8), 0xB896F0, M_GLASS, 2f, F_GLASS, "Gelatina fofinha e translúcida.")
-        uni("Cristal Rosa", C_DEC, tl(K_CRYSTAL, 0xF08AC4, 0xFFB8E0, 0xFFE6F4, 0, 0, 0, 0, true), 0xF08AC4, M_STONE, 8f, F_LIGHT, "Cristal mágico que brilha sozinho.")
-        uni("Cristal Azul", C_DEC, tl(K_CRYSTAL, 0x5AA8F0, 0x8CCBFF, 0xD8EEFF, 0, 0, 0, 0, true), 0x5AA8F0, M_STONE, 8f, F_LIGHT, "Cristal mágico que brilha sozinho.")
-        uni("Cristal Verde", C_DEC, tl(K_CRYSTAL, 0x4FCF8A, 0x86EDB4, 0xD6FFE8, 0, 0, 0, 0, true), 0x4FCF8A, M_STONE, 8f, F_LIGHT, "Cristal mágico que brilha sozinho.")
-        uni("Cristal Roxo", C_DEC, tl(K_CRYSTAL, 0x9A6AE0, 0xC09CFF, 0xEBDDFF, 0, 0, 0, 0, true), 0x9A6AE0, M_STONE, 8f, F_LIGHT, "Cristal mágico que brilha sozinho.")
+        uni("Cristal Rosa", C_DEC, tl(K_CRYSTAL, 0xF08AC4, 0xFFB8E0, 0xFFE6F4, 0, 0, 0, 16, true), 0xF08AC4, M_STONE, 8f, F_LIGHT, "Cristal mágico que brilha sozinho.")
+        uni("Cristal Azul", C_DEC, tl(K_CRYSTAL, 0x5AA8F0, 0x8CCBFF, 0xD8EEFF, 0, 0, 0, 16, true), 0x5AA8F0, M_STONE, 8f, F_LIGHT, "Cristal mágico que brilha sozinho.")
+        uni("Cristal Verde", C_DEC, tl(K_CRYSTAL, 0x4FCF8A, 0x86EDB4, 0xD6FFE8, 0, 0, 0, 16, true), 0x4FCF8A, M_STONE, 8f, F_LIGHT, "Cristal mágico que brilha sozinho.")
+        uni("Cristal Roxo", C_DEC, tl(K_CRYSTAL, 0x9A6AE0, 0xC09CFF, 0xEBDDFF, 0, 0, 0, 16, true), 0x9A6AE0, M_STONE, 8f, F_LIGHT, "Cristal mágico que brilha sozinho.")
         blk("Pôr do Sol", C_DEC, tl(K_FLAT, 0xFFB07A, 0xFF9AA8), tl(K_GRAD, 0xFFC27A, 0xA878D8, 0xFF8FA8), tl(K_FLAT, 0xA878D8, 0x9A6AC8), 0xFF9AA8, M_SOFT, 3f)
         blk("Céu", C_DEC, tl(K_FLAT, 0x8CCBFF, 0xA6D8FF), tl(K_GRAD, 0x6DB6F5, 0xD4ECFF, 0), tl(K_FLAT, 0xD4ECFF, 0xE4F4FF), 0x8CCBFF, M_SOFT, 3f)
         blk("Oceano", C_DEC, tl(K_FLAT, 0x5FD0D8, 0x7ADCE0), tl(K_GRAD, 0x5FD0D8, 0x1F5FA8, 0), tl(K_FLAT, 0x1F5FA8, 0x2A6DB8), 0x3A9ACB, M_SOFT, 3f)
@@ -195,9 +195,9 @@ object Blk {
         uni("Azulejo Azul", C_BUILD, tl(K_TILES, 0x6FA8E8, 0x5E98DA, 0x3E6EA8, 0, 0, 8), 0x6FA8E8, M_STONE, 6f)
         uni("Janela de Madeira", C_BUILD, tl(K_GLASS, 0xDDF2FF, 0x8B6B43), 0xB6A070, M_GLASS, 2f, F_GLASS, "Janela com moldura de madeira.")
         uni("Janela Branca", C_BUILD, tl(K_GLASS, 0xDDF2FF, 0xF2F2EE), 0xDDE8EE, M_GLASS, 2f, F_GLASS, "Janela com moldura branca.")
-        uni("Moita Cerejeira", C_NAT, tl(K_BLOCKY, 0xE08AAE, 0xF0A6C4, 0xF8C2D8, 0xFFDDEA), 0xF0A6C4, M_SOFT, 2f)
-        uni("Moita de Outono", C_NAT, tl(K_BLOCKY, 0xC0561E, 0xE07A26, 0xF0A03A, 0xF8C25A), 0xE07A26, M_SOFT, 2f)
-        uni("Moita Amarela", C_NAT, tl(K_BLOCKY, 0xC8A22A, 0xE0BE3A, 0xF2D65A, 0xFAE98A), 0xE0BE3A, M_SOFT, 2f)
+        uni("Moita Cerejeira", C_NAT, tl(K_LEAFY, 0xB8587E, 0xF0A6C4, 0xF8C2D8, 0xFFDDEA), 0xF0A6C4, M_SOFT, 2f)
+        uni("Moita de Outono", C_NAT, tl(K_LEAFY, 0x9A4012, 0xE07A26, 0xF0A03A, 0xF8C25A), 0xE07A26, M_SOFT, 2f)
+        uni("Moita Amarela", C_NAT, tl(K_LEAFY, 0xA88418, 0xE0BE3A, 0xF2D65A, 0xFAE98A), 0xE0BE3A, M_SOFT, 2f)
 
         // ================= LUZES E MÓVEIS =================
         uni("Pedra Luminosa", C_DEC, tl(K_GLOW, 0xFFE9A0, 0xFFC96A, 0xD8963A, 0, 0, 0, 0, true), 0xFFD27C, 0, 4f, F_LIGHT, "Brilha com uma luz quentinha.")
@@ -221,19 +221,19 @@ object Blk {
         uni("Areia Vermelha", C_NAT, tl(K_SPECK, 0xD9854A, 0xE4985C, 0xB8662E, 0, 0, 0), 0xD9854A, M_SOFT, 3f)
         uni("Areia Rosa", C_NAT, tl(K_SPECK, 0xF8CCD8, 0xFFDDE6, 0xE8A8BC, 0, 0, 0), 0xF8CCD8, M_SOFT, 3f)
         uni("Neve", C_NAT, tl(K_SPECK, 0xFFFFFF, 0xEEF5FC, 0xD6E4F2, 0, 0, 0), 0xFFFFFF, M_SOFT, 2f)
-        uni("Gelo", C_NAT, tl(K_ICE, 0xBFE3FF, 0xDDF1FF), 0xBFE3FF, M_GLASS, 3f, F_GLASS, "Gelo claro e escorregadio de olhar.")
+        uni("Gelo", C_NAT, tl(K_ICE, 0xBFE3FF, 0xDDF1FF, fl = 16), 0xBFE3FF, M_GLASS, 3f, F_GLASS, "Gelo claro e escorregadio de olhar.")
         uni("Gelo Compactado", C_NAT, tl(K_ICE, 0x9CCFF5, 0xBCE0FB, 0, 0, 0, 255), 0x9CCFF5, M_GLASS, 4f)
-        uni("Musgo", C_NAT, tl(K_BLOCKY, 0x4A7A28, 0x5C9034, 0x70A840, 0x88C050), 0x5C9034, M_SOFT, 2f)
-        blk("Cacto", C_NAT, tl(K_RING, 0x4F8F3A, 0x6FAF4A, 0x2F6A24, 0, 0, 2), tl(K_STRIPE, 0x4F8F3A, 0x5FA040, 0x2F6A24, 0, 0, 1), tl(K_RING, 0x4F8F3A, 0x6FAF4A, 0x2F6A24, 0, 0, 2), 0x4F8F3A, M_SOFT, 3f)
+        uni("Musgo", C_NAT, tl(K_LEAFY, 0x2E5A18, 0x5C9034, 0x70A840, 0x88C050), 0x5C9034, M_SOFT, 2f)
+        blk("Cacto", C_NAT, tl(K_CACTUS, 0x5FA040, 0x78BC52, 0x2F6A24, 0, 0, 1), tl(K_CACTUS, 0x5FA040, 0x78BC52, 0x2F6A24), tl(K_CACTUS, 0x5FA040, 0x78BC52, 0x2F6A24, 0, 0, 1), 0x4F8F3A, M_SOFT, 3f)
         blk("Bloco de Feno", C_NAT, tl(K_RING, 0xE6C65A, 0xF0D676, 0xB89838, 0, 0, 2), tl(K_STRIPE, 0xE6C65A, 0xD8B64A, 0xB89838, 0, 0, 0), tl(K_RING, 0xE6C65A, 0xF0D676, 0xB89838, 0, 0, 2), 0xE6C65A, M_SOFT, 3f)
         blk("Melancia", C_NAT, tl(K_RING, 0x8FBF5A, 0xA8D072, 0x4F8F3A, 0, 0, 2), tl(K_STRIPE, 0x5FA84A, 0x3F8A38, 0x2F6A28, 0, 0, 1), tl(K_RING, 0x8FBF5A, 0xA8D072, 0x4F8F3A, 0, 0, 2), 0x5FA84A, M_SOFT, 3f)
         blk("Abóbora", C_NAT, tl(K_RING, 0xF29A2A, 0xFFB84A, 0xC4701A, 0, 0, 2), tl(K_STRIPE, 0xF29A2A, 0xE08A1E, 0xC4701A, 0, 0, 1), tl(K_RING, 0xF29A2A, 0xFFB84A, 0xC4701A, 0, 0, 2), 0xF29A2A, M_SOFT, 3f)
-        uni("Esponja", C_NAT, tl(K_CELLS, 0xE8D86A, 0xD8C858, 0xB8A83E, 0, 0, 5), 0xE8D86A, M_SOFT, 2f)
+        uni("Esponja", C_NAT, tl(K_CELLS, 0xE8D86A, 0xD8C858, 0xB8A83E, 0, 0, 5, 8), 0xE8D86A, M_SOFT, 2f)
         uni("Favo de Mel", C_NAT, tl(K_CELLS, 0xF2A22A, 0xFFC24A, 0xB8701A, 0, 0, 4), 0xF2A22A, M_SOFT, 2f)
         uni("Bloco de Mel", C_NAT, tl(K_JELLY, 0xF8B83A, 0xE08A1E), 0xF8B83A, M_GLASS, 2f, F_GLASS, "Mel translúcido e docinho.")
 
         // ================= MINÉRIOS E METAIS =================
-        fun ore(n: String, o1: Int, o2: Int) { uni(n, C_NAT, tl(K_ORE, 0xB7BECC, 0xA2A9B8, o1, o2), o1, M_STONE, 12f) }
+        fun ore(n: String, o1: Int, o2: Int) { uni(n, C_NAT, tl(K_ORE, 0xB7BECC, 0xA2A9B8, o1, o2, fl = 16), o1, M_STONE, 12f) }
         ore("Minério de Carvão", 0x2C2C30, 0x55555C)
         ore("Minério de Ferro", 0xD8A888, 0xF2CDB2)
         ore("Minério de Cobre", 0xD87A4A, 0x6FBF8A)
@@ -242,7 +242,7 @@ object Blk {
         ore("Minério de Lápis", 0x2E5AC8, 0x7AA2F2)
         ore("Minério de Diamante", 0x4FD8D0, 0xB8FFFA)
         ore("Minério de Esmeralda", 0x2FB85A, 0x8AF2A8)
-        fun metal(n: String, c: Int) { uni(n, C_BUILD, tl(K_BORDER, c, lt(c, 0.12f), dk(c, 0.3f)), c, M_METAL, 14f) }
+        fun metal(n: String, c: Int) { uni(n, C_BUILD, tl(K_BORDER, c, lt(c, 0.12f), dk(c, 0.3f), fl = 16), c, M_METAL, 14f) }
         metal("Bloco de Ferro", 0xE2E4E8)
         metal("Bloco de Ouro", 0xF6CF3E)
         metal("Bloco de Diamante", 0x5FE8DE)
