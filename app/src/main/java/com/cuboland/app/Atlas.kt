@@ -13,10 +13,23 @@ import kotlin.math.sqrt
 /** Atlas pastel pintado por código: 64x64 por tile, formas lisas e suaves (estilo fofinho / Maple / Hytale). */
 object Atlas {
     const val T = 64
-    const val NT = 32          // slots (potência de 2). Usados: 0..19
+    const val NT = 32          // colunas do atlas (potência de 2)
+    const val ROWS = 16        // linhas: 32 x 16 = 512 tiles. 0..23 = tiles originais, 24..447 = blocos novos, 448..511 = brilhantes (Blk)
     val bmp: Bitmap by lazy { build() }
     @Volatile var raw: IntArray? = null   // preenchido por build()
-    val tiles: Array<Bitmap> by lazy { Array(20) { Bitmap.createBitmap(bmp, it * T, 0, T, T) } }
+    private val tileCache = arrayOfNulls<Bitmap>(NT * ROWS)
+    /** recorte de um tile do atlas (ícones do HUD) */
+    fun tile(i: Int): Bitmap {
+        val k = if (i in 0 until NT * ROWS) i else 0
+        val c = tileCache[k]
+        if (c != null) return c
+        val b = Bitmap.createBitmap(bmp, (k % NT) * T, (k / NT) * T, T, T)
+        tileCache[k] = b
+        return b
+    }
+    /** coordenada U/V dentro do atlas 2D: t = 0..1 dentro do tile */
+    fun u(tile: Int, t: Float): Float = ((tile % NT) + 0.01f + t * 0.98f) / NT
+    fun v(tile: Int, t: Float): Float = ((tile / NT) + 0.01f + t * 0.98f) / ROWS
     private const val TAU = 6.2831853f
     private const val CLEAR = 0x004F9A3A
 
@@ -246,6 +259,221 @@ object Atlas {
         return CLEAR
     }
 
+
+    // ---------- texturas dos blocos novos (receitas em Blk) ----------
+    private fun genNew(sp: IntArray, u: Float, v: Float): Int {
+        val k = sp[0]; val c1 = sp[1]; val c2 = sp[2]; val c3 = sp[3]; val c4 = sp[4]; val s = sp[5]
+        val par = sp[6] and 255; val fl = sp[6] shr 8
+        var c = c1
+        var a = 255
+        when (k) {
+            Blk.K_FLAT -> c = lerp(c1, c2, vn(u, v, 3, 3, s) * 0.65f + vn(u, v, 9, 9, s + 1) * 0.35f)
+            Blk.K_STONE -> { worley(u, v, 4, s + 11); c = mul(lerp(c1, c2, wid), 1.06f - wd1 * 0.22f); c = lerp(c, c3, sm(0.16f, 0.04f, wd2 - wd1)) }
+            Blk.K_COBBLE -> { worley(u, v, 4, s + 5); val st = mul(lerp(c1, c2, wid), 1.14f - wd1 * 0.5f); c = lerp(st, c3, sm(0.15f, 0.035f, wd2 - wd1)) }
+            Blk.K_BRICK -> {
+                val row = floor(v * 4f).toInt(); val fy = fr(v * 4f)
+                val bx = u * 2f + (row % 2) * 0.5f
+                val fx = fr(bx); val id = floor(bx).toInt()
+                val e = min(min(fx, 1f - fx) * 0.5f, min(fy, 1f - fy) * 0.25f)
+                val b = mul(lerp(c1, c2, h(row * 5 + id, row, s + 61)), 1.05f - fy * 0.14f)
+                c = lerp(b, c3, 1f - sm(0.012f, 0.03f, e))
+            }
+            Blk.K_PLANK -> {
+                val row = floor(v * 4f).toInt(); val fy = fr(v * 4f)
+                var p = lerp(c1, c2, h(row, 0, s + 40))
+                p = mul(p, 1f + 0.03f * sin((fy * 3f + vn(u, v, 2, 4, s + 41)) * TAU))
+                p = lerp(p, c3, max(sm(0.07f, 0f, fy), sm(0.93f, 1f, fy)))
+                val off = if (row % 2 == 0) 0.25f else 0.75f
+                val du = abs(u - off)
+                c = lerp(p, c3, sm(0.02f, 0f, min(du, 1f - du)))
+            }
+            Blk.K_LOGSIDE -> {
+                val st = 0.5f + 0.5f * sin(u * TAU * 5f + vn(u, v, 2, 3, s + 20) * 3f)
+                c = mul(lerp(c1, c2, st), 1f - 0.16f * sm(0.82f, 1f, st))
+                val d = sqrt((u - 0.32f) * (u - 0.32f) + (v - 0.62f) * (v - 0.62f) * 0.6f)
+                if (d < 0.08f) c = lerp(c, c3, sm(0.08f, 0.05f, d))
+            }
+            Blk.K_LOGTOP -> {
+                val dx = u - 0.5f; val dy = v - 0.5f
+                val r = sqrt(dx * dx + dy * dy) + (vn(u, v, 3, 3, s + 23) - 0.5f) * 0.04f
+                c = lerp(lerp(c1, c2, 0.5f + 0.5f * sin(r * TAU * 5.5f)), c3, sm(0.40f, 0.44f, max(abs(dx), abs(dy))))
+            }
+            Blk.K_ORE -> {
+                worley(u, v, 4, 11)
+                var st = mul(lerp(c1, c2, wid), 1.06f - wd1 * 0.22f)
+                st = lerp(st, mul(c2, 0.78f), sm(0.16f, 0.04f, wd2 - wd1))
+                worley(u, v, 5, s + 3)
+                if (wid > 0.55f) st = lerp(st, lerp(c3, c4, sm(0.1f, 0f, wd1)), sm(0.2f, 0.09f, wd1))
+                c = st
+            }
+            Blk.K_WOOL -> {
+                val wv = 0.5f + 0.5f * sin(u * TAU * 8f + floor(v * 8f) * 1.7f)
+                c = mul(lerp(c1, c2, vn(u, v, 4, 4, s) * 0.7f), 0.94f + 0.08f * wv)
+            }
+            Blk.K_GLASS -> {
+                val e = min(min(u, v), min(1f - u, 1f - v))
+                if (e < 0.075f) { c = c2 }
+                else {
+                    c = c1; a = 150
+                    if (e < 0.11f) c = lerp(c1, c2, 0.35f)
+                    if (abs((u + v) - 0.62f) < 0.045f || abs((u + v) - 0.82f) < 0.018f) { c = lerp(c1, 0xFFFFFF, 0.75f); a = 215 }
+                }
+            }
+            Blk.K_TILES -> {
+                val n = if (par == 0) 4 else par
+                val fu = fr(u * n); val fv = fr(v * n)
+                val ti = floor(u * n).toInt(); val tj = floor(v * n).toInt()
+                val e = min(min(fu, 1f - fu), min(fv, 1f - fv))
+                val base = mul(lerp(c1, c2, h(ti, tj, s)), 1.04f - 0.08f * fv)
+                c = lerp(base, c3, sm(0.07f, 0.02f, e))
+            }
+            Blk.K_CHECK -> {
+                val n = if (par == 0) 4 else par
+                val chk = (floor(u * n).toInt() + floor(v * n).toInt()) and 1
+                c = mul(if (chk == 0) c1 else c2, 0.97f + 0.06f * vn(u, v, 6, 6, s))
+            }
+            Blk.K_SPECK -> {
+                c = lerp(c1, c2, vn(u, v, 3, 3, s))
+                worley(u, v, 9, s + 17)
+                val th = if (par == 1) 0.45f else 0.7f
+                if (wid > th) c = lerp(c, c3, sm(0.2f, 0.1f, wd1) * 0.9f)
+                else if (c4 != 0 && wid < 0.15f) c = lerp(c, c4, sm(0.2f, 0.1f, wd1) * 0.9f)
+            }
+            Blk.K_STRIPE -> {
+                val t = if (par == 1) u else v
+                c = if ((floor(t * 4f).toInt() and 1) == 0) c1 else c2
+                val fe = fr(t * 4f)
+                c = lerp(c, c3, max(sm(0.1f, 0f, fe), sm(0.9f, 1f, fe)) * 0.6f)
+                val fib = if (par == 1) vn(u, v, 2, 16, s) else vn(u, v, 16, 2, s)
+                c = mul(c, 0.94f + 0.1f * fib)
+            }
+            Blk.K_GLOW -> { worley(u, v, 5, s + 9); c = mul(lerp(c1, c2, wid), 1.08f - wd1 * 0.3f); c = lerp(c, c3, sm(0.1f, 0.02f, wd2 - wd1) * 0.75f) }
+            Blk.K_LAVA -> { worley(u, v, 4, s + 3); c = lerp(lerp(c1, c2, wid), c3, sm(0.2f, 0.04f, wd2 - wd1)) }
+            Blk.K_LAMP -> {
+                val e = min(min(u, v), min(1f - u, 1f - v))
+                if (e < 0.1f || abs(u - 0.5f) < 0.025f || abs(v - 0.5f) < 0.025f) c = lerp(c2, mul(c2, 0.8f), v)
+                else { val d = sqrt((u - 0.5f) * (u - 0.5f) + (v - 0.5f) * (v - 0.5f)); c = lerp(c3, c1, sm(0f, 0.5f, d)) }
+            }
+            Blk.K_GRAVEL -> {
+                worley(u, v, 6, s)
+                val pc = if (wid < 0.33f) c1 else if (wid < 0.66f) c2 else c3
+                c = mul(pc, 1.12f - wd1 * 0.55f)
+                c = lerp(c, mul(c2, 0.5f), sm(0.1f, 0.02f, wd2 - wd1) * 0.8f)
+            }
+            Blk.K_SHINGLE -> {
+                val n = if (par == 0) 5 else par
+                val ry = v * n; val row = floor(ry).toInt(); val fy = fr(ry)
+                val xo = u * 3f + (row and 1) * 0.5f
+                val fx = fr(xo); val idc = floor(xo).toInt()
+                var b = mul(lerp(c1, c2, h(idc, row, s + 7)), 0.74f + 0.30f * fy)
+                b = lerp(b, c3, sm(0.05f, 0f, min(fx, 1f - fx)) * 0.8f)
+                c = lerp(b, c3, sm(0.06f, 0f, fy))
+            }
+            Blk.K_CRYSTAL -> {
+                worley(u, v, 3, s + 13)
+                c = mul(lerp(c1, c2, wid), 0.88f + 0.3f * wid)
+                c = lerp(c, c3, sm(0.1f, 0f, wd2 - wd1) * 0.85f)
+                c = lerp(c, 0xFFFFFF, 0.28f * sm(0.85f, 1f, wid))
+            }
+            Blk.K_SHELF -> {
+                val wood = v < 0.12f || v > 0.88f || abs(v - 0.5f) < 0.06f
+                if (wood) c = mul(c1, 0.96f + 0.06f * vn(u, v, 4, 8, s))
+                else {
+                    val row = if (v < 0.5f) 0 else 1
+                    val ry = if (row == 0) (v - 0.12f) / 0.32f else (v - 0.56f) / 0.32f
+                    val bi = floor(u * 8f).toInt(); val fx = fr(u * 8f)
+                    val hgt = 0.6f + 0.4f * h(bi, row, s + 3)
+                    if (ry < 1f - hgt) c = c2
+                    else {
+                        val pal = h(bi, row, s + 5)
+                        val bk = if (pal < 0.2f) c3 else if (pal < 0.4f) c4 else if (pal < 0.6f) 0x5E9E5A else if (pal < 0.8f) 0xD6A441 else 0x8A5BB8
+                        c = mul(bk, 0.86f + 0.2f * ry)
+                        c = lerp(c, mul(bk, 0.55f), sm(0.14f, 0f, min(fx, 1f - fx)))
+                    }
+                }
+            }
+            Blk.K_BAND -> {
+                val e = 0.27f + 0.05f * sin(u * TAU * 3f + 1f) + 0.035f * sin(u * TAU * 5f + 2f) + 0.025f * sin(u * TAU * 8f)
+                val g = lerp(c1, mul(c1, 0.86f), sm(0f, e, v))
+                val d = mul(lerp(c2, c3, vn(u, v, 3, 3, s)), 0.92f)
+                c = lerp(d, g, sm(e + 0.012f, e - 0.012f, v))
+            }
+            Blk.K_GRAD -> {
+                c = if (c3 == 0) lerp(c1, c2, v) else if (v < 0.5f) lerp(c1, c3, v * 2f) else lerp(c3, c2, (v - 0.5f) * 2f)
+                c = mul(c, 0.97f + 0.06f * vn(u, v, 5, 5, s))
+            }
+            Blk.K_CANDY -> {
+                val n = if (par == 0) 4 else par
+                val st = fr((u + v) * n)
+                c = lerp(c1, c2, sm(0.42f, 0.5f, st) - sm(0.92f, 1f, st))
+                c = lerp(c, 0xFFFFFF, 0.1f)
+            }
+            Blk.K_SWIRL -> {
+                val dx = u - 0.5f; val dy = v - 0.5f
+                val r = sqrt(dx * dx + dy * dy)
+                val ang = kotlin.math.atan2(dy, dx)
+                val t = fr(r * 3.2f + ang / TAU)
+                c = lerp(c1, c2, sm(0.38f, 0.5f, t) - sm(0.88f, 1f, t))
+                c = lerp(c, 0xFFFFFF, 0.08f)
+            }
+            Blk.K_BORDER -> {
+                val e = min(min(u, v), min(1f - u, 1f - v))
+                c = lerp(c1, c2, vn(u, v, 4, 4, s) * 0.5f)
+                c = lerp(c, c3, sm(0.1f, 0.035f, e))
+                c = lerp(c, c3, sm(0.03f, 0f, abs(e - 0.15f)) * 0.7f)
+            }
+            Blk.K_RING -> {
+                val n = if (par == 0) 3 else par
+                val e = min(min(u, v), min(1f - u, 1f - v))
+                val t = fr(e * n * 2f)
+                c = lerp(c1, c2, sm(0.3f, 0.5f, t))
+                c = lerp(c, c3, sm(0.09f, 0f, t) * 0.8f)
+                c = lerp(c, c3, sm(0.04f, 0f, e))
+            }
+            Blk.K_CELLS -> {
+                val n = if (par == 0) 4 else par
+                worley(u, v, n, s)
+                c = lerp(lerp(c1, c2, wid), c3, sm(0.1f, 0.03f, wd2 - wd1))
+                c = lerp(c, 0xFFFFFF, 0.12f * sm(0.35f, 0f, wd1))
+            }
+            Blk.K_JELLY -> {
+                val e = min(min(u, v), min(1f - u, 1f - v))
+                if (e > 0.2f) { c = lerp(c2, c1, 0.25f); a = 240 } else { c = c1; a = 150 }
+                val dd = sqrt((u - 0.25f) * (u - 0.25f) + (v - 0.22f) * (v - 0.22f))
+                c = lerp(c, 0xFFFFFF, sm(0.16f, 0.04f, dd) * 0.5f)
+            }
+            Blk.K_ICE -> {
+                c = lerp(c1, c2, vn(u, v, 3, 3, s))
+                worley(u, v, 3, s + 4)
+                c = lerp(c, 0xFFFFFF, sm(0.07f, 0f, wd2 - wd1) * 0.65f)
+                a = if (par == 0) 190 else par
+            }
+            Blk.K_BLOCKY -> {
+                val px = floor(u * 8f).toInt().coerceIn(0, 7); val py = floor(v * 8f).toInt().coerceIn(0, 7)
+                val q = h(px, py, s) * 0.7f + h(px / 2, py, s + 1) * 0.3f
+                c = if (q < 0.22f) c1 else if (q < 0.5f) c2 else if (q < 0.78f) c3 else c4
+            }
+            Blk.K_GLAZE -> {
+                val dx = abs(u - 0.5f) * 2f; val dy = abs(v - 0.5f) * 2f
+                when (par and 3) {
+                    0 -> { val t = dx + dy; c = lerp(c3, c2, sm(0.45f, 0.55f, t)); c = lerp(c, c1, sm(0.95f, 1.05f, t)) }
+                    1 -> { val m = min(dx, dy); c = lerp(c2, c1, sm(0.3f, 0.36f, m)); val m2 = max(dx, dy); c = lerp(c3, c, sm(0.3f, 0.36f, m2)) }
+                    2 -> { val m = max(dx, dy); c = lerp(c3, c2, sm(0.28f, 0.34f, m)); c = lerp(c, c1, sm(0.62f, 0.68f, m)); c = lerp(c, c2, sm(0.86f, 0.92f, m)) }
+                    else -> { val tri = abs(fr(v * 2f) - 0.5f); val z = fr(u * 2f + tri); c = lerp(c1, c2, sm(0.3f, 0.36f, z) - sm(0.8f, 0.86f, z)); c = lerp(c, c3, sm(0.09f, 0f, abs(z - 0.58f))) }
+                }
+            }
+            else -> c = c1
+        }
+        if ((fl and 1) != 0) { worley(u, v, 3, s + 101); c = lerp(c, mul(c, 0.45f), sm(0.05f, 0f, wd2 - wd1) * 0.9f) }
+        if ((fl and 2) != 0) { val m = vn(u, v, 5, 5, s + 77); c = lerp(c, lerp(0x5E8F3C, 0x7FB04A, vn(u, v, 9, 9, s + 78)), sm(0.52f, 0.62f, m)) }
+        if ((fl and 4) != 0) {
+            val e = min(min(u, v), min(1f - u, 1f - v))
+            c = mul(c, 1f - 0.16f * sm(0.07f, 0f, e))
+            c = lerp(c, 0xFFFFFF, 0.14f * sm(0.05f, 0f, min(u, v)))
+        }
+        return (a shl 24) or (c and 0xFFFFFF)
+    }
+
     private fun sample(t: Int, u: Float, v: Float): Int = when (t) {
         0 -> -1
         1 -> grassTop(u, v)
@@ -364,8 +592,8 @@ object Atlas {
     }
 
     private fun build(): Bitmap {
-        val w = T * NT
-        val out = IntArray(w * T)
+        val w = T * NT; val hh = T * ROWS
+        val out = IntArray(w * hh)
         for (t in 0 until 24) for (y in 0 until T) for (x in 0 until T) {
             var a = 0; var r = 0f; var g = 0f; var bl = 0f
             for (sy in 0..1) for (sx in 0..1) {      // antialias 2x2
@@ -376,19 +604,30 @@ object Atlas {
             out[y * w + t * T + x] = if (a == 0) CLEAR
                 else ((a / 4) shl 24) or ((r / a).toInt() shl 16) or ((g / a).toInt() shl 8) or (bl / a).toInt()
         }
-        for (t in 0 until 24) bleed(out, w, t * T)
+        for (t in 0 until 24) bleed(out, w, t * T, 0)
+        // blocos novos (receitas em Blk): 1 amostra por pixel, as formas já são suaves
+        val nDefs = Blk.defs.size
+        if (nDefs > 0) for (t in 24 until NT * ROWS) {
+            val sp = Blk.specs[t] ?: continue
+            val x0 = (t % NT) * T; val y0 = (t / NT) * T
+            for (y in 0 until T) for (x in 0 until T) {
+                val c = genNew(sp, (x + 0.5f) / T, (y + 0.5f) / T)
+                out[(y0 + y) * w + x0 + x] = if ((c ushr 24) == 0) CLEAR else c
+            }
+            bleed(out, w, x0, y0)
+        }
         raw = out.clone()   // cópia com a cor preservada nos pixels transparentes: vai direto pra GPU (o Bitmap do Android zera essa cor)
-        val b = Bitmap.createBitmap(w, T, Bitmap.Config.ARGB_8888)
-        b.setPixels(out, 0, w, 0, 0, w, T)
+        val b = Bitmap.createBitmap(w, hh, Bitmap.Config.ARGB_8888)
+        b.setPixels(out, 0, w, 0, 0, w, hh)
         return b
     }
 
     /** pixels transparentes herdam a cor dos vizinhos opacos: no mipmap/filtro a borda da folha/matinho mistura verde com verde (nada de contorno escuro) */
-    private fun bleed(px: IntArray, w: Int, x0: Int) {
+    private fun bleed(px: IntArray, w: Int, x0: Int, y0: Int) {
         var has = false
-        for (y in 0 until T) for (x in 0 until T) if ((px[y * w + x0 + x] ushr 24) == 0) { has = true; break }
+        for (y in 0 until T) for (x in 0 until T) if ((px[(y0 + y) * w + x0 + x] ushr 24) == 0) { has = true; break }
         if (!has) return
-        val filled = BooleanArray(T * T) { (px[(it / T) * w + x0 + it % T] ushr 24) != 0 }
+        val filled = BooleanArray(T * T) { (px[(y0 + it / T) * w + x0 + it % T] ushr 24) != 0 }
         repeat(T / 2) {
             val add = ArrayList<IntArray>()
             for (y in 0 until T) for (x in 0 until T) {
@@ -397,12 +636,12 @@ object Atlas {
                 for (dy in -1..1) for (dx in -1..1) {
                     val nx = x + dx; val ny = y + dy
                     if (nx < 0 || ny < 0 || nx >= T || ny >= T || !filled[ny * T + nx]) continue
-                    val c = px[ny * w + x0 + nx]; r += (c shr 16) and 255; g += (c shr 8) and 255; b += c and 255; n++
+                    val c = px[(y0 + ny) * w + x0 + nx]; r += (c shr 16) and 255; g += (c shr 8) and 255; b += c and 255; n++
                 }
                 if (n > 0) add.add(intArrayOf(x, y, (r / n shl 16) or (g / n shl 8) or (b / n)))
             }
             if (add.isEmpty()) return
-            for (a in add) { px[a[1] * w + x0 + a[0]] = a[2]; filled[a[1] * T + a[0]] = true }   // alpha continua 0
+            for (a in add) { px[(y0 + a[1]) * w + x0 + a[0]] = a[2]; filled[a[1] * T + a[0]] = true }   // alpha continua 0
         }
     }
 }

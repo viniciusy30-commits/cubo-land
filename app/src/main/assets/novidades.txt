@@ -1,3 +1,13 @@
+#id 2026-10-11-u
+#titulo Centenas de blocos novos!
+- Mais de 230 blocos novos na mochila: lãs, concretos, terracotas, terracotas vitrificadas e vidros coloridos em 16 cores
+- Madeiras de todo tipo (abeto, bétula, selva, acácia, cerejeira, bambu...) com tábuas, troncos e troncos descascados
+- Pedras e tijolos: pedregulho, granito, diorito, andesito, ardósia, quartzo, nether, fim, prismarinho, obsidiana e mais
+- Minérios e blocos de metal: carvão, ferro, cobre, ouro, diamante, esmeralda, lápis e redstone (minérios aparecem escondidos nos mundos novos)
+- Luzes que brilham: pedra luminosa, lanterna do mar, lâmpadas coloridas, cristais mágicos, magma
+- Blocos criados só pra Cubo Land: nuvem, algodão-doce, doces, gelatinas, cristais, degradês, telhados, gesso, azulejos e janelas
+- Vidro, gelo e gelatina são translúcidos e dá pra ver através
+
 #id 2026-10-11-t
 #titulo Mochila fofinha!
 - Mochila redesenhada: painel quentinho com bolinhas e costura, mochilinha colorida no título, etiquetas coloridas e bolsinhos pros itens

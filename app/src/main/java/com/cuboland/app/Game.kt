@@ -98,7 +98,7 @@ class Game(val world: World) {
     private var hitT = -1f; private var hitItem = 0; private var hitStab = false
     private var pendingT = -1f; private var pendingPower = 0f
     val leafFall = ArrayList<LeafP>(); private var leafT = 0f; var comboT = 0f
-    val drops = ArrayList<Drop>(); val ripples = ArrayList<Ripple>(); val prints = ArrayList<Foot>(); val picked = IntArray(16)
+    val drops = ArrayList<Drop>(); val ripples = ArrayList<Ripple>(); val prints = ArrayList<Foot>(); val picked = IntArray(256)
     @Volatile var pickMsg = ""; @Volatile var pickT = 0f; @Volatile var swimAmt = 0f; @Volatile var wetT = 0f; private var inWaterT = 0f   // wetT: efeito de "molhado" na tela ao sair da água (3s)
     // água: direção desejada (pro degrau), escorrer ao quebrar bloco, controle do efeito de tela molhada
     private var wishX = 0f; private var wishZ = 0f
@@ -404,10 +404,10 @@ class Game(val world: World) {
         blockHit(item, 1f)
     }
 
-    private fun hardness(id: Int) = when (id) { B.LEAVES -> 1.5f; B.GRASS, B.DIRT, B.SAND -> 3f; B.WOOD -> 8f; B.PLANK -> 6f; B.STONE -> 10f; B.BRICK -> 9f; else -> 4f }
+    private fun hardness(id: Int) = when (id) { B.LEAVES -> 1.5f; B.GRASS, B.DIRT, B.SAND -> 3f; B.WOOD -> 8f; B.PLANK -> 6f; B.STONE -> 10f; B.BRICK -> 9f; else -> if (id > 13 && B.hard[id] > 0f) B.hard[id] else 4f }
     private fun efficiency(item: Int, id: Int) = when (item) {
-        Items.PICK -> when (id) { B.STONE, B.BRICK -> 2f; B.DIRT, B.GRASS, B.SAND -> 1.5f; else -> 1f }
-        Items.AXE -> when (id) { B.WOOD, B.PLANK -> 2f; B.LEAVES -> 1.5f; else -> 0.6f }
+        Items.PICK -> when (id) { B.STONE, B.BRICK -> 2f; B.DIRT, B.GRASS, B.SAND -> 1.5f; else -> if (id > 13 && (B.mat[id] == Blk.M_STONE || B.mat[id] == Blk.M_METAL)) 2f else if (id > 13 && B.mat[id] == Blk.M_SOFT) 1.5f else 1f }
+        Items.AXE -> when (id) { B.WOOD, B.PLANK -> 2f; B.LEAVES -> 1.5f; else -> if (id > 13 && B.mat[id] == Blk.M_WOOD) 2f else 0.6f }
         else -> 0.7f
     }
 
@@ -540,7 +540,7 @@ class Game(val world: World) {
     }
 
 
-    private fun carvable(id: Int) = id in 1..13 && id != B.LEAVES && id != B.WATER && id != B.LANTERN
+    private fun carvable(id: Int) = Items.isBlock(id) && id != B.LEAVES && id != B.WATER && !B.light(id) && !B.glass(id)
 
     /** arranca de verdade pedaços do bloco (mini-voxels) na área do golpe; o formato depende da ferramenta e do progresso */
     private fun carve(d: Dmg, a: Int, s: Int, qx: Float, qy: Float, qz: Float, m: Mark, item: Int, big: Boolean) {
@@ -646,7 +646,7 @@ class Game(val world: World) {
 
     // ---------- quebra: mini-blocos e árvore caindo ----------
     private fun spawnPieces(cx: Float, cy: Float, cz: Float, id: Int, n: Int, size: Float, spread: Float, vx0: Float = 0f, vy0: Float = 0f, vz0: Float = 0f, life: Float = 3.2f) {
-        if (id <= 0 || id > 13) return
+        if (!Items.isBlock(id)) return
         for (i in 0 until n) {
             if (debris.size > 220) debris.removeAt(0)
             val ox = (rnd.nextFloat() - 0.5f) * spread; val oy = (rnd.nextFloat() - 0.5f) * spread; val oz = (rnd.nextFloat() - 0.5f) * spread
@@ -672,7 +672,7 @@ class Game(val world: World) {
 
     /** o bloco que sobra no chão: só 1, pequeno, pra pegar */
     private fun dropItem(x: Float, y: Float, z: Float, id: Int, vx: Float, vz: Float) {
-        if (id <= 0 || id > 13 || id == B.WATER) return
+        if (!Items.isBlock(id)) return
         if (drops.size > 60) drops.removeAt(0)
         var yy = y; var k = 0
         while (world.solid(floor(x).toInt(), floor(yy).toInt(), floor(z).toInt()) && k < 6) { yy += 0.5f; k++ }

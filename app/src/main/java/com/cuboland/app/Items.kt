@@ -3,8 +3,13 @@ package com.cuboland.app
 object Items {
     const val SWORD = 100; const val AXE = 101; const val STAFF = 102; const val PICK = 103
 
-    val inventory = intArrayOf(SWORD, AXE, STAFF, PICK, B.GRASS, B.DIRT, B.STONE, B.SAND, B.WOOD, B.LEAVES,
-        B.PLANK, B.BRICK, B.PINK, B.BLUE, B.YELLOW, B.LANTERN)
+    val inventory: IntArray = run {
+        val l = ArrayList<Int>()
+        for (i in intArrayOf(SWORD, AXE, STAFF, PICK, B.GRASS, B.DIRT, B.STONE, B.SAND, B.WOOD, B.LEAVES,
+            B.PLANK, B.BRICK, B.PINK, B.BLUE, B.YELLOW, B.LANTERN)) l.add(i)
+        for (d in Blk.defs) l.add(d.id)
+        l.toIntArray()
+    }
 
     /** categorias da mochila */
     val CATS = arrayOf("Tudo", "Ferramentas", "Natureza", "Construção", "Decoração")
@@ -12,11 +17,11 @@ object Items {
         SWORD, AXE, STAFF, PICK -> 1
         B.GRASS, B.DIRT, B.SAND, B.WOOD, B.LEAVES -> 2
         B.STONE, B.PLANK, B.BRICK -> 3
-        else -> 4
+        else -> if (id > 13 && id < 256 && B.cat[id] != 0) B.cat[id] else 4
     }
 
     fun valid(id: Int) = inventory.contains(id)
-    fun isBlock(id: Int) = id in 1..13 && id != B.WATER
+    fun isBlock(id: Int) = id in 1..255 && B.defined[id]
 
     fun name(id: Int) = when (id) {
         0 -> "Mão"
@@ -42,7 +47,7 @@ object Items {
         B.BLUE -> "Bloco azul brilhante, lembra céu e água."
         B.YELLOW -> "Bloco amarelo alegre, cor de sol."
         B.LANTERN -> "Brilha com uma luz quentinha. Ilumina a noite."
-        else -> "Bloco de construção. Toque em Colocar para usar."
+        else -> if (id in 14..255 && B.desc[id].isNotEmpty()) B.desc[id] else "Bloco de construção. Toque em Colocar para usar."
     }
 
     fun damage(id: Int) = when (id) { SWORD -> 2; AXE -> 3; STAFF -> 2; else -> 1 }

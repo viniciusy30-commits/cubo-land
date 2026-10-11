@@ -13,12 +13,23 @@ object B {
     const val AIR = 0; const val GRASS = 1; const val DIRT = 2; const val STONE = 3; const val SAND = 4
     const val WOOD = 5; const val LEAVES = 6; const val PLANK = 7; const val WATER = 8; const val BRICK = 9
     const val PINK = 10; const val BLUE = 11; const val YELLOW = 12; const val LANTERN = 13
-    val top = IntArray(14); val side = IntArray(14); val bot = IntArray(14)
-    val names = arrayOf("", "Grama", "Terra", "Pedra", "Areia", "Madeira", "Folhas", "Tábua", "Água",
-        "Tijolo", "Rosa", "Azul", "Amarelo", "Lanterna")
+    const val N = 256
+    val top = IntArray(N); val side = IntArray(N); val bot = IntArray(N)
+    val names = Array(N) { "" }
     val hotbar = intArrayOf(GRASS, STONE, PLANK, BRICK, PINK, BLUE, YELLOW, LANTERN)
+    /** tiles do atlas por face */
+    val tTop = IntArray(N); val tSide = IntArray(N); val tBot = IntArray(N)
+    /** propriedades dos blocos novos (Blk): brilho/vidro, dureza, material, categoria da mochila, descrição */
+    val flags = IntArray(N); val hard = FloatArray(N); val mat = IntArray(N); val cat = IntArray(N)
+    val desc = Array(N) { "" }
+    val defined = BooleanArray(N)
+    val byName = HashMap<String, Int>()
     private fun s(id: Int, t: Int, sd: Int, b: Int) { top[id] = t; side[id] = sd; bot[id] = b }
+    private fun t(id: Int, a: Int, b: Int, c: Int) { tTop[id] = a; tSide[id] = b; tBot[id] = c }
     init {
+        val oldNames = arrayOf("", "Grama", "Terra", "Pedra", "Areia", "Madeira", "Folhas", "Tábua", "Água",
+            "Tijolo", "Rosa", "Azul", "Amarelo", "Lanterna")
+        for (i in oldNames.indices) names[i] = oldNames[i]
         s(GRASS, 0x66C84C, 0x8C6039, 0x8C6039); s(DIRT, 0x8C6039, 0x8C6039, 0x8C6039)
         s(STONE, 0x9AA0A8, 0x9AA0A8, 0x9AA0A8); s(SAND, 0xF0DE9A, 0xF0DE9A, 0xF0DE9A)
         s(WOOD, 0xB98A55, 0x7A5230, 0xB98A55); s(LEAVES, 0x3FA23B, 0x3FA23B, 0x3FA23B)
@@ -26,15 +37,26 @@ object B {
         s(BRICK, 0xC4553F, 0xC4553F, 0xC4553F); s(PINK, 0xFF8FC8, 0xFF8FC8, 0xFF8FC8)
         s(BLUE, 0x4F9BFF, 0x4F9BFF, 0x4F9BFF); s(YELLOW, 0xFFD84A, 0xFFD84A, 0xFFD84A)
         s(LANTERN, 0xFFF2A8, 0xFFF2A8, 0xFFF2A8)
-    }
-    fun solid(id: Int) = id != AIR && id != WATER
-    val tTop = IntArray(14); val tSide = IntArray(14); val tBot = IntArray(14)
-    private fun t(id: Int, a: Int, b: Int, c: Int) { tTop[id] = a; tSide[id] = b; tBot[id] = c }
-    init {
         t(GRASS, 1, 2, 3); t(DIRT, 3, 3, 3); t(STONE, 4, 4, 4); t(SAND, 5, 5, 5); t(WOOD, 7, 6, 7); t(LEAVES, 8, 8, 8)
         t(PLANK, 9, 9, 9); t(WATER, 10, 10, 10); t(BRICK, 11, 11, 11); t(PINK, 12, 12, 12); t(BLUE, 13, 13, 13)
         t(YELLOW, 14, 14, 14); t(LANTERN, 15, 15, 15)
+        for (id in 1..13) if (id != WATER) defined[id] = true
+        flags[LANTERN] = Blk.F_LIGHT
+        for (d in Blk.defs) {
+            val id = d.id
+            names[id] = d.name; s(id, d.color, d.color, d.color); t(id, d.top, d.side, d.bot)
+            flags[id] = d.flags; hard[id] = d.hard; mat[id] = d.mat; cat[id] = d.cat; desc[id] = d.desc
+            defined[id] = true
+            byName[d.name] = id
+        }
     }
+    fun solid(id: Int) = id != AIR && id != WATER
+    /** bloco que brilha: sem sombra nem oclusão */
+    fun light(id: Int) = (flags[id and 255] and Blk.F_LIGHT) != 0
+    /** bloco translúcido (vidro, gelo, gelatina): desenhado junto com a água */
+    fun glass(id: Int) = (flags[id and 255] and Blk.F_GLASS) != 0
+    /** dá pra ver através: a face do vizinho precisa ser desenhada */
+    fun see(id: Int) = id == AIR || id == WATER || id == LEAVES || (flags[id and 255] and Blk.F_GLASS) != 0
 }
 
 class MeshBuf {
@@ -101,7 +123,7 @@ class World {
     fun get(x: Int, y: Int, z: Int): Int {
         if (y >= SY) return 0
         if (y < 0 || x < 0 || x >= SX || z < 0 || z >= SZ) return B.STONE
-        return blocks[(y * SZ + z) * SX + x].toInt()
+        return blocks[(y * SZ + z) * SX + x].toInt() and 0xFF
     }
 
     fun solid(x: Int, y: Int, z: Int) = B.solid(get(x, y, z))
@@ -167,6 +189,7 @@ class World {
             for (t in 0..2) blocks[((y + t) * SZ + z) * SX + x] = cols[i].toByte()
             blocks[((y + 3) * SZ + z) * SX + x] = B.LANTERN.toByte()
         }
+        scatterMinerals(seed)
         java.util.Arrays.fill(dirty, true)
     }
 
@@ -215,7 +238,40 @@ class World {
             for (t in 0..2) blocks[((y + t) * SZ + z) * SX + x] = cols[i].toByte()
             blocks[((y + 3) * SZ + z) * SX + x] = B.LANTERN.toByte()
         }
+        scatterMinerals(seed)
         java.util.Arrays.fill(dirty, true)
+    }
+
+    /** veios de minério e manchas de granito, diorito, andesito, cascalho e argila escondidos na pedra (só em mundos novos) */
+    private fun scatterMinerals(seed: Int) {
+        val rnd = Random(seed.toLong() * 31L + 7L)
+        val scale = (SX * SZ) / 65536f
+        fun vein(name: String, count: Int, size: Int, minY: Int, maxY: Int) {
+            val id = B.byName[name] ?: return
+            val n = Math.max(2, (count * scale).toInt())
+            for (i in 0 until n) {
+                var x = rnd.nextInt(SX); var y = minY + rnd.nextInt(maxY - minY + 1); var z = rnd.nextInt(SZ)
+                for (k in 0 until size) {
+                    if (get(x, y, z) == B.STONE) set(x, y, z, id)
+                    x += rnd.nextInt(3) - 1; y += rnd.nextInt(3) - 1; z += rnd.nextInt(3) - 1
+                }
+            }
+        }
+        vein("Minério de Carvão", 260, 10, 1, 7)
+        vein("Minério de Ferro", 200, 7, 1, 7)
+        vein("Minério de Cobre", 140, 8, 1, 7)
+        vein("Minério de Ouro", 40, 5, 1, 4)
+        vein("Minério de Redstone", 60, 6, 1, 4)
+        vein("Minério de Lápis", 30, 5, 1, 5)
+        vein("Minério de Diamante", 12, 4, 1, 3)
+        vein("Minério de Esmeralda", 8, 2, 1, 5)
+        vein("Granito", 70, 40, 1, 7)
+        vein("Diorito", 70, 40, 1, 7)
+        vein("Andesito", 70, 40, 1, 7)
+        vein("Tufo", 40, 30, 1, 5)
+        vein("Cascalho", 50, 30, 2, 7)
+        vein("Argila", 40, 25, 3, 7)
+        vein("Ardósia", 40, 40, 1, 3)
     }
 
     // ================= ÁRVORES =================
@@ -509,7 +565,7 @@ class World {
                 val sh = (0.62f + 0.38f * (0.5f + 0.5f * ny)) * vr
                 val fu = if (q == 1 || q == 2) 1f else 0f; val fv = if (q >= 2) 1f else 0f
                 o.vert(cx + r * nx, cy + r * 0.92f * ny, cz + r * nz, sh, sh, sh,
-                    (8 + ou + 0.01f + 0.48f * fu) / Atlas.NT, ov + 0.01f + 0.48f * fv)
+                    (8 + ou + 0.01f + 0.48f * fu) / Atlas.NT, (ov + 0.01f + 0.48f * fv) / Atlas.ROWS)
             }
             o.tri(0, 1, 2); o.tri(0, 2, 3); o.tri(0, 2, 1); o.tri(0, 3, 2); o.vc += 4
         }
@@ -530,6 +586,7 @@ class World {
             if (id == B.AIR) continue
             if (hidden.isNotEmpty() && hidden.contains((y * SZ + z) * SX + x)) continue
             val isW = id == B.WATER
+            val isG = !isW && B.glass(id)
             val lowered = isW && get(x, y + 1, z) == B.AIR
             val vr = 0.94f + 0.06f * hash(x, z, y)
             c[0] = x; c[1] = y; c[2] = z
@@ -564,10 +621,10 @@ class World {
                     for (d in 0 until 2) {
                         val a2 = ang + d * 1.5708f
                         val ax = kotlin.math.cos(a2) * 0.5f * ww; val az = kotlin.math.sin(a2) * 0.5f * ww
-                        o.vert(ox - ax, y + 0.98f, oz - az, bot, bot, bot, u0, 0.99f)
-                        o.vert(ox + ax, y + 0.98f, oz + az, bot, bot, bot, u1, 0.99f)
-                        o.vert(ox + ax, y + 0.98f + hh, oz + az, top, top, top, u1, 0.01f)
-                        o.vert(ox - ax, y + 0.98f + hh, oz - az, top, top, top, u0, 0.01f)
+                        o.vert(ox - ax, y + 0.98f, oz - az, bot, bot, bot, u0, 0.99f / Atlas.ROWS)
+                        o.vert(ox + ax, y + 0.98f, oz + az, bot, bot, bot, u1, 0.99f / Atlas.ROWS)
+                        o.vert(ox + ax, y + 0.98f + hh, oz + az, top, top, top, u1, 0.01f / Atlas.ROWS)
+                        o.vert(ox - ax, y + 0.98f + hh, oz - az, top, top, top, u0, 0.01f / Atlas.ROWS)
                         o.tri(0, 1, 2); o.tri(0, 2, 3); o.tri(0, 2, 1); o.tri(0, 3, 2); o.vc += 4
                     }
                 }
@@ -577,19 +634,19 @@ class World {
                 val nx = x + if (a == 0) s else 0; val ny = y + if (a == 1) s else 0; val nz = z + if (a == 2) s else 0
                 var nid = get(nx, ny, nz)
                 if (nid != B.AIR && hidden.isNotEmpty() && hidden.contains((ny * SZ + nz) * SX + nx)) nid = B.AIR   // bloco esculpido: o vizinho desenha a face voltada pra ele
-                if (isW) { if (nid != B.AIR) continue }
-                else if (id == B.LEAVES) { if (nid != B.AIR && nid != B.WATER && nid != B.LEAVES) continue }
-                else if (nid != B.AIR && nid != B.WATER && nid != B.LEAVES) continue   // folha tem buracos: o que está atrás dela precisa ser desenhado
+                if (isW) { if (nid != B.AIR && !B.glass(nid)) continue }
+                else if (isG) { if (nid == id || !B.see(nid)) continue }
+                else if (!B.see(nid)) continue   // folha e vidro deixam ver o que está atrás: a face do vizinho precisa ser desenhada
                 val u = (a + 1) % 3; val v = (a + 2) % 3
-                val shade = when { id == B.LANTERN -> 1f; id == B.LEAVES -> (if (a == 1) (if (s > 0) 1f else 0.8f) else if (a == 0) 0.92f else 0.86f); a == 1 -> if (s > 0) 1f else 0.55f; a == 0 -> 0.82f; else -> 0.7f }
-                val buf = if (isW) w else o
+                val shade = when { B.light(id) -> 1f; id == B.LEAVES -> (if (a == 1) (if (s > 0) 1f else 0.8f) else if (a == 0) 0.92f else 0.86f); a == 1 -> if (s > 0) 1f else 0.55f; a == 0 -> 0.82f; else -> 0.7f }
+                val buf = if (isW || isG) w else o
                 for (q in 0 until 4) {
                     val cu = QU[q]; val cv = QV[q]
                     p[0] = c[0].toFloat(); p[1] = c[1].toFloat(); p[2] = c[2].toFloat()
                     p[a] += if (s > 0) 1f else 0f; p[u] += cu.toFloat(); p[v] += cv.toFloat()
                     if (lowered && p[1] > y) p[1] = y + 0.88f
                     var aob = 1f
-                    if (!isW && id != B.LANTERN && id != B.LEAVES) {
+                    if (!isW && !isG && !B.light(id) && id != B.LEAVES) {
                         val du = if (cu == 1) 1 else -1; val dv = if (cv == 1) 1 else -1
                         val bx = IntArray(3); bx[0] = c[0]; bx[1] = c[1]; bx[2] = c[2]; bx[a] += s
                         val s1 = bx.clone(); s1[u] += du
@@ -610,7 +667,7 @@ class World {
                         val kx = p[0].toInt(); val kz = p[2].toInt()
                         cg = ((colDepth(kx - 1, kz - 1) + colDepth(kx, kz - 1) + colDepth(kx - 1, kz) + colDepth(kx, kz)) / 20f).coerceIn(0f, 1f)
                     }
-                    buf.vert(p[0], p[1], p[2], gr, cg, gr, (tile + 0.01f + tu * 0.98f) / Atlas.NT.toFloat(), 0.01f + tv * 0.98f)
+                    buf.vert(p[0], p[1], p[2], gr, cg, gr, Atlas.u(tile, tu), Atlas.v(tile, tv))
                 }
                 val flip = ao[0] + ao[2] < ao[1] + ao[3]
                 if (s > 0) {
@@ -629,8 +686,8 @@ class World {
 
     private fun quad(o: MeshBuf, tile: Int, ax: Float, ay: Float, az: Float, bx: Float, by: Float, bz: Float, cx: Float, cy: Float, cz: Float, dx: Float, dy: Float, dz: Float, s0: Float, s1: Float) {
         val u0 = (tile + 0.01f) / Atlas.NT; val u1 = (tile + 0.99f) / Atlas.NT
-        o.vert(ax, ay, az, s0, s0, s0, u0, 0.99f); o.vert(bx, by, bz, s0, s0, s0, u1, 0.99f)
-        o.vert(cx, cy, cz, s1, s1, s1, u1, 0.01f); o.vert(dx, dy, dz, s1, s1, s1, u0, 0.01f)
+        o.vert(ax, ay, az, s0, s0, s0, u0, 0.99f / Atlas.ROWS); o.vert(bx, by, bz, s0, s0, s0, u1, 0.99f / Atlas.ROWS)
+        o.vert(cx, cy, cz, s1, s1, s1, u1, 0.01f / Atlas.ROWS); o.vert(dx, dy, dz, s1, s1, s1, u0, 0.01f / Atlas.ROWS)
         o.tri(0, 1, 2); o.tri(0, 2, 3); o.tri(0, 2, 1); o.tri(0, 3, 2); o.vc += 4
     }
 
@@ -666,10 +723,10 @@ class World {
         for (i in 0 until 4) {
             val j = (i + 1) and 3
             val k = sh * (0.72f + 0.1f * i)
-            o.vert(x0 + ux * su[i] * w0 + vx * sv[i] * w0, y0 + vy * sv[i] * w0, z0 + uz * su[i] * w0 + vz * sv[i] * w0, k, k, k, tu0, 0.1f)
-            o.vert(x0 + ux * su[j] * w0 + vx * sv[j] * w0, y0 + vy * sv[j] * w0, z0 + uz * su[j] * w0 + vz * sv[j] * w0, k, k, k, tu1, 0.1f)
-            o.vert(x1 + ux * su[j] * w1 + vx * sv[j] * w1, y1 + vy * sv[j] * w1, z1 + uz * su[j] * w1 + vz * sv[j] * w1, k, k, k, tu1, vEnd)
-            o.vert(x1 + ux * su[i] * w1 + vx * sv[i] * w1, y1 + vy * sv[i] * w1, z1 + uz * su[i] * w1 + vz * sv[i] * w1, k, k, k, tu0, vEnd)
+            o.vert(x0 + ux * su[i] * w0 + vx * sv[i] * w0, y0 + vy * sv[i] * w0, z0 + uz * su[i] * w0 + vz * sv[i] * w0, k, k, k, tu0, 0.1f / Atlas.ROWS)
+            o.vert(x0 + ux * su[j] * w0 + vx * sv[j] * w0, y0 + vy * sv[j] * w0, z0 + uz * su[j] * w0 + vz * sv[j] * w0, k, k, k, tu1, 0.1f / Atlas.ROWS)
+            o.vert(x1 + ux * su[j] * w1 + vx * sv[j] * w1, y1 + vy * sv[j] * w1, z1 + uz * su[j] * w1 + vz * sv[j] * w1, k, k, k, tu1, vEnd / Atlas.ROWS)
+            o.vert(x1 + ux * su[i] * w1 + vx * sv[i] * w1, y1 + vy * sv[i] * w1, z1 + uz * su[i] * w1 + vz * sv[i] * w1, k, k, k, tu0, vEnd / Atlas.ROWS)
             o.tri(0, 1, 2); o.tri(0, 2, 3); o.tri(0, 2, 1); o.tri(0, 3, 2); o.vc += 4
         }
     }
@@ -796,7 +853,7 @@ class World {
                 pos[v] += if (cv == 1) hi else lo
                 var tu = cu.toFloat(); var tv = cv.toFloat()
                 if (a == 0) { tu = cv.toFloat(); tv = 1f - cu } else if (a == 2) { tv = 1f - cv }
-                o.vert(pos[0], pos[1], pos[2], sh, sh, sh, (8 + 0.01f + tu * 0.98f) / Atlas.NT.toFloat(), 0.01f + tv * 0.98f)
+                o.vert(pos[0], pos[1], pos[2], sh, sh, sh, (8 + 0.01f + tu * 0.98f) / Atlas.NT.toFloat(), (0.01f + tv * 0.98f) / Atlas.ROWS)
             }
             if (s > 0) { o.tri(0, 1, 2); o.tri(0, 2, 3) } else { o.tri(0, 2, 1); o.tri(0, 3, 2) }
             o.vc += 4
@@ -816,7 +873,7 @@ class World {
                 pos[a] += s * half[a]
                 pos[u] += (if (cu == 1) 1f else -1f) * half[u]
                 pos[v] += (if (cv == 1) 1f else -1f) * half[v]
-                o.vert(pos[0], pos[1], pos[2], k, k, k, (22f + 0.01f + ur + cu * 0.23f) / Atlas.NT.toFloat(), 0.01f + vw + cv * 0.23f)
+                o.vert(pos[0], pos[1], pos[2], k, k, k, (22f + 0.01f + ur + cu * 0.23f) / Atlas.NT.toFloat(), (0.01f + vw + cv * 0.23f) / Atlas.ROWS)
             }
             if (s > 0) { o.tri(0, 1, 2); o.tri(0, 2, 3) } else { o.tri(0, 2, 1); o.tri(0, 3, 2) }
             o.vc += 4
@@ -865,7 +922,7 @@ class World {
             val k2 = sh * (0.88f + 0.22f * r1)
             for (q in 0 until 4) {
                 o.vert(c[0] + sg1[q] * e1[0] + sg2[q] * e2[0], c[1] + sg1[q] * e1[1] + sg2[q] * e2[1], c[2] + sg1[q] * e1[2] + sg2[q] * e2[2],
-                    k2, k2, k2, (tl + uu[q]) / Atlas.NT.toFloat(), vv[q])
+                    k2, k2, k2, (tl + uu[q]) / Atlas.NT.toFloat(), vv[q] / Atlas.ROWS)
             }
             o.tri(0, 1, 2); o.tri(0, 2, 3); o.tri(0, 2, 1); o.tri(0, 3, 2); o.vc += 4
         }

@@ -319,7 +319,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         dst[0] = a; dst[1] = b; dst[2] = cc; dst[3] = dd; dst[4] = ee; dst[5] = ff
         mx.setPolyToPoly(src, 0, dst, 0, 3)
         bp.colorFilter = f
-        c.drawBitmap(Atlas.tiles[tile], mx, bp)
+        c.drawBitmap(Atlas.tile(tile), mx, bp)
     }
 
     private val bPath = Path()
