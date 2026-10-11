@@ -144,6 +144,14 @@ class World {
 
     fun solid(x: Int, y: Int, z: Int) = B.solid(get(x, y, z))
 
+    /** mundo de testes: blocos da apresentação (chão, árvores, vitrines) ficam travados; só dá pra quebrar o que o jogador colocar */
+    var locked: java.util.BitSet? = null
+    fun isLocked(x: Int, y: Int, z: Int): Boolean {
+        val l = locked ?: return false
+        if (x < 0 || x >= SX || z < 0 || z >= SZ || y < 0 || y >= SY) return false
+        return l.get((y * SZ + z) * SX + x)
+    }
+
     fun set(x: Int, y: Int, z: Int, id: Int) {
         if (x < 0 || x >= SX || z < 0 || z >= SZ || y < 0 || y >= SY) return
         blocks[(y * SZ + z) * SX + x] = id
@@ -213,16 +221,18 @@ class World {
     /** Mapa plano: planície de grama (y=10), camadas de terra/pedra embaixo, um rio enorme serpenteando e árvores bem espaçadas. */
     /** galeria de blocos: chão liso e fileiras por categoria, com todos os blocos do jogo e uma plaquinha com o nome de cada um */
     fun generateTest() {
+        locked = null
         java.util.Arrays.fill(blocks, 0); labels.clear()
         val floor = B.byName["Concreto Cinza-claro"] ?: B.STONE
         val top = 10
         for (z in 0 until SZ) for (x in 0 until SX) for (y in 0..top) blocks[(y * SZ + z) * SX + x] = floor
         val cats = ArrayList<Pair<String, List<Int>>>()
+        // os blocos básicos (ids 1..13) não têm categoria própria: entram no começo de cada categoria, a mesma da mochila (Items.cat)
         val basic = ArrayList<Int>(); for (id in 1..13) if (id != B.WATER && B.defined[id]) basic.add(id)
-        cats.add("BÁSICOS" to basic)
-        cats.add("NATUREZA" to Blk.defs.filter { it.cat == Blk.C_NAT && it.id !in Blk.hidden }.map { it.id })
-        cats.add("CONSTRUÇÃO" to Blk.defs.filter { it.cat == Blk.C_BUILD }.map { it.id })
-        cats.add("DECORAÇÃO" to Blk.defs.filter { it.cat == Blk.C_DEC }.map { it.id })
+        fun basicsOf(c: Int) = basic.filter { Items.cat(it) == c }
+        cats.add("NATUREZA" to (basicsOf(2) + Blk.defs.filter { it.cat == Blk.C_NAT && it.id !in Blk.hidden }.map { it.id }))
+        cats.add("CONSTRUÇÃO" to (basicsOf(3) + Blk.defs.filter { it.cat == Blk.C_BUILD }.map { it.id }))
+        cats.add("DECORAÇÃO" to (basicsOf(4) + Blk.defs.filter { it.cat == Blk.C_DEC }.map { it.id }))
         val other = Blk.defs.filter { it.cat != Blk.C_NAT && it.cat != Blk.C_BUILD && it.cat != Blk.C_DEC }.map { it.id }
         if (other.isNotEmpty()) cats.add("OUTROS" to other)
         val perRow = 16; val x0 = 8; var zc = 8
@@ -274,6 +284,9 @@ class World {
             }
         }
         woodId = B.WOOD; leafId = B.LEAVES
+        val lk = java.util.BitSet(blocks.size)
+        for (i in blocks.indices) if (blocks[i] != B.AIR) lk.set(i)
+        locked = lk
     }
 
     fun generateFlat(seed: Int) {
@@ -705,10 +718,13 @@ class World {
         return AOB[lvl]
     }
 
-    /** face com relevo de verdade: grade 8x8 de peças, cada uma sai ou entra até 2 degraus (Relief.map), com paredinhas entre alturas diferentes */
+    /** face com relevo de verdade: grade de peças (8x8 no automático, 16x16 nos mapas escritos à mão), cada uma sai ou entra até 2 degraus (Relief.map),
+     *  com paredinhas entre alturas diferentes. Peças vizinhas do mesmo nível viram um retângulo só, e as frestas que chegam na borda do bloco ganham parede
+     *  (senão dava pra ver o miolo do vizinho por ela). */
     private fun reliefFace(o: MeshBuf, c: IntArray, a: Int, s: Int, tile: Int, shade: Float, ao: FloatArray) {
-        val G = Relief.G
-        val map = Relief.map(tile)
+        val rm = Relief.map(tile)
+        val G = rm.g
+        val map = rm.lv
         val u = (a + 1) % 3; val v = (a + 2) % 3
         val lv = IntArray(G * G)
         for (iv in 0 until G) for (iu in 0 until G) {
@@ -735,39 +751,70 @@ class World {
         }
         val inv = 1f / G
         val step = Relief.STEP
-        fun hOf(iu: Int, iv: Int): Float = if (iu < 0 || iv < 0 || iu >= G || iv >= G) 0f else lv[iv * G + iu] * step
-        for (iv in 0 until G) {
-            var iu = 0
-            while (iu < G) {
-                val l = lv[iv * G + iu]
-                var e = iu
-                while (e + 1 < G && lv[iv * G + e + 1] == l) e++
-                val h = l * step
-                val sh = shade * (1f + 0.07f * l)
-                val fu0 = iu * inv; val fu1 = (e + 1) * inv; val fv0 = iv * inv; val fv1 = (iv + 1) * inv
-                quadV(fu0, fv0, h, fu1, fv0, h, fu1, fv1, h, fu0, fv1, h, sh, false)
-                iu = e + 1
+        fun lvOf(iu: Int, iv: Int): Int = if (iu < 0 || iv < 0 || iu >= G || iv >= G) 0 else lv[iv * G + iu]
+        // topos: retângulos de peças com o mesmo nível
+        val used = BooleanArray(G * G)
+        for (iv in 0 until G) for (iu in 0 until G) {
+            if (used[iv * G + iu]) continue
+            val l = lv[iv * G + iu]
+            var w = 1
+            while (iu + w < G && !used[iv * G + iu + w] && lv[iv * G + iu + w] == l) w++
+            var hh = 1
+            while (iv + hh < G) {
+                var ok = true
+                for (k in 0 until w) if (used[(iv + hh) * G + iu + k] || lv[(iv + hh) * G + iu + k] != l) { ok = false; break }
+                if (!ok) break
+                hh++
+            }
+            for (yy in iv until iv + hh) for (xx in iu until iu + w) used[yy * G + xx] = true
+            val h = l * step
+            val sh = shade * Relief.tone(l)
+            val fu0 = iu * inv; val fu1 = (iu + w) * inv; val fv0 = iv * inv; val fv1 = (iv + hh) * inv
+            quadV(fu0, fv0, h, fu1, fv0, h, fu1, fv1, h, fu0, fv1, h, sh, false)
+        }
+        // paredinhas: da peça mais alta pra mais baixa, mescladas ao longo da aresta. Na borda do bloco o "vizinho" é o nível 0 (frestas também fecham ali).
+        fun wallTone(bot: Int): Float = if (bot < 0) 0.64f else 0.82f
+        for (side in 0..1) {      // planos de u constante (esquerda/direita)
+            val du = if (side == 0) -1 else 1
+            for (iu in 0 until G) {
+                val outside = iu + du < 0 || iu + du >= G
+                var iv = 0
+                while (iv < G) {
+                    val l = lvOf(iu, iv); val n = lvOf(iu + du, iv)
+                    if (!(n < l || (outside && n > l))) { iv++; continue }
+                    var e = iv
+                    while (e + 1 < G && lvOf(iu, e + 1) == l && lvOf(iu + du, e + 1) == n) e++
+                    val fu = (if (side == 0) iu else iu + 1) * inv
+                    val top = maxOf(l, n) * step; val bot = minOf(l, n) * step
+                    val wsh = shade * wallTone(minOf(l, n)) * (if (side == 1) 0.92f else 1f)
+                    quadV(fu, iv * inv, top, fu, (e + 1) * inv, top, fu, (e + 1) * inv, bot, fu, iv * inv, bot, wsh, true)
+                    iv = e + 1
+                }
             }
         }
-        // paredinhas: sempre da peça mais alta pra mais baixa
-        for (iv in 0 until G) for (iu in 0 until G) {
-            val h = hOf(iu, iv)
-            val fu0 = iu * inv; val fu1 = (iu + 1) * inv; val fv0 = iv * inv; val fv1 = (iv + 1) * inv
-            val wsh = shade * (if (h < 0f) 0.62f else 0.8f)
-            var n = hOf(iu - 1, iv)
-            if (n < h) quadV(fu0, fv0, h, fu0, fv1, h, fu0, fv1, n, fu0, fv0, n, wsh, true)
-            n = hOf(iu + 1, iv)
-            if (n < h) quadV(fu1, fv0, h, fu1, fv1, h, fu1, fv1, n, fu1, fv0, n, wsh * 0.92f, true)
-            n = hOf(iu, iv - 1)
-            if (n < h) quadV(fu0, fv0, h, fu1, fv0, h, fu1, fv0, n, fu0, fv0, n, wsh * 0.96f, true)
-            n = hOf(iu, iv + 1)
-            if (n < h) quadV(fu0, fv1, h, fu1, fv1, h, fu1, fv1, n, fu0, fv1, n, wsh * 0.88f, true)
+        for (side in 0..1) {      // planos de v constante (frente/trás)
+            val dv = if (side == 0) -1 else 1
+            for (iv in 0 until G) {
+                val outside = iv + dv < 0 || iv + dv >= G
+                var iu = 0
+                while (iu < G) {
+                    val l = lvOf(iu, iv); val n = lvOf(iu, iv + dv)
+                    if (!(n < l || (outside && n > l))) { iu++; continue }
+                    var e = iu
+                    while (e + 1 < G && lvOf(e + 1, iv) == l && lvOf(e + 1, iv + dv) == n) e++
+                    val fv = (if (side == 0) iv else iv + 1) * inv
+                    val top = maxOf(l, n) * step; val bot = minOf(l, n) * step
+                    val wsh = shade * wallTone(minOf(l, n)) * (if (side == 1) 0.88f else 0.96f)
+                    quadV(iu * inv, fv, top, (e + 1) * inv, fv, top, (e + 1) * inv, fv, bot, iu * inv, fv, bot, wsh, true)
+                    iu = e + 1
+                }
+            }
         }
     }
 
     fun buildChunk(cx: Int, cz: Int, o: MeshBuf, w: MeshBuf) {
         o.clear(); w.clear()
-        val c = IntArray(3); val p = FloatArray(3); val col = FloatArray(3); val ao = FloatArray(4)
+        val c = IntArray(3); val p = FloatArray(3); val col = FloatArray(3); val ao = FloatArray(4); val lop = BooleanArray(6)
         for (y in 0 until SY) for (z in cz * CH until cz * CH + CH) for (x in cx * CH until cx * CH + CH) {
             val id = get(x, y, z)
             if (id == B.AIR) continue
@@ -793,6 +840,16 @@ class World {
                 }
                 leafFaces(o, x, y, z, 0f, 1f, true, vr, 1f, lt)        // casca externa (só faces expostas)
                 leafFaces(o, x, y, z, 0.16f, 0.84f, false, vr, 0.72f, lt)   // cubo interno: dá profundidade pelos buracos
+                if (o.vc < 46000) {   // folhas 3D da espécie (cartões dobrados na nervura) saindo das faces expostas
+                    var any = false
+                    for (f in 0 until 6) {
+                        val aa = f shr 1; val ss = if ((f and 1) == 0) 1 else -1
+                        val nid = get(x + if (aa == 0) ss else 0, y + if (aa == 1) ss else 0, z + if (aa == 2) ss else 0)
+                        lop[f] = nid == B.AIR || nid == B.WATER
+                        if (lop[f]) any = true
+                    }
+                    if (any) Leaf3D.emit(o, x, y, z, lt, lop, vr)
+                }
                 continue
             }
             if (id == B.GRASS && get(x, y + 1, z) == B.AIR) {

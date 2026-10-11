@@ -6,13 +6,32 @@ import kotlin.math.sqrt
  *  Mais claro que o resto da textura = sai pra fora (pepitas, pedras, nervuras); mais escuro = entra (frestas, rejunte, buracos).
  *  A borda de 1 peça fica sempre no nível 0 pra os blocos encostarem sem frestas. */
 object Relief {
+    /** grade do relevo automático (por brilho): peças de 2x2 pixels */
     const val G = 8
     const val STEP = 0.045f
-    private val cache = arrayOfNulls<ByteArray>(Atlas.NT * Atlas.ROWS)
+    /** g = peças por lado (8 no automático, 16 nos mapas escritos à mão da NatRelief); lv = nível -2..+2 de cada peça */
+    class Map(val g: Int, val lv: ByteArray)
+    private val cache = arrayOfNulls<Map>(Atlas.NT * Atlas.ROWS)
 
-    fun map(tile: Int): ByteArray {
+    /** mapa escrito à mão desse tile (tipo K_PAL da NatArt ou padrão Pix de K_PIX), ou null se o bloco usa o automático */
+    private fun hand(tile: Int): Map? {
+        val sp = Blk.specs.getOrNull(tile) ?: return null
+        val rows: Array<String>? = when (sp[0]) {
+            Blk.K_PAL -> NatRelief.art.getOrNull(sp[1])
+            Blk.K_PIX -> NatRelief.pix.getOrNull(sp[6] and 255)
+            else -> null
+        }
+        if (rows == null || rows.size != 16) return null
+        val out = ByteArray(256)
+        for (y in 0 until 16) for (x in 0 until 16) out[y * 16 + x] = (rows[y][x] - '0' - 2).coerceIn(-2, 2).toByte()
+        return Map(16, out)
+    }
+
+    fun map(tile: Int): Map {
         val k = if (tile in cache.indices) tile else 0
         cache[k]?.let { return it }
+        val h = hand(k)
+        if (h != null) { cache[k] = h; return h }
         val out = ByteArray(G * G)
         Atlas.bmp
         val raw = Atlas.raw
@@ -46,7 +65,11 @@ object Relief {
                 }
             }
         }
-        cache[k] = out
-        return out
+        val r = Map(G, out)
+        cache[k] = r
+        return r
     }
+
+    /** tom de cada nível: o fundo das frestas escurece (parece fundo mesmo), o alto pega mais luz */
+    fun tone(l: Int): Float = when (l) { 2 -> 1.12f; 1 -> 1.06f; 0 -> 1f; -1 -> 0.84f; else -> 0.72f }
 }

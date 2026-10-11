@@ -21,6 +21,7 @@ object Blk {
     const val K_SHELF = 20; const val K_BAND = 21; const val K_GRAD = 22; const val K_CANDY = 23; const val K_SWIRL = 24
     const val K_BORDER = 25; const val K_RING = 26; const val K_CELLS = 27; const val K_JELLY = 28; const val K_ICE = 29
     const val K_BLOCKY = 30; const val K_GLAZE = 31; const val K_CACTUS = 32; const val K_LEAFY = 33; const val K_PIX = 34; const val K_LEAF = 35
+    const val K_SPRITE = 38   // folha desenhada por espécie (Leaf3D): c1 = estilo, c2 = índice da NatArt (paleta; -1 = carvalho)
     const val K_PAL = 36; const val K_PLEAF = 37   // pixel art com paleta própria (NatArt); K_PLEAF = folhagem com buracos transparentes
 
     class Def(val id: Int, val name: String, val cat: Int, val top: Int, val side: Int, val bot: Int,
@@ -41,7 +42,7 @@ object Blk {
     val leafRuns: List<IntArray> by lazy {
         defs; val out = ArrayList<IntArray>(); var s = -1
         for (i in 24..GLOW0) {
-            val on = i < GLOW0 && (specs[i]?.get(0) == K_LEAF || specs[i]?.get(0) == K_PLEAF)
+            val on = i < GLOW0 && (specs[i]?.get(0) == K_LEAF || specs[i]?.get(0) == K_PLEAF || specs[i]?.get(0) == K_SPRITE)
             if (on && s < 0) s = i
             if (!on && s >= 0) { out.add(intArrayOf(s, i - 1)); s = -1 }
         }
@@ -59,6 +60,16 @@ object Blk {
 
     /** tile pixel art da NatArt (paleta própria, alpha por cor) */
     private fun pt(art: Int, leaf: Boolean = false, glow: Boolean = false): Int = tl(if (leaf) K_PLEAF else K_PAL, art, glow = glow)
+    /** tile da folhagem -> tile do sprite 3D dessa espécie (0 = sem folha 3D) */
+    val spriteOf = IntArray(512)
+    fun spriteFor(tile: Int): Int { defs; return if (tile in 0..511) spriteOf[tile] else 0 }
+    /** bloco de folhagem com folha 3D própria: tile da casca (NatArt) + tile do sprite logo depois (ficam no mesmo trecho de leafRuns) */
+    private fun leaf3(name: String, art: Int, kind: Int, color: Int, desc: String = ""): Int {
+        val t = pt(art, true)
+        val sp = tl(K_SPRITE, kind, art)
+        if (t >= 24 && sp >= 24) spriteOf[t] = sp
+        return uni(name, C_NAT, t, color, M_SOFT, 2f, F_LEAF, desc)
+    }
     private fun legacy(id: Int, canon: String) { hidden.add(id); aliasName[id] = canon }
 
     private fun blk(name: String, cat: Int, top: Int, side: Int, bot: Int, color: Int, mat: Int = 0, hard: Float = 4f, fl: Int = 0, desc: String = ""): Int {
@@ -247,7 +258,7 @@ object Blk {
         uni("Neve", C_NAT, pt(NatArt.NEVE), 0xFFFFFF, M_SOFT, 2f)
         uni("Gelo", C_NAT, pt(NatArt.GELO), 0xBFE3FF, M_GLASS, 3f, F_GLASS, "Gelo claro e escorregadio de olhar.")
         uni("Gelo Compactado", C_NAT, pt(NatArt.GELO_COMPACTO), 0x9CCFF5, M_GLASS, 4f)
-        uni("Musgo", C_NAT, pt(NatArt.F_MUSGO, true), 0x5C9034, M_SOFT, 2f, F_LEAF)
+        leaf3("Musgo", NatArt.F_MUSGO, Leaf3D.MUSGO, 0x5C9034)
         blk("Cacto", C_NAT, pt(NatArt.CACTO_TOP), pt(NatArt.CACTO_SIDE), pt(NatArt.CACTO_TOP), 0x4F8F3A, M_SOFT, 3f)
         blk("Bloco de Feno", C_NAT, pt(NatArt.FENO_TOP), pt(NatArt.FENO_SIDE), pt(NatArt.FENO_TOP), 0xE6C65A, M_SOFT, 3f)
         blk("Melancia", C_NAT, pt(NatArt.MELANCIA_TOP), pt(NatArt.MELANCIA_SIDE), pt(NatArt.MELANCIA_TOP), 0x5FA84A, M_SOFT, 3f)
@@ -279,17 +290,18 @@ object Blk {
         metal("Cobre Oxidado", 0x4FB59A)
 
         // ================= FOLHAGEM DE TODAS AS ÁRVORES =================
-        uni("Folhas de Abeto", C_NAT, pt(NatArt.F_ABETO, true), 0x3C7A3A, M_SOFT, 2f, F_LEAF, "Folhas de abeto: verde bem escuro, de pinheiro.")
-        uni("Folhas de Bétula", C_NAT, pt(NatArt.F_BETULA, true), 0x8FBF4A, M_SOFT, 2f, F_LEAF, "Folhas de bétula: verde clarinho e fresco.")
-        uni("Folhas de Selva", C_NAT, pt(NatArt.F_SELVA, true), 0x45B02A, M_SOFT, 2f, F_LEAF, "Folhas de selva: verde vivo e cheio.")
-        uni("Folhas de Acácia", C_NAT, pt(NatArt.F_ACACIA, true), 0xA2BC3C, M_SOFT, 2f, F_LEAF, "Folhas de acácia: verde de savana.")
-        uni("Folhas de Carvalho Escuro", C_NAT, pt(NatArt.F_CARVALHO_ESCURO, true), 0x2F7A24, M_SOFT, 2f, F_LEAF, "Folhas de carvalho escuro: verde profundo.")
-        uni("Folhas de Mangue", C_NAT, pt(NatArt.F_MANGUE, true), 0x62AA48, M_SOFT, 2f, F_LEAF, "Folhas de mangue: verde de pântano.")
-        uni("Folhas de Cerejeira", C_NAT, pt(NatArt.F_CEREJEIRA, true), 0xF0A0C0, M_SOFT, 2f, F_LEAF, "Folhas de cerejeira: cor-de-rosa florido.")
-        uni("Folhas de Outono", C_NAT, pt(NatArt.F_OUTONO, true), 0xE07A26, M_SOFT, 2f, F_LEAF, "Folhas de outono: laranja de fim de estação.")
-        uni("Folhas Amarelas", C_NAT, pt(NatArt.F_AMARELAS, true), 0xE0BE3A, M_SOFT, 2f, F_LEAF, "Folhas amarelas douradas.")
-        uni("Folhas de Bambu", C_NAT, pt(NatArt.F_BAMBU, true), 0x72AE34, M_SOFT, 2f, F_LEAF, "Folhas de bambu: finas e verdinhas.")
-        uni("Verruga Carmesim", C_NAT, pt(NatArt.F_CARMESIM, true), 0xC04068, M_SOFT, 2f, F_LEAF, "Verruga carmesim: copa vermelha do mundo sombrio.")
-        uni("Verruga Distorcido", C_NAT, pt(NatArt.F_DISTORCIDO, true), 0x2EA8A0, M_SOFT, 2f, F_LEAF, "Verruga distorcida: copa azul-turquesa do mundo sombrio.")
+        run { val sp = tl(K_SPRITE, Leaf3D.OAK, -1); if (sp >= 24) spriteOf[8] = sp }   // carvalho (Folhas): tile 8 do atlas original
+        leaf3("Folhas de Abeto", NatArt.F_ABETO, Leaf3D.ABETO, 0x3C7A3A, "Folhas de abeto: verde bem escuro, de pinheiro.")
+        leaf3("Folhas de Bétula", NatArt.F_BETULA, Leaf3D.BETULA, 0x8FBF4A, "Folhas de bétula: verde clarinho e fresco.")
+        leaf3("Folhas de Selva", NatArt.F_SELVA, Leaf3D.SELVA, 0x45B02A, "Folhas de selva: verde vivo e cheio.")
+        leaf3("Folhas de Acácia", NatArt.F_ACACIA, Leaf3D.ACACIA, 0xA2BC3C, "Folhas de acácia: verde de savana.")
+        leaf3("Folhas de Carvalho Escuro", NatArt.F_CARVALHO_ESCURO, Leaf3D.CARV_ESC, 0x2F7A24, "Folhas de carvalho escuro: verde profundo.")
+        leaf3("Folhas de Mangue", NatArt.F_MANGUE, Leaf3D.MANGUE, 0x62AA48, "Folhas de mangue: verde de pântano.")
+        leaf3("Folhas de Cerejeira", NatArt.F_CEREJEIRA, Leaf3D.CEREJA, 0xF0A0C0, "Folhas de cerejeira: cor-de-rosa florido.")
+        leaf3("Folhas de Outono", NatArt.F_OUTONO, Leaf3D.OUTONO, 0xE07A26, "Folhas de outono: laranja de fim de estação.")
+        leaf3("Folhas Amarelas", NatArt.F_AMARELAS, Leaf3D.GINKGO, 0xE0BE3A, "Folhas amarelas douradas.")
+        leaf3("Folhas de Bambu", NatArt.F_BAMBU, Leaf3D.BAMBU, 0x72AE34, "Folhas de bambu: finas e verdinhas.")
+        leaf3("Verruga Carmesim", NatArt.F_CARMESIM, Leaf3D.CARMESIM, 0xC04068, "Verruga carmesim: copa vermelha do mundo sombrio.")
+        leaf3("Verruga Distorcido", NatArt.F_DISTORCIDO, Leaf3D.DISTORCIDO, 0x2EA8A0, "Verruga distorcida: copa azul-turquesa do mundo sombrio.")
     }
 }

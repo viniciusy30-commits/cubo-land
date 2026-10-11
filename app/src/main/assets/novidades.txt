@@ -1,3 +1,15 @@
+#id 2026-10-11-zzzzzzzzz
+#titulo Folhas 3D de cada árvore!
+- Cada folhagem da Natureza agora tem a sua própria folha em 3D, dobrada na nervura e com a ponta caindo: carvalho oval, abeto com agulhas, bétula miudinha, selva enorme, acácia achatada, mangue pontudo, cerejeira florida, outono em bordo, amarelas em leque, bambu em lâminas, verrugas e musgo em tufos
+- No mundo de testes os blocos de apresentação (chão, árvores) não quebram mais: só dá pra quebrar o que você mesmo colocar
+- As copas ficam mais cheias e com a silhueta cada uma de um jeito
+
+#id 2026-10-11-zzzzzzzz
+#titulo Relevo com lógica (Natureza)!
+- O relevo da Natureza foi refeito à mão: pepitas dos minérios saem da pedra com a cavidade em volta, favo/esponja/melancia/abóbora/cacto/feno/palha têm gomos, costelas e camadas no lugar certo, camadas de neve/micélio/podzol ficam por cima da terra
+- Troncos: sulcos fundos na casca e anel de casca no topo; tábuas: o fundo fica só nos vãos entre as tábuas
+- A Galeria não tem mais "Básicos": cada bloco foi pra sua categoria
+
 #id 2026-10-11-zzzzzzz
 #titulo Profundidade de verdade!
 - Chega do relevo borrado: as texturas voltaram nítidas (pixel bem definido, sem embaçar de perto)

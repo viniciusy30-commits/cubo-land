@@ -420,6 +420,7 @@ class Game(val world: World) {
         raycast(camX, camY, camZ, dirX(), dirY(), dirZ(), camDist, camDist + 5.5f)
         if (!hasHit || hy <= 0) return
         val id = world.get(hx, hy, hz)
+        if (world.isLocked(hx, hy, hz)) { hitPulse = 0.3f; return }   // bloco de apresentação do mundo de testes: não quebra
         // ponto exato do impacto: refina a entrada do raio no bloco
         val dx = dirX(); val dy = dirY(); val dz = dirZ()
         var lo = max(camDist, rT - 0.05f); var hi = rT
@@ -732,7 +733,7 @@ class Game(val world: World) {
             val offs = if (hitStab) arrayOf(intArrayOf(0, 0, 0)) else arrayOf(intArrayOf(0, 0, 0), intArrayOf(1, 0, 0), intArrayOf(-1, 0, 0), intArrayOf(0, 1, 0), intArrayOf(0, -1, 0), intArrayOf(0, 0, 1), intArrayOf(0, 0, -1))
             for (o in offs) {
                 val x = bx + o[0]; val y = by + o[1]; val z = bz + o[2]
-                val nb = world.get(x, y, z); if (!B.leafy(nb)) continue
+                val nb = world.get(x, y, z); if (!B.leafy(nb) || world.isLocked(x, y, z)) continue
                 world.set(x, y, z, B.AIR); leafCutFx(x, y, z, if (o[0] == 0 && o[1] == 0 && o[2] == 0) 0 else 1, nb)
             }
         }
@@ -750,7 +751,7 @@ class Game(val world: World) {
     /** corta o tronco: tudo de madeira/folha conectado acima do corte vira uma árvore que tomba */
     private fun fellTree(x: Int, y: Int, z: Int, cutY: Float = Float.NaN): Boolean {
         val s0 = world.get(x, y + 1, z)
-        if (!B.log(s0) && !B.leafy(s0)) return false
+        if ((!B.log(s0) && !B.leafy(s0)) || world.isLocked(x, y + 1, z)) return false
         val seen = HashSet<Int>(); val q = ArrayDeque<Int>(); val out = ArrayList<Int>()
         fun enc(a: Int, b: Int, c: Int) = ((b * World.SZ + c) * World.SX + a)
         seen.add(enc(x, y + 1, z)); q.add(enc(x, y + 1, z))
@@ -762,7 +763,7 @@ class Game(val world: World) {
                 if (ny <= y || ny >= World.SY || abs(nx - x) > 5 || abs(nz - z) > 5 || nx < 0 || nz < 0 || nx >= World.SX || nz >= World.SZ) continue
                 val k = enc(nx, ny, nz); if (seen.contains(k)) continue
                 val nid = world.get(nx, ny, nz)
-                if (!B.log(nid) && !B.leafy(nid)) continue
+                if ((!B.log(nid) && !B.leafy(nid)) || world.isLocked(nx, ny, nz)) continue
                 seen.add(k); q.add(k)
             }
         }

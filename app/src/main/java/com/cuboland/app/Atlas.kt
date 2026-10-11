@@ -602,6 +602,10 @@ object Atlas {
                 val ch = art.rows[py][px]
                 if (ch == '.') a = 0 else { val p = art.pal[Character.digit(ch, 16)]; c = p and 0xFFFFFF; a = p ushr 24 }
             }
+            Blk.K_SPRITE -> {
+                val p = Leaf3D.pixel(c1, c2, floor(u * 16f).toInt().coerceIn(0, 15), floor(v * 16f).toInt().coerceIn(0, 15))
+                if ((p ushr 24) == 0) a = 0 else { c = p and 0xFFFFFF; a = 255 }
+            }
             Blk.K_PLEAF -> {
                 val art = NatArt.all[c1]
                 val px = floor(u * 16f).toInt().coerceIn(0, 15); val py = floor(v * 16f).toInt().coerceIn(0, 15)
@@ -794,7 +798,7 @@ object Atlas {
             for (y in 0 until T) for (x in 0 until T) {
                 val qx = x / 4; val qy = y / 4   // grade de 16x16 pixels grandes (pixel art)
                 val g0 = genNew(sp, (qx + 0.5f) / 16f, (qy + 0.5f) / 16f)
-                val c = if (sp[0] == Blk.K_PIX || sp[0] == Blk.K_LEAF || sp[0] == Blk.K_PAL || sp[0] == Blk.K_PLEAF) g0 else pixelArt(g0, qx, qy, sp[5])
+                val c = if (sp[0] == Blk.K_PIX || sp[0] == Blk.K_LEAF || sp[0] == Blk.K_PAL || sp[0] == Blk.K_PLEAF || sp[0] == Blk.K_SPRITE) g0 else pixelArt(g0, qx, qy, sp[5])
                 out[(y0 + y) * w + x0 + x] = if ((c ushr 24) == 0) CLEAR else c
             }
             bleed(out, w, x0, y0)
