@@ -88,6 +88,8 @@ object Atlas {
         var c = lerp(0x86D36F, 0xB5EC8C, vn(u, v, 3, 3, 1) * 0.6f + vn(u, v, 6, 6, 2) * 0.4f)
         worley(u, v, 4, 4)
         c = lerp(c, 0xCBF6A6, sm(0.7f, 0.25f, wd1) * 0.5f)                 // manchas macias de luz
+        c = mul(c, 0.84f + 0.3f * vn(u, v, 24, 12, 7))                       // lâminas de grama
+        if (h(floor(u * 32f).toInt(), floor(v * 32f).toInt(), 8) > 0.9f) c = mul(c, 0.8f)
         worley(u, v, 8, 9)
         if (wid > 0.86f) c = lerp(c, if (wid > 0.93f) 0xFFFFFF else 0xFFC4DD, sm(0.16f, 0.1f, wd1))  // florzinhas
         return c
@@ -144,13 +146,118 @@ object Atlas {
         return lerp(c, 0xB07F55, sm(0.40f, 0.44f, max(abs(dx), abs(dy))))
     }
 
-    /** folha da referência (como na foto 2): pixels em 4 tons de verde, com buraquinhos que mostram o interior da copa */
+    private val OAK = intArrayOf(0x25500F, 0x3A7519, 0x56A02A, 0x7CC43F)
+    /** folha do carvalho: mesmas 4 cores de sempre, agora em folhinhas sobrepostas (com nervura e sombra projetada) e buraquinhos que mostram o miolo da copa */
     private fun leaves(u: Float, v: Float): Int {
         val px = floor(u * 16f).toInt().coerceIn(0, 15); val py = floor(v * 16f).toInt().coerceIn(0, 15)
-        if (h(px, py, 91) < 0.3f && h(px, py / 2, 92) < 0.7f) return CLEAR
-        val k = h(px / 2, py, 93) * 0.6f + h(px, py, 94) * 0.4f
-        val c = when { k < 0.25f -> 0x25500F; k < 0.5f -> 0x3A7519; k < 0.78f -> 0x56A02A; else -> 0x7CC43F }
-        return op(c)
+        val c = leafGrid(OAK, 91, 0)[py * 16 + px]
+        return if ((c ushr 24) == 0) CLEAR else c
+    }
+
+    private val leafCache = HashMap<Int, IntArray>()
+    /** grade 16x16 de folhagem: ~28 folhinhas pontudas em 3 camadas, cada uma com nervura clara, lado de baixo mais escuro e sombra caindo na de baixo */
+    private fun leafGrid(pal: IntArray, seed: Int, accent: Int): IntArray {
+        val key = pal.contentHashCode() * 31 + seed * 7 + accent
+        leafCache[key]?.let { return it }
+        val g = 16; val gf = 16f
+        val tone = IntArray(g * g) { 1 }
+        val cov = IntArray(g * g)
+        val rnd = java.util.Random(seed * 7919L + 13L)
+        val n = 28
+        for (k in 0 until n) {
+            val cx = rnd.nextFloat() * gf; val cy = rnd.nextFloat() * gf
+            val ang = rnd.nextFloat() * 3.1416f
+            val len = 2.6f + rnd.nextFloat() * 2.2f; val wd = 1.2f + rnd.nextFloat() * 0.9f
+            val lay = k * 3 / n
+            val ca = cos(ang); val sa = sin(ang)
+            for (pass in 0..1) {
+                val off = if (pass == 0) 1f else 0f
+                for (y in 0 until g) for (x in 0 until g) {
+                    var dx = x + 0.5f - cx - off; var dy = y + 0.5f - cy - off
+                    dx -= gf * Math.round(dx / gf).toFloat(); dy -= gf * Math.round(dy / gf).toFloat()
+                    val al = dx * ca + dy * sa; val b = -dx * sa + dy * ca
+                    val t = al / len
+                    if (abs(t) >= 1f) continue
+                    val half = wd * (1f - t * t)
+                    if (abs(b) >= half) continue
+                    val i = y * g + x
+                    if (pass == 0) { tone[i] = max(0, tone[i] - 1) }
+                    else {
+                        var tn = lay
+                        if (b < -0.3f * half) tn += 1 else if (b > 0.45f * half) tn -= 1
+                        if (abs(b) < 0.4f && t > -0.7f) tn += 1
+                        tone[i] = tn.coerceIn(0, 4); cov[i]++
+                    }
+                }
+            }
+        }
+        val out = IntArray(g * g)
+        val pn = pal.size
+        for (y in 0 until g) for (x in 0 until g) {
+            val i = y * g + x
+            if (cov[i] == 0 && h(x, y, seed + 5) < 0.7f) { out[i] = CLEAR; continue }
+            var c = pal[(tone[i] * (pn - 1) + 2) / 4]
+            if (accent != 0 && tone[i] >= 3 && h(x, y, seed + 9) > 0.92f) c = accent
+            out[i] = op(c)
+        }
+        leafCache[key] = out
+        return out
+    }
+
+    /** relevo em todos os tiles: altura = brilho suavizado + granulado por pixel; luz vinda de cima-esquerda (realce/sombra) + oclusão nos buracos e frestas */
+    private fun blurWrap(src: FloatArray, r: Int): FloatArray {
+        val n = T; val tmp = FloatArray(n * n); val out = FloatArray(n * n); val k = (2 * r + 1).toFloat()
+        for (y in 0 until n) for (x in 0 until n) { var s = 0f; for (d in -r..r) s += src[y * n + wrap(x + d, n)]; tmp[y * n + x] = s / k }
+        for (y in 0 until n) for (x in 0 until n) { var s = 0f; for (d in -r..r) s += tmp[wrap(y + d, n) * n + x]; out[y * n + x] = s / k }
+        return out
+    }
+
+    private fun depth(px: IntArray, w: Int, x0: Int, y0: Int, str: Float, pix: Boolean, sd: Int) {
+        val n = T * T
+        val h0 = FloatArray(n); val solid = BooleanArray(n)
+        var mean = 0f; var cnt = 0
+        for (y in 0 until T) for (x in 0 until T) {
+            val c = px[(y0 + y) * w + x0 + x]; val i = y * T + x
+            if ((c ushr 24) >= 100) {
+                solid[i] = true
+                val l = (((c shr 16) and 255) * 0.299f + ((c shr 8) and 255) * 0.587f + (c and 255) * 0.114f) / 255f
+                h0[i] = l; mean += l; cnt++
+            } else h0[i] = -0.2f
+        }
+        if (cnt == 0) return
+        mean /= cnt
+        var vr = 0f
+        for (i in 0 until n) if (solid[i]) { val d = h0[i] - mean; vr += d * d }
+        vr /= cnt
+        val amp = 0.05f + ((0.02f - vr) * 6f).coerceIn(0f, 0.12f)      // texturas chapadas ganham mais granulado de relevo
+        for (y in 0 until T) for (x in 0 until T) {
+            val i = y * T + x
+            if (!solid[i]) continue
+            if (pix) {
+                h0[i] += (h(x / 4, y / 4, sd + 700) - 0.5f) * 2f * amp
+                val fx = ((x % 4) + 0.5f) / 4f; val fy = ((y % 4) + 0.5f) / 4f
+                h0[i] += min(min(min(fx, 1f - fx), min(fy, 1f - fy)), 0.3f) * 0.18f      // cada pixel vira um "travesseirinho"
+            } else h0[i] += (vn(x / 64f, y / 64f, 32, 32, sd + 700) - 0.5f) * 2f * amp
+        }
+        val h1 = blurWrap(h0, 1)
+        val h2 = blurWrap(h1, 3)
+        for (y in 0 until T) for (x in 0 until T) {
+            val i = y * T + x
+            if (!solid[i]) continue
+            val xp = wrap(x + 1, T); val xm = wrap(x - 1, T); val yp = wrap(y + 1, T); val ym = wrap(y - 1, T)
+            val gd = h1[yp * T + xp] - h1[ym * T + xm]
+            val gx = h1[y * T + xp] - h1[y * T + xm]
+            val gy = h1[yp * T + x] - h1[ym * T + x]
+            var s = 1f + str * 1.7f * (gd * 0.6f + gx * 0.35f + gy * 0.35f)
+            val ao = h2[i] - h1[i]
+            s *= 1f - str * (ao * 1.9f).coerceIn(0f, 0.34f) + str * (-ao * 1.3f).coerceIn(0f, 0.2f)
+            s = s.coerceIn(0.55f, 1.4f)
+            val c = px[(y0 + y) * w + x0 + x]
+            val r = (((c shr 16) and 255) * s).toInt().coerceIn(0, 255)
+            val gg = (((c shr 8) and 255) * s).toInt().coerceIn(0, 255)
+            val bb = ((c and 255) * s).toInt().coerceIn(0, 255)
+            px[(y0 + y) * w + x0 + x] = (c and (255 shl 24)) or (r shl 16) or (gg shl 8) or bb
+        }
     }
 
     /** placas 3D de folha (cubinhos que saem do bloco, como na referência): pixels grandes em 4 tons de verde, sem buracos */
@@ -484,19 +591,22 @@ object Atlas {
                 else if (wd1 < 0.09f) b = lerp(b, 0xFFFFFF, 0.22f)
                 c = b
             }
-            Blk.K_LEAF -> {   // mesma receita da folha do carvalho (leaves): 4 tons em pixels, com buraquinhos que mostram o miolo da copa
+            Blk.K_LEAF -> {
                 val px = floor(u * 16f).toInt().coerceIn(0, 15); val py = floor(v * 16f).toInt().coerceIn(0, 15)
-                if (h(px, py, 91 + s) < 0.3f && h(px, py / 2, 92 + s) < 0.7f) a = 0
-                else {
-                    val k = h(px / 2, py, 93 + s) * 0.6f + h(px, py, 94 + s) * 0.4f
-                    c = if (k < 0.25f) c1 else if (k < 0.5f) c2 else if (k < 0.78f) c3 else c4
-                }
+                val lg = leafGrid(intArrayOf(c1, c2, c3, c4), 91 + s, 0)[py * 16 + px]
+                if ((lg ushr 24) == 0) a = 0 else c = lg and 0xFFFFFF
             }
-            Blk.K_PAL, Blk.K_PLEAF -> {
+            Blk.K_PAL -> {
                 val art = NatArt.all[c1]
                 val px = floor(u * 16f).toInt().coerceIn(0, 15); val py = floor(v * 16f).toInt().coerceIn(0, 15)
                 val ch = art.rows[py][px]
                 if (ch == '.') a = 0 else { val p = art.pal[Character.digit(ch, 16)]; c = p and 0xFFFFFF; a = p ushr 24 }
+            }
+            Blk.K_PLEAF -> {
+                val art = NatArt.all[c1]
+                val px = floor(u * 16f).toInt().coerceIn(0, 15); val py = floor(v * 16f).toInt().coerceIn(0, 15)
+                val lg = leafGrid(intArrayOf(art.pal[0], art.pal[1], art.pal[2], art.pal[3], art.pal[4]), c1 * 13 + 1, if (art.pal.size > 5) art.pal[5] else 0)[py * 16 + px]
+                if ((lg ushr 24) == 0) a = 0 else c = lg and 0xFFFFFF
             }
             Blk.K_PIX -> {
                 val px = floor(u * 16f).toInt().coerceIn(0, 15); val py = floor(v * 16f).toInt().coerceIn(0, 15)
@@ -675,6 +785,7 @@ object Atlas {
             out[y * w + t * T + x] = if (a == 0) CLEAR
                 else ((a / 4) shl 24) or ((r / a).toInt() shl 16) or ((g / a).toInt() shl 8) or (bl / a).toInt()
         }
+        for (t in intArrayOf(1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 23)) depth(out, w, t * T, 0, if (t == 8) 1f else 0.85f, t == 8, t * 17)
         for (t in 0 until 24) bleed(out, w, t * T, 0)
         // blocos novos (receitas em Blk): 1 amostra por pixel, as formas já são suaves
         val nDefs = Blk.defs.size
@@ -687,6 +798,9 @@ object Atlas {
                 val c = if (sp[0] == Blk.K_PIX || sp[0] == Blk.K_LEAF || sp[0] == Blk.K_PAL || sp[0] == Blk.K_PLEAF) g0 else pixelArt(g0, qx, qy, sp[5])
                 out[(y0 + y) * w + x0 + x] = if ((c ushr 24) == 0) CLEAR else c
             }
+            val k0 = sp[0]
+            val dst = if (k0 == Blk.K_GLASS || k0 == Blk.K_JELLY || k0 == Blk.K_ICE) 0.4f else if (t >= Blk.GLOW0) 0.55f else 1f
+            depth(out, w, x0, y0, dst, true, sp[5])
             bleed(out, w, x0, y0)
         }
         raw = out.clone()   // cópia com a cor preservada nos pixels transparentes: vai direto pra GPU (o Bitmap do Android zera essa cor)

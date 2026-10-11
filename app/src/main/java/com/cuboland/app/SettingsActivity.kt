@@ -85,6 +85,9 @@ class SettingsActivity : CozyActivity() {
         val c3 = cCard("Atualização", "Versão instalada: ${packageManager.getPackageInfo(packageName, 0).versionName}")
         c3.addView(cBtn("Verificar atualização", Cz.TEAL, 15f) { Updater.check(this, true) }, lpW(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(10) })
         add(c3)
+        val c4 = cCard("Reverter atualização", "Volta o código no GitHub para antes da última entrega. Mostra tudo que vai mudar antes de confirmar; dá pra repetir.")
+        c4.addView(cBtn("Reverter atualização", Cz.RED, 15f) { Reverter.start(this) }, lpW(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(10) })
+        add(c4)
         if (sp.getBoolean("creative", false)) { /* ajuste antigo: agora o modo criativo é por mundo */ }
     }
 

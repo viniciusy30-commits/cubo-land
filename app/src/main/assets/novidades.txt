@@ -1,3 +1,15 @@
+#id 2026-10-11-zzzzzz
+#titulo Reverter atualização!
+- Novo botão em Ajustes > Geral: Reverter atualização. Antes de confirmar ele mostra a entrega que vai sair (data, título, o que trouxe e a lista de arquivos que voltam, são apagados ou são restaurados)
+- Ao confirmar, o main do GitHub volta ao estado de antes daquela entrega e o GitHub gera um APK novo já revertido. Pode repetir quantas vezes quiser: cada toque volta a entrega anterior que ainda não foi revertida
+
+#id 2026-10-11-zzzzz
+#titulo Texturas com profundidade!
+- Todos os blocos ganharam relevo de verdade: luz vinda de cima-esquerda com realce e sombra em cada pixel, sombrinha nas frestas e buracos e granulado em volta (até os blocos que eram lisos ficaram com textura)
+- Folhas refeitas do zero: folhinhas pontudas sobrepostas em camadas, com nervura clara, lado de baixo mais escuro e sombra caindo nas folhas de baixo; as cores do carvalho continuam as originais
+- Todas as folhagens (abeto, bétula, selva, acácia, cerejeira, outono...) usam o novo desenho, cada uma na sua paleta, com florzinhas/frutinhas nas que têm
+- Grama do topo com lâminas e pontinhos escuros
+
 #id 2026-10-11-zzzz
 #titulo Árvores na Galeria!
 - A Galeria de blocos agora tem, bem afastado dos blocos, um gramado com uma fileira por espécie (carvalho, abeto, bétula, selva, acácia, carvalho escuro, mangue, cerejeira, outono, amarela, bambu, carmesim e distorcido), cada uma com 2 árvores e uma plaquinha
