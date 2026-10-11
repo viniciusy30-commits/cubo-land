@@ -1,3 +1,7 @@
+#id 2026-10-11-y
+#titulo Madeiras em pixel art!
+- Tábuas com veios e pregos, troncos com casca em relevo e anéis no topo, troncos descascados, bloco de bambu com gomos, bambu trançado e piso de madeira desenhados em pixel art 16x16
+
 #id 2026-10-11-x
 #titulo Pedras em pixel art de verdade!
 - Pedregulho, tijolos, granito, diorito, andesito, ardósia, tufo, arenitos, quartzo, nether, fim, purpur e obsidiana redesenhados em pixel art 16x16, com contorno, brilho e sombra em cada pedrinha

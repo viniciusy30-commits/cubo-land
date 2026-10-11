@@ -69,6 +69,8 @@ object Blk {
     private val DF = arrayOf("Branca", "Laranja", "Magenta", "Azul-clara", "Amarela", "Lima", "Rosa", "Cinza",
         "Cinza-clara", "Ciano", "Roxa", "Azul", "Marrom", "Verde", "Vermelha", "Preta")
 
+    private fun pal(pat: Int, c: Int, fl: Int = 0): Int = tl(K_PIX, dk(c, 0.5f), dk(c, 0.22f), c, lt(c, 0.2f), 0, pat, fl)
+
     private fun build() {
         // ================= CORES (16 cores cada) =================
         for (i in 0 until 16) { val c = DYE[i]
@@ -92,10 +94,10 @@ object Blk {
         val WN = arrayOf("Abeto", "Bétula", "Selva", "Acácia", "Carvalho Escuro", "Mangue", "Cerejeira", "Bambu", "Carmesim", "Distorcido")
         val WP = intArrayOf(0x7B5B3A, 0xE6D79B, 0xB98563, 0xC4693B, 0x4B3321, 0x8E3F3B, 0xE9B8B2, 0xE1C75B, 0x8B3B5E, 0x2F7F7A)
         for (i in 0 until 10) { val c = WP[i]
-            uni("Tábua de " + WN[i], C_BUILD, tl(K_PLANK, lt(c, 0.06f), dk(c, 0.06f), dk(c, 0.3f)), c, M_WOOD, 6f) }
+            uni("Tábua de " + WN[i], C_BUILD, pal(Pix.PLANK, c), c, M_WOOD, 6f) }
         fun log(n: String, s1: Int, s2: Int, kn: Int, t1: Int, t2: Int) {
-            val tp = tl(K_LOGTOP, t1, t2, s2)
-            blk(n, C_NAT, tp, tl(K_LOGSIDE, s1, s2, kn), tp, s2, M_WOOD, 8f)
+            val tp = tl(K_PIX, s2, t2, t1, lt(t1, 0.15f), 0, Pix.LOGTOP)
+            blk(n, C_NAT, tp, tl(K_PIX, kn, s2, s1, lt(s1, 0.12f), 0, Pix.BARK), tp, s2, M_WOOD, 8f)
         }
         log("Tronco de Abeto", 0x5A4128, 0x45301B, 0x33220F, 0x7B5B3A, 0x6A4C2E)
         log("Tronco de Bétula", 0xEDEDE6, 0xD3D3CB, 0x2E2E2E, 0xE6D79B, 0xD6C687)
@@ -106,11 +108,11 @@ object Blk {
         log("Tronco de Cerejeira", 0x4A3445, 0x382633, 0x261923, 0xE9B8B2, 0xD9A8A2)
         log("Caule Carmesim", 0x7A2A52, 0x5E1F3E, 0x4A1530, 0x8B3B5E, 0x7A3252)
         log("Caule Distorcido", 0x2A7E7A, 0x1F615E, 0x174A47, 0x2F7F7A, 0x286E6A)
-        blk("Bloco de Bambu", C_BUILD, tl(K_LOGTOP, 0xE1C75B, 0xD0B54A, 0x8DB03E), tl(K_STRIPE, 0xA5C94E, 0x8DB03E, 0x6E9430, 0, 0, 1), tl(K_LOGTOP, 0xE1C75B, 0xD0B54A, 0x8DB03E), 0xA5C94E, M_WOOD, 6f)
-        uni("Bambu Trançado", C_BUILD, tl(K_TILES, 0xE1C75B, 0xD6BA4F, 0x9C8530, 0, 0, 4), 0xE1C75B, M_WOOD, 5f)
+        blk("Bloco de Bambu", C_BUILD, tl(K_PIX, 0x8DB03E, 0xD0B54A, 0xE1C75B, 0xF0DA80, 0, Pix.LOGTOP), tl(K_PIX, 0x6E9430, 0x8DB03E, 0xA5C94E, 0xC4E070, 0, Pix.BAMBOO), tl(K_PIX, 0x8DB03E, 0xD0B54A, 0xE1C75B, 0xF0DA80, 0, Pix.LOGTOP), 0xA5C94E, M_WOOD, 6f)
+        uni("Bambu Trançado", C_BUILD, pal(Pix.MOSAIC, 0xE1C75B), 0xE1C75B, M_WOOD, 5f)
         fun strip(n: String, c: Int) {
-            val tp = tl(K_LOGTOP, lt(c, 0.12f), c, dk(c, 0.1f))
-            blk(n, C_BUILD, tp, tl(K_LOGSIDE, lt(c, 0.12f), c, c), tp, c, M_WOOD, 7f)
+            val tp = tl(K_PIX, dk(c, 0.35f), dk(c, 0.15f), c, lt(c, 0.2f), 0, Pix.LOGTOP)
+            blk(n, C_BUILD, tp, pal(Pix.STRIPSIDE, c), tp, c, M_WOOD, 7f)
         }
         strip("Carvalho Descascado", 0xC9A06B)
         strip("Abeto Descascado", 0x8A6A45)
@@ -121,7 +123,6 @@ object Blk {
         strip("Cerejeira Descascada", 0xDDA5A0)
 
         // ================= PEDRAS E MINERAIS =================
-        fun pal(pat: Int, c: Int, fl: Int = 0): Int = tl(K_PIX, dk(c, 0.5f), dk(c, 0.22f), c, lt(c, 0.2f), 0, pat, fl)
         fun rough(n: String, c: Int, grout: Int) { uni(n, C_BUILD, pal(Pix.STONE0 + n.length % 3, c), c, M_STONE, 10f) }
         fun smooth(n: String, c: Int) { uni(n, C_BUILD, pal(Pix.SMOOTH, c), c, M_STONE, 10f) }
         fun bricks(n: String, c: Int, grout: Int, fl: Int = 0) { uni(n, C_BUILD, pal(if ((fl and 1) != 0) Pix.CRACKBRICK else Pix.BRICK, c, fl and 2), c, M_STONE, 10f) }
@@ -191,7 +192,7 @@ object Blk {
         uni("Gesso Rosa", C_BUILD, tl(K_FLAT, 0xFFD6E4, 0xF8C8DA, 0xFFD6E4, 0, 0, 0, 4), 0xFFD6E4, M_STONE, 6f)
         uni("Gesso Amarelo", C_BUILD, tl(K_FLAT, 0xFFEFB0, 0xF8E6A0, 0xFFEFB0, 0, 0, 0, 4), 0xFFEFB0, M_STONE, 6f)
         uni("Gesso Azul", C_BUILD, tl(K_FLAT, 0xCFE4FA, 0xBFD8F2, 0xCFE4FA, 0, 0, 0, 4), 0xCFE4FA, M_STONE, 6f)
-        uni("Piso de Madeira", C_BUILD, tl(K_TILES, 0xC9935A, 0xB98350, 0x8A5E36, 0, 0, 4), 0xC9935A, M_WOOD, 5f)
+        uni("Piso de Madeira", C_BUILD, pal(Pix.MOSAIC, 0xC9935A), 0xC9935A, M_WOOD, 5f)
         uni("Azulejo Branco", C_BUILD, tl(K_TILES, 0xF4F4F0, 0xE8E8E4, 0xC8C8C4, 0, 0, 8), 0xF4F4F0, M_STONE, 6f)
         uni("Azulejo Azul", C_BUILD, tl(K_TILES, 0x6FA8E8, 0x5E98DA, 0x3E6EA8, 0, 0, 8), 0x6FA8E8, M_STONE, 6f)
         uni("Janela de Madeira", C_BUILD, tl(K_GLASS, 0xDDF2FF, 0x8B6B43), 0xB6A070, M_GLASS, 2f, F_GLASS, "Janela com moldura de madeira.")
