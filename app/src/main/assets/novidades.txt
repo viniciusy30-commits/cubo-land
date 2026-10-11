@@ -1,3 +1,9 @@
+#id 2026-10-11-r
+#titulo Grama limpa e árvore de galhos!
+- Os matinhos da grama não têm mais o contorno preto serrilhado ao longe (nem as folhinhas e flores)
+- Árvore nova de teste feita só de galhos grossos e finos, com folhinhas nascendo nos galhos e buquês nas pontas, sem blocos de folha
+- Tem uma pertinho do spawn em mundos novos, e outras aparecem pela floresta
+
 #id 2026-10-11-q
 #titulo Personagem pisando no portal!
 - No menu, o personagem ficou menor (80%) e os pés agora ficam no centro do portal, com sombra e brilho embaixo, sem flutuar

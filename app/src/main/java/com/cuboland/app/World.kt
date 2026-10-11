@@ -159,6 +159,10 @@ class World {
             for (y in hh + 1..WATER_Y) blocks[(y * SZ + z) * SX + x] = B.WATER.toByte()
         }
         plantForest(Random(seed.toLong()), 420) { x, z -> h[x * SZ + z] }
+        run {   // árvore de galhos de teste, bem perto do spawn
+            val tx = SX / 2 + 10; val tz = SZ / 2 - 10; val ty = surfaceY(tx, tz) - 1
+            if (get(tx, ty, tz) == B.GRASS && air(tx, ty + 1, tz)) plantTree(tx, ty, tz, 7, Random(seed.toLong() + 7))
+        }
         // pilares decorativos perto do spawn
         val cols = intArrayOf(B.PINK, B.BLUE, B.YELLOW, B.BRICK)
         for (i in 0 until 4) {
@@ -208,6 +212,10 @@ class World {
             placed.add(intArrayOf(x, z, r))
             plantTree(x, y, z, type, rnd)
         }
+        run {   // árvore de galhos de teste, bem perto do spawn
+            val tx = SX / 2 + 10; val tz = SZ / 2 - 10; val ty = surfaceY(tx, tz) - 1
+            if (get(tx, ty, tz) == B.GRASS && air(tx, ty + 1, tz)) plantTree(tx, ty, tz, 7, Random(seed.toLong() + 7))
+        }
         val cols = intArrayOf(B.PINK, B.BLUE, B.YELLOW, B.BRICK)
         for (i in 0 until 4) {
             val x = SX / 2 + 3 + i * 2; val z = SZ / 2 + 4
@@ -256,6 +264,22 @@ class World {
         return intArrayOf(bx, by, bz)
     }
 
+    /** galho grosso de madeira (sem folha nenhuma): anda na direção d, sobe a cada "rise" passos e brota galhos menores (depth) pelo caminho */
+    private fun bough(x: Int, y: Int, z: Int, d: Int, len: Int, rise: Int, depth: Int, rnd: Random) {
+        val dx = DX8[d and 7]; val dz = DZ8[d and 7]
+        var bx = x; var by = y; var bz = z
+        for (i in 1..len) {
+            if (dx != 0 && dz != 0) { if (i % 2 == 1) bx += dx else bz += dz } else { bx += dx; bz += dz }
+            wood(bx, by, bz)
+            if (depth == 0 && i <= 2 && air(bx, by - 1, bz)) wood(bx, by - 1, bz)   // base mais grossa
+            if (i % rise == 0 || i == len) { by++; wood(bx, by, bz) }
+            if (depth < 2 && len >= 3 && i >= 2 && i < len && rnd.nextInt(if (depth == 0) 2 else 3) == 0) {
+                val side = if (rnd.nextBoolean()) 1 + rnd.nextInt(2) else -1 - rnd.nextInt(2)
+                bough(bx, by, bz, d + side + 8, Math.max(2, len * 2 / 3 - depth), Math.max(1, rise - 1), depth + 1, rnd)
+            }
+        }
+    }
+
     /** copa cheia de volume: bola central + gomos em volta (não fica uma bola lisa) */
     private fun crown(cx: Int, cy: Int, cz: Int, r: Float, rnd: Random) {
         blob(cx, cy, cz, r, r * 0.8f, r, rnd)
@@ -282,12 +306,13 @@ class World {
         }
     }
 
-    /** tipo: 0 pequena, 1 média, 2 grande (tronco grosso), 3 alta e fina, 4 pinheiro, 5 arbusto, 6 tronco caído */
+    /** tipo: 0 pequena, 1 média, 2 grande (tronco grosso), 3 alta e fina, 4 pinheiro, 5 arbusto, 6 tronco caído, 7 árvore de galhos (sem blocos de folha) */
     private fun pickTree(rnd: Random): Int {
+        if (rnd.nextInt(5) == 0) return 7   // teste: árvore só de galhos (sem blocos de folha)
         val r = rnd.nextInt(24)
         return when { r < 5 -> 0; r < 11 -> 1; r < 14 -> 2; r < 16 -> 3; r < 19 -> 4; r < 22 -> 5; else -> 6 }
     }
-    private val treeRadius = intArrayOf(3, 5, 7, 3, 4, 2, 3)
+    private val treeRadius = intArrayOf(3, 5, 7, 3, 4, 2, 3, 8)
 
     /** tronco com curvas leves: a cada "kink" o tronco desvia 1 bloco pro lado. Retorna a coluna do topo [x,z] */
     private fun trunk(x: Int, y: Int, z: Int, h: Int, kinks: Int, rnd: Random): IntArray {
@@ -396,6 +421,20 @@ class World {
                 wood(x, y + 1, z)
                 blob(x, y + 1, z, 1.7f, 1.3f, 1.7f, rnd)
                 if (rnd.nextBoolean()) blob(x + 1 - rnd.nextInt(3), y + 1, z + 1 - rnd.nextInt(3), 1.3f, 1.1f, 1.3f, rnd)
+            }
+            7 -> {   // árvore de galhos: tronco + galhos grossos e finos, sem bloco de folha (as folhinhas nascem dos galhos, ver decorBlock)
+                val th = 8 + rnd.nextInt(3)
+                val tp = trunk(x, y, z, th, 2, rnd)
+                root(x, y, z, 1, 0); root(x, y, z, 0, 1); root(x, y, z, -1, 0); root(x, y, z, 0, -1)
+                for (t in 1..2) wood(tp[0], y + th + t, tp[1])   // líder: o tronco passa da copa
+                val n = 7; val d0 = rnd.nextInt(8)
+                for (k in 0 until n) {
+                    val d = (d0 + k * 8 / n + rnd.nextInt(2)) and 7
+                    val yy = y + th - 6 + k * 6 / (n - 1)
+                    val low = k < 3
+                    bough(tp[0], yy, tp[1], d, if (low) 5 + rnd.nextInt(3) else 3 + rnd.nextInt(3), if (low) 3 else 2, 0, rnd)
+                }
+                for (k in 0 until 3) bough(tp[0], y + th + 1 + k % 2, tp[1], d0 + k * 3, 3 + rnd.nextInt(2), 1, 1, rnd)   // topo: galhos finos e empinados
             }
             else -> {   // tronco caído, com folhas numa ponta
                 val ax = if (rnd.nextBoolean()) 1 else 0; val az = 1 - ax
@@ -644,27 +683,27 @@ class World {
     }
 
     /** um galho fino com duas curvas, tufos de folhas no meio e na ponta e, às vezes, um raminho lateral */
-    private fun twig(o: MeshBuf, x: Int, y: Int, z: Int, k: Int) {
+    private fun twig(o: MeshBuf, x: Int, y: Int, z: Int, k: Int, sc: Float = 1f) {
         val sd = x * 131 + y * 71 + z * 173 + k * 997
         val r = FloatArray(10) { hash(sd, it * 13 + y, 400 + it) }
         var a = r[0] * 6.2832f; var p = 0.25f + r[1] * 0.5f
         val sx = x + 0.5f + cos(a) * 0.3f; val sy = y + 0.5f + (r[3] - 0.3f) * 0.4f; val sz = z + 0.5f + sin(a) * 0.3f
-        val l1 = 0.55f + r[2] * 0.3f
+        val l1 = (0.55f + r[2] * 0.3f) * sc
         val x1 = sx + cos(a) * cos(p) * l1; val y1 = sy + sin(p) * l1; val z1 = sz + sin(a) * cos(p) * l1
         a += (r[4] - 0.5f) * 1.4f; p += 0.1f + r[5] * 0.4f
-        val l2 = 0.45f + r[6] * 0.3f
+        val l2 = (0.45f + r[6] * 0.3f) * sc
         val x2 = x1 + cos(a) * cos(p) * l2; val y2 = y1 + sin(p) * l2; val z2 = z1 + sin(a) * cos(p) * l2
         val sh = 0.8f + 0.2f * r[7]
         prism(o, sx, sy, sz, x1, y1, z1, 0.07f, 0.05f, sh)
         prism(o, x1, y1, z1, x2, y2, z2, 0.05f, 0.032f, sh)
-        cluster(o, x1, y1 + 0.1f, z1, 0.75f + 0.3f * r[8], sd + 1)
-        cluster(o, x2, y2 + 0.12f, z2, 1.0f + 0.4f * r[8], sd + 2)
+        cluster(o, x1, y1 + 0.1f, z1, (0.75f + 0.3f * r[8]) * sc, sd + 1)
+        cluster(o, x2, y2 + 0.12f, z2, (1.0f + 0.4f * r[8]) * sc, sd + 2)
         if (r[9] > 0.5f) {   // raminho lateral saindo do meio do 2º trecho
             val a3 = a + (if (r[8] > 0.5f) 1.2f else -1.2f); val p3 = p + 0.3f
             val mx = (x1 + x2) * 0.5f; val my = (y1 + y2) * 0.5f; val mz = (z1 + z2) * 0.5f
-            val x3 = mx + cos(a3) * cos(p3) * 0.5f; val y3 = my + sin(p3) * 0.5f; val z3 = mz + sin(a3) * cos(p3) * 0.5f
+            val x3 = mx + cos(a3) * cos(p3) * 0.5f * sc; val y3 = my + sin(p3) * 0.5f * sc; val z3 = mz + sin(a3) * cos(p3) * 0.5f * sc
             prism(o, mx, my, mz, x3, y3, z3, 0.035f, 0.022f, sh)
-            cluster(o, x3, y3 + 0.08f, z3, 0.7f, sd + 3)
+            cluster(o, x3, y3 + 0.08f, z3, 0.7f * sc, sd + 3)
         }
     }
 
@@ -682,7 +721,7 @@ class World {
             if (hidden.isNotEmpty() && hidden.contains((y * SZ + z) * SX + x)) return
             var leaf = 0
             for (dy in -1..2) for (dz in -2..2) for (dx in -2..2) if (get(x + dx, y + dy, z + dz) == B.LEAVES) leaf++
-            if (leaf < 3) return   // só madeira de árvore (com folhas por perto)
+            if (leaf < 3) { boughDecor(o, x, y, z); return }   // sem folhas por perto: só vale se for galho de árvore de galhos
             if (get(x, y + 1, z) != B.AIR && get(x + 1, y, z) != B.AIR && get(x - 1, y, z) != B.AIR && get(x, y, z + 1) != B.AIR && get(x, y, z - 1) != B.AIR) return
             val n = if (hash(x * 7 + 1, z, y) > 0.4f) 2 else 1
             for (k in 0 until n) twig(o, x, y, z, k)
@@ -714,6 +753,24 @@ class World {
         var k = 0
         while (k < m.vn) { m.v[k] -= ox + 0.5f; m.v[k + 1] -= oy + 0.5f - yo; m.v[k + 2] -= oz + 0.5f; k += 8 }
         return m
+    }
+
+    /** árvore de galhos: madeira solta no alto, ligada a outra madeira na horizontal, ganha galhinhos longos e, nas pontas, buquês de folhas */
+    private fun boughDecor(o: MeshBuf, x: Int, y: Int, z: Int) {
+        var hs = 0
+        for (i in 0 until 4) if (get(x + DX8[i * 2], y, z + DZ8[i * 2]) == B.WOOD) hs++
+        if (hs == 0) return
+        var gy = y - 1
+        while (gy > 0 && (get(x, gy, z) == B.AIR || get(x, gy, z) == B.WOOD)) gy--
+        if (y - gy < 4) return   // tronco e raízes ficam lisos
+        val tip = hs == 1 && get(x, y + 1, z) != B.WOOD
+        val n = if (tip) 3 else if (hash(x * 7 + 1, z, y) > 0.35f) 2 else 1
+        for (k in 0 until n) twig(o, x, y, z, k, 1.4f)
+        if (tip) for (q in 0 until 3) {   // buquê na ponta do galho
+            val sd = x * 53 + y * 31 + z * 17 + q * 7
+            cluster(o, x + 0.5f + (hash(sd, 1, 430) - 0.5f) * 1.1f, y + 0.9f + hash(sd, 2, 431) * 0.7f, z + 0.5f + (hash(sd, 3, 432) - 0.5f) * 1.1f,
+                1.5f + 0.6f * hash(sd, 4, 433), sd)
+        }
     }
 
     private fun leafOpen(x: Int, y: Int, z: Int): Boolean {

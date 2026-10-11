@@ -375,8 +375,33 @@ object Atlas {
             out[y * w + t * T + x] = if (a == 0) CLEAR
                 else ((a / 4) shl 24) or ((r / a).toInt() shl 16) or ((g / a).toInt() shl 8) or (bl / a).toInt()
         }
+        for (t in 0 until 24) bleed(out, w, t * T)
         val b = Bitmap.createBitmap(w, T, Bitmap.Config.ARGB_8888)
+        b.isPremultiplied = false   // senão o Android zera a cor dos pixels transparentes (viram preto e sujam as bordas ao longe)
         b.setPixels(out, 0, w, 0, 0, w, T)
         return b
+    }
+
+    /** pixels transparentes herdam a cor dos vizinhos opacos: no mipmap/filtro a borda da folha/matinho mistura verde com verde (nada de contorno escuro) */
+    private fun bleed(px: IntArray, w: Int, x0: Int) {
+        var has = false
+        for (y in 0 until T) for (x in 0 until T) if ((px[y * w + x0 + x] ushr 24) == 0) { has = true; break }
+        if (!has) return
+        val filled = BooleanArray(T * T) { (px[(it / T) * w + x0 + it % T] ushr 24) != 0 }
+        repeat(T / 2) {
+            val add = ArrayList<IntArray>()
+            for (y in 0 until T) for (x in 0 until T) {
+                if (filled[y * T + x]) continue
+                var r = 0; var g = 0; var b = 0; var n = 0
+                for (dy in -1..1) for (dx in -1..1) {
+                    val nx = x + dx; val ny = y + dy
+                    if (nx < 0 || ny < 0 || nx >= T || ny >= T || !filled[ny * T + nx]) continue
+                    val c = px[ny * w + x0 + nx]; r += (c shr 16) and 255; g += (c shr 8) and 255; b += c and 255; n++
+                }
+                if (n > 0) add.add(intArrayOf(x, y, (r / n shl 16) or (g / n shl 8) or (b / n)))
+            }
+            if (add.isEmpty()) return
+            for (a in add) { px[a[1] * w + x0 + a[0]] = a[2]; filled[a[1] * T + a[0]] = true }   // alpha continua 0
+        }
     }
 }
