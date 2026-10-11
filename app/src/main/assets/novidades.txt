@@ -1,3 +1,13 @@
+#id 2026-10-11-t
+#titulo Mochila fofinha!
+- Mochila redesenhada: painel quentinho com bolinhas e costura, mochilinha colorida no título, etiquetas coloridas e bolsinhos pros itens
+- Fontes mais nítidas e fáceis de ler (sem aquela sombra borrada), acentos com espaço certo
+- Tiramos a sombra que ficava embaixo dos blocos
+- Botão de fechar (X) centralizado
+- Barra de itens com tabuleirinho, costura, plaquinhas de número e enfeites
+- Agora você toca no item da mochila e depois no slot onde quer colocá-lo (ou arrasta direto). Não vai mais sozinho pro slot escolhido
+- Arraste um item da barra pra cima (pra fora da barra) e o slot fica vazio: só a mão do personagem
+
 #id 2026-10-11-s
 #titulo Mochila nova!
 - Itens separados por categoria em abas: Tudo, Ferramentas, Natureza, Construção e Decoração

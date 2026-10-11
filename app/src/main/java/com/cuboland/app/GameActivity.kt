@@ -62,7 +62,7 @@ class GameActivity : AppCompatActivity() {
         game = Game(world)
         Look.load(this)
         getSharedPreferences("cfg", 0).getString("hb", null)?.split(",")?.mapNotNull { it.toIntOrNull() }
-            ?.takeIf { it.size == 8 }?.forEachIndexed { i, v -> if (Items.valid(v)) game.hotbar[i] = v }
+            ?.takeIf { it.size == 8 }?.forEachIndexed { i, v -> if (v == 0 || Items.valid(v)) game.hotbar[i] = v }
         game.sens = getSharedPreferences("cfg", 0).getFloat("sens", 1f)
         game.creative = info.creative
         gl = GLSurfaceView(this)

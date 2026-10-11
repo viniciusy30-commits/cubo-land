@@ -19,11 +19,13 @@ object Items {
     fun isBlock(id: Int) = id in 1..13 && id != B.WATER
 
     fun name(id: Int) = when (id) {
+        0 -> "Mão"
         SWORD -> "Espada de Cristal"; AXE -> "Machado Gigante"; STAFF -> "Cajado Estrelado"; PICK -> "Picareta Brilhante"
         else -> B.names.getOrElse(id) { "?" }
     }
 
     fun desc(id: Int) = when (id) {
+        0 -> "Sem nada na mão: o personagem fica de mãos livres."
         SWORD -> "Rápida e leve. Dano 2, golpes velozes."
         AXE -> "Pesada! Dano 3, empurra longe e racha madeira bem rápido."
         STAFF -> "Dispara estrelas mágicas à distância."
