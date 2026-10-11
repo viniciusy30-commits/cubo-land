@@ -7,7 +7,7 @@ object Items {
         val l = ArrayList<Int>()
         for (i in intArrayOf(SWORD, AXE, STAFF, PICK, B.GRASS, B.DIRT, B.STONE, B.SAND, B.WOOD, B.LEAVES,
             B.PLANK, B.BRICK, B.PINK, B.BLUE, B.YELLOW, B.LANTERN)) l.add(i)
-        for (d in Blk.defs) l.add(d.id)
+        for (d in Blk.defs) if (d.id !in Blk.hidden) l.add(d.id)
         l.toIntArray()
     }
 

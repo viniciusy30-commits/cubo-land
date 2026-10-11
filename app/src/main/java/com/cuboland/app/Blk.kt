@@ -21,6 +21,7 @@ object Blk {
     const val K_SHELF = 20; const val K_BAND = 21; const val K_GRAD = 22; const val K_CANDY = 23; const val K_SWIRL = 24
     const val K_BORDER = 25; const val K_RING = 26; const val K_CELLS = 27; const val K_JELLY = 28; const val K_ICE = 29
     const val K_BLOCKY = 30; const val K_GLAZE = 31; const val K_CACTUS = 32; const val K_LEAFY = 33; const val K_PIX = 34; const val K_LEAF = 35
+    const val K_PAL = 36; const val K_PLEAF = 37   // pixel art com paleta própria (NatArt); K_PLEAF = folhagem com buracos transparentes
 
     class Def(val id: Int, val name: String, val cat: Int, val top: Int, val side: Int, val bot: Int,
               val color: Int, val flags: Int, val hard: Float, val mat: Int, val desc: String)
@@ -30,13 +31,17 @@ object Blk {
     private var nextTile = 24
     private var nextGlow = GLOW0
     private var nextId = 14
+    /** blocos que só existem pra mundos antigos abrirem: não aparecem na mochila e viram o bloco equivalente ao carregar */
+    val hidden = HashSet<Int>()
+    private val aliasName = HashMap<Int, String>()
+    val alias: IntArray by lazy { defs; val a = IntArray(1024); for ((id, n) in aliasName) { val t = list.firstOrNull { it.name == n }; if (t != null) a[id] = t.id }; a }
     private val list = ArrayList<Def>()
     val defs: List<Def> by lazy { build(); list }
     /** trechos de tiles seguidos de folhagem (K_LEAF): o shader usa pra balançar no vento e iluminar como folha */
     val leafRuns: List<IntArray> by lazy {
         defs; val out = ArrayList<IntArray>(); var s = -1
         for (i in 24..GLOW0) {
-            val on = i < GLOW0 && specs[i]?.get(0) == K_LEAF
+            val on = i < GLOW0 && (specs[i]?.get(0) == K_LEAF || specs[i]?.get(0) == K_PLEAF)
             if (on && s < 0) s = i
             if (!on && s >= 0) { out.add(intArrayOf(s, i - 1)); s = -1 }
         }
@@ -51,6 +56,10 @@ object Blk {
         specs[i] = intArrayOf(kind, c1, c2, c3, c4, sd, par or (fl shl 8))
         return i
     }
+
+    /** tile pixel art da NatArt (paleta própria, alpha por cor) */
+    private fun pt(art: Int, leaf: Boolean = false, glow: Boolean = false): Int = tl(if (leaf) K_PLEAF else K_PAL, art, glow = glow)
+    private fun legacy(id: Int, canon: String) { hidden.add(id); aliasName[id] = canon }
 
     private fun blk(name: String, cat: Int, top: Int, side: Int, bot: Int, color: Int, mat: Int = 0, hard: Float = 4f, fl: Int = 0, desc: String = ""): Int {
         if (nextId == 100) nextId = 104
@@ -198,7 +207,7 @@ object Blk {
         uni("Telhado Vermelho", C_BUILD, tl(K_SHINGLE, 0xD8584A, 0xC44A3E, 0x8E2E26), 0xD8584A, M_STONE, 8f)
         uni("Telhado Azul", C_BUILD, tl(K_SHINGLE, 0x5A86D8, 0x4C74C4, 0x2E4E8E), 0x5A86D8, M_STONE, 8f)
         uni("Telhado Verde", C_BUILD, tl(K_SHINGLE, 0x5FAE6A, 0x509C5C, 0x2F6A3A), 0x5FAE6A, M_STONE, 8f)
-        uni("Palha", C_BUILD, tl(K_STRIPE, 0xE6C65A, 0xD8B64A, 0xB89838, 0, 0, 0), 0xE6C65A, M_SOFT, 3f)
+        uni("Palha", C_BUILD, pt(NatArt.PALHA), 0xE6C65A, M_SOFT, 3f)
         uni("Gesso Branco", C_BUILD, tl(K_FLAT, 0xFAF6EE, 0xF0EBE0, 0xFAF6EE, 0, 0, 0, 4), 0xFAF6EE, M_STONE, 6f)
         uni("Gesso Rosa", C_BUILD, tl(K_FLAT, 0xFFD6E4, 0xF8C8DA, 0xFFD6E4, 0, 0, 0, 4), 0xFFD6E4, M_STONE, 6f)
         uni("Gesso Amarelo", C_BUILD, tl(K_FLAT, 0xFFEFB0, 0xF8E6A0, 0xFFEFB0, 0, 0, 0, 4), 0xFFEFB0, M_STONE, 6f)
@@ -208,53 +217,55 @@ object Blk {
         uni("Azulejo Azul", C_BUILD, tl(K_TILES, 0x6FA8E8, 0x5E98DA, 0x3E6EA8, 0, 0, 8), 0x6FA8E8, M_STONE, 6f)
         uni("Janela de Madeira", C_BUILD, tl(K_GLASS, 0xDDF2FF, 0x8B6B43), 0xB6A070, M_GLASS, 2f, F_GLASS, "Janela com moldura de madeira.")
         uni("Janela Branca", C_BUILD, tl(K_GLASS, 0xDDF2FF, 0xF2F2EE), 0xDDE8EE, M_GLASS, 2f, F_GLASS, "Janela com moldura branca.")
-        uni("Moita Cerejeira", C_NAT, tl(K_LEAF, 0x9A3E62, 0xD9739B, 0xF0A0C0, 0xFFC8DC), 0xF0A6C4, M_SOFT, 2f, F_LEAF)
-        uni("Moita de Outono", C_NAT, tl(K_LEAF, 0x7A2E0E, 0xB8561C, 0xE07A26, 0xF2A83E), 0xE07A26, M_SOFT, 2f, F_LEAF)
-        uni("Moita Amarela", C_NAT, tl(K_LEAF, 0x7E6410, 0xB8921E, 0xE0BE3A, 0xF6DC62), 0xE0BE3A, M_SOFT, 2f, F_LEAF)
+        // Moitas eram cópias idênticas das Folhas (outro nome, mesma textura): ficam só pra mundos antigos, escondidas, e viram Folhas ao carregar
+        legacy(uni("Moita Cerejeira", C_NAT, pt(NatArt.F_CEREJEIRA, true), 0xF0A6C4, M_SOFT, 2f, F_LEAF), "Folhas de Cerejeira")
+        legacy(uni("Moita de Outono", C_NAT, pt(NatArt.F_OUTONO, true), 0xE07A26, M_SOFT, 2f, F_LEAF), "Folhas de Outono")
+        legacy(uni("Moita Amarela", C_NAT, pt(NatArt.F_AMARELAS, true), 0xE0BE3A, M_SOFT, 2f, F_LEAF), "Folhas Amarelas")
 
         // ================= LUZES E MÓVEIS =================
         uni("Pedra Luminosa", C_DEC, tl(K_GLOW, 0xFFE9A0, 0xFFC96A, 0xD8963A, 0, 0, 0, 0, true), 0xFFD27C, 0, 4f, F_LIGHT, "Brilha com uma luz quentinha.")
         uni("Lanterna do Mar", C_DEC, tl(K_LAMP, 0xBFEFF0, 0x6FA8A8, 0xF4FFFF, 0, 0, 0, 0, true), 0xBFEFF0, 0, 4f, F_LIGHT, "Luz azulada de águas profundas.")
         uni("Luzcogumelo", C_DEC, tl(K_GLOW, 0xFFB26A, 0xF58A3C, 0xB85A22, 0, 0, 0, 0, true), 0xF58A3C, 0, 4f, F_LIGHT, "Brilho alaranjado e acolhedor.")
-        uni("Magma", C_NAT, tl(K_LAVA, 0x3A1A14, 0x5A2418, 0xFF7A2A, 0, 0, 0, 0, true), 0xC8501E, M_STONE, 8f, F_LIGHT, "Pedra quente com rachaduras brilhantes.")
+        uni("Magma", C_NAT, pt(NatArt.MAGMA, glow = true), 0xC8501E, M_STONE, 8f, F_LIGHT, "Pedra quente com rachaduras brilhantes.")
         blk("Estante", C_DEC, tl(K_PLANK, 0xD9A864, 0xC99A58, 0xA07840), tl(K_SHELF, 0xD9A864, 0x3A2A1C, 0xB5503C, 0x4F7FB8), tl(K_PLANK, 0xD9A864, 0xC99A58, 0xA07840), 0xB5503C, M_WOOD, 5f)
         blk("Barril", C_DEC, tl(K_RING, 0xC99A58, 0xD9A864, 0x8A6A3A, 0, 0, 2), tl(K_STRIPE, 0xC99A58, 0xB88A4A, 0x8A6A3A, 0, 0, 1), tl(K_RING, 0xC99A58, 0xD9A864, 0x8A6A3A, 0, 0, 2), 0xC99A58, M_WOOD, 5f)
         blk("Mesa de Trabalho", C_DEC, tl(K_TILES, 0xD9A864, 0xC99A58, 0x6B4A2A, 0, 0, 3), tl(K_PLANK, 0xC99A58, 0xB88A4A, 0x6B4A2A), tl(K_PLANK, 0xD9A864, 0xC99A58, 0x8A6A3A), 0xC99A58, M_WOOD, 5f)
         blk("Dinamite", C_DEC, tl(K_BORDER, 0xE84A4A, 0xF06A5A, 0xA02A2A), tl(K_STRIPE, 0xE84A4A, 0xF2F2EE, 0xA02A2A, 0, 0, 1), tl(K_BORDER, 0xE84A4A, 0xF06A5A, 0xA02A2A), 0xE84A4A, 0, 2f, 0, "Só de enfeite: não explode.")
-        blk("Abóbora Luminosa", C_DEC, tl(K_RING, 0xF29A2A, 0xFFB84A, 0xC4701A, 0, 0, 2, 0, true), tl(K_STRIPE, 0xF29A2A, 0xE08A1E, 0xC4701A, 0, 0, 1, 0, true), tl(K_RING, 0xF29A2A, 0xFFB84A, 0xC4701A, 0, 0, 2, 0, true), 0xF29A2A, M_WOOD, 4f, F_LIGHT, "Abóbora que brilha por dentro.")
+        blk("Abóbora Luminosa", C_DEC, pt(NatArt.ABOBORA_LUM_TOP, glow = true), pt(NatArt.ABOBORA_LUM_SIDE, glow = true), pt(NatArt.ABOBORA_LUM_TOP, glow = true), 0xF29A2A, M_WOOD, 4f, F_LIGHT, "Abóbora que brilha por dentro.")
 
         // ================= NATUREZA =================
-        uni("Terra Grossa", C_NAT, tl(K_GRAVEL, 0xB98B5F, 0xA37748, 0xC9A074), 0xA37748, M_SOFT, 3f)
-        blk("Podzol", C_NAT, tl(K_FLAT, 0x7A5B38, 0x6A4C2E), tl(K_BAND, 0x7A5B38, 0xC9996B, 0xB98B5F), tl(K_FLAT, 0xC9996B, 0xB98B5F), 0x7A5B38, M_SOFT, 3f)
-        blk("Micélio", C_NAT, tl(K_FLAT, 0x9A8AA8, 0xB0A0BE), tl(K_BAND, 0x9A8AA8, 0xC9996B, 0xB98B5F), tl(K_FLAT, 0xC9996B, 0xB98B5F), 0x9A8AA8, M_SOFT, 3f)
-        blk("Grama Nevada", C_NAT, tl(K_FLAT, 0xFFFFFF, 0xE6F0FA), tl(K_BAND, 0xFFFFFF, 0xC9996B, 0xB98B5F), tl(K_FLAT, 0xC9996B, 0xB98B5F), 0xF2F8FF, M_SOFT, 3f)
-        uni("Lama", C_NAT, tl(K_FLAT, 0x5A4A42, 0x6A5A50), 0x5A4A42, M_SOFT, 3f)
-        uni("Argila", C_NAT, tl(K_FLAT, 0xA8B4C4, 0xB8C4D2), 0xA8B4C4, M_SOFT, 3f)
-        uni("Cascalho", C_NAT, tl(K_GRAVEL, 0x8E8A88, 0xA8A4A2, 0x706C6A), 0x8E8A88, M_SOFT, 3f)
-        uni("Areia Vermelha", C_NAT, tl(K_SPECK, 0xD9854A, 0xE4985C, 0xB8662E, 0, 0, 0), 0xD9854A, M_SOFT, 3f)
-        uni("Areia Rosa", C_NAT, tl(K_SPECK, 0xF8CCD8, 0xFFDDE6, 0xE8A8BC, 0, 0, 0), 0xF8CCD8, M_SOFT, 3f)
-        uni("Neve", C_NAT, tl(K_SPECK, 0xFFFFFF, 0xEEF5FC, 0xD6E4F2, 0, 0, 0), 0xFFFFFF, M_SOFT, 2f)
-        uni("Gelo", C_NAT, tl(K_ICE, 0xBFE3FF, 0xDDF1FF, fl = 16), 0xBFE3FF, M_GLASS, 3f, F_GLASS, "Gelo claro e escorregadio de olhar.")
-        uni("Gelo Compactado", C_NAT, tl(K_ICE, 0x9CCFF5, 0xBCE0FB, 0, 0, 0, 255), 0x9CCFF5, M_GLASS, 4f)
-        uni("Musgo", C_NAT, tl(K_LEAF, 0x24501A, 0x3F7D26, 0x62A83A, 0x92D456), 0x5C9034, M_SOFT, 2f, F_LEAF)
-        blk("Cacto", C_NAT, tl(K_CACTUS, 0x5FA040, 0x78BC52, 0x2F6A24, 0, 0, 1), tl(K_CACTUS, 0x5FA040, 0x78BC52, 0x2F6A24), tl(K_CACTUS, 0x5FA040, 0x78BC52, 0x2F6A24, 0, 0, 1), 0x4F8F3A, M_SOFT, 3f)
-        blk("Bloco de Feno", C_NAT, tl(K_RING, 0xE6C65A, 0xF0D676, 0xB89838, 0, 0, 2), tl(K_STRIPE, 0xE6C65A, 0xD8B64A, 0xB89838, 0, 0, 0), tl(K_RING, 0xE6C65A, 0xF0D676, 0xB89838, 0, 0, 2), 0xE6C65A, M_SOFT, 3f)
-        blk("Melancia", C_NAT, tl(K_RING, 0x8FBF5A, 0xA8D072, 0x4F8F3A, 0, 0, 2), tl(K_STRIPE, 0x5FA84A, 0x3F8A38, 0x2F6A28, 0, 0, 1), tl(K_RING, 0x8FBF5A, 0xA8D072, 0x4F8F3A, 0, 0, 2), 0x5FA84A, M_SOFT, 3f)
-        blk("Abóbora", C_NAT, tl(K_RING, 0xF29A2A, 0xFFB84A, 0xC4701A, 0, 0, 2), tl(K_STRIPE, 0xF29A2A, 0xE08A1E, 0xC4701A, 0, 0, 1), tl(K_RING, 0xF29A2A, 0xFFB84A, 0xC4701A, 0, 0, 2), 0xF29A2A, M_SOFT, 3f)
-        uni("Esponja", C_NAT, tl(K_CELLS, 0xE8D86A, 0xD8C858, 0xB8A83E, 0, 0, 5, 8), 0xE8D86A, M_SOFT, 2f)
-        uni("Favo de Mel", C_NAT, tl(K_CELLS, 0xF2A22A, 0xFFC24A, 0xB8701A, 0, 0, 4), 0xF2A22A, M_SOFT, 2f)
-        uni("Bloco de Mel", C_NAT, tl(K_JELLY, 0xF8B83A, 0xE08A1E), 0xF8B83A, M_GLASS, 2f, F_GLASS, "Mel translúcido e docinho.")
+        uni("Terra Grossa", C_NAT, pt(NatArt.TERRA_GROSSA), 0xA37748, M_SOFT, 3f)
+        val tDirt = pt(NatArt.TERRA_BASE)
+        blk("Podzol", C_NAT, pt(NatArt.PODZOL_TOP), pt(NatArt.PODZOL_SIDE), tDirt, 0x7A5B38, M_SOFT, 3f)
+        blk("Micélio", C_NAT, pt(NatArt.MICELIO_TOP), pt(NatArt.MICELIO_SIDE), tDirt, 0x9A8AA8, M_SOFT, 3f)
+        blk("Grama Nevada", C_NAT, pt(NatArt.GRAMA_NEVADA_TOP), pt(NatArt.GRAMA_NEVADA_SIDE), tDirt, 0xF2F8FF, M_SOFT, 3f)
+        uni("Lama", C_NAT, pt(NatArt.LAMA), 0x5A4A42, M_SOFT, 3f)
+        uni("Argila", C_NAT, pt(NatArt.ARGILA), 0xA8B4C4, M_SOFT, 3f)
+        uni("Cascalho", C_NAT, pt(NatArt.CASCALHO), 0x8E8A88, M_SOFT, 3f)
+        uni("Areia Vermelha", C_NAT, pt(NatArt.AREIA_VERMELHA), 0xD9854A, M_SOFT, 3f)
+        uni("Areia Rosa", C_NAT, pt(NatArt.AREIA_ROSA), 0xF8CCD8, M_SOFT, 3f)
+        uni("Neve", C_NAT, pt(NatArt.NEVE), 0xFFFFFF, M_SOFT, 2f)
+        uni("Gelo", C_NAT, pt(NatArt.GELO), 0xBFE3FF, M_GLASS, 3f, F_GLASS, "Gelo claro e escorregadio de olhar.")
+        uni("Gelo Compactado", C_NAT, pt(NatArt.GELO_COMPACTO), 0x9CCFF5, M_GLASS, 4f)
+        uni("Musgo", C_NAT, pt(NatArt.F_MUSGO, true), 0x5C9034, M_SOFT, 2f, F_LEAF)
+        blk("Cacto", C_NAT, pt(NatArt.CACTO_TOP), pt(NatArt.CACTO_SIDE), pt(NatArt.CACTO_TOP), 0x4F8F3A, M_SOFT, 3f)
+        blk("Bloco de Feno", C_NAT, pt(NatArt.FENO_TOP), pt(NatArt.FENO_SIDE), pt(NatArt.FENO_TOP), 0xE6C65A, M_SOFT, 3f)
+        blk("Melancia", C_NAT, pt(NatArt.MELANCIA_TOP), pt(NatArt.MELANCIA_SIDE), pt(NatArt.MELANCIA_TOP), 0x5FA84A, M_SOFT, 3f)
+        blk("Abóbora", C_NAT, pt(NatArt.ABOBORA_TOP), pt(NatArt.ABOBORA_SIDE), pt(NatArt.ABOBORA_TOP), 0xF29A2A, M_SOFT, 3f)
+        uni("Esponja", C_NAT, pt(NatArt.ESPONJA), 0xE8D86A, M_SOFT, 2f)
+        uni("Favo de Mel", C_NAT, pt(NatArt.FAVO), 0xF2A22A, M_SOFT, 2f)
+        uni("Bloco de Mel", C_NAT, pt(NatArt.MEL), 0xF8B83A, M_GLASS, 2f, F_GLASS, "Mel translúcido e docinho.")
 
         // ================= MINÉRIOS E METAIS =================
-        fun ore(n: String, o1: Int, o2: Int) { uni(n, C_NAT, tl(K_ORE, 0xB7BECC, 0xA2A9B8, o1, o2, fl = 16), o1, M_STONE, 12f) }
-        ore("Minério de Carvão", 0x2C2C30, 0x55555C)
-        ore("Minério de Ferro", 0xD8A888, 0xF2CDB2)
-        ore("Minério de Cobre", 0xD87A4A, 0x6FBF8A)
-        ore("Minério de Ouro", 0xF2C93A, 0xFFEC8A)
-        ore("Minério de Redstone", 0xD8302A, 0xFF7A6A)
-        ore("Minério de Lápis", 0x2E5AC8, 0x7AA2F2)
-        ore("Minério de Diamante", 0x4FD8D0, 0xB8FFFA)
-        ore("Minério de Esmeralda", 0x2FB85A, 0x8AF2A8)
+        fun ore(n: String, o1: Int, art: Int) { uni(n, C_NAT, pt(art), o1, M_STONE, 12f) }
+        ore("Minério de Carvão", 0x2C2C30, NatArt.ORE_CARVAO)
+        ore("Minério de Ferro", 0xD8A888, NatArt.ORE_FERRO)
+        ore("Minério de Cobre", 0xD87A4A, NatArt.ORE_COBRE)
+        ore("Minério de Ouro", 0xF2C93A, NatArt.ORE_OURO)
+        ore("Minério de Redstone", 0xD8302A, NatArt.ORE_REDSTONE)
+        ore("Minério de Lápis", 0x2E5AC8, NatArt.ORE_LAPIS)
+        ore("Minério de Diamante", 0x4FD8D0, NatArt.ORE_DIAMANTE)
+        ore("Minério de Esmeralda", 0x2FB85A, NatArt.ORE_ESMERALDA)
         fun metal(n: String, c: Int) { uni(n, C_BUILD, tl(K_BORDER, c, lt(c, 0.12f), dk(c, 0.3f), fl = 16), c, M_METAL, 14f) }
         metal("Bloco de Ferro", 0xE2E4E8)
         metal("Bloco de Ouro", 0xF6CF3E)
@@ -268,17 +279,17 @@ object Blk {
         metal("Cobre Oxidado", 0x4FB59A)
 
         // ================= FOLHAGEM DE TODAS AS ÁRVORES =================
-        uni("Folhas de Abeto", C_NAT, tl(K_LEAF, 0x1B3D1E, 0x2A5A2C, 0x3C7A3A, 0x58A04E), 0x3C7A3A, M_SOFT, 2f, F_LEAF, "Folhas de abeto: verde bem escuro, de pinheiro.")
-        uni("Folhas de Bétula", C_NAT, tl(K_LEAF, 0x4E7A22, 0x6E9E34, 0x8FBF4A, 0xB2DC6E), 0x8FBF4A, M_SOFT, 2f, F_LEAF, "Folhas de bétula: verde clarinho e fresco.")
-        uni("Folhas de Selva", C_NAT, tl(K_LEAF, 0x1F5A12, 0x2F8A1C, 0x45B02A, 0x6ED04A), 0x45B02A, M_SOFT, 2f, F_LEAF, "Folhas de selva: verde vivo e cheio.")
-        uni("Folhas de Acácia", C_NAT, tl(K_LEAF, 0x5A6E1E, 0x7E9A2C, 0xA2BC3C, 0xC4DC60), 0xA2BC3C, M_SOFT, 2f, F_LEAF, "Folhas de acácia: verde de savana.")
-        uni("Folhas de Carvalho Escuro", C_NAT, tl(K_LEAF, 0x153A10, 0x225A1A, 0x2F7A24, 0x469A38), 0x2F7A24, M_SOFT, 2f, F_LEAF, "Folhas de carvalho escuro: verde profundo.")
-        uni("Folhas de Mangue", C_NAT, tl(K_LEAF, 0x2E5A22, 0x468A34, 0x62AA48, 0x86C868), 0x62AA48, M_SOFT, 2f, F_LEAF, "Folhas de mangue: verde de pântano.")
-        uni("Folhas de Cerejeira", C_NAT, tl(K_LEAF, 0x9A3E62, 0xD9739B, 0xF0A0C0, 0xFFC8DC), 0xF0A0C0, M_SOFT, 2f, F_LEAF, "Folhas de cerejeira: cor-de-rosa florido.")
-        uni("Folhas de Outono", C_NAT, tl(K_LEAF, 0x7A2E0E, 0xB8561C, 0xE07A26, 0xF2A83E), 0xE07A26, M_SOFT, 2f, F_LEAF, "Folhas de outono: laranja de fim de estação.")
-        uni("Folhas Amarelas", C_NAT, tl(K_LEAF, 0x7E6410, 0xB8921E, 0xE0BE3A, 0xF6DC62), 0xE0BE3A, M_SOFT, 2f, F_LEAF, "Folhas amarelas douradas.")
-        uni("Folhas de Bambu", C_NAT, tl(K_LEAF, 0x2F5A14, 0x4E8A22, 0x72AE34, 0xA0D058), 0x72AE34, M_SOFT, 2f, F_LEAF, "Folhas de bambu: finas e verdinhas.")
-        uni("Verruga Carmesim", C_NAT, tl(K_LEAF, 0x5A1228, 0x8A2244, 0xC04068, 0xE8708C), 0xC04068, M_SOFT, 2f, F_LEAF, "Verruga carmesim: copa vermelha do mundo sombrio.")
-        uni("Verruga Distorcido", C_NAT, tl(K_LEAF, 0x0F4A4A, 0x1A7A78, 0x2EA8A0, 0x5AD2C6), 0x2EA8A0, M_SOFT, 2f, F_LEAF, "Verruga distorcida: copa azul-turquesa do mundo sombrio.")
+        uni("Folhas de Abeto", C_NAT, pt(NatArt.F_ABETO, true), 0x3C7A3A, M_SOFT, 2f, F_LEAF, "Folhas de abeto: verde bem escuro, de pinheiro.")
+        uni("Folhas de Bétula", C_NAT, pt(NatArt.F_BETULA, true), 0x8FBF4A, M_SOFT, 2f, F_LEAF, "Folhas de bétula: verde clarinho e fresco.")
+        uni("Folhas de Selva", C_NAT, pt(NatArt.F_SELVA, true), 0x45B02A, M_SOFT, 2f, F_LEAF, "Folhas de selva: verde vivo e cheio.")
+        uni("Folhas de Acácia", C_NAT, pt(NatArt.F_ACACIA, true), 0xA2BC3C, M_SOFT, 2f, F_LEAF, "Folhas de acácia: verde de savana.")
+        uni("Folhas de Carvalho Escuro", C_NAT, pt(NatArt.F_CARVALHO_ESCURO, true), 0x2F7A24, M_SOFT, 2f, F_LEAF, "Folhas de carvalho escuro: verde profundo.")
+        uni("Folhas de Mangue", C_NAT, pt(NatArt.F_MANGUE, true), 0x62AA48, M_SOFT, 2f, F_LEAF, "Folhas de mangue: verde de pântano.")
+        uni("Folhas de Cerejeira", C_NAT, pt(NatArt.F_CEREJEIRA, true), 0xF0A0C0, M_SOFT, 2f, F_LEAF, "Folhas de cerejeira: cor-de-rosa florido.")
+        uni("Folhas de Outono", C_NAT, pt(NatArt.F_OUTONO, true), 0xE07A26, M_SOFT, 2f, F_LEAF, "Folhas de outono: laranja de fim de estação.")
+        uni("Folhas Amarelas", C_NAT, pt(NatArt.F_AMARELAS, true), 0xE0BE3A, M_SOFT, 2f, F_LEAF, "Folhas amarelas douradas.")
+        uni("Folhas de Bambu", C_NAT, pt(NatArt.F_BAMBU, true), 0x72AE34, M_SOFT, 2f, F_LEAF, "Folhas de bambu: finas e verdinhas.")
+        uni("Verruga Carmesim", C_NAT, pt(NatArt.F_CARMESIM, true), 0xC04068, M_SOFT, 2f, F_LEAF, "Verruga carmesim: copa vermelha do mundo sombrio.")
+        uni("Verruga Distorcido", C_NAT, pt(NatArt.F_DISTORCIDO, true), 0x2EA8A0, M_SOFT, 2f, F_LEAF, "Verruga distorcida: copa azul-turquesa do mundo sombrio.")
     }
 }

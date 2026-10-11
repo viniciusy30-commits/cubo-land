@@ -1,3 +1,16 @@
+#id 2026-10-11-zzzz
+#titulo Árvores na Galeria!
+- A Galeria de blocos agora tem, bem afastado dos blocos, um gramado com uma fileira por espécie (carvalho, abeto, bétula, selva, acácia, carvalho escuro, mangue, cerejeira, outono, amarela, bambu, carmesim e distorcido), cada uma com 2 árvores e uma plaquinha
+
+#id 2026-10-11-zzz
+#titulo Natureza renovada!
+- Revisão da Natureza: as Moitas (Cerejeira, Outono e Amarela) eram cópias das Folhas com outro nome. Saíram da mochila e, nos mundos antigos, viram as Folhas na hora de abrir (nada some)
+- Todas as texturas da Natureza redesenhadas em pixel art 16x16 com paleta própria: terra grossa com pedrinhas, podzol com folhas secas, micélio com fios, neve e grama nevada com brilhos, lama com poças, argila em camadas, cascalho de seixos, areias com ondas
+- Minérios com pepitas de cada formato: carvão, ferro, cobre com azinhavre, ouro, redstone, lápis, diamante e esmeralda
+- Favo de mel em hexágonos, bloco de mel com bolhas, esponja furadinha, magma com rachaduras em brasa, gelo com brilhos e gelo compactado em placas
+- Cacto com costelas, espinhos e florzinha, feno amarrado com corda, melancia listrada, abóbora em gomos e a Abóbora Luminosa agora tem rosto
+- Cada folhagem com desenho próprio: agulhas de abeto, flores de cerejeira, folhas grandes da selva, lâminas de bambu, verrugas gordinhas e musgo florido
+
 #id 2026-10-11-zz
 #titulo Galeria de blocos!
 - Novo tipo de mundo, a Galeria de blocos: plano, sem monstros, com todos os blocos do jogo em fileiras por categoria (Básicos, Natureza, Construção, Decoração) e uma plaquinha com o nome de cada um pra você ver as texturas

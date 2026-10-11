@@ -217,7 +217,7 @@ class World {
         val cats = ArrayList<Pair<String, List<Int>>>()
         val basic = ArrayList<Int>(); for (id in 1..13) if (id != B.WATER && B.defined[id]) basic.add(id)
         cats.add("BÁSICOS" to basic)
-        cats.add("NATUREZA" to Blk.defs.filter { it.cat == Blk.C_NAT }.map { it.id })
+        cats.add("NATUREZA" to Blk.defs.filter { it.cat == Blk.C_NAT && it.id !in Blk.hidden }.map { it.id })
         cats.add("CONSTRUÇÃO" to Blk.defs.filter { it.cat == Blk.C_BUILD }.map { it.id })
         cats.add("DECORAÇÃO" to Blk.defs.filter { it.cat == Blk.C_DEC }.map { it.id })
         val other = Blk.defs.filter { it.cat != Blk.C_NAT && it.cat != Blk.C_BUILD && it.cat != Blk.C_DEC }.map { it.id }
@@ -242,6 +242,35 @@ class World {
             }
             zc += 3
         }
+        plantTestTrees(top)
+    }
+
+    /** galeria de árvores: bem afastada dos blocos (x >= 90), uma fileira por espécie com 2 árvores, sobre um gramado */
+    private fun plantTestTrees(top: Int) {
+        val rows = arrayOf(
+            arrayOf("CARVALHO", "", ""), arrayOf("ABETO", "Tronco de Abeto", "Folhas de Abeto"), arrayOf("BÉTULA", "Tronco de Bétula", "Folhas de Bétula"),
+            arrayOf("SELVA", "Tronco de Selva", "Folhas de Selva"), arrayOf("ACÁCIA", "Tronco de Acácia", "Folhas de Acácia"),
+            arrayOf("CARVALHO ESCURO", "Tronco de Carvalho Escuro", "Folhas de Carvalho Escuro"), arrayOf("MANGUE", "Tronco de Mangue", "Folhas de Mangue"),
+            arrayOf("CEREJEIRA", "Tronco de Cerejeira", "Folhas de Cerejeira"), arrayOf("OUTONO", "Tronco de Abeto", "Folhas de Outono"),
+            arrayOf("AMARELA", "Tronco de Bétula", "Folhas Amarelas"), arrayOf("BAMBU", "Tronco de Selva", "Folhas de Bambu"),
+            arrayOf("CARMESIM", "Caule Carmesim", "Verruga Carmesim"), arrayOf("DISTORCIDO", "Caule Distorcido", "Verruga Distorcido"))
+        val gx0 = 90; val gx1 = 170; val gz0 = 6; val step = 18
+        val gz1 = Math.min(SZ - 4, gz0 + rows.size * step + 4)
+        for (z in gz0 until gz1) for (x in gx0 until Math.min(SX - 2, gx1)) blocks[(top * SZ + z) * SX + x] = B.GRASS
+        val rnd = Random(4242L)
+        for ((i, r) in rows.withIndex()) {
+            val z = gz0 + 9 + i * step
+            if (z + 6 >= SZ) break
+            labels.add(Label(gx0 + 4f, top + 6f, z + 0.5f, r[0], true))
+            for (k in 0 until 2) {
+                val x = gx0 + 22 + k * 24
+                woodId = if (r[1].isEmpty()) B.WOOD else (B.byName[r[1]] ?: B.WOOD)
+                leafId = if (r[2].isEmpty()) B.LEAVES else (B.byName[r[2]] ?: B.LEAVES)
+                val type = if (r[0] == "ABETO") 4 else if (k == 0) 1 else 2
+                plantTree(x, top, z, type, rnd)
+            }
+        }
+        woodId = B.WOOD; leafId = B.LEAVES
     }
 
     fun generateFlat(seed: Int) {
@@ -623,6 +652,8 @@ class World {
                 if (bb.getInt() != SAVE_MAGIC) return false
                 bb.asIntBuffer().get(blocks)
             } else return false
+            val al = Blk.alias
+            for (i in blocks.indices) { val b = blocks[i]; if (b in 14..1023 && al[b] != 0) blocks[i] = al[b] }
             java.util.Arrays.fill(dirty, true); true
         } catch (_: Exception) { false }
     }
