@@ -562,10 +562,38 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         }
     }
 
+    /** plaquinhas da galeria de blocos: texto flutuando em cima de cada bloco, projetado na tela */
+    private val lbV = FloatArray(4); private val lbO = FloatArray(4)
+    private fun drawLabels(c: Canvas, w: Float, h: Float) {
+        val m = game.vpm ?: return
+        val labs = game.world.labels
+        if (labs.isEmpty()) return
+        val px = game.player.x; val pz = game.player.z
+        for (lb in labs) {
+            val dx = lb.x - px; val dz = lb.z - pz
+            val d2 = dx * dx + dz * dz
+            val maxD = if (lb.big) 70f else 17f
+            if (d2 > maxD * maxD) continue
+            lbV[0] = lb.x; lbV[1] = lb.y; lbV[2] = lb.z; lbV[3] = 1f
+            android.opengl.Matrix.multiplyMV(lbO, 0, m, 0, lbV, 0)
+            if (lbO[3] <= 0.1f) continue
+            val nx = lbO[0] / lbO[3]; val ny = lbO[1] / lbO[3]
+            if (nx < -1.3f || nx > 1.3f || ny < -1.3f || ny > 1.3f) continue
+            val sx = (nx * 0.5f + 0.5f) * w; val sy = (1f - (ny * 0.5f + 0.5f)) * h
+            val dist = sqrt(d2)
+            val sc = if (lb.big) tsc(1.8f) else if (dist < 8f) tsc(1.2f) else tsc(0.8f)
+            val tw = PixFont.width(lb.text, sc).toFloat(); val th = 9f * sc; val pad = 2f * sc
+            rc(c, sx - tw / 2f - pad - sc, sy - th / 2f - pad - sc, sx + tw / 2f + pad + sc, sy + th / 2f + pad + sc, Color.argb(235, 40, 28, 60))
+            rc(c, sx - tw / 2f - pad, sy - th / 2f - pad, sx + tw / 2f + pad, sy + th / 2f + pad, if (lb.big) Color.argb(245, 255, 214, 120) else Color.argb(245, 255, 246, 222))
+            pxText(c, lb.text, sx, sy - th / 2f + sc * 1.5f, sc, Color.rgb(48, 34, 70), 1, false)
+        }
+    }
+
     override fun onDraw(c: Canvas) {
         val w = width.toFloat(); val h = height.toFloat()
         val clock = System.nanoTime() / 1e9f
         drawWet(c)
+        drawLabels(c, w, h)
         if (game.hurtFlash > 0f) rc(c, 0f, 0f, w, h, Color.argb((game.hurtFlash * 90).toInt(), 255, 0, 0))
         if (aimTouch && lookId < 0 && game.aimOn && System.currentTimeMillis() - lastUpT > 350) game.aimOn = false
         if (!paused && !invOpen && lookId >= 0) {

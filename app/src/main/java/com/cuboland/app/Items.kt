@@ -17,11 +17,11 @@ object Items {
         SWORD, AXE, STAFF, PICK -> 1
         B.GRASS, B.DIRT, B.SAND, B.WOOD, B.LEAVES -> 2
         B.STONE, B.PLANK, B.BRICK -> 3
-        else -> if (id > 13 && id < 256 && B.cat[id] != 0) B.cat[id] else 4
+        else -> if (id > 13 && id < 1024 && B.cat[id] != 0) B.cat[id] else 4
     }
 
     fun valid(id: Int) = inventory.contains(id)
-    fun isBlock(id: Int) = id in 1..255 && B.defined[id]
+    fun isBlock(id: Int) = id in 1..1023 && B.defined[id]
 
     fun name(id: Int) = when (id) {
         0 -> "Mão"
@@ -47,7 +47,7 @@ object Items {
         B.BLUE -> "Bloco azul brilhante, lembra céu e água."
         B.YELLOW -> "Bloco amarelo alegre, cor de sol."
         B.LANTERN -> "Brilha com uma luz quentinha. Ilumina a noite."
-        else -> if (id in 14..255 && B.desc[id].isNotEmpty()) B.desc[id] else "Bloco de construção. Toque em Colocar para usar."
+        else -> if (id in 14..1023 && B.desc[id].isNotEmpty()) B.desc[id] else "Bloco de construção. Toque em Colocar para usar."
     }
 
     fun damage(id: Int) = when (id) { SWORD -> 2; AXE -> 3; STAFF -> 2; else -> 1 }

@@ -1,3 +1,16 @@
+#id 2026-10-11-zz
+#titulo Galeria de blocos!
+- Novo tipo de mundo, a Galeria de blocos: plano, sem monstros, com todos os blocos do jogo em fileiras por categoria (Básicos, Natureza, Construção, Decoração) e uma plaquinha com o nome de cada um pra você ver as texturas
+- Ela é gerada de novo toda vez que você entra, então sempre mostra os blocos que existem no momento
+
+#id 2026-10-11-z
+#titulo Folhas pra todas as árvores!
+- 12 folhagens novas na mochila: abeto, bétula, selva, acácia, carvalho escuro, mangue, cerejeira, outono, amarelas, bambu e as verrugas carmesim e distorcida, todas com a textura detalhada do carvalho (buraquinhos, 4 tons e balanço no vento)
+- As florestas dos mundos novos agora têm manchas de cada espécie, cada uma com o seu tronco e a sua folha
+- Moitas e Musgo também ganharam a folhagem nova
+- A espada corta cada folha com folhinhas na cor dela, e o machado derruba árvores de qualquer tronco
+- Os blocos agora ocupam 4 bytes no mundo: acabou o limite de 255 tipos de bloco (mundos antigos abrem normalmente)
+
 #id 2026-10-11-y
 #titulo Madeiras em pixel art!
 - Tábuas com veios e pregos, troncos com casca em relevo e anéis no topo, troncos descascados, bloco de bambu com gomos, bambu trançado e piso de madeira desenhados em pixel art 16x16

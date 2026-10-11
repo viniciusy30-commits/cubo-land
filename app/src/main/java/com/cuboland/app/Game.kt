@@ -50,7 +50,7 @@ class FallTree(val px: Float, val py: Float, val pz: Float, val dx: Float, val d
     var dm: MeshBuf? = null; val rs = IntArray(bl.size / 4 + 1)   // galhos e folhinhas finas (malha própria), rs = faixa de índices de cada bloco
     val gone = BooleanArray(bl.size / 4)   // folhas e galhos que já bateram no chão e se quebraram
     /** só o tronco (perto do eixo do corte) segura a árvore; folhas e galhos finos se quebram ao tocar o chão */
-    fun holds(i: Int) = bl[i * 4 + 3] == B.WOOD && abs(bl[i * 4]) <= 2 && abs(bl[i * 4 + 2]) <= 2
+    fun holds(i: Int) = B.log(bl[i * 4 + 3]) && abs(bl[i * 4]) <= 2 && abs(bl[i * 4 + 2]) <= 2
     var drop = 0f; var dvy = 0f; var dropping = false   // depois de deitar sem tocar chão, ela despenca até encostar
     var sx = 0; var sy = -99; var sz = 0; var landed = false; var lt = 0f   // sx..sz = bloco do toco (ignorado na colisão)
     val kx get() = dz; val kz get() = -dx     // eixo de rotação (horizontal, perpendicular à queda)
@@ -86,6 +86,10 @@ class Game(val world: World) {
     val rnd = Random()
     val player = Ent(World.SX / 2f + 0.5f, 20f, World.SZ / 2f + 0.5f, 0.3f, 1.8f)
     val slimes = ArrayList<Slime>()
+    /** galeria de blocos: sem monstros */
+    @Volatile var noMobs = false
+    /** matriz de projeção da última imagem (o HUD usa pra pôr as plaquinhas no lugar certo) */
+    @Volatile var vpm: FloatArray? = null
     val parts = ArrayList<Particle>()
     val wind = ArrayList<WindP>()   // rastro de vento do voo rápido (até WIND_MAX elementos)
     private var windT = 0f; private var helixT = 0f; private var ringT = 0f
@@ -122,7 +126,7 @@ class Game(val world: World) {
     init { respawn() }
 
     fun respawn() {
-        val x = World.SX / 2; val z = World.SZ / 2
+        val x = if (world.spawnX >= 0) world.spawnX else World.SX / 2; val z = if (world.spawnZ >= 0) world.spawnZ else World.SZ / 2
         player.x = x + 0.5f; player.z = z + 0.5f; player.y = world.surfaceY(x, z) + 0.05f
         player.vx = 0f; player.vy = 0f; player.vz = 0f
         hp = 10; slimes.clear(); posture = 0; player.h = 1.8f
@@ -407,7 +411,7 @@ class Game(val world: World) {
     private fun hardness(id: Int) = when (id) { B.LEAVES -> 1.5f; B.GRASS, B.DIRT, B.SAND -> 3f; B.WOOD -> 8f; B.PLANK -> 6f; B.STONE -> 10f; B.BRICK -> 9f; else -> if (id > 13 && B.hard[id] > 0f) B.hard[id] else 4f }
     private fun efficiency(item: Int, id: Int) = when (item) {
         Items.PICK -> when (id) { B.STONE, B.BRICK -> 2f; B.DIRT, B.GRASS, B.SAND -> 1.5f; else -> if (id > 13 && (B.mat[id] == Blk.M_STONE || B.mat[id] == Blk.M_METAL)) 2f else if (id > 13 && B.mat[id] == Blk.M_SOFT) 1.5f else 1f }
-        Items.AXE -> when (id) { B.WOOD, B.PLANK -> 2f; B.LEAVES -> 1.5f; else -> if (id > 13 && B.mat[id] == Blk.M_WOOD) 2f else 0.6f }
+        Items.AXE -> when (id) { B.WOOD, B.PLANK -> 2f; B.LEAVES -> 1.5f; else -> if (id > 13 && B.leafy(id)) 1.5f else if (id > 13 && B.mat[id] == Blk.M_WOOD) 2f else 0.6f }
         else -> 0.7f
     }
 
@@ -446,7 +450,7 @@ class Game(val world: World) {
         if (item == Items.SWORD && !creative) d.prog = min(d.prog, 0.5f)   // espada marca o bloco, mas não chega a quebrar
         hitPulse = 1f
         if (d.prog >= 1f) { dmg.remove(key); d.dead = true; breakBlock(hx, hy, hz, id); return }
-        if (id == B.WOOD && !d.felled && d.prog >= 0.65f) {
+        if (B.log(id) && !d.felled && d.prog >= 0.65f) {
             d.felled = true
             val cy = if (d.cutY.isNaN()) 0f else d.cutY
             if (fellTree(hx, hy, hz, cy)) trimStump(d, cy)   // a árvore tomba pela fenda: o toco fica cortado na altura do entalhe
@@ -540,7 +544,7 @@ class Game(val world: World) {
     }
 
 
-    private fun carvable(id: Int) = Items.isBlock(id) && id != B.LEAVES && id != B.WATER && !B.light(id) && !B.glass(id)
+    private fun carvable(id: Int) = Items.isBlock(id) && !B.leafy(id) && id != B.WATER && !B.light(id) && !B.glass(id)
 
     /** arranca de verdade pedaços do bloco (mini-voxels) na área do golpe; o formato depende da ferramenta e do progresso */
     private fun carve(d: Dmg, a: Int, s: Int, qx: Float, qy: Float, qz: Float, m: Mark, item: Int, big: Boolean) {
@@ -554,7 +558,7 @@ class Game(val world: World) {
         val kb = if (big) 1.3f else 1f; val kd = 1f + 0.9f * pr
         val half = (VN - 1) / 2f
         fun prot(i: Int, j: Int, k: Int) = abs(i - half) <= hw && abs(j - half) <= hw && abs(k - half) <= hw
-        val trunk = d.id == B.WOOD && a != 1
+        val trunk = B.log(d.id) && a != 1
         if (trunk && d.cutY.isNaN()) d.cutY = (if (a == 0) qy else qy).coerceIn(-0.25f, 0.25f)   // altura do entalhe de corte, fixada no 1º golpe
         val rm = BooleanArray(v.size); var any = false
         for (k in 0 until VN) for (j in 0 until VN) for (i in 0 until VN) {
@@ -665,9 +669,9 @@ class Game(val world: World) {
         world.set(x, y, z, B.AIR)
         waterTouch(x, y, z)
         breakFx(x, y, z, id, true)
-        val di = when (id) { B.GRASS -> B.DIRT; B.LEAVES -> if (rnd.nextFloat() < 0.3f) B.LEAVES else 0; else -> id }
+        val di = if (id == B.GRASS) B.DIRT else if (B.leafy(id)) (if (rnd.nextFloat() < 0.3f) id else 0) else id
         if (di != 0) dropItem(x + 0.5f, y + 0.4f, z + 0.5f, di, 0f, 0f)
-        if (id == B.WOOD) fellTree(x, y, z)
+        if (B.log(id)) fellTree(x, y, z)
     }
 
     /** o bloco que sobra no chão: só 1, pequeno, pra pegar */
@@ -680,8 +684,14 @@ class Game(val world: World) {
     }
 
     private val leafCols = intArrayOf(0x4FA52E, 0x6CBF3C, 0x8AD453, 0x3E8A25, 0xA3DF6A, 0xC4E070, 0x7FC84A)
+    /** cores das folhinhas de cada tipo de folha (as 4 cores da textura); o carvalho usa leafCols */
+    private fun leafPal(id: Int): IntArray {
+        val sp = Blk.specs[B.tSide[id]]
+        return if (sp != null && sp[0] == Blk.K_LEAF) intArrayOf(sp[1], sp[2], sp[3], sp[4]) else leafCols
+    }
     /** a espada corta o bloco: ele vira, na hora, uma nuvem de folhinhas que escorrem no sentido do corte, girando e planando */
-    private fun leafCutFx(x: Int, y: Int, z: Int, k: Int) {
+    private fun leafCutFx(x: Int, y: Int, z: Int, k: Int, bid: Int = B.LEAVES) {
+        val pal = leafPal(bid)
         val cx = x + 0.5f; val cy = y + 0.5f; val cz = z + 0.5f
         val fx = fwdX(); val fz = fwdZ(); val hl = max(0.001f, hypot(fx, fz)); val fwx = fx / hl; val fwz = fz / hl
         val rxv = fwz; val rzv = -fwx; val sg = if (combo == 1) -1f else 1f   // direção lateral do talho
@@ -693,18 +703,18 @@ class Game(val world: World) {
             val l = LeafP(cx + ox, cy + oy, cz + oz,
                 rxv * sg * s + fwx * (0.4f + rnd.nextFloat() * 1.5f) + (rnd.nextFloat() - 0.5f) * 0.8f,
                 rzv * sg * s + fwz * (0.4f + rnd.nextFloat() * 1.5f) + (rnd.nextFloat() - 0.5f) * 0.8f,
-                rnd.nextFloat() * 6.28f, leafCols[rnd.nextInt(leafCols.size)], 0.07f + rnd.nextFloat() * 0.07f, 3.4f + rnd.nextFloat() * 2.2f)
+                rnd.nextFloat() * 6.28f, pal[rnd.nextInt(pal.size)], 0.07f + rnd.nextFloat() * 0.07f, 3.4f + rnd.nextFloat() * 2.2f)
             l.vy = 0.5f + rnd.nextFloat() * 2.0f + along * 1.6f; l.burst = 0.6f + rnd.nextFloat() * 0.5f; l.spin = 1.4f + rnd.nextFloat() * 2.4f
             leafFall.add(l)
         }
         if (parts.size < 540) {
             for (i in 0 until 8) parts.add(Particle(cx + (rnd.nextFloat() - 0.5f) * 0.9f, cy + (rnd.nextFloat() - 0.5f) * 0.9f, cz + (rnd.nextFloat() - 0.5f) * 0.9f,
                 rxv * sg * (1f + rnd.nextFloat() * 2.5f) + (rnd.nextFloat() - 0.5f), 0.5f + rnd.nextFloat() * 1.8f, rzv * sg * (1f + rnd.nextFloat() * 2.5f) + (rnd.nextFloat() - 0.5f),
-                leafCols[rnd.nextInt(leafCols.size)], 0.03f + rnd.nextFloat() * 0.035f, 0.5f + rnd.nextFloat() * 0.5f).also { it.grav = 5f })
+                pal[rnd.nextInt(pal.size)], 0.03f + rnd.nextFloat() * 0.035f, 0.5f + rnd.nextFloat() * 0.5f).also { it.grav = 5f })
             for (i in 0 until 3) parts.add(Particle(cx + (rnd.nextFloat() - 0.5f) * 0.9f, cy + (rnd.nextFloat() - 0.5f) * 0.9f, cz + (rnd.nextFloat() - 0.5f) * 0.9f,
                 rxv * sg * 0.8f, 0.4f + rnd.nextFloat() * 1.0f, rzv * sg * 0.8f, if (rnd.nextBoolean()) 0xF4FFB8 else 0xFFFFFF, 0.022f, 0.6f + rnd.nextFloat() * 0.5f).also { it.grav = 0.4f })
         }
-        if (k == 0 && rnd.nextFloat() < 0.12f) dropItem(cx, cy, cz, B.LEAVES, 0f, 0f)
+        if (k == 0 && rnd.nextFloat() < 0.12f) dropItem(cx, cy, cz, bid, 0f, 0f)
     }
 
     private fun tuftFx(x: Float, y: Float, z: Float, kind: Int) {
@@ -717,13 +727,13 @@ class Game(val world: World) {
     /** a espada corta folhas (a atingida e as coladas nela) e matinhos/flores perto do golpe. true = cortou folhas */
     private fun cutFoliage(bx: Int, by: Int, bz: Int, id: Int, cx: Float, cy: Float, cz: Float): Boolean {
         var leaves = false; var tufts = 0
-        if (id == B.LEAVES) {
+        if (B.leafy(id)) {
             leaves = true
             val offs = if (hitStab) arrayOf(intArrayOf(0, 0, 0)) else arrayOf(intArrayOf(0, 0, 0), intArrayOf(1, 0, 0), intArrayOf(-1, 0, 0), intArrayOf(0, 1, 0), intArrayOf(0, -1, 0), intArrayOf(0, 0, 1), intArrayOf(0, 0, -1))
             for (o in offs) {
                 val x = bx + o[0]; val y = by + o[1]; val z = bz + o[2]
-                if (world.get(x, y, z) != B.LEAVES) continue
-                world.set(x, y, z, B.AIR); leafCutFx(x, y, z, if (o[0] == 0 && o[1] == 0 && o[2] == 0) 0 else 1)
+                val nb = world.get(x, y, z); if (!B.leafy(nb)) continue
+                world.set(x, y, z, B.AIR); leafCutFx(x, y, z, if (o[0] == 0 && o[1] == 0 && o[2] == 0) 0 else 1, nb)
             }
         }
         val gx0 = floor(cx - 1.4f).toInt(); val gx1 = floor(cx + 1.4f).toInt(); val gz0 = floor(cz - 1.4f).toInt(); val gz1 = floor(cz + 1.4f).toInt()
@@ -740,7 +750,7 @@ class Game(val world: World) {
     /** corta o tronco: tudo de madeira/folha conectado acima do corte vira uma árvore que tomba */
     private fun fellTree(x: Int, y: Int, z: Int, cutY: Float = Float.NaN): Boolean {
         val s0 = world.get(x, y + 1, z)
-        if (s0 != B.WOOD && s0 != B.LEAVES) return false
+        if (!B.log(s0) && !B.leafy(s0)) return false
         val seen = HashSet<Int>(); val q = ArrayDeque<Int>(); val out = ArrayList<Int>()
         fun enc(a: Int, b: Int, c: Int) = ((b * World.SZ + c) * World.SX + a)
         seen.add(enc(x, y + 1, z)); q.add(enc(x, y + 1, z))
@@ -752,7 +762,7 @@ class Game(val world: World) {
                 if (ny <= y || ny >= World.SY || abs(nx - x) > 5 || abs(nz - z) > 5 || nx < 0 || nz < 0 || nx >= World.SX || nz >= World.SZ) continue
                 val k = enc(nx, ny, nz); if (seen.contains(k)) continue
                 val nid = world.get(nx, ny, nz)
-                if (nid != B.WOOD && nid != B.LEAVES) continue
+                if (!B.log(nid) && !B.leafy(nid)) continue
                 seen.add(k); q.add(k)
             }
         }
@@ -806,7 +816,7 @@ class Game(val world: World) {
             val wx = floor(f.px + tmpV[0]).toInt(); val wy = floor(f.py - f.drop + tmpV[1] - 0.42f).toInt(); val wz = floor(f.pz + tmpV[2]).toInt()
             if (f.drop <= 0f && wx == f.sx && wy == f.sy && wz == f.sz) continue
             val id = world.get(wx, wy, wz)
-            if (id == B.AIR || id == B.WATER || id == B.LEAVES || id == B.WOOD) continue
+            if (id == B.AIR || id == B.WATER || B.leafy(id) || B.log(id)) continue
             if (f.holds(i)) hit = true else smashPiece(f, i)
         }
         return hit
@@ -816,11 +826,12 @@ class Game(val world: World) {
     private fun smashPiece(f: FallTree, i: Int) {
         f.gone[i] = true
         val cx = f.px + tmpV[0]; val cy = f.py - f.drop + tmpV[1]; val cz = f.pz + tmpV[2]
-        if (f.bl[i * 4 + 3] == B.WOOD) { burst(cx, cy, cz, 0xB98A55, 4, 3f); burst(cx, cy, cz, 0x7A5230, 2, 3f) }
+        val bid = f.bl[i * 4 + 3]; val pal = leafPal(bid)
+        if (B.log(bid)) { burst(cx, cy, cz, B.top[bid], 4, 3f); burst(cx, cy, cz, B.side[bid], 2, 3f) }
         else {
-            burst(cx, cy, cz, leafCols[rnd.nextInt(leafCols.size)], 4, 3f)
+            burst(cx, cy, cz, pal[rnd.nextInt(pal.size)], 4, 3f)
             if (leafFall.size < 140) leafFall.add(LeafP(cx, cy, cz, (rnd.nextFloat() - 0.5f) * 1.6f, (rnd.nextFloat() - 0.5f) * 1.6f, rnd.nextFloat() * 6.28f,
-                leafCols[rnd.nextInt(leafCols.size)], 0.08f + rnd.nextFloat() * 0.05f, 5f))
+                pal[rnd.nextInt(pal.size)], 0.08f + rnd.nextFloat() * 0.05f, 5f))
         }
         shake = max(shake, 0.12f)
     }
@@ -833,9 +844,9 @@ class Game(val world: World) {
             val id = f.bl[i * 4 + 3]
             treeRot(f, f.bl[i * 4].toFloat(), f.bl[i * 4 + 1] + f.yo, f.bl[i * 4 + 2].toFloat(), tmpV)
             val cx = f.px + tmpV[0]; val cy = f.py - f.drop + tmpV[1]; val cz = f.pz + tmpV[2]
-            if (id == B.WOOD) burst(cx, cy - 0.3f, cz, 0xC9B28A, 2, 2f)
+            if (B.log(id)) burst(cx, cy - 0.3f, cz, 0xC9B28A, 2, 2f)
             else if (leafFall.size < 140) leafFall.add(LeafP(cx, cy, cz, (rnd.nextFloat() - 0.5f) * 1.6f, (rnd.nextFloat() - 0.5f) * 1.6f, rnd.nextFloat() * 6.28f,
-                intArrayOf(0x4FA52E, 0x6CBF3C, 0x8AD453, 0x3E8A25)[rnd.nextInt(4)], 0.09f, 5f))
+                leafPal(id)[rnd.nextInt(4)], 0.09f, 5f))
         }
         shake = max(shake, 0.5f)
         val dist = hypot(player.x - f.px, player.z - f.pz); if (dist > 18f) shake = 0.1f
@@ -849,14 +860,14 @@ class Game(val world: World) {
             val id = f.bl[i * 4 + 3]
             treeRot(f, f.bl[i * 4].toFloat(), f.bl[i * 4 + 1] + f.yo, f.bl[i * 4 + 2].toFloat(), tmpV)
             val cx = f.px + tmpV[0]; val cy = f.py - f.drop + tmpV[1]; val cz = f.pz + tmpV[2]
-            if (id == B.WOOD) {
-                burst(cx, cy, cz, 0xB98A55, 4, 3f); burst(cx, cy, cz, 0x7A5230, 3, 3f)
-                logs++; if (logs % 5 == 1 && logs <= 21) dropItem(cx, cy + 0.2f, cz, B.WOOD, 0f, 0f)
+            if (B.log(id)) {
+                burst(cx, cy, cz, B.top[id], 4, 3f); burst(cx, cy, cz, B.side[id], 3, 3f)
+                logs++; if (logs % 5 == 1 && logs <= 21) dropItem(cx, cy + 0.2f, cz, id, 0f, 0f)
             } else {
                 leaves++
-                if (leaves % 2 == 0) burst(cx, cy, cz, intArrayOf(0x4FA52E, 0x6CBF3C, 0x8AD453, 0x3E8A25)[rnd.nextInt(4)], 3, 2.5f)
+                if (leaves % 2 == 0) burst(cx, cy, cz, leafPal(id)[rnd.nextInt(4)], 3, 2.5f)
                 if (leaves % 4 == 0 && leafFall.size < 140) leafFall.add(LeafP(cx, cy, cz, (rnd.nextFloat() - 0.5f) * 0.8f, (rnd.nextFloat() - 0.5f) * 0.8f, rnd.nextFloat() * 6.28f,
-                    intArrayOf(0x4FA52E, 0x6CBF3C, 0x8AD453, 0x3E8A25, 0xA3DF6A)[rnd.nextInt(5)], 0.08f + rnd.nextFloat() * 0.05f, 7f))
+                    leafPal(id)[rnd.nextInt(4)], 0.08f + rnd.nextFloat() * 0.05f, 7f))
             }
         }
         shake = max(shake, 0.25f)
@@ -1045,7 +1056,7 @@ class Game(val world: World) {
         if (wantPlace) { wantPlace = false; place() }
 
         spawnT -= dt
-        if (spawnT <= 0f) { spawnT = 3f; if (slimes.size < 7) spawnSlime() }
+        if (spawnT <= 0f) { spawnT = 3f; if (!noMobs && slimes.size < 7) spawnSlime() }
         val it = slimes.iterator()
         while (it.hasNext()) {
             val s = it.next()
@@ -1125,8 +1136,8 @@ class Game(val world: World) {
                 val x = (player.x + (rnd.nextFloat() - 0.5f) * 30f).toInt(); val z = (player.z + (rnd.nextFloat() - 0.5f) * 30f).toInt()
                 val y = (player.y + (rnd.nextFloat() - 0.4f) * 18f).toInt()
                 if (x < 1 || z < 1 || x >= World.SX - 1 || z >= World.SZ - 1 || y < 2 || y >= World.SY) continue
-                if (world.get(x, y, z) != B.LEAVES || world.get(x, y - 1, z) != B.AIR) continue
-                val cols = intArrayOf(0x4FA52E, 0x6CBF3C, 0x8AD453, 0x3E8A25, 0xA3DF6A, 0xC4E070, 0x7FC84A)
+                if (!B.leafy(world.get(x, y, z)) || world.get(x, y - 1, z) != B.AIR) continue
+                val cols = leafPal(world.get(x, y, z))
                 leafFall.add(LeafP(x + rnd.nextFloat(), y - 0.05f, z + rnd.nextFloat(), (rnd.nextFloat() - 0.5f) * 0.4f + 0.2f, (rnd.nextFloat() - 0.5f) * 0.5f,
                     rnd.nextFloat() * 6.28f, cols[rnd.nextInt(cols.size)], 0.07f + rnd.nextFloat() * 0.05f, 9f))
                 break

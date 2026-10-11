@@ -3,12 +3,13 @@ package com.cuboland.app
 /**
  * Registro dos blocos novos (id >= 14). Cada bloco é uma linha em build().
  * ATENÇÃO: os ids vão pro arquivo do mundo. NUNCA reordene nem apague linhas: só adicione no FIM de build().
- * Ids 100..103 são das ferramentas (pulados). Máximo: id 255 (o mundo guarda 1 byte por bloco).
+ * Ids 100..103 são das ferramentas (pulados). Máximo: id 1023 (o mundo guarda 4 bytes por bloco; os arrays de B têm N = 1024 — aumente N se precisar de mais).
  */
 object Blk {
     const val GLOW0 = 448          // primeiro tile emissivo: o shader deixa tiles >= 448 sempre brilhando
     const val F_LIGHT = 1          // brilha (sem sombra/AO)
     const val F_GLASS = 2          // translúcido: desenhado junto com a água, vizinhos continuam visíveis
+    const val F_LEAF = 4           // folhagem: malha de folha (casca + cubo interno), buracos que deixam ver o miolo, balança no vento
     const val M_STONE = 1; const val M_WOOD = 2; const val M_SOFT = 3; const val M_GLASS = 4; const val M_METAL = 5
     const val C_NAT = 2; const val C_BUILD = 3; const val C_DEC = 4
 
@@ -19,7 +20,7 @@ object Blk {
     const val K_LAVA = 15; const val K_LAMP = 16; const val K_GRAVEL = 17; const val K_SHINGLE = 18; const val K_CRYSTAL = 19
     const val K_SHELF = 20; const val K_BAND = 21; const val K_GRAD = 22; const val K_CANDY = 23; const val K_SWIRL = 24
     const val K_BORDER = 25; const val K_RING = 26; const val K_CELLS = 27; const val K_JELLY = 28; const val K_ICE = 29
-    const val K_BLOCKY = 30; const val K_GLAZE = 31; const val K_CACTUS = 32; const val K_LEAFY = 33; const val K_PIX = 34
+    const val K_BLOCKY = 30; const val K_GLAZE = 31; const val K_CACTUS = 32; const val K_LEAFY = 33; const val K_PIX = 34; const val K_LEAF = 35
 
     class Def(val id: Int, val name: String, val cat: Int, val top: Int, val side: Int, val bot: Int,
               val color: Int, val flags: Int, val hard: Float, val mat: Int, val desc: String)
@@ -31,6 +32,16 @@ object Blk {
     private var nextId = 14
     private val list = ArrayList<Def>()
     val defs: List<Def> by lazy { build(); list }
+    /** trechos de tiles seguidos de folhagem (K_LEAF): o shader usa pra balançar no vento e iluminar como folha */
+    val leafRuns: List<IntArray> by lazy {
+        defs; val out = ArrayList<IntArray>(); var s = -1
+        for (i in 24..GLOW0) {
+            val on = i < GLOW0 && specs[i]?.get(0) == K_LEAF
+            if (on && s < 0) s = i
+            if (!on && s >= 0) { out.add(intArrayOf(s, i - 1)); s = -1 }
+        }
+        out
+    }
 
     private fun tl(kind: Int, c1: Int, c2: Int = c1, c3: Int = c1, c4: Int = 0, seed: Int = 0, par: Int = 0, fl: Int = 0, glow: Boolean = false): Int {
         val i = if (glow) nextGlow else nextTile
@@ -43,7 +54,7 @@ object Blk {
 
     private fun blk(name: String, cat: Int, top: Int, side: Int, bot: Int, color: Int, mat: Int = 0, hard: Float = 4f, fl: Int = 0, desc: String = ""): Int {
         if (nextId == 100) nextId = 104
-        if (nextId > 255) return 0
+        if (nextId > 1023) return 0
         val id = nextId
         nextId++
         list.add(Def(id, name, cat, top, side, bot, color, fl, hard, mat, desc))
@@ -197,9 +208,9 @@ object Blk {
         uni("Azulejo Azul", C_BUILD, tl(K_TILES, 0x6FA8E8, 0x5E98DA, 0x3E6EA8, 0, 0, 8), 0x6FA8E8, M_STONE, 6f)
         uni("Janela de Madeira", C_BUILD, tl(K_GLASS, 0xDDF2FF, 0x8B6B43), 0xB6A070, M_GLASS, 2f, F_GLASS, "Janela com moldura de madeira.")
         uni("Janela Branca", C_BUILD, tl(K_GLASS, 0xDDF2FF, 0xF2F2EE), 0xDDE8EE, M_GLASS, 2f, F_GLASS, "Janela com moldura branca.")
-        uni("Moita Cerejeira", C_NAT, tl(K_LEAFY, 0xB8587E, 0xF0A6C4, 0xF8C2D8, 0xFFDDEA), 0xF0A6C4, M_SOFT, 2f)
-        uni("Moita de Outono", C_NAT, tl(K_LEAFY, 0x9A4012, 0xE07A26, 0xF0A03A, 0xF8C25A), 0xE07A26, M_SOFT, 2f)
-        uni("Moita Amarela", C_NAT, tl(K_LEAFY, 0xA88418, 0xE0BE3A, 0xF2D65A, 0xFAE98A), 0xE0BE3A, M_SOFT, 2f)
+        uni("Moita Cerejeira", C_NAT, tl(K_LEAF, 0x9A3E62, 0xD9739B, 0xF0A0C0, 0xFFC8DC), 0xF0A6C4, M_SOFT, 2f, F_LEAF)
+        uni("Moita de Outono", C_NAT, tl(K_LEAF, 0x7A2E0E, 0xB8561C, 0xE07A26, 0xF2A83E), 0xE07A26, M_SOFT, 2f, F_LEAF)
+        uni("Moita Amarela", C_NAT, tl(K_LEAF, 0x7E6410, 0xB8921E, 0xE0BE3A, 0xF6DC62), 0xE0BE3A, M_SOFT, 2f, F_LEAF)
 
         // ================= LUZES E MÓVEIS =================
         uni("Pedra Luminosa", C_DEC, tl(K_GLOW, 0xFFE9A0, 0xFFC96A, 0xD8963A, 0, 0, 0, 0, true), 0xFFD27C, 0, 4f, F_LIGHT, "Brilha com uma luz quentinha.")
@@ -225,7 +236,7 @@ object Blk {
         uni("Neve", C_NAT, tl(K_SPECK, 0xFFFFFF, 0xEEF5FC, 0xD6E4F2, 0, 0, 0), 0xFFFFFF, M_SOFT, 2f)
         uni("Gelo", C_NAT, tl(K_ICE, 0xBFE3FF, 0xDDF1FF, fl = 16), 0xBFE3FF, M_GLASS, 3f, F_GLASS, "Gelo claro e escorregadio de olhar.")
         uni("Gelo Compactado", C_NAT, tl(K_ICE, 0x9CCFF5, 0xBCE0FB, 0, 0, 0, 255), 0x9CCFF5, M_GLASS, 4f)
-        uni("Musgo", C_NAT, tl(K_LEAFY, 0x2E5A18, 0x5C9034, 0x70A840, 0x88C050), 0x5C9034, M_SOFT, 2f)
+        uni("Musgo", C_NAT, tl(K_LEAF, 0x24501A, 0x3F7D26, 0x62A83A, 0x92D456), 0x5C9034, M_SOFT, 2f, F_LEAF)
         blk("Cacto", C_NAT, tl(K_CACTUS, 0x5FA040, 0x78BC52, 0x2F6A24, 0, 0, 1), tl(K_CACTUS, 0x5FA040, 0x78BC52, 0x2F6A24), tl(K_CACTUS, 0x5FA040, 0x78BC52, 0x2F6A24, 0, 0, 1), 0x4F8F3A, M_SOFT, 3f)
         blk("Bloco de Feno", C_NAT, tl(K_RING, 0xE6C65A, 0xF0D676, 0xB89838, 0, 0, 2), tl(K_STRIPE, 0xE6C65A, 0xD8B64A, 0xB89838, 0, 0, 0), tl(K_RING, 0xE6C65A, 0xF0D676, 0xB89838, 0, 0, 2), 0xE6C65A, M_SOFT, 3f)
         blk("Melancia", C_NAT, tl(K_RING, 0x8FBF5A, 0xA8D072, 0x4F8F3A, 0, 0, 2), tl(K_STRIPE, 0x5FA84A, 0x3F8A38, 0x2F6A28, 0, 0, 1), tl(K_RING, 0x8FBF5A, 0xA8D072, 0x4F8F3A, 0, 0, 2), 0x5FA84A, M_SOFT, 3f)
@@ -255,5 +266,19 @@ object Blk {
         metal("Cobre Exposto", 0xB89478)
         metal("Cobre Desgastado", 0x6FAE8A)
         metal("Cobre Oxidado", 0x4FB59A)
+
+        // ================= FOLHAGEM DE TODAS AS ÁRVORES =================
+        uni("Folhas de Abeto", C_NAT, tl(K_LEAF, 0x1B3D1E, 0x2A5A2C, 0x3C7A3A, 0x58A04E), 0x3C7A3A, M_SOFT, 2f, F_LEAF, "Folhas de abeto: verde bem escuro, de pinheiro.")
+        uni("Folhas de Bétula", C_NAT, tl(K_LEAF, 0x4E7A22, 0x6E9E34, 0x8FBF4A, 0xB2DC6E), 0x8FBF4A, M_SOFT, 2f, F_LEAF, "Folhas de bétula: verde clarinho e fresco.")
+        uni("Folhas de Selva", C_NAT, tl(K_LEAF, 0x1F5A12, 0x2F8A1C, 0x45B02A, 0x6ED04A), 0x45B02A, M_SOFT, 2f, F_LEAF, "Folhas de selva: verde vivo e cheio.")
+        uni("Folhas de Acácia", C_NAT, tl(K_LEAF, 0x5A6E1E, 0x7E9A2C, 0xA2BC3C, 0xC4DC60), 0xA2BC3C, M_SOFT, 2f, F_LEAF, "Folhas de acácia: verde de savana.")
+        uni("Folhas de Carvalho Escuro", C_NAT, tl(K_LEAF, 0x153A10, 0x225A1A, 0x2F7A24, 0x469A38), 0x2F7A24, M_SOFT, 2f, F_LEAF, "Folhas de carvalho escuro: verde profundo.")
+        uni("Folhas de Mangue", C_NAT, tl(K_LEAF, 0x2E5A22, 0x468A34, 0x62AA48, 0x86C868), 0x62AA48, M_SOFT, 2f, F_LEAF, "Folhas de mangue: verde de pântano.")
+        uni("Folhas de Cerejeira", C_NAT, tl(K_LEAF, 0x9A3E62, 0xD9739B, 0xF0A0C0, 0xFFC8DC), 0xF0A0C0, M_SOFT, 2f, F_LEAF, "Folhas de cerejeira: cor-de-rosa florido.")
+        uni("Folhas de Outono", C_NAT, tl(K_LEAF, 0x7A2E0E, 0xB8561C, 0xE07A26, 0xF2A83E), 0xE07A26, M_SOFT, 2f, F_LEAF, "Folhas de outono: laranja de fim de estação.")
+        uni("Folhas Amarelas", C_NAT, tl(K_LEAF, 0x7E6410, 0xB8921E, 0xE0BE3A, 0xF6DC62), 0xE0BE3A, M_SOFT, 2f, F_LEAF, "Folhas amarelas douradas.")
+        uni("Folhas de Bambu", C_NAT, tl(K_LEAF, 0x2F5A14, 0x4E8A22, 0x72AE34, 0xA0D058), 0x72AE34, M_SOFT, 2f, F_LEAF, "Folhas de bambu: finas e verdinhas.")
+        uni("Verruga Carmesim", C_NAT, tl(K_LEAF, 0x5A1228, 0x8A2244, 0xC04068, 0xE8708C), 0xC04068, M_SOFT, 2f, F_LEAF, "Verruga carmesim: copa vermelha do mundo sombrio.")
+        uni("Verruga Distorcido", C_NAT, tl(K_LEAF, 0x0F4A4A, 0x1A7A78, 0x2EA8A0, 0x5AD2C6), 0x2EA8A0, M_SOFT, 2f, F_LEAF, "Verruga distorcida: copa azul-turquesa do mundo sombrio.")
     }
 }

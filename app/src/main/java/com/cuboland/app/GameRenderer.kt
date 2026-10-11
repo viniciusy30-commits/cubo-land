@@ -35,6 +35,8 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     private var lastId = -1; private var equip = 1f
     private var prevYaw = 0f; private var prevPitch = 0f; private var swayX = 0f; private var swayY = 0f
 
+    /** condição GLSL: o tile é de folhagem dos blocos novos (balança e ilumina como a folha do carvalho) */
+    private fun leafCond(v: String): String = Blk.leafRuns.joinToString(" || ") { "($v > ${it[0] - 0.5f} && $v < ${it[1] + 0.5f})" }.ifEmpty { "false" }
     private val VS = """
         uniform mat4 uVP; uniform mat4 uModel; uniform vec3 uCam; uniform float uTime; uniform float uWind; uniform float uUnder;
         attribute vec3 aPos; attribute vec3 aCol; attribute vec2 aUV;
@@ -48,7 +50,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                     float w = clamp((0.99 - aUV.y * 16.0) / 0.98, 0.0, 1.0); w = w * w;
                     wp.x += (sin(uTime * 2.3 + wp.x * 0.9 + wp.z * 0.6) * 0.07 + 0.04) * w * gust * 1.4;
                     wp.z += cos(uTime * 1.8 + wp.x * 0.5 + wp.z * 0.9) * 0.05 * w * gust * 1.4;
-                } else if (tile == 8.0 || tile == 20.0 || tile == 21.0 || tile == 22.0) {
+                } else if (tile == 8.0 || tile == 20.0 || tile == 21.0 || tile == 22.0 || ${leafCond("tile")}) {
                     float ph = wp.x * 0.8 + wp.z * 0.7;
                     float dx = (sin(uTime * 1.6 + wp.y * 1.2 + ph) * 0.05 + sin(uTime * 3.1 + ph * 1.7) * 0.015 + 0.02) * gust;
                     float dz = (cos(uTime * 1.3 + wp.y * 1.0 + ph) * 0.05 + cos(uTime * 2.7 + ph * 1.3) * 0.015) * gust;
@@ -83,7 +85,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         void main() {
             vec2 uv = vUV;
             bool isWater = vTile > 9.5 && vTile < 10.5;
-            bool isLeaf = (vTile > 7.5 && vTile < 8.5) || (vTile > 19.5 && vTile < 22.5);
+            bool isLeaf = (vTile > 7.5 && vTile < 8.5) || (vTile > 19.5 && vTile < 22.5) || ${leafCond("vTile")};
             vec4 t = texture2D(uTex, uv);
             if (t.a < 0.4) discard;
             float l = clamp((vCol.r - 0.3) / 0.7, 0.0, 1.0);
@@ -1476,6 +1478,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val ez = game.camZ + (rnd.nextFloat() - 0.5f) * sh
         Matrix.setLookAtM(view, 0, ex, ey, ez, ex + game.lookDirX(), ey + game.lookDirY(), ez + game.lookDirZ(), 0f, 1f, 0f)
         Matrix.multiplyMM(vp, 0, proj, 0, view, 0)
+        game.vpm = vp.clone()
         updateFrustum(vp)
         cvx = ex; cvy = ey; cvz = ez; cdx = game.lookDirX(); cdy = game.lookDirY(); cdz = game.lookDirZ()
         val uwy = floor(ey).toInt()

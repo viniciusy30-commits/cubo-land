@@ -58,7 +58,7 @@ class WorldsActivity : CozyActivity() {
 
     private fun worldCard(w: Worlds.Info, last: Boolean): LinearLayout {
         val card = cPanel(Cz.PANEL, 20f, 12)
-        card.addView(WorldThumb(this, w.seed, w.type), lpW(ViewGroup.LayoutParams.MATCH_PARENT, dp(78)))
+        card.addView(WorldThumb(this, w.seed, if (w.type == Worlds.TEST) 1 else w.type), lpW(ViewGroup.LayoutParams.MATCH_PARENT, dp(78)))
         val nameRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(0, dp(8), 0, dp(4)) }
         nameRow.addView(cTxt(w.name, 18f, Color.WHITE).apply { maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END }, lpW(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         if (last) nameRow.addView(badge("RECENTE", Cz.GOLD), lpW(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { leftMargin = dp(6) })
@@ -115,16 +115,16 @@ class WorldsActivity : CozyActivity() {
                 p.addView(cTxt("Tipo de mapa", 12f, Cz.SOFT, false).apply { setPadding(0, dp(12), 0, dp(4)) })
                 val tr = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
                 val boxes = ArrayList<LinearLayout>()
-                val infos = arrayOf("Ilha" to "Mundo médio com colinas, lagos e florestas", "Planície e rio" to "Gigante e plano, com um rio enorme")
+                val infos = arrayOf("Ilha" to "Mundo médio com colinas, lagos e florestas", "Planície e rio" to "Gigante e plano, com um rio enorme", "Galeria de blocos" to "Plano sem monstros, com todos os blocos em fileiras e plaquinhas")
                 fun paint() { for ((k, b) in boxes.withIndex()) b.background = CozyBox(this, if (k == type) Cz.PANEL2 else Cz.PANEL3, 14f, false, if (k == type) Cz.GOLD else Cz.INK) }
-                for (k in 0..1) {
+                for (k in 0..2) {
                     val b = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(8), dp(8), dp(8), dp(8)); isClickable = true }
-                    b.addView(WorldThumb(this, if (k == 0) 1234 else 4321, k), lpW(ViewGroup.LayoutParams.MATCH_PARENT, dp(64)))
+                    b.addView(WorldThumb(this, if (k == 0) 1234 else 4321, if (k == 2) 1 else k), lpW(ViewGroup.LayoutParams.MATCH_PARENT, dp(64)))
                     b.addView(cTxt(infos[k].first, 14f, Color.WHITE).apply { setPadding(0, dp(6), 0, 0) })
                     b.addView(cTxt(infos[k].second, 10.5f, Cz.SOFT, false))
                     b.setOnClickListener { type = k; paint() }
                     boxes.add(b)
-                    tr.addView(b, lpW(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { if (k == 0) rightMargin = dp(6) else leftMargin = dp(6) })
+                    tr.addView(b, lpW(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { if (k < 2) rightMargin = dp(3); if (k > 0) leftMargin = dp(3) })
                 }
                 paint(); p.addView(tr)
             }
@@ -163,7 +163,7 @@ class WorldsActivity : CozyActivity() {
                 val nm = name.text.toString().trim()
                 if (w == null) {
                     val sd = seedEt?.text?.toString()?.toIntOrNull() ?: (System.nanoTime() % 99999).toInt().let { if (it < 0) -it else it }
-                    val n = Worlds.create(this, nm, type, sd, creative)
+                    val n = Worlds.create(this, if (nm.isEmpty() && type == Worlds.TEST) "Galeria de blocos" else nm, type, sd, creative || type == Worlds.TEST)
                     close(); refresh(); play(n)
                 } else {
                     w.name = nm.ifEmpty { w.name }; w.creative = creative

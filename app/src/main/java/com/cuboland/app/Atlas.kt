@@ -484,6 +484,14 @@ object Atlas {
                 else if (wd1 < 0.09f) b = lerp(b, 0xFFFFFF, 0.22f)
                 c = b
             }
+            Blk.K_LEAF -> {   // mesma receita da folha do carvalho (leaves): 4 tons em pixels, com buraquinhos que mostram o miolo da copa
+                val px = floor(u * 16f).toInt().coerceIn(0, 15); val py = floor(v * 16f).toInt().coerceIn(0, 15)
+                if (h(px, py, 91 + s) < 0.3f && h(px, py / 2, 92 + s) < 0.7f) a = 0
+                else {
+                    val k = h(px / 2, py, 93 + s) * 0.6f + h(px, py, 94 + s) * 0.4f
+                    c = if (k < 0.25f) c1 else if (k < 0.5f) c2 else if (k < 0.78f) c3 else c4
+                }
+            }
             Blk.K_PIX -> {
                 val px = floor(u * 16f).toInt().coerceIn(0, 15); val py = floor(v * 16f).toInt().coerceIn(0, 15)
                 val t = Pix.P[par][py][px] - '0'
@@ -670,7 +678,7 @@ object Atlas {
             for (y in 0 until T) for (x in 0 until T) {
                 val qx = x / 4; val qy = y / 4   // grade de 16x16 pixels grandes (pixel art)
                 val g0 = genNew(sp, (qx + 0.5f) / 16f, (qy + 0.5f) / 16f)
-                val c = if (sp[0] == Blk.K_PIX) g0 else pixelArt(g0, qx, qy, sp[5])
+                val c = if (sp[0] == Blk.K_PIX || sp[0] == Blk.K_LEAF) g0 else pixelArt(g0, qx, qy, sp[5])
                 out[(y0 + y) * w + x0 + x] = if ((c ushr 24) == 0) CLEAR else c
             }
             bleed(out, w, x0, y0)

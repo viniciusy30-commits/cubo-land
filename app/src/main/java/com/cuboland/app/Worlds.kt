@@ -9,7 +9,8 @@ import java.io.File
 object Worlds {
     const val ISLAND = 0
     const val FLAT = 1
-    val TYPE_NAMES = arrayOf("Ilha", "Planície e rio")
+    const val TEST = 2   // galeria de blocos: plano sem monstros, com todos os blocos em fileiras e plaquinhas
+    val TYPE_NAMES = arrayOf("Ilha", "Planície e rio", "Galeria de blocos")
 
     class Info(val id: String, var name: String, val type: Int, val seed: Int, var creative: Boolean,
                val created: Long, var played: Long, val file: String)
