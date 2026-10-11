@@ -6,29 +6,39 @@ import android.view.MotionEvent
 import android.view.View
 import kotlin.math.*
 
-class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) {
+class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (Boolean) -> Unit, val onExit: () -> Unit) : View(ctx) {
+    private val prefs = ctx.getSharedPreferences("cfg", 0)
+    private val aimTouch = prefs.getBoolean("aimTouch", false)   // mira no ponto do toque (círculo no dedo)
+    private val bs = prefs.getFloat("btn", 1f).coerceIn(0.8f, 1.25f)
+    private var paused = false
+    private var lookDownT = 0L; private var lookMoved = 0f; private var lookHold = false; private var lastUpT = 0L
+    private fun al(c: Int, a: Int) = Color.argb(a, Color.red(c), Color.green(c), Color.blue(c))
     private val d = resources.displayMetrics.density
-    private val pt = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val u = max(2, (2 * d).roundToInt()).toFloat()          // 1 "pixel de arte" na tela
+    private val pt = Paint().apply { isAntiAlias = false }
     private val bp = Paint().apply { isFilterBitmap = false; isAntiAlias = false }
     private val mx = Matrix()
     private val src = floatArrayOf(0f, 0f, Atlas.T.toFloat(), 0f, 0f, Atlas.T.toFloat())
     private val dst = FloatArray(6)
     private val fLeft = LightingColorFilter(0xFFCCCCCC.toInt(), 0)
     private val fRight = LightingColorFilter(0xFFA0A0A0.toInt(), 0)
-    private val path = Path()
     private var stickId = -1; private var lookId = -1
     private var scx = 0f; private var scy = 0f; private var sx = 0f; private var sy = 0f
-    private var lx = 0f; private var ly = 0f
+    private var lx = 0f; private var ly = 0f; private var fx0 = 0f; private var fy0 = 0f
     private val btnId = HashMap<Int, Int>()
-    private val press = FloatArray(7)
+    private val press = FloatArray(10)
     private var invOpen = false; private var invSel = -1
-    private var bounce = 0f; private var lastSel = -1
-    // 0 atacar, 1 pular, 2 colocar, 3 câmera, 4 sair, 5 mochila
-    private fun bx(i: Int) = when (i) { 0 -> width - 100 * d; 1 -> width - 195 * d; 6 -> width - 195 * d; 2 -> width - 70 * d; 3 -> width - 40 * d; 5 -> width - 92 * d; else -> 40 * d }
-    private fun byy(i: Int) = when (i) { 0 -> height - 100 * d; 1 -> height - 62 * d; 6 -> height - 152 * d; 2 -> height - 190 * d; else -> 40 * d }
-    private fun br(i: Int) = when (i) { 0 -> 44 * d; 1 -> 34 * d; 6 -> 30 * d; 2 -> 32 * d; else -> 22 * d }
-    private val slot get() = 46 * d
-    private fun hbLeft() = (width - 8 * slot - 7 * 4 * d) / 2f
+    private var poseDownT = 0L; private var poseFired = false; private var poseTapT = 0L
+    private var bounce = 0f; private var lastSel = -1; private var lastItem = -1; private var nameUntil = 0L
+    // 1 pular/boiar, 3 câmera, 4 pausa, 5 mochila, 6 afundar, 7 correr
+    private fun bx(i: Int) = when (i) { 1, 6 -> width * 0.858f; 7 -> width * 0.927f; 8 -> width * 0.934f; 3 -> width - 40 * d; 5 -> width - 92 * d; else -> 40 * d }
+    private fun byy(i: Int) = when (i) { 1 -> if (wet()) height * 0.753f - 72 * d else height * 0.753f; 6 -> height * 0.753f; 7 -> height * 0.653f; 8 -> height * 0.833f; else -> 40 * d }
+    private fun wet() = game.flying || game.player.inWater
+    private fun br(i: Int) = (when (i) { 1 -> 32 * d; 7, 6 -> 28 * d; 8 -> 26 * d; else -> 22 * d }) * (if (i == 1 || i == 6 || i == 7 || i == 8) bs else 1f)
+    private fun sn(v: Float) = (v / u).roundToInt() * u
+    private val slot get() = sn(46 * d)
+    private val gap get() = max(u, sn(4 * d))
+    private fun hbLeft() = sn((width - 8 * slot - 7 * gap) / 2f)
     private fun hbTop() = height - slot - 10 * d
     private fun defStickX() = 110 * d
     private fun defStickY() = height - 100 * d
@@ -45,32 +55,62 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
 
     private fun col(v: Int) = v or (0xFF shl 24)
 
+    override fun onSizeChanged(w: Int, h: Int, ow: Int, oh: Int) { game.aspect = w.toFloat() / max(1, h) }
+
     override fun onTouchEvent(e: MotionEvent): Boolean {
         val act = e.actionMasked; val idx = e.actionIndex
         when (act) {
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> down(e.getPointerId(idx), e.getX(idx), e.getY(idx))
-            MotionEvent.ACTION_MOVE -> if (!invOpen) for (i in 0 until e.pointerCount) move(e.getPointerId(i), e.getX(i), e.getY(i))
+            MotionEvent.ACTION_MOVE -> if (!invOpen && !paused) for (i in 0 until e.pointerCount) move(e.getPointerId(i), e.getX(i), e.getY(i))
             MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> up(e.getPointerId(idx))
         }
         return true
     }
 
+    private fun clearInput() {
+        stickId = -1; lookId = -1; sx = 0f; sy = 0f; lookHold = false
+        game.stickX = 0f; game.stickY = 0f; game.jumpHeld = false; game.downHeld = false; game.attackHeld = false; game.aimOn = false; btnId.clear()
+    }
+
+    fun togglePause() {
+        paused = !paused
+        game.paused = paused
+        clearInput()
+        if (invOpen) invOpen = false
+    }
+
+    private fun pbox() = RectF(width / 2f - 160 * d, height / 2f - 142 * d, width / 2f + 160 * d, height / 2f + 142 * d)
+    private fun pbtn(k: Int): RectF { val b = pbox(); val t = b.top + 98 * d + k * 56 * d; return RectF(b.left + 22 * d, t, b.right - 22 * d, t + 48 * d) }
+
+    private fun pauseDown(x: Float, y: Float) {
+        if (pbtn(0).contains(x, y)) { togglePause(); return }
+        if (pbtn(1).contains(x, y)) { game.creative = !game.creative; if (!game.creative) game.flying = false; onMode(game.creative); return }
+        if (pbtn(2).contains(x, y)) { onExit(); return }
+    }
+
     private fun toggleInv() {
         invOpen = !invOpen
-        stickId = -1; lookId = -1; sx = 0f; sy = 0f
-        game.stickX = 0f; game.stickY = 0f; game.jumpHeld = false; game.downHeld = false; game.attackHeld = false; btnId.clear()
+        clearInput()
         invSel = game.cur()
     }
 
     private fun hotbarHit(x: Float, y: Float): Boolean {
         if (y > hbTop() - 8 * d) {
-            val s = ((x - hbLeft()) / (slot + 4 * d)).toInt()
+            val s = ((x - hbLeft()) / (slot + gap)).toInt()
             if (x >= hbLeft() && s in 0..7) { game.sel = s; invSel = game.cur(); return true }
         }
         return false
     }
 
+    private fun aimAt(x: Float, y: Float) {
+        if (!aimTouch) return
+        game.aimNx = ((x - width / 2f) / (width / 2f)).coerceIn(-1f, 1f)
+        game.aimNy = ((y - height / 2f) / (height / 2f)).coerceIn(-1f, 1f)
+        game.aimOn = true
+    }
+
     private fun down(id: Int, x: Float, y: Float) {
+        if (paused) { pauseDown(x, y); return }
         if (hypot(x - bx(5), y - byy(5)) < br(5) * 1.2f) { toggleInv(); return }
         if (invOpen) {
             if (hotbarHit(x, y)) return
@@ -83,21 +123,21 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
             if (x < pl() || x > pr() || y < pt0() || y > pb()) toggleInv()
             return
         }
-        for (i in intArrayOf(0, 1, 2, 3, 4, 6)) if ((i != 6 || game.flying) && hypot(x - bx(i), y - byy(i)) < br(i) * 1.15f) {
+        for (i in intArrayOf(1, 3, 4, 6, 7, 8)) if ((i != 6 || wet()) && (i != 8 || !wet()) && hypot(x - bx(i), y - byy(i)) < br(i) * 1.15f) {
             btnId[id] = i
             when (i) {
-                0 -> { game.attackPress = true; game.attackHeld = true }
                 1 -> { game.jumpHeld = true; game.jumpTap() }
-                6 -> game.downHeld = true
-                2 -> game.wantPlace = true
+                6 -> { game.downHeld = true; game.downTap() }
+                7 -> game.sprint = !game.sprint      // toque liga/desliga; parar de andar desliga sozinho
+                8 -> { poseDownT = System.currentTimeMillis(); poseFired = false }
                 3 -> game.wantCam = true
-                4 -> onExit()
+                4 -> togglePause()
             }
             return
         }
         if (hotbarHit(x, y)) return
         if (x < width * 0.38f && stickId < 0) { stickId = id; scx = x; scy = y; sx = 0f; sy = 0f; return }
-        if (lookId < 0) { lookId = id; lx = x; ly = y }
+        if (lookId < 0) { lookId = id; lx = x; ly = y; fx0 = x; fy0 = y; lookDownT = System.currentTimeMillis(); lookMoved = 0f; lookHold = false; aimAt(x, y) }
     }
 
     private fun move(id: Int, x: Float, y: Float) {
@@ -109,26 +149,180 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
             sx = dx / r; sy = dy / r
             game.stickX = sx; game.stickY = -sy
         } else if (id == lookId) {
-            game.addLook(x - lx, y - ly); lx = x; ly = y
+            lookMoved += hypot(x - lx, y - ly)
+            // mira por toque: só gira a câmera depois de arrastar um pouco; antes disso o dedo só mira
+            if (!aimTouch || lookMoved > 12 * d) game.addLook(x - lx, y - ly)
+            lx = x; ly = y; aimAt(x, y)
         }
     }
 
     private fun up(id: Int) {
         if (id == stickId) { stickId = -1; sx = 0f; sy = 0f; game.stickX = 0f; game.stickY = 0f }
-        if (id == lookId) lookId = -1
+        if (id == lookId) {
+            lookId = -1; lastUpT = System.currentTimeMillis()
+            if (!paused && !invOpen) {
+                if (lookHold) { game.attackHeld = false; game.attackRelease = true }
+                else if (lookMoved < 14 * d && System.currentTimeMillis() - lookDownT < 320) {
+                    if (Items.isBlock(game.cur())) game.wantPlace = true else { game.attackPress = true; game.attackRelease = true }
+                }
+            }
+            lookHold = false
+        }
         val b = btnId.remove(id)
         if (b == 1) game.jumpHeld = false
         if (b == 6) game.downHeld = false
-        if (b == 0) { game.attackHeld = false; game.attackRelease = true }
+        if (b == 8 && !poseFired) {   // toque: 1x agacha, 2x senta (espera um pouco pra ver se vem o 2º toque)
+            val now = System.currentTimeMillis()
+            if (poseTapT > 0L && now - poseTapT < 320) { poseTapT = 0L; game.requestPosture(2) } else poseTapT = now
+        }
+        if (b == 8) poseFired = false
     }
 
-    private fun heart(c: Canvas, cx: Float, cy: Float, s: Float, color: Int) {
-        path.reset()
-        path.moveTo(cx, cy + s * 0.9f)
-        path.cubicTo(cx - s * 1.4f, cy - s * 0.1f, cx - s * 0.7f, cy - s * 1.1f, cx, cy - s * 0.35f)
-        path.cubicTo(cx + s * 0.7f, cy - s * 1.1f, cx + s * 1.4f, cy - s * 0.1f, cx, cy + s * 0.9f)
-        pt.style = Paint.Style.FILL; pt.color = color; c.drawPath(path, pt)
+    private val HEART = arrayOf(".XX...XX.", "XXXX.XXXX", "XXXXXXXXX", "XXXXXXXXX", ".XXXXXXX.", "..XXXXX..", "...XXX...", "....X....")
+    /** coração em pixels (9x8) como no Minecraft: contorno preto, vermelho e brilho; half = só a metade esquerda */
+    private fun pxHeart(c: Canvas, cx: Float, cy: Float, px: Float, fill: Int, half: Boolean = false, empty: Boolean = false) {
+        val x0 = cx - 4.5f * px; val y0 = cy - 4f * px
+        pt.style = Paint.Style.FILL
+        pt.color = Color.BLACK
+        for (r in 0 until 8) for (k in 0 until 9) if (HEART[r][k] == 'X') c.drawRect(x0 + (k - 1) * px, y0 + (r - 1) * px, x0 + (k + 2) * px, y0 + (r + 2) * px, pt)
+        for (r in 0 until 8) for (k in 0 until 9) {
+            if (HEART[r][k] != 'X') continue
+            pt.color = if (empty || (half && k > 4)) Color.rgb(60, 24, 30) else if (r >= 4) shadeC(fill, 0.82f) else fill
+            c.drawRect(x0 + k * px, y0 + r * px, x0 + (k + 1) * px, y0 + (r + 1) * px, pt)
+        }
+        if (!empty) { pt.color = Color.argb(230, 255, 255, 255); c.drawRect(x0 + px, y0 + px, x0 + 3 * px, y0 + 2 * px, pt); c.drawRect(x0 + px, y0 + 2 * px, x0 + 2 * px, y0 + 3 * px, pt) }
     }
+
+
+    // ------------------------------------------------------------------ pixel art
+    private fun rc(c: Canvas, l: Float, t: Float, r: Float, b: Float, color: Int) { pt.style = Paint.Style.FILL; pt.color = color; c.drawRect(l, t, r, b, pt) }
+    private fun outer(c: Canvas, l: Float, t: Float, r: Float, b: Float, color: Int) { rc(c, l + u, t, r - u, b, color); rc(c, l, t + u, r, b - u, color) }
+
+    /** painel/botão no estilo do menu: contorno preto, moldura dourada, face com degradê em degraus e rebites */
+    private fun pxPanel(c: Canvas, l0: Float, t0: Float, r0: Float, b0: Float, base: Int, hi: Boolean = false, pressed: Boolean = false, a: Int = 255) {
+        val l = sn(l0); val t = sn(t0) + (if (pressed) u else 0f); val r = sn(r0); val b = sn(b0)
+        val gold = if (hi) Color.rgb(255, 238, 150) else Color.rgb(255, 208, 96)
+        val goldL = Color.rgb(255, 240, 170); val goldD = Color.rgb(196, 128, 48)
+        if (!pressed) outer(c, l, t + u, r, b + u, al(Cz.INK, a))
+        outer(c, l, t, r, b, al(Cz.INK, a))
+        outer(c, l + u, t + u, r - u, b - u, al(gold, a))
+        rc(c, l + 2 * u, t + u, r - 2 * u, t + 2 * u, al(goldL, a)); rc(c, l + u, t + 2 * u, l + 2 * u, b - 2 * u, al(goldL, a))
+        rc(c, l + 2 * u, b - 2 * u, r - 2 * u, b - u, al(goldD, a)); rc(c, r - 2 * u, t + 2 * u, r - u, b - 2 * u, al(goldD, a))
+        val light = mixC(base, Color.WHITE, 0.3f); val dark = shadeC(base, 0.62f)
+        val fl = l + 2 * u; val fr = r - 2 * u; val ft = t + 2 * u; val fb = b - 2 * u
+        var y = ft
+        while (y < fb - 0.5f) {
+            val f = (y - ft) / max(u, fb - ft)
+            val cc = if (f < 0.45f) mixC(light, base, min(1f, f * 2.2f)) else mixC(base, dark, (f - 0.45f) / 0.55f)
+            rc(c, fl, y, fr, min(y + u, fb), al(cc, a)); y += u
+        }
+        if (r - l > 9 * u && b - t > 9 * u) {
+            for (k in 0 until 4) { val rx = if (k % 2 == 0) l + 3 * u else r - 4 * u; val ry = if (k < 2) t + 3 * u else b - 4 * u
+                rc(c, rx, ry, rx + u, ry + u, al(goldD, a)) }
+        }
+    }
+
+    private fun frame(c: Canvas, l: Float, t: Float, r: Float, b: Float, th: Float, color: Int) {
+        rc(c, l, t, r, t + th, color); rc(c, l, b - th, r, b, color); rc(c, l, t + th, l + th, b - th, color); rc(c, r - th, t + th, r, b - th, color)
+    }
+
+    /** moldura transparente: só contorno preto + dourado e um brilho leve de vidro por dentro */
+    private fun pxGlass(c: Canvas, l0: Float, t0: Float, r0: Float, b0: Float, hi: Boolean) {
+        val l = sn(l0); val t = sn(t0); val r = sn(r0); val b = sn(b0)
+        val g = if (hi) Color.rgb(255, 232, 140) else Color.rgb(236, 190, 92); val gl = Color.rgb(255, 244, 186); val gd = Color.rgb(176, 116, 44)
+        val ink = Color.argb(200, 36, 28, 48)
+        rc(c, l + 2 * u, t + 2 * u, r - 2 * u, b - 2 * u, Color.argb(if (hi) 40 else 22, 255, 255, 255))
+        rc(c, l + 2 * u, t + 2 * u, r - 2 * u, t + 3 * u, Color.argb(if (hi) 70 else 40, 255, 255, 255))
+        rc(c, l + u, t, r - u, t + u, ink); rc(c, l + u, b - u, r - u, b, ink); rc(c, l, t + u, l + u, b - u, ink); rc(c, r - u, t + u, r, b - u, ink)
+        rc(c, l + u, t + u, r - u, t + 2 * u, gl); rc(c, l + u, t + 2 * u, l + 2 * u, b - 2 * u, g)
+        rc(c, l + u, b - 2 * u, r - u, b - u, gd); rc(c, r - 2 * u, t + 2 * u, r - u, b - 2 * u, gd)
+    }
+
+    private fun pxDisc(c: Canvas, cx: Float, cy: Float, R: Int, color: Int) {
+        for (k in -R..R) {
+            val hw = floor(sqrt(max(0f, R * R + R * 0.6f - k * k))).toInt()
+            rc(c, cx - (hw + 0.5f) * u, cy + (k - 0.5f) * u, cx + (hw + 0.5f) * u, cy + (k + 0.5f) * u, color)
+        }
+    }
+
+    private fun pxRing(c: Canvas, cx: Float, cy: Float, R: Int, th: Int, color: Int) {
+        val r2 = R - th
+        for (k in -R..R) {
+            val hw = floor(sqrt(max(0f, R * R + R * 0.6f - k * k))).toInt()
+            val iv = r2 * r2 + r2 * 0.6f - k * k
+            val y0 = cy + (k - 0.5f) * u; val y1 = cy + (k + 0.5f) * u
+            if (r2 > 0 && iv >= 0f) {
+                val hi = floor(sqrt(iv)).toInt()
+                rc(c, cx - (hw + 0.5f) * u, y0, cx - (hi + 0.5f) * u, y1, color); rc(c, cx + (hi + 0.5f) * u, y0, cx + (hw + 0.5f) * u, y1, color)
+            } else rc(c, cx - (hw + 0.5f) * u, y0, cx + (hw + 0.5f) * u, y1, color)
+        }
+    }
+
+    /** botão redondo pixelado */
+    private fun pxRound(c: Canvas, cx0: Float, cy0: Float, R: Int, base: Int, pressed: Boolean) {
+        val cx = sn(cx0); val cy = sn(cy0) + (if (pressed) u else 0f)
+        if (!pressed) pxDisc(c, cx, cy + u, R, Cz.INK)
+        pxDisc(c, cx, cy, R, Cz.INK)
+        pxDisc(c, cx, cy, R - 1, Color.rgb(255, 208, 96))
+        pxDisc(c, cx, cy, R - 2, shadeC(base, 0.72f))
+        pxDisc(c, cx, cy - u, R - 3, base)
+        pxDisc(c, cx - R * 0.28f * u, cy - R * 0.34f * u, max(1, R / 4), mixC(base, Color.WHITE, 0.4f))
+    }
+
+    private val S_UP = arrayOf("....#....", "...###...", "..#####..", ".#######.", "...###...", "...###...", "...###...", "...###...", "...###...")
+    private val S_DOWN = arrayOf("...###...", "...###...", "...###...", "...###...", "...###...", ".#######.", "..#####..", "...###...", "....#....")
+    private val S_RUN = arrayOf("##..##...", ".##..##..", "..##..##.", "...##..##", "..##..##.", ".##..##..", "##..##...")
+    private val S_BAG = arrayOf("...###...", "..#...#..", ".#######.", "#########", "##.....##", "##.###.##", "##.###.##", "#########", ".#######.")
+    private val S_EYE = arrayOf("..#####..", ".#######.", ".##...##.", "##..#..##", ".##...##.", ".#######.", "..#####..")
+    private val S_PAUSE = arrayOf("###.###", "###.###", "###.###", "###.###", "###.###", "###.###", "###.###", "###.###", "###.###")
+    private val S_POSE = arrayOf("...###...", "...###...", "....#....", ".#######.", "#..###..#", "...###...", "..##.##..", ".##...##.", "##.....##")
+    private val S_X = arrayOf("##...##", "###.###", ".#####.", "..###..", ".#####.", "###.###", "##...##")
+    private val S_SLIME = arrayOf("..ggggg..", ".ggggggg.", "ggkgggkgg", "ggkgggkgg", "ggggggggg", "gGGGGGGGg", ".ggggggg.")
+
+    /** desenha o sprite centralizado pela caixa dos pixels realmente usados (cx,cy = centro do botão) */
+    private fun sprite(c: Canvas, rows: Array<String>, cx: Float, cy: Float, base: Int, white: Int = Color.WHITE) {
+        var minC = 99; var maxC = -1; var minR = 99; var maxR = -1
+        for (r in rows.indices) for (k in rows[r].indices) if (rows[r][k] != '.') { minC = min(minC, k); maxC = max(maxC, k); minR = min(minR, r); maxR = max(maxR, r) }
+        val wb = maxC - minC + 1; val hb = maxR - minR + 1
+        val x0 = cx - wb * u / 2f - minC * u; val y0 = cy - hb * u / 2f - minR * u - u / 2f   // -u/2: compensa a sombra de baixo
+        for (pass in 0..1) for (r in rows.indices) for (k in rows[r].indices) {
+            val ch = rows[r][k]; if (ch == '.') continue
+            if (pass == 0 && ch != '#') continue
+            val color = when (ch) { '#' -> if (pass == 0) shadeC(base, 0.4f) else white; 'g' -> Color.rgb(120, 225, 110); 'G' -> Color.rgb(70, 170, 80); else -> Color.rgb(20, 60, 30) }
+            val oy = if (pass == 0) u else 0f
+            rc(c, x0 + k * u, y0 + r * u + oy, x0 + (k + 1) * u, y0 + (r + 1) * u + oy, color)
+        }
+    }
+
+    private fun drawCells(c: Canvas, s: String, x: Float, y: Float, sc: Int, color: Int) {
+        var cx = x; val p = sc.toFloat()
+        for (cell in PixFont.parse(s)) {
+            for (ry in 0 until 7) {
+                val bits = cell.rows[ry]; var rx = 0
+                while (rx < 5) {
+                    if (((bits shr (4 - rx)) and 1) != 0) {
+                        var e = rx
+                        while (e + 1 < 5 && ((bits shr (4 - (e + 1))) and 1) != 0) e++
+                        rc(c, cx + rx * p, y + ry * p, cx + (e + 1) * p, y + (ry + 1) * p, color); rx = e + 1
+                    } else rx++
+                }
+            }
+            val mk = PixFont.marks(cell.mark); var i = 0
+            while (i + 1 < mk.size) { rc(c, cx + mk[i] * p, y + mk[i + 1] * p, cx + (mk[i] + 1) * p, y + (mk[i + 1] + 1) * p, color); i += 2 }
+            cx += 6 * p
+        }
+    }
+
+    /** texto em fonte pixelada; align 0 esquerda, 1 centro, 2 direita; y = topo das letras */
+    private fun pxText(c: Canvas, s: String, x: Float, y: Float, sc: Int, color: Int, align: Int = 0, shadow: Boolean = true, outline: Boolean = false) {
+        val w = PixFont.width(s, sc).toFloat()
+        val x0 = when (align) { 1 -> x - w / 2f; 2 -> x - w; else -> x }
+        if (outline) { val oc = Color.argb(220, 20, 14, 30); val p = sc.toFloat()
+            drawCells(c, s, x0 - p, y, sc, oc); drawCells(c, s, x0 + p, y, sc, oc); drawCells(c, s, x0, y - p, sc, oc); drawCells(c, s, x0, y + p, sc, oc); drawCells(c, s, x0 + p, y + p, sc, oc) }
+        else if (shadow) drawCells(c, s, x0 + sc, y + sc, sc, Color.argb(210, 20, 14, 30))
+        drawCells(c, s, x0, y, sc, color)
+    }
+    private fun tsc(f: Float) = max(1, (f * d).roundToInt())
 
     private fun face(c: Canvas, tile: Int, a: Float, b: Float, cc: Float, dd: Float, ee: Float, ff: Float, f: ColorFilter?) {
         dst[0] = a; dst[1] = b; dst[2] = cc; dst[3] = dd; dst[4] = ee; dst[5] = ff
@@ -153,191 +347,246 @@ class HudView(ctx: Context, val game: Game, val onExit: () -> Unit) : View(ctx) 
     }
 
     private fun icon(c: Canvas, cx: Float, cy: Float, size: Float, id: Int) {
-        val sp = ToolSprites.get(id)
-        if (sp != null) spriteIcon(c, cx, cy, size, sp)
-        else {
+        val bm = ToolIcons.get(id)
+        if (bm != null) {
+            val s2 = size * 0.92f
+            rf.set(cx - s2 / 2, cy - s2 / 2, cx + s2 / 2, cy + s2 / 2)
+            ip.colorFilter = shadowF; ip.alpha = 90
+            val so = size * 0.035f
+            c.save(); c.translate(so, so * 1.4f); c.drawBitmap(bm, null, rf, ip); c.restore()
+            ip.colorFilter = null; ip.alpha = 255
+            c.drawBitmap(bm, null, rf, ip)
+        } else if (Items.isBlock(id)) {
             pt.style = Paint.Style.FILL; pt.color = Color.argb(60, 0, 0, 0)
             c.drawOval(cx - size * 0.28f, cy + size * 0.22f, cx + size * 0.28f, cy + size * 0.34f, pt)
             blockIcon(c, cx, cy - size * 0.02f, size * 0.3f, id)
         }
     }
 
-    private fun accent(i: Int) = when (i) { 0 -> Color.rgb(255, 120, 100); 1, 6 -> Color.rgb(120, 195, 255); 2 -> Color.rgb(130, 230, 130); else -> Color.rgb(200, 210, 235) }
+
+    private fun accent(i: Int) = when (i) { 8 -> Cz.LILAC; 1, 6 -> Cz.SKY; 3 -> Cz.TEAL; 5 -> Cz.GOLD; 7 -> Cz.ORANGE; else -> Cz.LILAC }
     private val rf = RectF()
+    private val ip = Paint(Paint.ANTI_ALIAS_FLAG).apply { isFilterBitmap = true }
+    private val shadowF = LightingColorFilter(0x000000, 0x000000)
     private val gold = Color.rgb(255, 214, 90)
 
-    private fun circle(c: Canvas, i: Int, active: Boolean) {
-        press[i] += ((if (active) 1f else 0f) - press[i]) * 0.3f
-        val cx = bx(i); val cy = byy(i); val r = br(i) * (1f - 0.08f * press[i]); val ac = accent(i)
-        pt.style = Paint.Style.FILL; pt.color = Color.argb(70, 0, 0, 0); c.drawCircle(cx, cy + 3 * d, r, pt)
-        pt.color = Color.argb((120 + 70 * press[i]).toInt(), 16, 20, 36); c.drawCircle(cx, cy, r, pt)
-        pt.color = Color.argb((35 + 70 * press[i]).toInt(), Color.red(ac), Color.green(ac), Color.blue(ac)); c.drawCircle(cx, cy, r * 0.86f, pt)
-        rf.set(cx - r * 0.78f, cy - r * 0.78f, cx + r * 0.78f, cy + r * 0.78f)
-        pt.style = Paint.Style.STROKE; pt.strokeWidth = 3f * d; pt.strokeCap = Paint.Cap.ROUND
-        pt.color = Color.argb(70, 255, 255, 255); c.drawArc(rf, 200f, 100f, false, pt)
-        pt.strokeWidth = 2.5f * d; pt.color = Color.argb(235, Color.red(ac), Color.green(ac), Color.blue(ac)); c.drawCircle(cx, cy, r, pt)
-        pt.strokeWidth = 1f * d; pt.color = Color.argb(90, 255, 255, 255); c.drawCircle(cx, cy, r + 2 * d, pt)
+    private val ICO_PLAY = arrayOf("##.......", "####.....", "######...", "########.", "#########", "########.", "######...", "####.....", "##.......")
+    private val ICO_HEART = arrayOf(".##...##.", "####.####", "#########", "#########", "#########", ".#######.", "..#####..", "...###...", "....#....")
+    private val ICO_STAR = arrayOf("....#....", "....#....", "...###...", "#########", ".#######.", "..#####..", "..##.##..", ".##...##.", ".#.....#.")
+    private val ICO_SWAP = arrayOf("...#.....", "..##.....", ".#######.", "..##.....", "...#.....", ".....#...", ".....##..", ".#######.", ".....##..", ".....#...")
+    private val ICO_EXIT = arrayOf("#####..#.", "#...#..##", "#...#####", "#...#..##", "#...#..#.", "#...#....", "#...#....", "#####....")
+    private val ICO_PAUSE = arrayOf("##.##", "##.##", "##.##", "##.##", "##.##", "##.##", "##.##")
+
+    /** ícone pixelado com sombra; '#' = cor, 'o' = escuro */
+    private fun pxIcon(c: Canvas, rows: Array<String>, cx: Float, cy: Float, color: Int, p: Float = (u * 3f / 2f).roundToInt().toFloat()) {
+        val x0 = (cx - rows[0].length * p / 2f).roundToInt().toFloat(); val y0 = (cy - rows.size * p / 2f).roundToInt().toFloat()
+        for (pass in 0..1) for (r in rows.indices) for (q in 0 until rows[r].length) {
+            val ch = rows[r][q]; if (ch == '.') continue
+            val o = if (pass == 0) p * 0.6f else 0f
+            rc(c, x0 + q * p + o, y0 + r * p + o, x0 + (q + 1) * p + o, y0 + (r + 1) * p + o, if (pass == 0) Color.argb(110, 20, 10, 30) else if (ch == 'o') Cz.INK else color)
+        }
     }
 
-    private fun pill(c: Canvas, l: Float, t: Float, r: Float, b: Float, a: Int = 110) {
-        rf.set(l, t, r, b); pt.style = Paint.Style.FILL; pt.color = Color.argb(a, 14, 18, 34); c.drawRoundRect(rf, (b - t) / 2, (b - t) / 2, pt)
-        pt.style = Paint.Style.STROKE; pt.strokeWidth = 1.5f * d; pt.color = Color.argb(90, 255, 255, 255); c.drawRoundRect(rf, (b - t) / 2, (b - t) / 2, pt)
+    private fun drawPause(c: Canvas) {
+        val w = width.toFloat(); val h = height.toFloat()
+        rc(c, 0f, 0f, w, h, Color.argb(160, 8, 8, 24))
+        val b = pbox()
+        pxPanel(c, b.left, b.top, b.right, b.bottom, Cz.PANEL)
+        // faixa do título
+        val tl = b.left + 16 * d; val tr = b.right - 16 * d; val tt = b.top + 14 * d; val tb = b.top + 48 * d
+        rc(c, sn(tl), sn(tt), sn(tr), sn(tb), Color.argb(46, 196, 128, 48))
+        rc(c, sn(tl), sn(tb) - u, sn(tr), sn(tb), Color.argb(120, 196, 128, 48))
+        pxText(c, "Pausado", w / 2, b.top + 24 * d, tsc(3.4f), Cz.GOLD_D, 1, false)
+        pxIcon(c, ICO_PAUSE, b.left + 42 * d, (tt + tb) / 2f, Cz.GOLD_D); pxIcon(c, ICO_PAUSE, b.right - 42 * d, (tt + tb) / 2f, Cz.GOLD_D)
+        // nome do mundo numa plaquinha escura
+        val nm = if (worldName.length > 18) worldName.take(17) + "." else worldName
+        val sc = tsc(1.6f); val nw = PixFont.width(nm, sc) + 28 * d
+        val cy0 = b.top + 66 * d
+        rc(c, sn(w / 2 - nw / 2), sn(cy0 - 9 * d), sn(w / 2 + nw / 2), sn(cy0 + 9 * d), Color.argb(215, 58, 36, 54))
+        rc(c, sn(w / 2 - nw / 2), sn(cy0 - 9 * d), sn(w / 2 + nw / 2), sn(cy0 - 9 * d) + u, Color.argb(255, 255, 208, 96))
+        rc(c, sn(w / 2 - nw / 2), sn(cy0 + 9 * d) - u, sn(w / 2 + nw / 2), sn(cy0 + 9 * d), Color.argb(255, 196, 128, 48))
+        pxText(c, nm, w / 2, cy0 - 3.5f * sc, sc, Cz.CREAM, 1)
+        // divisor com losango
+        val dy = sn(b.top + 86 * d)
+        rc(c, sn(b.left + 28 * d), dy, sn(w / 2 - 8 * d), dy + u, Color.argb(130, 196, 128, 48)); rc(c, sn(w / 2 + 8 * d), dy, sn(b.right - 28 * d), dy + u, Color.argb(130, 196, 128, 48))
+        rc(c, w / 2 - u / 2, dy - u, w / 2 + u / 2, dy + 2 * u, Cz.GOLD_D); rc(c, w / 2 - u * 1.5f, dy, w / 2 + u * 1.5f, dy + u, Cz.GOLD_D)
+
+        pxBtn(c, pbtn(0), Cz.GREEN, "Continuar", null, ICO_PLAY, null)
+        val cre = game.creative
+        pxBtn(c, pbtn(1), if (cre) Cz.LILAC else Cz.ORANGE, if (cre) "Criativo" else "Sobrevivência", "MODO DE JOGO", if (cre) ICO_STAR else ICO_HEART, ICO_SWAP)
+        pxBtn(c, pbtn(2), Cz.RED, "Salvar e sair", null, ICO_EXIT, null)
+        pxText(c, if (cre) "Toque para ir ao modo sobrevivência" else "Toque para ir ao modo criativo", w / 2, pbtn(2).bottom + 12 * d, tsc(1f), Cz.TXT_SOFT, 1, false)
+    }
+
+    private fun pxBtn(c: Canvas, r: RectF, base: Int, label: String, sub: String?, icon: Array<String>, right: Array<String>?) {
+        pxPanel(c, r.left, r.top, r.right, r.bottom, base)
+        val sc = tsc(2.1f)
+        val label2 = label.replace("ª", "A")
+        if (sub == null) pxText(c, label2, r.centerX(), r.centerY() - 3.5f * sc, sc, Color.WHITE, 1)
+        else {
+            val s1 = tsc(1.1f); val tot = 7f * s1 + 4 * d + 7f * sc; val y0 = r.centerY() - tot / 2f - 1.5f * d
+            pxText(c, sub, r.centerX(), y0, s1, mixC(base, Color.WHITE, 0.8f), 1)
+            pxText(c, label2, r.centerX(), y0 + 7f * s1 + 4 * d, sc, Color.WHITE, 1)
+        }
+        pxIcon(c, icon, r.left + 28 * d, r.centerY() - 1.5f * d, Color.WHITE)
+        if (right != null) pxIcon(c, right, r.right - 28 * d, r.centerY() - 1.5f * d, mixC(base, Color.WHITE, 0.85f))
+    }
+
+    private fun rnd(i: Int, k: Int): Float { val v = sin(i * 12.9898f + k * 78.233f) * 43758.547f; return v - floor(v) }
+
+    /** efeito de câmera molhada ao sair da água: véu azulado, brilho e gotas escorrendo (some em ~3s) */
+    private fun drawWet(c: Canvas) {
+        val wt = game.wetT
+        if (wt <= 0f) return
+        val w = width.toFloat(); val h = height.toFloat()
+        val e = 3f - wt
+        val f = min(1f, wt / 1.2f)
+        pt.color = Color.argb((26 * f).toInt(), 120, 190, 255); c.drawRect(0f, 0f, w, h, pt)
+        val fl = max(0f, 1f - e / 0.3f)
+        if (fl > 0f) { pt.color = Color.argb((80 * fl).toInt(), 225, 247, 255); c.drawRect(0f, 0f, w, h, pt) }
+        for (i in 0 until 38) {
+            val life = 1.4f + rnd(i, 1) * 1.6f
+            if (e > life) continue
+            val x = sn(rnd(i, 2) * w)
+            val y0 = rnd(i, 3) * h * 0.75f
+            val spd = (6f + rnd(i, 4) * 40f) * d
+            val y = y0 + spd * e + 16f * d * e * e
+            if (y > h) continue
+            val sz = sn(u * (1f + rnd(i, 5) * 2.4f)).coerceAtLeast(u)
+            val a = (210f * f * min(1f, (life - e) * 3f)).toInt().coerceIn(0, 255)
+            val trail = min(y - y0, 46f * d)
+            pt.color = Color.argb(a * 35 / 100, 200, 235, 255); c.drawRect(x, y - trail, x + u, y, pt)
+            pt.color = Color.argb(a * 55 / 100, 190, 225, 255); c.drawRect(x - sz / 2f, y, x + sz / 2f, y + sz * 1.4f, pt)
+            pt.color = Color.argb(a * 60 / 100, 90, 150, 210); c.drawRect(x - sz / 2f, y + sz * 1.4f - u, x + sz / 2f, y + sz * 1.4f, pt)
+            pt.color = Color.argb(a, 255, 255, 255); c.drawRect(x - sz / 2f + u * 0.5f, y + u * 0.5f, x - sz / 2f + u * 1.5f, y + u * 1.5f, pt)
+        }
     }
 
     override fun onDraw(c: Canvas) {
         val w = width.toFloat(); val h = height.toFloat()
         val clock = System.nanoTime() / 1e9f
-        if (game.hurtFlash > 0f) { pt.style = Paint.Style.FILL; pt.color = Color.argb((game.hurtFlash * 90).toInt(), 255, 0, 0); c.drawRect(0f, 0f, w, h, pt) }
-        pt.strokeCap = Paint.Cap.ROUND
+        drawWet(c)
+        if (game.hurtFlash > 0f) rc(c, 0f, 0f, w, h, Color.argb((game.hurtFlash * 90).toInt(), 255, 0, 0))
+        if (aimTouch && lookId < 0 && game.aimOn && System.currentTimeMillis() - lastUpT > 350) game.aimOn = false
+        if (!paused && !invOpen && lookId >= 0) {
+            if (!lookHold && lookMoved < 16 * d && System.currentTimeMillis() - lookDownT > 320) {
+                lookHold = true
+                game.attackHeld = true; game.attackPress = true
+            } else if (lookHold && game.cur() != Items.SWORD && game.cur() != Items.AXE) game.attackPress = true
+        }
+        val nowP = System.currentTimeMillis()
+        if (poseTapT > 0L && nowP - poseTapT >= 320) { poseTapT = 0L; game.requestPosture(1) }
+        if (btnId.containsValue(8) && !poseFired && nowP - poseDownT > 380) { poseFired = true; poseTapT = 0L; game.requestPosture(3) }
+        if (wet() && game.posture != 0) game.posture = 0
+        // ponto de mira (centro, ou no dedo no modo de mira por toque)
+        val ax: Float; val ay: Float
+        if (aimTouch) { ax = lx; ay = ly } else { ax = w / 2; ay = h / 2 }
         if (!invOpen) {
-            // mira com contorno
-            for (k in 0..1) {
-                pt.style = Paint.Style.STROKE; pt.strokeWidth = if (k == 0) 4f * d else 2f * d; pt.color = if (k == 0) Color.argb(90, 0, 0, 0) else Color.argb(230, 255, 255, 255)
-                c.drawLine(w / 2 - 8 * d, h / 2, w / 2 + 8 * d, h / 2, pt); c.drawLine(w / 2, h / 2 - 8 * d, w / 2, h / 2 + 8 * d, pt)
+            if (!aimTouch) {
+                val a = 2 * u; val t = u / 2f
+                rc(c, ax - a - u / 2, ay - t - u / 2, ax + a + u / 2, ay + t + u / 2, Color.argb(150, 0, 0, 0)); rc(c, ax - t - u / 2, ay - a - u / 2, ax + t + u / 2, ay + a + u / 2, Color.argb(150, 0, 0, 0))
+                rc(c, ax - a, ay - t, ax + a, ay + t, Color.WHITE); rc(c, ax - t, ay - a, ax + t, ay + a, Color.WHITE)
+            } else if (lookId >= 0) {
+                val R = max(5, (26 * d / u).roundToInt())
+                pxRing(c, ax, ay, R + 1, 2, Color.argb(190, 20, 14, 30)); pxRing(c, ax, ay, R, 1, Color.argb(235, 255, 255, 255))
+                rc(c, ax - u / 2, ay - u / 2, ax + u / 2, ay + u / 2, Color.argb(235, 255, 214, 90))
             }
-            // joystick
+            // joystick pixelado
             val jx = if (stickId >= 0) scx else defStickX(); val jy = if (stickId >= 0) scy else defStickY()
-            pt.style = Paint.Style.FILL; pt.color = Color.argb(48, 255, 255, 255); c.drawCircle(jx, jy, 60 * d, pt)
-            pt.style = Paint.Style.STROKE; pt.strokeWidth = 2.5f * d; pt.color = Color.argb(170, 255, 255, 255); c.drawCircle(jx, jy, 60 * d, pt)
-            pt.style = Paint.Style.FILL; pt.color = Color.argb(150, 255, 255, 255)
-            for (k in 0 until 4) { val an = k * 1.5708f; c.drawCircle(jx + cos(an) * 46 * d, jy + sin(an) * 46 * d, 2.2f * d, pt) }
-            val kx = jx + sx * 60 * d; val ky = jy + sy * 60 * d
-            pt.color = Color.argb(70, 0, 0, 0); c.drawCircle(kx, ky + 3 * d, 25 * d, pt)
-            pt.color = Color.argb(235, 255, 255, 255); c.drawCircle(kx, ky, 25 * d, pt)
-            pt.color = Color.rgb(205, 220, 240); c.drawCircle(kx, ky, 17 * d, pt)
-            pt.color = Color.argb(200, 255, 255, 255); c.drawCircle(kx - 4 * d, ky - 5 * d, 6 * d, pt)
+            val JR = max(6, (60 * d / u).roundToInt())
+            pxDisc(c, jx, jy, JR, Color.argb(44, 255, 255, 255))
+            pxRing(c, jx, jy, JR + 1, 1, Color.argb(200, 20, 14, 30)); pxRing(c, jx, jy, JR, 1, Color.argb(190, 255, 214, 90))
+            for (k in 0 until 4) { val an = k * 1.5708f; rc(c, jx + cos(an) * 46 * d - u / 2, jy + sin(an) * 46 * d - u / 2, jx + cos(an) * 46 * d + u / 2, jy + sin(an) * 46 * d + u / 2, Color.argb(190, 255, 255, 255)) }
+            val kx = sn(jx + sx * 60 * d); val ky = sn(jy + sy * 60 * d); val KR = max(3, (24 * d / u).roundToInt())
+            pxDisc(c, kx, ky + u, KR, Color.argb(120, 0, 0, 0)); pxDisc(c, kx, ky, KR, Cz.INK)
+            pxDisc(c, kx, ky, KR - 1, Color.rgb(255, 208, 96)); pxDisc(c, kx, ky, KR - 2, Color.rgb(222, 232, 248)); pxDisc(c, kx - u, ky - u, max(1, KR / 3), Color.WHITE)
         }
-        for (i in 0 until 7) {
+        // botões
+        for (i in intArrayOf(7, 8, 1, 6, 3, 5, 4)) {
             if (invOpen && i != 5) continue
-            if (i == 6 && !game.flying) continue
-            circle(c, i, btnId.containsValue(i) || (i == 5 && invOpen))
-            val x = bx(i); val y = byy(i)
-            pt.style = Paint.Style.STROKE; pt.strokeWidth = 4f * d; pt.color = Color.WHITE; pt.strokeCap = Paint.Cap.ROUND; pt.strokeJoin = Paint.Join.ROUND
-            when (i) {
-                0 -> { c.drawLine(x - 14 * d, y + 14 * d, x + 14 * d, y - 14 * d, pt); c.drawLine(x - 8 * d, y + 2 * d, x - 2 * d, y + 8 * d, pt)
-                    c.drawLine(x - 18 * d, y + 18 * d, x - 12 * d, y + 12 * d, pt) }
-                1 -> { path.reset(); path.moveTo(x - 12 * d, y + 5 * d); path.lineTo(x, y - 7 * d); path.lineTo(x + 12 * d, y + 5 * d); c.drawPath(path, pt)
-                    c.drawLine(x, y - 7 * d, x, y + 12 * d, pt) }
-                2 -> { c.drawRoundRect(x - 11 * d, y - 11 * d, x + 11 * d, y + 11 * d, 3 * d, 3 * d, pt); c.drawLine(x - 5 * d, y, x + 5 * d, y, pt); c.drawLine(x, y - 5 * d, x, y + 5 * d, pt) }
-                3 -> { pt.strokeWidth = 3f * d; c.drawOval(x - 12 * d, y - 7 * d, x + 12 * d, y + 7 * d, pt); pt.style = Paint.Style.FILL; c.drawCircle(x, y, 3.5f * d, pt) }
-                6 -> { path.reset(); path.moveTo(x - 12 * d, y - 5 * d); path.lineTo(x, y + 7 * d); path.lineTo(x + 12 * d, y - 5 * d); c.drawPath(path, pt)
-                    c.drawLine(x, y + 7 * d, x, y - 12 * d, pt) }
-                5 -> { pt.strokeWidth = 3f * d; c.drawRoundRect(x - 10 * d, y - 6 * d, x + 10 * d, y + 11 * d, 5 * d, 5 * d, pt)
-                    path.reset(); path.moveTo(x - 6 * d, y - 6 * d); path.cubicTo(x - 6 * d, y - 15 * d, x + 6 * d, y - 15 * d, x + 6 * d, y - 6 * d); c.drawPath(path, pt)
-                    c.drawLine(x - 10 * d, y, x + 10 * d, y, pt) }
-                else -> { path.reset(); path.moveTo(x + 6 * d, y - 10 * d); path.lineTo(x - 6 * d, y); path.lineTo(x + 6 * d, y + 10 * d); c.drawPath(path, pt) }
-            }
+            if (i == 6 && !wet()) continue
+            if (i == 8 && wet()) continue
+            val active = btnId.containsValue(i) || (i == 5 && invOpen) || (i == 7 && game.sprint) || (i == 8 && game.posture != 0)
+            press[i] += ((if (active) 1f else 0f) - press[i]) * 0.5f
+            val on = press[i] > 0.5f
+            val base = if ((i == 7 && game.sprint) || (i == 8 && game.posture != 0)) Cz.GREEN else accent(i)
+            val R = max(4, (br(i) / u).roundToInt())
+            val cx = bx(i); val cy = byy(i) + (if (on) u else 0f)
+            pxRound(c, cx, byy(i), R, base, on)
+            val spr = when (i) { 1 -> S_UP; 6 -> S_DOWN; 7 -> S_RUN; 8 -> S_POSE; 3 -> S_EYE; 5 -> S_BAG; else -> S_PAUSE }
+            sprite(c, spr, sn(cx), cy, base)
         }
-        // anel de carga do golpe poderoso
+        // barra de carga do golpe poderoso (perto da mira)
         if (game.charging && !invOpen) {
-            val rr0 = br(0) + 7 * d; val ch = game.charge
-            val rc = RectF(bx(0) - rr0, byy(0) - rr0, bx(0) + rr0, byy(0) + rr0)
-            pt.style = Paint.Style.STROKE; pt.strokeWidth = 5f * d; pt.strokeCap = Paint.Cap.ROUND
-            pt.color = Color.argb(70, 255, 255, 255); c.drawArc(rc, 0f, 360f, false, pt)
-            pt.color = if (ch >= 1f) Color.rgb(255, 214, 90) else Color.rgb(255, (255 - 60 * ch).toInt(), (255 - 170 * ch).toInt())
-            c.drawArc(rc, -90f, 360f * ch, false, pt)
+            val bw = 14 * u; val ch = game.charge; val by = ay + 30 * d
+            outer(c, ax - bw / 2 - u, by - u, ax + bw / 2 + u, by + 2 * u, Cz.INK)
+            rc(c, ax - bw / 2, by, ax + bw / 2, by + u, Color.argb(120, 255, 255, 255))
+            rc(c, ax - bw / 2, by, ax - bw / 2 + sn(bw * ch), by + u, if (ch >= 1f) Color.rgb(255, 214, 90) else Color.rgb(255, (255 - 60 * ch).toInt(), (255 - 170 * ch).toInt()))
         }
         // hotbar
-        if (game.sel != lastSel) { lastSel = game.sel; bounce = 1f }
+        if (game.sel != lastSel) { lastSel = game.sel; bounce = 1f; nameUntil = System.currentTimeMillis() + 2000 }
+        if (game.cur() != lastItem) { lastItem = game.cur(); nameUntil = System.currentTimeMillis() + 2000 }
         bounce = max(0f, bounce - 0.08f)
-        val left = hbLeft(); val top = hbTop()
-        pill(c, left - 8 * d, top - 8 * d, left + 8 * slot + 7 * 4 * d + 8 * d, top + slot + 6 * d, 95)
+        val left = hbLeft(); val top = sn(hbTop())
         for (i in 0 until 8) {
-            val x = left + i * (slot + 4 * d)
+            val x = left + i * (slot + gap)
             val s = i == game.sel
-            val lift = if (s) 4 * d + 5 * d * sin(bounce * 3.14f) else 0f
+            val lift = if (s) sn(3 * d + 4 * d * sin(bounce * 3.14f)) else 0f
             val rr = RectF(x, top - lift, x + slot, top + slot - lift)
-            if (s) {
-                val gl = 0.55f + 0.45f * sin(clock * 4f)
-                pt.style = Paint.Style.STROKE; pt.strokeWidth = 7f * d; pt.color = Color.argb((60 * gl).toInt(), 255, 214, 90)
-                c.drawRoundRect(rr, 10 * d, 10 * d, pt)
-            }
-            pt.style = Paint.Style.FILL; pt.color = Color.argb(if (s) 215 else 135, if (s) 44 else 24, if (s) 48 else 30, if (s) 72 else 50)
-            c.drawRoundRect(rr, 9 * d, 9 * d, pt)
-            rf.set(rr.left + 3 * d, rr.top + 3 * d, rr.right - 3 * d, rr.top + slot * 0.42f)
-            pt.color = Color.argb(if (s) 40 else 22, 255, 255, 255); c.drawRoundRect(rf, 6 * d, 6 * d, pt)
-            pt.style = Paint.Style.STROKE; pt.strokeWidth = (if (s) 2.8f else 1.4f) * d; pt.color = if (s) gold else Color.argb(110, 255, 255, 255)
-            c.drawRoundRect(rr, 9 * d, 9 * d, pt)
+            if (s) { val g = (110 + 80 * sin(clock * 4f)).toInt(); frame(c, sn(rr.left) - u, sn(rr.top) - u, sn(rr.right) + u, sn(rr.bottom) + u, u, Color.argb(g, 255, 214, 90)) }
+            pxGlass(c, rr.left, rr.top, rr.right, rr.bottom, s)
             icon(c, x + slot / 2, rr.top + slot * 0.5f, slot, game.hotbar[i])
-            pt.style = Paint.Style.FILL; pt.textSize = 9 * d; pt.textAlign = Paint.Align.LEFT; pt.color = Color.argb(if (s) 255 else 150, 255, 255, 255)
-            pt.typeface = Typeface.DEFAULT_BOLD; c.drawText("${i + 1}", rr.left + 5 * d, rr.top + 11 * d, pt)
+            pxText(c, "${i + 1}", rr.left + 3 * u, rr.top + 3 * u, tsc(1.1f), Color.argb(if (s) 255 else 170, 255, 255, 255))
         }
         if (!invOpen) {
-            pt.textSize = 14 * d; pt.typeface = Typeface.DEFAULT_BOLD; pt.textAlign = Paint.Align.CENTER
-            val nm = Items.name(game.cur()); val tw = pt.measureText(nm)
-            pill(c, w / 2 - tw / 2 - 14 * d, top - 40 * d, w / 2 + tw / 2 + 14 * d, top - 16 * d, 120)
-            pt.style = Paint.Style.FILL; pt.color = Color.WHITE; c.drawText(nm, w / 2, top - 22 * d, pt)
+            if (System.currentTimeMillis() < nameUntil) {
+                val nm = Items.name(game.cur())
+                pxText(c, nm, w / 2, top - 24 * d, 2, Color.WHITE, 1, outline = true)
+            }
+            if (game.pickT > 0f) {
+                val al = (min(1f, game.pickT * 2f) * 255).toInt()
+                val py2 = top - 52 * d - (1.6f - game.pickT) * 14 * d
+                pxText(c, game.pickMsg, w / 2, py2, tsc(1.6f), Color.argb(al, 255, 236, 140), 1)
+            }
         }
         // corações
         val hp = game.hp
         for (i in 0 until 5) {
             val full = hp >= (i + 1) * 2; val half = hp == i * 2 + 1
-            val cx = w / 2 - 60 * d + i * 30 * d
+            val cx = 84 * d + i * 28 * d; val hy = 40 * d
             val beat = if (hp <= 2 && hp > 0) 1f + 0.08f * sin(clock * 9f) else 1f
-            heart(c, cx, 28 * d, 12.5f * d * beat, Color.argb(190, 20, 10, 25))
-            heart(c, cx, 28 * d, 10.5f * d * beat, Color.argb(120, 80, 40, 60))
-            if (full || half) {
-                if (half) { c.save(); c.clipRect(cx - 16 * d, 0f, cx, 80 * d) }
-                heart(c, cx, 28 * d, 10.5f * d * beat, Color.rgb(255, 72, 96))
-                heart(c, cx, 26 * d, 6f * d * beat, Color.rgb(255, 120, 135))
-                pt.style = Paint.Style.FILL; pt.color = Color.argb(230, 255, 255, 255); c.drawCircle(cx - 4.5f * d, 22.5f * d, 2f * d, pt)
-                if (half) c.restore()
-            }
+            val bob = if (hp <= 2 && hp > 0) sin(clock * 12f + i) * 1.5f * d else 0f
+            pxHeart(c, cx, hy + bob, 2.4f * d * beat, Color.rgb(228, 36, 48), half && !full, !(full || half))
+            if (half && !full) pxHeart(c, cx, hy + bob, 2.4f * d * beat, Color.rgb(228, 36, 48), true, false)
         }
-        // contador de slimes
-        val ktxt = "${game.kills}"; pt.textSize = 15 * d; pt.typeface = Typeface.DEFAULT_BOLD; pt.textAlign = Paint.Align.LEFT
-        val kw = pt.measureText(ktxt) + 44 * d; val kr = w - 118 * d
-        pill(c, kr - kw, 18 * d, kr, 46 * d)
-        pt.style = Paint.Style.FILL; pt.color = Color.rgb(120, 225, 110); c.drawRoundRect(kr - kw + 8 * d, 26 * d, kr - kw + 26 * d, 40 * d, 5 * d, 5 * d, pt)
-        pt.color = Color.rgb(20, 60, 30); c.drawRect(kr - kw + 12 * d, 30 * d, kr - kw + 14.5f * d, 33 * d, pt); c.drawRect(kr - kw + 19.5f * d, 30 * d, kr - kw + 22 * d, 33 * d, pt)
-        pt.color = Color.WHITE; c.drawText(ktxt, kr - kw + 32 * d, 38 * d, pt)
-        pt.setShadowLayer(4 * d, 0f, 1f, Color.BLACK)
-        if (game.deadTimer > 0f) { pt.textAlign = Paint.Align.CENTER; pt.textSize = 26 * d; pt.color = Color.WHITE; c.drawText("Você desmaiou! Renascendo...", w / 2, h / 2 - 40 * d, pt) }
-        pt.clearShadowLayer(); pt.typeface = Typeface.DEFAULT
+        if (game.deadTimer > 0f) pxText(c, "Você desmaiou! Renascendo...", w / 2, h / 2 - 40 * d, tsc(2.6f), Color.WHITE, 1)
         if (invOpen) drawInventory(c)
+        if (paused) drawPause(c)
         postInvalidateOnAnimation()
     }
 
     private fun drawInventory(c: Canvas) {
         val w = width.toFloat(); val h = height.toFloat()
-        pt.style = Paint.Style.FILL; pt.color = Color.argb(150, 6, 8, 20); c.drawRect(0f, 0f, w, h, pt)
-        val rr = RectF(pl(), pt0(), pr(), pb())
-        pt.shader = LinearGradient(0f, rr.top, 0f, rr.bottom, Color.argb(240, 40, 50, 88), Color.argb(240, 20, 24, 48), Shader.TileMode.CLAMP)
-        c.drawRoundRect(rr, 18 * d, 18 * d, pt); pt.shader = null
-        c.save(); c.clipRect(rr.left, rr.top, rr.right, rr.top + 46 * d)
-        pt.color = Color.argb(60, 255, 214, 90); c.drawRoundRect(rr, 18 * d, 18 * d, pt); c.restore()
-        pt.style = Paint.Style.STROKE; pt.strokeWidth = 3f * d; pt.color = Color.argb(230, 255, 214, 90); c.drawRoundRect(rr, 18 * d, 18 * d, pt)
-        pt.strokeWidth = 1f * d; pt.color = Color.argb(60, 255, 255, 255); c.drawLine(rr.left + 14 * d, rr.top + 46 * d, rr.right - 14 * d, rr.top + 46 * d, pt)
-        pt.style = Paint.Style.FILL; pt.color = Color.WHITE; pt.textSize = 20 * d; pt.textAlign = Paint.Align.LEFT; pt.typeface = Typeface.DEFAULT_BOLD
-        c.drawText("Mochila", pl() + 18 * d, pt0() + 31 * d, pt)
+        rc(c, 0f, 0f, w, h, Color.argb(150, 6, 8, 20))
+        pxPanel(c, pl(), pt0(), pr(), pb(), Cz.PANEL, false, false, 250)
+        pxText(c, "Mochila", pl() + 18 * d, pt0() + 16 * d, tsc(3f), Cz.TXT, 0, false)
         // fechar
-        pt.color = Color.argb(90, 255, 255, 255); c.drawCircle(pr() - 20 * d, pt0() + 22 * d, 14 * d, pt)
-        pt.style = Paint.Style.STROKE; pt.strokeWidth = 3f * d; pt.color = Color.WHITE; pt.strokeCap = Paint.Cap.ROUND
         val xx = pr() - 20 * d; val yy = pt0() + 22 * d
-        c.drawLine(xx - 6 * d, yy - 6 * d, xx + 6 * d, yy + 6 * d, pt); c.drawLine(xx + 6 * d, yy - 6 * d, xx - 6 * d, yy + 6 * d, pt)
+        pxRound(c, xx, yy, 5, Cz.RED, false); sprite(c, S_X, sn(xx), sn(yy), Cz.RED)
         // info do item selecionado no cabeçalho
         val sel = if (invSel > 0) invSel else game.cur()
-        val ix = pl() + 130 * d; val avail = pr() - 50 * d - ix
-        pt.style = Paint.Style.FILL; pt.color = Color.rgb(255, 224, 130); pt.textSize = 15 * d
-        c.drawText(Items.name(sel), ix, pt0() + 20 * d, pt)
-        pt.typeface = Typeface.DEFAULT; pt.color = Color.argb(225, 255, 255, 255); pt.textSize = 11.5f * d
-        val ds = Items.desc(sel); val dw = pt.measureText(ds); if (dw > avail) pt.textSize = 11.5f * d * avail / dw
-        c.drawText(ds, ix, pt0() + 37 * d, pt)
+        val ix = pl() + 150 * d; val avail = (pr() - 50 * d - ix).toInt()
+        pxText(c, Items.name(sel), ix, pt0() + 8 * d, tsc(2.1f), Cz.GOLD_D, 0, false)
+        val ds = Items.desc(sel); var dsc = tsc(1.4f)
+        while (dsc > 1 && PixFont.width(ds, dsc) > avail) dsc--
+        pxText(c, ds, ix, pt0() + 32 * d, dsc, Cz.TXT, 0, false)
         for ((i, id) in Items.inventory.withIndex()) {
             val x = cellX(i); val y = cellY(i); val s = cell - 6 * d
             val on = id == invSel
-            pt.style = Paint.Style.FILL; pt.color = Color.argb(if (on) 70 else 34, 255, 255, 255)
-            val cr = RectF(x, y, x + s, y + s); c.drawRoundRect(cr, 11 * d, 11 * d, pt)
-            rf.set(x + 3 * d, y + 3 * d, x + s - 3 * d, y + s * 0.45f); pt.color = Color.argb(if (on) 40 else 18, 255, 255, 255); c.drawRoundRect(rf, 8 * d, 8 * d, pt)
-            pt.style = Paint.Style.STROKE; pt.strokeWidth = (if (on) 3f else 1.2f) * d; pt.color = if (on) gold else Color.argb(80, 255, 255, 255)
-            c.drawRoundRect(cr, 11 * d, 11 * d, pt)
+            pxPanel(c, x, y, x + s, y + s, if (on) Cz.PANEL2 else Cz.PANEL3, on)
             icon(c, x + s / 2, y + s / 2, s, id)
         }
         val ty = cellY(Items.inventory.size - 1) + cell + 8 * d
-        if (ty < pb() - 4 * d) {
-            pt.style = Paint.Style.FILL; pt.color = Color.argb(170, 255, 255, 255); pt.textSize = 11.5f * d; pt.textAlign = Paint.Align.LEFT
-            c.drawText("Toque num item para colocá-lo no slot selecionado", pl() + 18 * d, ty + 6 * d, pt)
-        }
-        pt.typeface = Typeface.DEFAULT
+        if (ty < pb() - 4 * d) pxText(c, "Toque num item para colocá-lo no slot selecionado", pl() + 18 * d, ty, tsc(1.5f), Cz.TXT, 0, false)
     }
 }

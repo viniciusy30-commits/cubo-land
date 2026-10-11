@@ -38,6 +38,11 @@ class SettingsActivity : AppCompatActivity() {
         fun add(b: android.view.View) {
             val lp = LinearLayout.LayoutParams(dp(300), LinearLayout.LayoutParams.WRAP_CONTENT); lp.topMargin = dp(12); col.addView(b, lp)
         }
+        fun cTxt() = if (sp.getBoolean("creative", false)) "🕊  Modo criativo: LIGADO" else "🕊  Modo criativo: desligado"
+        val cHold = arrayOfNulls<android.widget.Button>(1)
+        cHold[0] = btn(cTxt(), Color.rgb(46, 160, 100)) { sp.edit().putBoolean("creative", !sp.getBoolean("creative", false)).apply(); cHold[0]?.text = cTxt() }
+        add(cHold[0]!!)
+        col.addView(label("No criativo: toque duas vezes no pulo pra voar, quebra tudo de uma batida e nada te machuca.", 13f))
         add(btn("🔄  Verificar atualização", Color.rgb(66, 133, 244)) { Updater.check(this, true) })
         add(btn("✨  O que mudou", Color.rgb(171, 71, 188)) { Novidades.showLatest(this) })
         add(btn("🗑  Recomeçar o mundo", Color.rgb(229, 80, 70)) {
@@ -49,7 +54,7 @@ class SettingsActivity : AppCompatActivity() {
         add(btn("←  Voltar", Color.rgb(90, 100, 120)) { finish() })
         col.addView(label("Versão instalada: ${packageManager.getPackageInfo(packageName, 0).versionName}", 13f))
         val sv = ScrollView(this)
-        sv.setBackgroundColor(Color.rgb(110, 190, 235))
+        sv.background = android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(Color.rgb(64, 140, 232), Color.rgb(140, 208, 250), Color.rgb(255, 236, 205)))
         sv.addView(col)
         setContentView(sv)
     }

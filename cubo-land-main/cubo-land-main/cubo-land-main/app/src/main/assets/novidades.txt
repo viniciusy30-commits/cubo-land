@@ -1,0 +1,63 @@
+#id 2026-10-09-h
+#titulo Ferramentas novas e água limpinha!
+- Espada, machado e picareta redesenhados em 3D, com visual próprio: pastel, gemas, cabo colorido e brilho
+- O personagem agora segura as ferramentas pelo punho, com dedos e polegar, inclinadas pra frente
+- Cada ferramenta aparece num ângulo que mostra o lado bonito dela
+- Água toda na cor clara e turquesa, sem a parte escura do fundo
+- Reflexos do céu mantidos, e os pontinhos brancos foram removidos
+
+#id 2026-10-09-g
+#titulo Água, folhas e mãos estilo shader!
+- Água nova: azul turquesa na beirada e azul profundo no fundo, transparente de verdade
+- Ondas suaves, reflexo do céu, brilho do sol e espuma na praia
+- Luz dançando no fundo do mar (cáusticas) e fundo escurecendo com a profundidade
+- Folhas novas em cubos de pixel-art com buracos e tons de verde, bem realistas
+- Mãos novas estilo Minecraft: braço grosso, mão cúbica com dedos e polegar
+- Blocos seguros de frente, e mão esquerda aparecendo no canto
+
+#id 2026-10-09-f
+#titulo Árvores fofas e água viva!
+- Copas das árvores em tufos 3D redondinhos, com volume e florzinhas
+- Água com ondas, brilhos que cintilam e movimento suave
+- Embaixo d'água: tudo fica azulado, com névoa e luz dançando
+- Mão fechada de verdade: dedos enrolados e polegar segurando o cabo
+- Blocos seguros pela palma, com os dedos por trás
+- Sombras dos cantos bem mais suaves
+
+#id 2026-10-09-e
+#titulo Mundo fofinho e pastel!
+- Visual novo todo em tons pastel, liso e sem granulado
+- Texturas pintadas à mão em 64x64: grama com florzinhas, tijolo, tábua, pedra...
+- Árvores com folhagem fofa e flores rosinhas
+- Blocos coloridos brilhosos, estilo docinho
+- Espada, machado e picareta seguradas com o fio e a ponta pra frente
+- Sombras e cores mais suaves
+
+#id 2026-10-09-d
+#titulo Shaders e visual lindão!
+- Texturas novas, suaves e detalhadas (32x32) em todos os blocos
+- Céu com sol, brilho e nuvens suaves
+- Luz quente do sol e sombras azuladas, cores mais vivas
+- Grama baixinha e flores balançando ao vento
+- Água brilhando, folhagem nova cheia de detalhes
+- Mão e itens reposicionados em 1ª pessoa
+- Folhas das árvores e a água em movimento
+- Mão em 1ª pessoa com dedos e polegar segurando os itens
+- Espada, machado, cajado e picareta muito mais detalhados
+- Personagem com pose no ar e respiração parada
+
+#id 2026-10-09-b
+#titulo Texturas, mochila e armas!
+- Todos os blocos agora têm textura própria
+- Braço em 1ª pessoa segurando o item, com balanço e animações
+- Mochila com armas: espada, machado, cajado de estrelas e picareta
+- Personagem mais fofinho, com carinha e cachecol
+- Tremor de tela, partículas e estrelas mágicas
+
+#id 2026-10-09-a
+#titulo Primeira versão 3D!
+- Mundo de blocos 3D com ilha, praia, árvores e água
+- Personagem animado com espada e câmera 1ª/3ª pessoa
+- Slimes inimigos para lutar
+- Quebre e coloque blocos de decoração
+- Atualização pelo próprio app

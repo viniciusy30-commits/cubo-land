@@ -1,61 +1,142 @@
 package com.cuboland.app
 
+import android.content.Intent
+import android.content.res.ColorStateList
 import android.graphics.Color
-import android.graphics.Typeface
 import android.os.Bundle
+import android.view.Gravity
+import android.view.View
+import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.SeekBar
 import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
-import java.io.File
 
-class SettingsActivity : AppCompatActivity() {
+class SettingsActivity : CozyActivity() {
+    private lateinit var content: LinearLayout
+    private lateinit var scroll: ScrollView
+    private val tabViews = ArrayList<TextView>()
+    private val TAB_COL = intArrayOf(Cz.ORANGE, Cz.SKY, Cz.GREEN, Cz.LILAC, Cz.TEAL)
+    private val TABS = arrayOf("Geral", "Controles", "Gráficos", "Novidades", "Sobre")
+    private var current = -1
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val root = FrameLayout(this)
+        root.addView(SceneBg(this, 0.1f))
+        val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(28), dp(18), dp(28), dp(14)) }
+        col.addView(cHeader("Ajustes", "Deixe o jogo do seu jeito") { finish() })
+        val body = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val side = cPanel(Cz.PANEL, 18f, 8)
+        for ((i, t) in TABS.withIndex()) {
+            val tv = cTxt(t, 15f, Color.WHITE, false).also { it.gravity = Gravity.CENTER }
+            tv.setPadding(dp(14), dp(13), dp(14), dp(11)); tv.isClickable = true
+            tv.setOnClickListener { select(i) }
+            side.addView(tv, lpW(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(4) })
+            tabViews.add(tv)
+        }
+        body.addView(side, lpW(dp(170), ViewGroup.LayoutParams.WRAP_CONTENT))
+        content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(14), 0, dp(4), dp(10)) }
+        scroll = ScrollView(this).apply { isVerticalScrollBarEnabled = false; addView(content) }
+        body.addView(scroll, lpW(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f))
+        col.addView(body, lpW(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f).apply { topMargin = dp(12) })
+        root.addView(col)
+        setContentView(root)
+        select(intent.getIntExtra("tab", 0))
+    }
+
+    private fun select(i: Int) {
+        if (i == current) return
+        current = i
+        for ((k, tv) in tabViews.withIndex()) {
+            val on = k == i
+            tv.background = if (on) CozyBox(this, TAB_COL[k], 12f, false, Cz.INK) else CozyBox(this, Cz.PANEL2, 12f, false, Color.rgb(196, 140, 120))
+            tv.setTextColor(if (on) Color.WHITE else Cz.TXT)
+        }
+        content.removeAllViews(); scroll.scrollTo(0, 0)
+        when (i) { 0 -> general(); 1 -> controls(); 2 -> graphics(); 3 -> news(); else -> about() }
+        for (k in 0 until content.childCount) content.getChildAt(k).popIn(50L * k, 18)
+    }
+
+    private fun add(v: View) { content.addView(v, lpW(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(12) }) }
+
+    private fun slider(title: String, valueText: (Float) -> String, lo: Float, hi: Float, cur: Float, onChange: (Float) -> Unit): LinearLayout {
+        val card = cPanel(Cz.PANEL, 16f, 14)
+        val head = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        head.addView(cTxt(title, 15f, Cz.CREAM), lpW(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        val vt = cTxt(valueText(cur), 14f, Cz.GOLD); head.addView(vt)
+        card.addView(head)
+        val bar = PixSlider(this, ((cur - lo) / (hi - lo) * 100).toInt().coerceIn(0, 100)) { p ->
+            val v = lo + p / 100f * (hi - lo); vt.text = valueText(v); onChange(v)
+        }
+        card.addView(bar, lpW(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(6) })
+        return card
+    }
+
+    private fun general() {
         val sp = getSharedPreferences("cfg", 0)
-        val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(40), dp(24), dp(40), dp(24)) }
-        fun label(t: String, size: Float = 16f, bold: Boolean = false) = TextView(this).apply {
-            text = t; textSize = size; setTextColor(Color.WHITE); if (bold) typeface = Typeface.DEFAULT_BOLD
-            setShadowLayer(6f, 0f, 3f, Color.argb(120, 20, 40, 90)); setPadding(0, dp(8), 0, dp(4))
+        val c1 = cCard("Meu personagem", "Mude cabelo, roupas, acessórios e muito mais")
+        c1.addView(cBtn("Editar personagem", Cz.ORANGE, 15f) { startActivity(Intent(this, CharacterActivity::class.java)) }, lpW(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(10) })
+        add(c1)
+        val c2 = cCard("Meus mundos", "Crie, edite, duplique e exclua mundos")
+        c2.addView(cBtn("Abrir seleção de mundos", Cz.GREEN, 15f) { startActivity(Intent(this, WorldsActivity::class.java)) }, lpW(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(10) })
+        add(c2)
+        val c3 = cCard("Atualização", "Versão instalada: ${packageManager.getPackageInfo(packageName, 0).versionName}")
+        c3.addView(cBtn("Verificar atualização", Cz.TEAL, 15f) { Updater.check(this, true) }, lpW(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(10) })
+        add(c3)
+        if (sp.getBoolean("creative", false)) { /* ajuste antigo: agora o modo criativo é por mundo */ }
+    }
+
+    private fun controls() {
+        val sp = getSharedPreferences("cfg", 0)
+        add(slider("Sensibilidade da câmera", { "%.1fx".format(it) }, 0.4f, 2f, sp.getFloat("sens", 1f)) { sp.edit().putFloat("sens", it).apply() })
+        add(slider("Tamanho dos botões", { "${(it * 100).toInt()}%" }, 0.8f, 1.25f, sp.getFloat("btn", 1f)) { sp.edit().putFloat("btn", it).apply() })
+        val card = cPanel(Cz.PANEL, 16f, 14)
+        card.addView(cToggleRow("Mira no dedo (círculo)", "Desligado: mira fixa no centro (+). Ligado: a mira é onde você toca, com um círculo em volta do dedo", sp.getBoolean("aimTouch", false)) { sp.edit().putBoolean("aimTouch", it).apply() })
+        add(card)
+        val tips = cCard("Como jogar")
+        for (t in listOf("Lado esquerdo: analógico para andar", "Lado direito: arraste para olhar em volta; botões de pular e correr", "Toque rápido: coloca o bloco (ou ataca com ferramenta)", "Segure: quebra blocos e golpeia sem parar", "Espada e machado: segure o botão de ataque para carregar um golpe forte", "Correr: toque uma vez para ligar; parar de andar desliga sozinho", "No criativo: toque duas vezes no pulo para voar"))
+            tips.addView(cTxt("•  $t", 12.5f, Cz.CREAM, false).apply { setPadding(0, dp(4), 0, 0) })
+        add(tips)
+    }
+
+    private fun graphics() {
+        val sp = getSharedPreferences("cfg", 0)
+        val card = cCard("Resolução do mundo 3D", "Menos resolução = mais fluidez em aparelhos fracos. Os botões continuam nítidos.")
+        val names = arrayOf("Automática", "Alta (100%)", "Média (80%)", "Leve (60%)")
+        val chips = ArrayList<TextView>()
+        val grid = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(10), 0, 0) }
+        fun paint() { for ((k, c) in chips.withIndex()) c.styleChip(k == sp.getInt("res", 0)) }
+        for (k in names.indices) {
+            val c = cChip(names[k]) { sp.edit().putInt("res", k).apply(); paint() }
+            chips.add(c)
+            grid.addView(c, lpW(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { if (k > 0) leftMargin = dp(6) })
         }
-        col.addView(label("Configurações", 30f, true))
-        val sensLabel = label("")
-        val sens = sp.getFloat("sens", 1f)
-        fun upd(v: Float) { sensLabel.text = "Sensibilidade da câmera: ${"%.1f".format(v)}x" }
-        upd(sens)
-        col.addView(sensLabel)
-        val bar = SeekBar(this).apply {
-            max = 100; progress = ((sens - 0.4f) / 1.6f * 100).toInt()
-            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(s: SeekBar?, p: Int, u: Boolean) { val v = 0.4f + p / 100f * 1.6f; upd(v); sp.edit().putFloat("sens", v).apply() }
-                override fun onStartTrackingTouch(s: SeekBar?) {}
-                override fun onStopTrackingTouch(s: SeekBar?) {}
-            })
+        paint(); card.addView(grid); add(card)
+        add(cCard("Dica", "A resolução vale na próxima vez que você entrar em um mundo.").apply { })
+    }
+
+    private fun news() {
+        Novidades.markSeen(this)
+        val list = Novidades.parse(this)
+        if (list.isEmpty()) { add(cCard("Nada por aqui ainda")); return }
+        for ((i, e) in list.withIndex()) {
+            val card = cPanel(if (i == 0) Cz.PANEL2 else Cz.PANEL, 16f, 14)
+            val head = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+            if (i == 0) head.addView(cTxt("NOVO", 10f, Cz.INK, false).apply { background = CozyBox(this@SettingsActivity, Cz.GOLD, 8f, false); setPadding(dp(7), dp(2), dp(7), dp(2)) }, lpW(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { rightMargin = dp(8) })
+            head.addView(cTxt(e.data(), 11.5f, Cz.SOFT, false))
+            card.addView(head)
+            card.addView(cTxt(e.titulo, 16f, Cz.GOLD).apply { setPadding(0, dp(4), 0, dp(4)) })
+            for (item in e.itens) card.addView(cTxt("•  $item", 12.5f, Cz.CREAM, false).apply { setPadding(0, dp(2), 0, dp(2)) })
+            add(card)
         }
-        col.addView(bar)
-        fun add(b: android.view.View) {
-            val lp = LinearLayout.LayoutParams(dp(300), LinearLayout.LayoutParams.WRAP_CONTENT); lp.topMargin = dp(12); col.addView(b, lp)
-        }
-        fun cTxt() = if (sp.getBoolean("creative", false)) "🕊  Modo criativo: LIGADO" else "🕊  Modo criativo: desligado"
-        val cHold = arrayOfNulls<android.widget.Button>(1)
-        cHold[0] = btn(cTxt(), Color.rgb(46, 160, 100)) { sp.edit().putBoolean("creative", !sp.getBoolean("creative", false)).apply(); cHold[0]?.text = cTxt() }
-        add(cHold[0]!!)
-        col.addView(label("No criativo: toque duas vezes no pulo pra voar, quebra tudo de uma batida e nada te machuca.", 13f))
-        add(btn("🔄  Verificar atualização", Color.rgb(66, 133, 244)) { Updater.check(this, true) })
-        add(btn("✨  O que mudou", Color.rgb(171, 71, 188)) { Novidades.showLatest(this) })
-        add(btn("🗑  Recomeçar o mundo", Color.rgb(229, 80, 70)) {
-            AlertDialog.Builder(this).setTitle("Recomeçar o mundo?")
-                .setMessage("Tudo que você construiu será apagado e um mundo novo será criado.")
-                .setPositiveButton("Apagar") { _, _ -> File(filesDir, "mundo.bin").delete() }
-                .setNegativeButton("Cancelar", null).show()
-        })
-        add(btn("←  Voltar", Color.rgb(90, 100, 120)) { finish() })
-        col.addView(label("Versão instalada: ${packageManager.getPackageInfo(packageName, 0).versionName}", 13f))
-        val sv = ScrollView(this)
-        sv.background = android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(Color.rgb(64, 140, 232), Color.rgb(140, 208, 250), Color.rgb(255, 236, 205)))
-        sv.addView(col)
-        setContentView(sv)
+    }
+
+    private fun about() {
+        val c = cCard("CuboLand", "Versão ${packageManager.getPackageInfo(packageName, 0).versionName}")
+        c.addView(cTxt("Um mundinho de cubos para construir, explorar e lutar contra slimes. Feito com carinho, um bloco de cada vez. ♥", 13f, Cz.CREAM, false).apply { setPadding(0, dp(8), 0, dp(10)) })
+        c.addView(cBtn("Verificar atualização", Cz.TEAL, 15f) { Updater.check(this, true) }, lpW(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        add(c)
     }
 }

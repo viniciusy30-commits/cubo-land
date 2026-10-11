@@ -1,0 +1,255 @@
+package com.cuboland.app
+
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Rect
+import android.opengl.Matrix
+import android.view.MotionEvent
+import android.view.View
+import kotlin.math.abs
+import kotlin.math.ceil
+import kotlin.math.floor
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.sin
+import kotlin.math.sqrt
+
+/** Preview 3D do personagem: rasterizador próprio (z-buffer) em baixa resolução, usando o MESMO modelo do jogo. Arraste pra girar. */
+class CharView(ctx: Context, private val W: Int = 420, private val H: Int = 532) : View(ctx) {
+    private val S = 140f * H / 380f
+    private val bmp = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888)
+    private val pix = IntArray(W * H)
+    private val zb = FloatArray(W * H)
+    private val model = CharModel()
+    private val base = FloatArray(16); private val tmp = FloatArray(16)
+    private val paint = Paint().apply { isFilterBitmap = true }
+    private val dst = Rect()
+    private var yaw = -25f; private var drag = false; private var lastX = 0f
+    private var tt = 0f; private var lastT = System.nanoTime()
+    /** 0 parado, 1 andando, 2 correndo, 3 pulando, 4 atacando */
+    var mode = 0
+    /** fundo transparente (menu principal) e balanço suave em vez de girar sem parar */
+    var transparentBg = false
+    /** cenário completo (céu, nuvens, colinas, grama) ocupando a view inteira, sem cortes nos lados */
+    var scenic = false
+    private val sp = Paint()
+    private val tb: Boolean get() = transparentBg || scenic
+    var sway = false
+    /** desenha a sombrinha no chão (o menu principal desenha a própria) */
+    var shadow = true
+    private var m0 = 0f
+    private var mvSm = 0f; private var runSm = 0f; private var airSm = 0f; private var landSm = 0f; private var vyHold = 0f
+    private var crSm = 0f; private var siSm = 0f; private var liSm = 0f; private var flSm = 0f; private var fsSm = 0f; private var dsSm = 0f
+    private var swSm = 0f; private var dvSm = 0f; private var tiSm = 0f; private var sfSm = 0f; private var swPh = 0f
+    private val an = Anim(); private var ph = 0f
+    private val wx = FloatArray(8); private val wy = FloatArray(8); private val wz = FloatArray(8)
+    private val faces = arrayOf(intArrayOf(4, 5, 7, 6), intArrayOf(1, 0, 2, 3), intArrayOf(5, 1, 3, 7), intArrayOf(0, 4, 6, 2), intArrayOf(6, 7, 3, 2), intArrayOf(0, 1, 5, 4))
+    private val sx = FloatArray(4); private val sy = FloatArray(4); private val sz = FloatArray(4)
+
+    private fun shadeCol(c: Int, k: Float): Int {
+        val r = min(255, (Color.red(c) * k).toInt()); val g = min(255, (Color.green(c) * k).toInt()); val b = min(255, (Color.blue(c) * k).toInt())
+        return Color.rgb(r, g, b)
+    }
+
+    private fun tri(ax: Float, ay: Float, az: Float, bx: Float, by: Float, bz: Float, cx: Float, cy: Float, cz: Float, col: Int, alpha: Float) {
+        val area = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax)
+        if (abs(area) < 1e-6f) return
+        val x0 = max(0, floor(min(ax, min(bx, cx))).toInt()); val x1 = min(W - 1, ceil(max(ax, max(bx, cx))).toInt())
+        val y0 = max(0, floor(min(ay, min(by, cy))).toInt()); val y1 = min(H - 1, ceil(max(ay, max(by, cy))).toInt())
+        for (y in y0..y1) for (x in x0..x1) {
+            val px = x + 0.5f; val py = y + 0.5f
+            val w0 = ((bx - px) * (cy - py) - (by - py) * (cx - px)) / area
+            val w1 = ((cx - px) * (ay - py) - (cy - py) * (ax - px)) / area
+            val w2 = 1f - w0 - w1
+            if (w0 < -1e-4f || w1 < -1e-4f || w2 < -1e-4f) continue
+            val z = w0 * az + w1 * bz + w2 * cz
+            val i = y * W + x
+            if (z <= zb[i]) continue
+            if (alpha >= 0.99f) { zb[i] = z; pix[i] = col }
+            else pix[i] = mixC(pix[i], col, alpha)
+        }
+    }
+
+    private val boxFn: BoxFn = { m, ox, oy, oz, rx, ry, bsx, bsy, bsz, off, col, a, rz ->
+        System.arraycopy(m, 0, tmp, 0, 16)
+        Matrix.translateM(tmp, 0, ox, oy, oz)
+        if (rz != 0f) Matrix.rotateM(tmp, 0, rz, 0f, 0f, 1f)
+        if (ry != 0f) Matrix.rotateM(tmp, 0, ry, 0f, 1f, 0f)
+        if (rx != 0f) Matrix.rotateM(tmp, 0, rx, 1f, 0f, 0f)
+        Matrix.translateM(tmp, 0, 0f, off, 0f)
+        Matrix.scaleM(tmp, 0, bsx, bsy, bsz)
+        for (i in 0 until 8) {
+            val x = if ((i and 1) != 0) 0.5f else -0.5f
+            val y = if ((i and 2) != 0) 0.5f else -0.5f
+            val z = if ((i and 4) != 0) 0.5f else -0.5f
+            wx[i] = tmp[0] * x + tmp[4] * y + tmp[8] * z + tmp[12]
+            wy[i] = tmp[1] * x + tmp[5] * y + tmp[9] * z + tmp[13]
+            wz[i] = tmp[2] * x + tmp[6] * y + tmp[10] * z + tmp[14]
+        }
+        for (f in faces) {
+            val a0 = f[0]; val a1 = f[1]; val a2 = f[2]
+            val ux = wx[a1] - wx[a0]; val uy = wy[a1] - wy[a0]; val uz = wz[a1] - wz[a0]
+            val vx = wx[a2] - wx[a0]; val vy = wy[a2] - wy[a0]; val vz = wz[a2] - wz[a0]
+            var nx = uy * vz - uz * vy; var ny = uz * vx - ux * vz; var nz = ux * vy - uy * vx
+            val nl = sqrt(nx * nx + ny * ny + nz * nz)
+            if (nl > 1e-8f) {
+                nx /= nl; ny /= nl; nz /= nl
+                if (nz > 0f) {
+                    val lit = max(0f, nx * -0.35f + ny * 0.75f + nz * 0.55f)
+                    val c = shadeCol(col, 0.58f + 0.5f * lit)
+                    for (k in 0 until 4) {
+                        sx[k] = W * 0.5f + wx[f[k]] * S
+                        sy[k] = H * 0.95f - wy[f[k]] * S
+                        sz[k] = wz[f[k]]
+                    }
+                    tri(sx[0], sy[0], sz[0], sx[1], sy[1], sz[1], sx[2], sy[2], sz[2], c, a)
+                    tri(sx[0], sy[0], sz[0], sx[2], sy[2], sz[2], sx[3], sy[3], sz[3], c, a)
+                }
+            }
+        }
+    }
+
+    private fun background() {
+        val top = Color.rgb(150, 205, 250); val bot = Color.rgb(214, 238, 255)
+        for (y in 0 until H) {
+            val c = if (tb) 0 else mixC(top, bot, y / (H - 1f))
+            val row = y * W
+            for (x in 0 until W) { pix[row + x] = c; zb[row + x] = -1e9f }
+        }
+        // chão e sombrinha
+        if (!shadow) return
+        val gy = (H * 0.95f).toInt()
+        val k = H / 380f
+        for (y in gy - (6 * k).toInt()..min(H - 1, gy + (14 * k).toInt())) for (x in 0 until W) {
+            val dx = (x - W * 0.5f) / (70f * k); val dy = (y - gy) / (12f * k)
+            val d = dx * dx + dy * dy
+            val i = y * W + x
+            if (d < 1f) pix[i] = if (tb) Color.argb((110 * (1f - d)).toInt(), 20, 24, 20) else mixC(pix[i], Color.rgb(40, 60, 40), 0.35f * (1f - d))
+        }
+    }
+
+    /** toque rápido no personagem: um pulinho */
+    fun hopNow() { mode = 99; m0 = tt }
+    fun setYaw(v: Float) { yaw = v }
+    fun dragStart(x: Float) { drag = true; lastX = x }
+    fun dragMove(x: Float, k: Float) { yaw += (x - lastX) * k; lastX = x }
+    fun dragEnd() { drag = false }
+    /** imagem pronta (W x H, fundo transparente se transparentBg) */
+    val bitmap: Bitmap get() = bmp
+
+    /** avança a animação e redesenha o personagem no bitmap */
+    fun step(dt: Float) {
+        tt += dt
+        if (!drag) { if (sway) yaw += (-20f + 24f * sin(tt * 0.7f) - yaw) * min(1f, dt * 2f) else yaw += dt * 28f }
+        background()
+        Matrix.setIdentityM(base, 0)
+        Matrix.rotateM(base, 0, yaw, 0f, 1f, 0f)
+        an.t = tt
+        var hop = 0f
+        // alvos de cada modo; tudo é suavizado igual ao jogo (transições fluidas entre poses)
+        var mvT = 0f; var runT = 0f; var airT = 0f; var landT = 0f; var vy = 0f
+        var crT = 0f; var siT = 0f; var liT = 0f; var flT = 0f; var fsT = 0f; var dsT = 0f
+        var swT = 0f; var dvT = 0f; var tiT = 0f; var sfT = 0f
+        an.atk = 1f; an.atkArm = 0f; an.hasTool = false; an.poseOn = false; an.charge = 0f
+        when (mode) {
+            1 -> { ph += dt * 8f; mvT = 1f }
+            2 -> { ph += dt * 14f; mvT = 1f; runT = 1f }
+            3, 99 -> {
+                val jt = if (mode == 3) tt % 1.7f else tt - m0
+                if (mode == 99 && jt >= 1.2f) mode = 0
+                else if (jt < 0.9f) { airT = 1f; vy = 7f * kotlin.math.cos(jt / 0.9f * 3.1416f); hop = sin(jt / 0.9f * 3.1416f) * (if (mode == 3) 0.9f else 0.5f) }
+                else landT = 1f - (jt - 0.9f) / 0.3f
+            }
+            4 -> { val cyc = (tt % 0.9f) / 0.9f; an.atk = cyc; an.atkArm = CharModel.atkDelta(cyc); an.hasTool = true }
+            5 -> crT = 1f
+            6 -> siT = 1f
+            7 -> liT = 1f
+            8 -> { liT = 1f; mvT = 1f; ph += dt * 5f }
+            9 -> flT = 1f
+            10 -> { flT = 1f; fsT = 1f; dsT = 1f }
+            11 -> { swT = 1f; sfT = 1f; tiT = 32f; mvT = 0.6f }
+            12 -> { swT = 1f; dvT = 1f; sfT = 1f; tiT = 78f; mvT = 0.6f }
+        }
+        fun sm(cur: Float, tg: Float, k: Float) = cur + (tg - cur) * min(1f, k * dt)
+        mvSm = sm(mvSm, mvT, 8f); runSm = sm(runSm, runT, 8f); airSm = sm(airSm, airT, 9f); landSm = sm(landSm, landT, 16f)
+        vyHold = sm(vyHold, vy, 12f)
+        crSm = sm(crSm, crT, 8f); siSm = sm(siSm, siT, 7f); liSm = sm(liSm, liT, 6f); flSm = sm(flSm, flT, 6f)
+        fsSm = sm(fsSm, fsT, 5f); dsSm = sm(dsSm, dsT, 3.5f); swSm = sm(swSm, swT, 8f); dvSm = sm(dvSm, dvT, 6f)
+        tiSm = sm(tiSm, tiT, 9f); sfSm = sm(sfSm, sfT, 7f)
+        swPh += dt * (if (swT > 0f) 3.6f else 0f)
+        an.move = mvSm; an.run = runSm; an.air = airSm > 0.05f; an.airA = airSm; an.vy = vyHold; an.landT = landSm
+        an.crouch = crSm; an.sit = siSm; an.lie = liSm; an.fly = flSm; an.flySpd = fsSm; an.dash = dsSm; an.imp = 0f
+        an.swim = swSm; an.dive = dvSm; an.tilt = tiSm; an.swimFast = sfSm; an.swimPh = swPh
+        an.phase = ph
+        hop += 0.5f * flSm * (1f + 0.04f * sin(tt * 1.6f))
+        if (hop > 0f) Matrix.translateM(base, 0, 0f, hop, 0f)
+        if (swSm > 0.01f) { Matrix.translateM(base, 0, 0f, 0.9f, 0f); Matrix.rotateM(base, 0, tiSm, 1f, 0f, 0f); Matrix.translateM(base, 0, 0f, -0.9f, 0f) }
+        model.draw(boxFn, base, an, null)
+        bmp.setPixels(pix, 0, W, 0, 0, W, H)
+    }
+
+    private fun r(c: Canvas, x: Float, y: Float, x2: Float, y2: Float, col: Int) { sp.color = col; c.drawRect(x, y, x2, y2, sp) }
+
+    private fun drawScene(c: Canvas, feetY: Float) {
+        val w = width.toFloat(); val h = height.toFloat()
+        val u = max(3f, context.pxU() * 2f)
+        val bands = 14
+        val top = Color.rgb(104, 170, 248); val bot = Color.rgb(255, 226, 214)
+        for (i in 0 until bands) r(c, 0f, h * i / bands, w, h * (i + 1) / bands + 1f, mixC(top, bot, i / (bands - 1f)))
+        r(c, w * 0.76f, h * 0.08f, w * 0.76f + u * 7, h * 0.08f + u * 7, Color.rgb(255, 244, 178))
+        r(c, w * 0.76f - u, h * 0.08f + u, w * 0.76f + u * 8, h * 0.08f + u * 6, Color.argb(70, 255, 244, 178))
+        for (k in 0 until 3) {   // nuvens quadradinhas passando
+            val cx = ((tt * (6f + k * 4f) + k * w * 0.42f) % (w + u * 24)) - u * 12
+            val cy = h * (0.12f + 0.13f * k)
+            r(c, cx, cy, cx + u * 10, cy + u * 2, Color.argb(235, 255, 255, 255)); r(c, cx + u * 2, cy - u * 2, cx + u * 7, cy, Color.argb(235, 255, 255, 255)); r(c, cx + u, cy + u * 2, cx + u * 9, cy + u * 3, Color.argb(120, 200, 215, 245))
+        }
+        val gy = feetY - u * 1.5f
+        var x = 0f; var i = 0
+        while (x < w) {   // colinas distantes em degraus
+            val hh = u * (5f + 3f * sin(i * 0.5f) + 2f * sin(i * 1.3f + 1f))
+            r(c, x, gy - hh - u * 4, x + u * 2, gy, Color.rgb(150, 206, 150)); i++; x += u * 2
+        }
+        x = 0f; i = 0
+        while (x < w) {
+            val hh = u * (3f + 2f * sin(i * 0.8f + 2f))
+            r(c, x, gy - hh, x + u * 2, gy, Color.rgb(104, 184, 104)); i++; x += u * 2
+        }
+        r(c, 0f, gy, w, gy + u, Color.rgb(150, 224, 96)); r(c, 0f, gy + u, w, gy + u * 2, Color.rgb(96, 176, 70))
+        r(c, 0f, gy + u * 2, w, h, Color.rgb(150, 104, 68))
+        x = 0f; i = 0
+        while (x < w) { val yy = gy + u * (3f + (i * 7 % 5)); if (yy < h) r(c, x, yy, x + u, yy + u, Color.rgb(124, 84, 52)); i++; x += u * 3 }
+        for (k in 0 until 6) {   // florzinhas
+            val fx = (k * 0.19f + 0.06f) * w; if (abs(fx - w * 0.5f) < w * 0.12f) continue
+            r(c, fx, gy - u * 2, fx + u, gy, Color.rgb(70, 150, 60))
+            r(c, fx - u, gy - u * 3, fx + u * 2, gy - u * 2, if (k % 2 == 0) Color.rgb(255, 140, 180) else Color.rgb(255, 224, 110))
+        }
+        for (k in 0 until 14) {   // brilhinhos flutuando
+            val px = (hash2(k, 1, 7) * w); val py = h * 0.7f - ((tt * (8f + hash2(k, 2, 7) * 10f) + hash2(k, 3, 7) * h) % (h * 0.6f))
+            sp.color = Color.argb((120 + 100 * abs(sin(tt * 2f + k))).toInt(), 255, 250, 200); c.drawRect(px, py, px + u, py + u, sp)
+        }
+    }
+
+    override fun onDraw(c: Canvas) {
+        val now = System.nanoTime(); val dt = min(0.1f, (now - lastT) / 1e9f); lastT = now
+        step(dt)
+        val sc = min(width / W.toFloat(), height / H.toFloat())
+        val dw = (W * sc).toInt(); val dh = (H * sc).toInt()
+        val l = (width - dw) / 2; val t = (height - dh) / 2
+        if (scenic) drawScene(c, t + dh * 0.95f)
+        dst.set(l, t, l + dw, t + dh)
+        c.drawBitmap(bmp, null, dst, paint)
+        postInvalidateOnAnimation()
+    }
+
+    override fun onTouchEvent(e: MotionEvent): Boolean {
+        when (e.actionMasked) {
+            MotionEvent.ACTION_DOWN -> { drag = true; lastX = e.x }
+            MotionEvent.ACTION_MOVE -> { yaw += (e.x - lastX) * 0.6f; lastX = e.x }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> drag = false
+        }
+        return true
+    }
+}

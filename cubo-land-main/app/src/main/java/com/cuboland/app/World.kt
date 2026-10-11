@@ -53,8 +53,13 @@ class MeshBuf {
 
 class World {
     companion object {
-        const val SX = 96; const val SY = 32; const val SZ = 96; const val CH = 16
-        const val CX = SX / CH; const val CZ = SZ / CH; const val WATER_Y = 9
+        @JvmField var SX = 96; @JvmField var SZ = 96
+        const val SY = 32; const val CH = 16
+        val CX: Int get() = SX / CH
+        val CZ: Int get() = SZ / CH
+        const val WATER_Y = 9
+        /** deve ser chamado ANTES de criar World/Game/GameRenderer: o mapa plano é bem maior que a ilha */
+        fun configure(flat: Boolean) { SX = if (flat) 256 else 96; SZ = SX }
         val CU = intArrayOf(0, 1); val CV = intArrayOf(0, 1)
         val QU = intArrayOf(0, 1, 1, 0); val QV = intArrayOf(0, 0, 1, 1)
         val AOB = floatArrayOf(0.86f, 0.91f, 0.96f, 1f)
@@ -62,6 +67,36 @@ class World {
 
     val blocks = ByteArray(SX * SY * SZ)
     val dirty = BooleanArray(CX * CZ) { true }
+    /** blocos desenhados à parte (esculpidos pelos golpes): o mesher do chunk pula eles */
+    val hidden = HashSet<Int>()
+    /** matinhos/flores cortados pela espada: chave do bloco de grama -> instante do corte (voltam a crescer depois) */
+    val cut = HashMap<Int, Float>()
+
+    fun markDirty(x: Int, z: Int) {
+        for (dx in -1..1) for (dz in -1..1) {
+            val cx = (x + dx).coerceIn(0, SX - 1) / CH; val cz = (z + dz).coerceIn(0, SZ - 1) / CH
+            dirty[cz * CX + cx] = true
+        }
+    }
+
+    /** 0 = sem matinho, 1 = matinho, 2 = flor (igual ao que o mesher desenha em cima da grama) */
+    fun tuftKind(x: Int, y: Int, z: Int): Int {
+        if (get(x, y, z) != B.GRASS || get(x, y + 1, z) != B.AIR) return 0
+        val r = hash(x, z, 3); if (r <= 0.55f) return 0
+        if (cut.containsKey((y * SZ + z) * SX + x)) return 0
+        return if (r > 0.94f) 2 else 1
+    }
+
+    fun cutTuft(x: Int, y: Int, z: Int, now: Float) { cut[(y * SZ + z) * SX + x] = now; markDirty(x, z) }
+
+    fun regrow(now: Float, life: Float) {
+        if (cut.isEmpty()) return
+        val it = cut.entries.iterator()
+        while (it.hasNext()) {
+            val e = it.next()
+            if (now - e.value > life) { val k = e.key; it.remove(); markDirty(k % SX, (k / SX) % SZ) }
+        }
+    }
 
     fun get(x: Int, y: Int, z: Int): Int {
         if (y >= SY) return 0
@@ -135,6 +170,54 @@ class World {
         java.util.Arrays.fill(dirty, true)
     }
 
+
+    /** Mapa plano: planície de grama (y=10), camadas de terra/pedra embaixo, um rio enorme serpenteando e árvores bem espaçadas. */
+    fun generateFlat(seed: Int) {
+        java.util.Arrays.fill(blocks, 0)
+        val h = IntArray(SX * SZ)
+        for (x in 0 until SX) {
+            val wob = vnoise(x * 0.012f, 0f, seed + 3)
+            val zc = SZ / 2f + 58f + 22f * sin(x * 0.022f + seed * 0.1f) + (wob - 0.5f) * 30f
+            val hw = 15f + 5f * sin(x * 0.047f + 1.3f) + 3f * vnoise(x * 0.03f, 4f, seed + 9)
+            for (z in 0 until SZ) {
+                val t = Math.abs(z - zc) / hw
+                val depth = if (t < 1f) 1 + Math.round(6f * (1f - t * t)) else 0
+                val hh = 10 - depth
+                h[x * SZ + z] = hh
+                val river = depth > 0
+                for (y in 0..hh) {
+                    val id = when {
+                        y == hh -> if (river) (if (t > 0.55f) B.SAND else B.DIRT) else B.GRASS
+                        y >= hh - 2 -> if (river) B.SAND else B.DIRT
+                        else -> B.STONE
+                    }
+                    blocks[(y * SZ + z) * SX + x] = id.toByte()
+                }
+                for (y in hh + 1..WATER_Y) blocks[(y * SZ + z) * SX + x] = B.WATER.toByte()
+            }
+        }
+        val rnd = Random(seed.toLong())
+        val placed = ArrayList<IntArray>()
+        for (i in 0 until 1600) {
+            val x = 6 + rnd.nextInt(SX - 12); val z = 6 + rnd.nextInt(SZ - 12)
+            val y = h[x * SZ + z]
+            if (y != 10 || get(x, y, z) != B.GRASS || !air(x, y + 1, z)) continue
+            if (Math.abs(x - SX / 2) < 8 && Math.abs(z - SZ / 2) < 8) continue
+            val type = pickTree(rnd); val r = treeRadius[type]
+            if (placed.any { Math.max(Math.abs(it[0] - x), Math.abs(it[1] - z)) < it[2] + r + 9 }) continue   // bem espaçadas
+            placed.add(intArrayOf(x, z, r))
+            plantTree(x, y, z, type, rnd)
+        }
+        val cols = intArrayOf(B.PINK, B.BLUE, B.YELLOW, B.BRICK)
+        for (i in 0 until 4) {
+            val x = SX / 2 + 3 + i * 2; val z = SZ / 2 + 4
+            val y = surfaceY(x, z)
+            for (t in 0..2) blocks[((y + t) * SZ + z) * SX + x] = cols[i].toByte()
+            blocks[((y + 3) * SZ + z) * SX + x] = B.LANTERN.toByte()
+        }
+        java.util.Arrays.fill(dirty, true)
+    }
+
     // ================= ÁRVORES =================
     private fun air(x: Int, y: Int, z: Int) = x in 0 until SX && z in 0 until SZ && y in 0 until SY && get(x, y, z) == B.AIR
 
@@ -153,18 +236,50 @@ class World {
         if (g == B.AIR || g == B.LEAVES) set(x, y, z, B.WOOD)
     }
 
-    /** galho torto que sobe; termina numa bolota de folhas. Retorna a ponta [x,y,z] */
-    private fun branch(x: Int, y: Int, z: Int, len: Int, rnd: Random): IntArray {
-        val dirs = arrayOf(intArrayOf(1, 0), intArrayOf(-1, 0), intArrayOf(0, 1), intArrayOf(0, -1), intArrayOf(1, 1), intArrayOf(-1, 1), intArrayOf(1, -1), intArrayOf(-1, -1))
-        val d = dirs[rnd.nextInt(8)]
+    private val DX8 = intArrayOf(1, 1, 0, -1, -1, -1, 0, 1)
+    private val DZ8 = intArrayOf(0, 1, 1, 1, 0, -1, -1, -1)
+
+    /** galho fino: sai do tronco na direção d (0..7), anda um eixo por vez (blocos sempre encostados) e sobe devagar.
+     *  Com fork, brota um raminho no meio. Retorna a ponta [x,y,z] */
+    private fun limb(x: Int, y: Int, z: Int, d: Int, len: Int, rnd: Random, fork: Boolean): IntArray {
+        val dx = DX8[d and 7]; val dz = DZ8[d and 7]
         var bx = x; var by = y; var bz = z
         for (i in 1..len) {
-            bx += d[0]; bz += d[1]
-            if (i % 2 == 0 || rnd.nextInt(3) == 0) by++
+            if (dx != 0 && dz != 0) { if (i % 2 == 1) bx += dx else bz += dz } else { bx += dx; bz += dz }
             wood(bx, by, bz)
-            if (i == len) { by++; wood(bx, by, bz) }
+            if (i % 2 == 0 || i == len) { by++; wood(bx, by, bz) }
+            if (fork && len >= 4 && i == len / 2 + 1) {
+                val t = limb(bx, by, bz, d + (if (rnd.nextBoolean()) 2 else -2) + 8, 2, rnd, false)
+                blob(t[0], t[1], t[2], 1.5f, 1.2f, 1.5f, rnd)
+            }
         }
         return intArrayOf(bx, by, bz)
+    }
+
+    /** copa cheia de volume: bola central + gomos em volta (não fica uma bola lisa) */
+    private fun crown(cx: Int, cy: Int, cz: Int, r: Float, rnd: Random) {
+        blob(cx, cy, cz, r, r * 0.8f, r, rnd)
+        val n = 3 + r.toInt()
+        val a0 = rnd.nextFloat() * 6.283f
+        for (k in 0 until n) {
+            val a = a0 + k * 6.283f / n + (rnd.nextFloat() - 0.5f) * 0.6f
+            val dist = r * (0.7f + rnd.nextFloat() * 0.2f)
+            blob(cx + Math.round(Math.cos(a.toDouble()) * dist).toInt(), cy + rnd.nextInt(3) - 1, cz + Math.round(Math.sin(a.toDouble()) * dist).toInt(),
+                r * 0.55f, r * 0.45f, r * 0.55f, rnd)
+        }
+    }
+
+    /** n galhos espalhados em volta do tronco, em alturas diferentes, cada um com uma folhagem na ponta */
+    private fun limbs(tx: Int, tz: Int, y0: Int, y1: Int, n: Int, minLen: Int, maxLen: Int, leafR: Float, rnd: Random, thick: Boolean = false, bx: Int = tx, bz: Int = tz) {
+        val d0 = rnd.nextInt(8)
+        for (k in 0 until n) {
+            val d = (d0 + k * 8 / n + rnd.nextInt(2)) and 7
+            val sx = if (thick && DX8[d] > 0) bx + 1 else bx
+            val sz = if (thick && DZ8[d] > 0) bz + 1 else bz
+            val yy = y0 + (if (n > 1) (y1 - y0) * k / (n - 1) else 0) + rnd.nextInt(2)
+            val e = limb(sx, yy, sz, d, minLen + rnd.nextInt(maxLen - minLen + 1), rnd, true)
+            blob(e[0], e[1] + 1, e[2], leafR, leafR * 0.8f, leafR, rnd)
+        }
     }
 
     /** tipo: 0 pequena, 1 média, 2 grande (tronco grosso), 3 alta e fina, 4 pinheiro, 5 arbusto, 6 tronco caído */
@@ -172,7 +287,7 @@ class World {
         val r = rnd.nextInt(24)
         return when { r < 5 -> 0; r < 11 -> 1; r < 14 -> 2; r < 16 -> 3; r < 19 -> 4; r < 22 -> 5; else -> 6 }
     }
-    private val treeRadius = intArrayOf(2, 4, 6, 3, 4, 2, 3)
+    private val treeRadius = intArrayOf(3, 5, 7, 3, 4, 2, 3)
 
     /** tronco com curvas leves: a cada "kink" o tronco desvia 1 bloco pro lado. Retorna a coluna do topo [x,z] */
     private fun trunk(x: Int, y: Int, z: Int, h: Int, kinks: Int, rnd: Random): IntArray {
@@ -224,8 +339,8 @@ class World {
             0 -> {
                 val th = 3 + rnd.nextInt(2)
                 val tp = trunk(x, y, z, th, rnd.nextInt(2), rnd)
-                blob(tp[0], y + th + 1, tp[1], 2.4f, 1.9f, 2.4f, rnd)
-                if (rnd.nextBoolean()) { val e = branch(tp[0], y + th - 1, tp[1], 2, rnd); blob(e[0], e[1], e[2], 1.5f, 1.3f, 1.5f, rnd) }
+                limbs(tp[0], tp[1], y + th - 1, y + th - 1, 1, 2, 2, 1.7f, rnd)
+                crown(tp[0], y + th + 1, tp[1], 2.4f, rnd)
                 droop(tp[0], y + th, tp[1], 3, 3, rnd)
             }
             1 -> {
@@ -233,37 +348,33 @@ class World {
                 val tp = trunk(x, y, z, th, 1 + rnd.nextInt(2), rnd)
                 root(x, y, z, 1, 0); root(x, y, z, 0, 1)
                 if (rnd.nextBoolean()) root(x, y, z, -1, 0)
-                for (k in 0 until 2 + rnd.nextInt(2)) {
-                    val e = branch(tp[0], y + th - 3 + rnd.nextInt(3), tp[1], 2 + rnd.nextInt(2), rnd)
-                    blob(e[0], e[1], e[2], 2.2f, 1.8f, 2.2f, rnd)
-                }
-                blob(tp[0], y + th + 1, tp[1], 3.2f, 2.6f, 3.2f, rnd)
-                blob(tp[0] + 2 - rnd.nextInt(5), y + th, tp[1] + 2 - rnd.nextInt(5), 2.2f, 1.7f, 2.2f, rnd)
+                if (rnd.nextBoolean()) root(x, y, z, 0, -1)
+                limbs(tp[0], tp[1], y + th - 3, y + th - 1, 3 + rnd.nextInt(2), 3, 4, 2.0f, rnd)
+                crown(tp[0], y + th + 1, tp[1], 3.1f, rnd)
                 droop(tp[0], y + th, tp[1], 5, 5, rnd)
             }
             2 -> {
-                val th = 8 + rnd.nextInt(4)
+                val th = 9 + rnd.nextInt(4)
                 val thick = get(x + 1, y, z) == B.GRASS && get(x, y, z + 1) == B.GRASS && get(x + 1, y, z + 1) == B.GRASS
                 var tx = x; var tz = z
-                if (thick) {
-                    for (t in 1..th) { wood(x, y + t, z); if (t <= th - 2) { wood(x + 1, y + t, z); wood(x, y + t, z + 1); wood(x + 1, y + t, z + 1) } }
+                if (thick) {   // tronco grosso que afina perto do topo
+                    for (t in 1..th) { wood(x, y + t, z); if (t <= th - 3) { wood(x + 1, y + t, z); wood(x, y + t, z + 1); wood(x + 1, y + t, z + 1) } }
                 } else { val tp = trunk(x, y, z, th, 2, rnd); tx = tp[0]; tz = tp[1] }
                 for (dx in -1..2) for (dz in -1..2) {   // raízes aparentes, com pé no chão
                     if ((dx == 0 || dx == 1) && (dz == 0 || dz == 1)) continue
-                    if (rnd.nextInt(3) == 0 && get(x + dx, y, z + dz) == B.GRASS && air(x + dx, y + 1, z + dz)) wood(x + dx, y + 1, z + dz)
+                    if (rnd.nextInt(3) == 0 && get(x + dx, y, z + dz) == B.GRASS && air(x + dx, y + 1, z + dz)) {
+                        wood(x + dx, y + 1, z + dz)
+                        if (rnd.nextInt(3) == 0 && air(x + dx * 2, y + 1, z + dz * 2) && get(x + dx * 2, y, z + dz * 2) == B.GRASS) wood(x + dx * 2, y + 1, z + dz * 2)
+                    }
                 }
-                for (k in 0 until 5 + rnd.nextInt(3)) {
-                    val e = branch(tx, y + th - 5 + rnd.nextInt(4), tz, 3 + rnd.nextInt(2), rnd)
-                    blob(e[0], e[1], e[2], 2.8f, 2.2f, 2.8f, rnd)
-                }
-                blob(tx, y + th + 2, tz, 4.6f, 3.2f, 4.6f, rnd)
-                blob(tx + 2, y + th + 3, tz - 1, 2.4f, 2.0f, 2.4f, rnd); blob(tx - 2, y + th + 2, tz + 2, 2.4f, 2.0f, 2.4f, rnd)
-                blob(tx - 3, y + th + 1, tz - 2, 2.2f, 1.7f, 2.2f, rnd); blob(tx + 3, y + th + 1, tz + 2, 2.2f, 1.7f, 2.2f, rnd)
+                limbs(tx, tz, y + th - 6, y + th - 2, 6 + rnd.nextInt(2), 3, 5, 2.7f, rnd, thick, x, z)
+                crown(tx, y + th + 2, tz, 4.6f, rnd)
                 droop(tx, y + th, tz, 7, 6, rnd)
             }
             3 -> {
                 val th = 8 + rnd.nextInt(3)
                 val tp = trunk(x, y, z, th + 1, 1, rnd)
+                limbs(tp[0], tp[1], y + th - 5, y + th - 3, 2, 2, 3, 1.5f, rnd)
                 for (k in 0..3) { val r = 3.1f - k * 0.7f; blob(tp[0], y + th - 4 + k * 2, tp[1], r, 1.7f, r, rnd) }
                 blob(tp[0], y + th + 3, tp[1], 1.1f, 1.4f, 1.1f, rnd)
                 droop(tp[0], y + th - 2, tp[1], 3, 6, rnd)
@@ -386,6 +497,7 @@ class World {
         for (y in 0 until SY) for (z in cz * CH until cz * CH + CH) for (x in cx * CH until cx * CH + CH) {
             val id = get(x, y, z)
             if (id == B.AIR) continue
+            if (hidden.isNotEmpty() && hidden.contains((y * SZ + z) * SX + x)) continue
             val isW = id == B.WATER
             val lowered = isW && get(x, y + 1, z) == B.AIR
             val vr = 0.94f + 0.06f * hash(x, z, y)
@@ -409,7 +521,7 @@ class World {
             }
             if (id == B.GRASS && get(x, y + 1, z) == B.AIR) {
                 val r = hash(x, z, 3)
-                if (r > 0.55f) {
+                if (r > 0.55f && (cut.isEmpty() || !cut.containsKey((y * SZ + z) * SX + x))) {
                     val fl = r > 0.94f
                     val tile = if (fl) 17 + (hash(x, z, 4) * 3f).toInt().coerceIn(0, 2) else 16
                     val hh = if (fl) 0.62f else 0.28f + 0.3f * hash(x, z, 9)
@@ -432,7 +544,8 @@ class World {
             for (face in 0 until 6) {
                 val a = face shr 1; val s = if ((face and 1) == 0) 1 else -1
                 val nx = x + if (a == 0) s else 0; val ny = y + if (a == 1) s else 0; val nz = z + if (a == 2) s else 0
-                val nid = get(nx, ny, nz)
+                var nid = get(nx, ny, nz)
+                if (nid != B.AIR && hidden.isNotEmpty() && hidden.contains((ny * SZ + nz) * SX + nx)) nid = B.AIR   // bloco esculpido: o vizinho desenha a face voltada pra ele
                 if (isW) { if (nid != B.AIR) continue }
                 else if (id == B.LEAVES) { if (nid != B.AIR && nid != B.WATER && nid != B.LEAVES) continue }
                 else if (nid != B.AIR && nid != B.WATER && nid != B.LEAVES) continue   // folha tem buracos: o que está atrás dela precisa ser desenhado
