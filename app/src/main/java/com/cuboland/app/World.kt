@@ -159,10 +159,6 @@ class World {
             for (y in hh + 1..WATER_Y) blocks[(y * SZ + z) * SX + x] = B.WATER.toByte()
         }
         plantForest(Random(seed.toLong()), 420) { x, z -> h[x * SZ + z] }
-        run {   // árvore de galhos de teste, bem perto do spawn
-            val tx = SX / 2 + 10; val tz = SZ / 2 - 10; val ty = surfaceY(tx, tz) - 1
-            if (get(tx, ty, tz) == B.GRASS && air(tx, ty + 1, tz)) plantTree(tx, ty, tz, 7, Random(seed.toLong() + 7))
-        }
         // pilares decorativos perto do spawn
         val cols = intArrayOf(B.PINK, B.BLUE, B.YELLOW, B.BRICK)
         for (i in 0 until 4) {
@@ -212,10 +208,6 @@ class World {
             placed.add(intArrayOf(x, z, r))
             plantTree(x, y, z, type, rnd)
         }
-        run {   // árvore de galhos de teste, bem perto do spawn
-            val tx = SX / 2 + 10; val tz = SZ / 2 - 10; val ty = surfaceY(tx, tz) - 1
-            if (get(tx, ty, tz) == B.GRASS && air(tx, ty + 1, tz)) plantTree(tx, ty, tz, 7, Random(seed.toLong() + 7))
-        }
         val cols = intArrayOf(B.PINK, B.BLUE, B.YELLOW, B.BRICK)
         for (i in 0 until 4) {
             val x = SX / 2 + 3 + i * 2; val z = SZ / 2 + 4
@@ -244,6 +236,7 @@ class World {
         if (g == B.AIR || g == B.LEAVES) set(x, y, z, B.WOOD)
     }
 
+    private val DECOR = false
     private val DX8 = intArrayOf(1, 1, 0, -1, -1, -1, 0, 1)
     private val DZ8 = intArrayOf(0, 1, 1, 1, 0, -1, -1, -1)
 
@@ -307,7 +300,6 @@ class World {
 
     /** tipo: 0 pequena, 1 média, 2 grande (tronco grosso), 3 alta e fina, 4 pinheiro, 5 arbusto, 6 tronco caído, 7 árvore de galhos (sem blocos de folha) */
     private fun pickTree(rnd: Random): Int {
-        if (rnd.nextInt(5) == 0) return 7   // teste: árvore só de galhos (sem blocos de folha)
         val r = rnd.nextInt(24)
         return when { r < 5 -> 0; r < 11 -> 1; r < 14 -> 2; r < 16 -> 3; r < 19 -> 4; r < 22 -> 5; else -> 6 }
     }
@@ -708,6 +700,7 @@ class World {
     }
 
     private fun decorate(cx: Int, cz: Int, o: MeshBuf) {
+        if (!DECOR) return   // galhos finos e folhinhas soltas desligados
         for (y in 1 until SY) for (z in cz * CH until cz * CH + CH) for (x in cx * CH until cx * CH + CH) {
             if (o.vc > 58000) return
             decorBlock(o, x, y, z)
@@ -744,6 +737,7 @@ class World {
      *  rs[i] = onde começam os índices do bloco i (rs[n] = fim), pra esconder os galhos dos blocos que já quebraram */
     fun decorTree(bl: IntArray, ox: Int, oy: Int, oz: Int, yo: Float, rs: IntArray): MeshBuf {
         val m = MeshBuf(); val n = bl.size / 4
+        if (!DECOR) { java.util.Arrays.fill(rs, 0, n + 1, 0); return m }
         for (i in 0 until n) {
             rs[i] = m.inn
             if (m.vc > 58000) continue

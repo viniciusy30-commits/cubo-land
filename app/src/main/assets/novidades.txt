@@ -1,8 +1,15 @@
+#id 2026-10-11-s
+#titulo Mochila nova!
+- Itens separados por categoria em abas: Tudo, Ferramentas, Natureza, Construção e Decoração
+- Barra de pesquisa: toque nela e digite o nome do item ou da categoria
+- Painel com o item em destaque, descrição e força das ferramentas (dano, alcance e rapidez)
+- A barra de itens fica ativa com a mochila aberta: toque pra escolher o slot, arraste um item da mochila direto pra um slot, ou arraste um slot sobre outro pra trocar
+- Plaquinha verde nos itens mostra em qual slot eles estão
+
 #id 2026-10-11-r
-#titulo Grama limpa e árvore de galhos!
-- Os matinhos da grama não têm mais o contorno preto serrilhado ao longe (nem as folhinhas e flores)
-- Árvore nova de teste feita só de galhos grossos e finos, com folhinhas nascendo nos galhos e buquês nas pontas, sem blocos de folha
-- Tem uma pertinho do spawn em mundos novos, e outras aparecem pela floresta
+#titulo Grama limpa!
+- Os matinhos da grama não têm mais o contorno preto serrilhado ao longe (nem as flores)
+- Galhos finos e folhinhas soltas saíram: as árvores voltam a ter só blocos de folha
 
 #id 2026-10-11-q
 #titulo Personagem pisando no portal!

@@ -48,11 +48,6 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
     private fun pt0() = 12 * d
     private fun pr() = width - 24 * d
     private fun pb() = hbTop() - 26 * d
-    private val cell get() = 58 * d
-    private fun cols() = max(1, ((pr() - pl() - 32 * d) / cell).toInt())
-    private fun cellX(i: Int) = pl() + 16 * d + (i % cols()) * cell
-    private fun cellY(i: Int) = pt0() + 48 * d + (i / cols()) * cell
-
     private fun col(v: Int) = v or (0xFF shl 24)
 
     override fun onSizeChanged(w: Int, h: Int, ow: Int, oh: Int) { game.aspect = w.toFloat() / max(1, h) }
@@ -61,8 +56,12 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         val act = e.actionMasked; val idx = e.actionIndex
         when (act) {
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> down(e.getPointerId(idx), e.getX(idx), e.getY(idx))
-            MotionEvent.ACTION_MOVE -> if (!invOpen && !paused) for (i in 0 until e.pointerCount) move(e.getPointerId(i), e.getX(i), e.getY(i))
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> up(e.getPointerId(idx))
+            MotionEvent.ACTION_MOVE -> if (invOpen) { for (i in 0 until e.pointerCount) invMove(e.getPointerId(i), e.getX(i), e.getY(i)) }
+                else if (!paused) for (i in 0 until e.pointerCount) move(e.getPointerId(i), e.getX(i), e.getY(i))
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
+                val pid = e.getPointerId(idx)
+                if (!(invOpen && invUp(pid, e.getX(idx), e.getY(idx)))) up(pid)
+            }
         }
         return true
     }
@@ -77,6 +76,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         game.paused = paused
         clearInput()
         if (invOpen) invOpen = false
+        ptrId = -1; ptrDrag = false
     }
 
     private fun pbox() = RectF(width / 2f - 160 * d, height / 2f - 142 * d, width / 2f + 160 * d, height / 2f + 142 * d)
@@ -91,7 +91,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
     private fun toggleInv() {
         invOpen = !invOpen
         clearInput()
-        invSel = game.cur()
+        invSel = game.cur(); ptrId = -1; ptrDrag = false
     }
 
     private fun hotbarHit(x: Float, y: Float): Boolean {
@@ -112,17 +112,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
     private fun down(id: Int, x: Float, y: Float) {
         if (paused) { pauseDown(x, y); return }
         if (hypot(x - bx(5), y - byy(5)) < br(5) * 1.2f) { toggleInv(); return }
-        if (invOpen) {
-            if (hotbarHit(x, y)) return
-            if (hypot(x - (pr() - 20 * d), y - (pt0() + 22 * d)) < 22 * d) { toggleInv(); return }
-            for (i in Items.inventory.indices) {
-                if (x >= cellX(i) && x <= cellX(i) + cell - 6 * d && y >= cellY(i) && y <= cellY(i) + cell - 6 * d) {
-                    invSel = Items.inventory[i]; game.hotbar[game.sel] = invSel; bounce = 1f; return
-                }
-            }
-            if (x < pl() || x > pr() || y < pt0() || y > pb()) toggleInv()
-            return
-        }
+        if (invOpen) { invDown(id, x, y); return }
         for (i in intArrayOf(1, 3, 4, 6, 7, 8)) if ((i != 6 || wet()) && (i != 8 || !wet()) && hypot(x - bx(i), y - byy(i)) < br(i) * 1.15f) {
             btnId[id] = i
             when (i) {
@@ -565,28 +555,273 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         postInvalidateOnAnimation()
     }
 
-    private fun drawInventory(c: Canvas) {
-        val w = width.toFloat(); val h = height.toFloat()
-        rc(c, 0f, 0f, w, h, Color.argb(150, 6, 8, 20))
-        pxPanel(c, pl(), pt0(), pr(), pb(), Cz.PANEL, false, false, 250)
-        pxText(c, "Mochila", pl() + 18 * d, pt0() + 16 * d, tsc(3f), Cz.TXT, 0, false)
-        // fechar
-        val xx = pr() - 20 * d; val yy = pt0() + 22 * d
-        pxRound(c, xx, yy, 5, Cz.RED, false); sprite(c, S_X, sn(xx), sn(yy), Cz.RED)
-        // info do item selecionado no cabeçalho
-        val sel = if (invSel > 0) invSel else game.cur()
-        val ix = pl() + 150 * d; val avail = (pr() - 50 * d - ix).toInt()
-        pxText(c, Items.name(sel), ix, pt0() + 8 * d, tsc(2.1f), Cz.GOLD_D, 0, false)
-        val ds = Items.desc(sel); var dsc = tsc(1.4f)
-        while (dsc > 1 && PixFont.width(ds, dsc) > avail) dsc--
-        pxText(c, ds, ix, pt0() + 32 * d, dsc, Cz.TXT, 0, false)
-        for ((i, id) in Items.inventory.withIndex()) {
-            val x = cellX(i); val y = cellY(i); val s = cell - 6 * d
-            val on = id == invSel
-            pxPanel(c, x, y, x + s, y + s, if (on) Cz.PANEL2 else Cz.PANEL3, on)
-            icon(c, x + s / 2, y + s / 2, s, id)
+    // ================= MOCHILA (abas por categoria, pesquisa, arrastar pra barra) =================
+    private var query = ""; private var invCat = 0; private var invScroll = 0f
+    private var ptrId = -1; private var ptrKind = 0; private var ptrItem = 0; private var ptrSlot = -1
+    private var ptrX0 = 0f; private var ptrY0 = 0f; private var ptrX = 0f; private var ptrY = 0f; private var ptrDrag = false; private var ptrScroll0 = 0f
+    private var bodyTop = 0f; private var bodyBot = 0f; private var tabL = 0f; private var tabR = 0f; private var tabH = 0f
+    private var infoL = 0f; private var infoR = 0f; private var infoW = 0f
+    private var gx0 = 0f; private var gx1 = 0f; private var gTop = 0f; private var gBot = 0f; private var cs = 0f; private var cols = 1; private var maxScroll = 0f
+    private var sL = 0f; private var sR = 0f; private var sT = 0f; private var sB = 0f
+    private var shownKey = ""; private var shownList: List<Int> = emptyList()
+    private val MARKS = Regex("\\p{M}+")
+    private val ICO_MAG = arrayOf("..###....", ".#...#...", "#.....#..", "#.....#..", "#.....#..", ".#...#...", "..###.#..", ".......#.", "........#")
+
+    private fun normQ(s: String) = java.text.Normalizer.normalize(s.lowercase(), java.text.Normalizer.Form.NFD).replace(MARKS, "")
+
+    private fun shown(): List<Int> {
+        val key = "$invCat|$query"
+        if (key == shownKey) return shownList
+        val q = normQ(query.trim())
+        shownList = if (q.isEmpty()) Items.inventory.filter { invCat == 0 || Items.cat(it) == invCat }
+        else Items.inventory.filter { normQ(Items.name(it)).contains(q) || normQ(Items.CATS[Items.cat(it)]).contains(q) }
+        shownKey = key
+        return shownList
+    }
+
+    private fun catColor(k: Int) = when (k) { 0 -> Cz.GOLD_D; 1 -> Cz.SKY; 2 -> Cz.GREEN; 3 -> Cz.ORANGE; else -> Cz.LILAC }
+
+    private fun layout() {
+        val L = pl(); val R = pr(); val T = pt0(); val PB = pb()
+        bodyTop = T + 54 * d; bodyBot = PB - 12 * d
+        tabL = L + 14 * d; tabR = tabL + 52 * d
+        tabH = min(40 * d, (bodyBot - bodyTop - 16 * d) / 5f)
+        infoW = if ((R - L) / d >= 600f) 176 * d else 0f
+        infoR = R - 14 * d; infoL = infoR - infoW
+        gx0 = tabR + 10 * d; gx1 = if (infoW > 0f) infoL - 10 * d else R - 14 * d
+        gTop = bodyTop + 24 * d; gBot = bodyBot
+        cs = 54 * d
+        cols = max(1, ((gx1 - gx0 - 22 * d) / cs).toInt())
+        val rows = (shown().size + cols - 1) / cols
+        maxScroll = max(0f, rows * cs + 8 * d - (gBot - gTop))
+        invScroll = invScroll.coerceIn(0f, maxScroll)
+        sL = L + 160 * d; sR = R - 96 * d; sT = T + 14 * d; sB = T + 42 * d
+    }
+
+    private fun cellX(i: Int) = gx0 + 8 * d + (i % cols) * cs
+    private fun cellY(i: Int) = gTop + 4 * d + (i / cols) * cs - invScroll
+    private fun tabY(k: Int) = bodyTop + k * (tabH + 4 * d)
+    private fun slotAt(x: Float): Int {
+        if (x < hbLeft() - 4 * d) return -1
+        val s = ((x - hbLeft()) / (slot + gap)).toInt()
+        return if (s in 0..7) s else -1
+    }
+    private fun dropSlot(x: Float, y: Float) = if (y < pb() - 8 * d) -1 else slotAt(x)
+
+    private fun invDown(id: Int, x: Float, y: Float) {
+        if (ptrId >= 0) return
+        layout()
+        fun start(kind: Int) { ptrId = id; ptrKind = kind; ptrX0 = x; ptrY0 = y; ptrX = x; ptrY = y; ptrDrag = false; ptrScroll0 = invScroll }
+        if (hypot(x - (pr() - 26 * d), y - (pt0() + 28 * d)) < 22 * d) { toggleInv(); return }
+        if (y >= pb()) {   // barra de itens continua usável com a mochila aberta
+            val s = slotAt(x)
+            if (s >= 0) { start(2); ptrSlot = s; ptrItem = game.hotbar[s] }
+            return
         }
-        val ty = cellY(Items.inventory.size - 1) + cell + 8 * d
-        if (ty < pb() - 4 * d) pxText(c, "Toque num item para colocá-lo no slot selecionado", pl() + 18 * d, ty, tsc(1.5f), Cz.TXT, 0, false)
+        if (x >= sL && x <= sR && y >= sT && y <= sB) {
+            if (query.isNotEmpty() && x > sR - 30 * d) { query = ""; invScroll = 0f } else start(4)
+            return
+        }
+        for (k in 0 until 5) if (x >= tabL && x <= tabR + 4 * d && y >= tabY(k) && y <= tabY(k) + tabH) { invCat = k; query = ""; invScroll = 0f; return }
+        if (x >= gx0 && x <= gx1 && y >= gTop && y <= gBot) {
+            val list = shown()
+            for (i in list.indices) {
+                val cx = cellX(i); val cy = cellY(i)
+                if (x >= cx && x <= cx + cs - 6 * d && y >= cy && y <= cy + cs - 6 * d) { start(1); ptrItem = list[i]; invSel = ptrItem; return }
+            }
+            start(3); return
+        }
+        if (x < pl() || x > pr() || y < pt0() || y > pb()) toggleInv()
+    }
+
+    private fun invMove(id: Int, x: Float, y: Float) {
+        if (id != ptrId) return
+        ptrX = x; ptrY = y
+        if (ptrKind == 3) { invScroll = (ptrScroll0 - (y - ptrY0)).coerceIn(0f, maxScroll); return }
+        if (!ptrDrag && hypot(x - ptrX0, y - ptrY0) > 10 * d && (ptrKind == 1 || ptrKind == 2)) ptrDrag = true
+        if (!ptrDrag && ptrKind == 4 && hypot(x - ptrX0, y - ptrY0) > 10 * d) ptrDrag = true
+    }
+
+    private fun invUp(id: Int, x: Float, y: Float): Boolean {
+        if (id != ptrId) return false
+        ptrId = -1
+        val kind = ptrKind; val drag = ptrDrag; ptrDrag = false
+        when (kind) {
+            1 -> {
+                invSel = ptrItem
+                if (drag) { val s = dropSlot(x, y); if (s >= 0) { game.hotbar[s] = ptrItem; game.sel = s; bounce = 1f } }
+                else { game.hotbar[game.sel] = ptrItem; bounce = 1f }
+            }
+            2 -> {
+                if (drag) {
+                    val s = dropSlot(x, y)
+                    if (s >= 0 && s != ptrSlot) { val t = game.hotbar[s]; game.hotbar[s] = game.hotbar[ptrSlot]; game.hotbar[ptrSlot] = t; game.sel = s; bounce = 1f }
+                } else { game.sel = ptrSlot; invSel = game.cur() }
+                invSel = game.cur()
+            }
+            4 -> if (!drag) openSearch()
+        }
+        return true
+    }
+
+    private fun openSearch() {
+        val act = context as? android.app.Activity ?: return
+        val et = android.widget.EditText(act)
+        et.setText(query); et.setSelection(et.text.length); et.hint = "Nome do item ou categoria"
+        et.isSingleLine = true; et.imeOptions = android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH
+        val dlg = android.app.AlertDialog.Builder(act).setTitle("Pesquisar na mochila").setView(et)
+            .setPositiveButton("Buscar") { _, _ -> query = et.text.toString().trim(); invScroll = 0f }
+            .setNeutralButton("Limpar") { _, _ -> query = ""; invScroll = 0f }
+            .setNegativeButton("Cancelar", null).create()
+        et.setOnEditorActionListener { _, _, _ -> query = et.text.toString().trim(); invScroll = 0f; dlg.dismiss(); true }
+        dlg.setOnDismissListener { act.goFullscreen() }
+        dlg.window?.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
+        dlg.show(); et.requestFocus()
+    }
+
+    private fun wrap(s: String, sc: Int, maxW: Int): List<String> {
+        val out = ArrayList<String>(); var line = ""
+        for (wd in s.split(" ")) {
+            val t = if (line.isEmpty()) wd else "$line $wd"
+            if (line.isNotEmpty() && PixFont.width(t, sc) > maxW) { out.add(line); line = wd } else line = t
+        }
+        if (line.isNotEmpty()) out.add(line)
+        return out
+    }
+
+    private fun pips(c: Canvas, label: String, x: Float, y: Float, wd: Float, n: Int, color: Int) {
+        val s1 = tsc(1f)
+        pxText(c, label, x, y + 1 * d, s1, Cz.TXT, 0, false)
+        val ps = 6 * d; val st = 8 * d
+        for (i in 0 until 5) {
+            val px = x + wd - (5 - i) * st
+            rc(c, px, y, px + ps, y + ps, Cz.INK)
+            rc(c, px + u / 2, y + u / 2, px + ps - u / 2, y + ps - u / 2, if (i < n) color else Color.argb(90, 150, 120, 110))
+        }
+    }
+
+    private fun drawInventory(c: Canvas) {
+        layout()
+        val w = width.toFloat()
+        val clock = System.nanoTime() / 1e9f
+        val hb = hbTop(); val L = pl(); val R = pr(); val T = pt0(); val PB = pb()
+        // fundo escurecido, mais leve perto da barra de itens (que continua usável)
+        rc(c, 0f, 0f, w, hb - 34 * d, Color.argb(160, 6, 8, 20))
+        rc(c, 0f, hb - 34 * d, w, hb - 22 * d, Color.argb(110, 6, 8, 20))
+        rc(c, 0f, hb - 22 * d, w, hb - 10 * d, Color.argb(50, 6, 8, 20))
+        pxPanel(c, L, T, R, PB, Cz.PANEL, false, false, 250)
+        // cabeçalho
+        rc(c, sn(L + 14 * d), sn(T + 10 * d), sn(R - 14 * d), sn(T + 46 * d), Color.argb(46, 196, 128, 48))
+        rc(c, sn(L + 14 * d), sn(T + 46 * d) - u, sn(R - 14 * d), sn(T + 46 * d), Color.argb(120, 196, 128, 48))
+        sprite(c, S_BAG, L + 30 * d, T + 28 * d, Cz.INK, Cz.GOLD_D)
+        val ts = tsc(2.4f)
+        pxText(c, "Mochila", L + 46 * d, T + 28 * d - 3.5f * ts, ts, Cz.TXT, 0, true)
+        // barra de pesquisa
+        val sl = sn(sL); val st = sn(sT); val sr = sn(sR); val sb = sn(sB); val sm = (st + sb) / 2f
+        outer(c, sl, st + u, sr, sb + u, Color.argb(90, 36, 28, 48))
+        outer(c, sl, st, sr, sb, Cz.INK)
+        outer(c, sl + u, st + u, sr - u, sb - u, if (query.isNotEmpty()) Cz.GOLD else Color.rgb(224, 176, 92))
+        rc(c, sl + 2 * u, st + 2 * u, sr - 2 * u, sb - 2 * u, Color.rgb(255, 251, 242))
+        rc(c, sl + 2 * u, st + 2 * u, sr - 2 * u, st + 3 * u, Color.argb(40, 120, 70, 40))
+        pxIcon(c, ICO_MAG, sl + 16 * d, sm, Cz.TXT_SOFT, u)
+        val tsx = tsc(1.7f); val tx0 = sl + 30 * d; val avail = (sr - tx0 - (if (query.isNotEmpty()) 30 * d else 10 * d)).toInt()
+        if (query.isEmpty()) pxText(c, "Pesquisar item...", tx0, sm - 3.5f * tsx, tsx, Color.argb(190, 140, 104, 120), 0, false)
+        else {
+            var q = query; while (q.length > 1 && PixFont.width(q, tsx) > avail) q = q.substring(1)
+            pxText(c, q, tx0, sm - 3.5f * tsx, tsx, Cz.TXT, 0, false)
+            pxIcon(c, S_X, sr - 16 * d, sm, Cz.RED, u)
+        }
+        // fechar
+        val xx = R - 26 * d; val yy = T + 28 * d
+        pxRound(c, xx, yy, 5, Cz.RED, false); sprite(c, S_X, sn(xx), sn(yy), Cz.RED)
+        // abas de categoria
+        val searching = query.isNotEmpty()
+        val tabIcon = intArrayOf(-1, Items.SWORD, B.GRASS, B.BRICK, B.PINK)
+        for (k in 0 until 5) {
+            val on = !searching && invCat == k
+            val y0 = tabY(k)
+            pxPanel(c, tabL, y0, tabR + (if (on) 4 * d else 0f), y0 + tabH, if (on) Cz.PANEL2 else Cz.PANEL3, on)
+            val icx = tabL + 26 * d; val icy = y0 + tabH / 2f
+            if (tabIcon[k] < 0) pxIcon(c, ICO_STAR, icx, icy, if (on) Cz.GOLD_D else Cz.TXT_SOFT) else icon(c, icx, icy, tabH * 0.92f, tabIcon[k])
+            if (on) rc(c, sn(tabL) + u, sn(y0 + tabH * 0.25f), sn(tabL) + 2 * u, sn(y0 + tabH * 0.75f), catColor(k))
+        }
+        // bandeja dos itens
+        val list = shown()
+        outer(c, sn(gx0), sn(bodyTop), sn(gx1), sn(bodyBot), Cz.INK)
+        rc(c, sn(gx0) + u, sn(bodyTop) + u, sn(gx1) - u, sn(bodyBot) - u, Color.rgb(244, 229, 206))
+        rc(c, sn(gx0) + u, sn(bodyTop) + u, sn(gx1) - u, sn(gTop) - 2 * d, Color.argb(70, 196, 128, 48))
+        val hs = tsc(1.4f)
+        val title = if (searching) "Resultados" else Items.CATS[invCat]
+        pxText(c, title, gx0 + 10 * d, bodyTop + 7 * d, hs, Cz.TXT, 0, false)
+        val cnt = "${list.size} ${if (list.size == 1) "item" else "itens"}"
+        pxText(c, cnt, gx1 - 10 * d, bodyTop + 7 * d, hs, Cz.TXT_SOFT, 2, false)
+        c.save(); c.clipRect(gx0 + u, gTop, gx1 - u, gBot - u)
+        for ((i, itm) in list.withIndex()) {
+            val x = cellX(i); val y = cellY(i); val s = cs - 6 * d
+            if (y > gBot || y + s < gTop) continue
+            val on = itm == invSel
+            if (itm == game.cur()) { val g = (120 + 90 * sin(clock * 4f)).toInt(); frame(c, sn(x) - u, sn(y) - u, sn(x + s) + u, sn(y + s) + u, u, Color.argb(g, 255, 214, 90)) }
+            pxPanel(c, x, y, x + s, y + s, if (on) Cz.PANEL2 else Cz.PANEL3, on)
+            icon(c, x + s / 2, y + s / 2, s, itm)
+            for (hsl in 0 until 8) if (game.hotbar[hsl] == itm) {   // plaquinha com o número do slot onde o item está
+                val bw = 7 * d; val bx0 = x + s - bw - 3 * d; val by0 = y + s - bw - 3 * d
+                rc(c, sn(bx0), sn(by0), sn(bx0 + bw), sn(by0 + bw), Cz.INK)
+                rc(c, sn(bx0) + u / 2, sn(by0) + u / 2, sn(bx0 + bw) - u / 2, sn(by0 + bw) - u / 2, Cz.GREEN)
+                pxText(c, "${hsl + 1}", bx0 + bw / 2f, by0 + bw / 2f - 3.5f * tsc(0.75f), tsc(0.75f), Color.WHITE, 1, false); break
+            }
+        }
+        if (list.isEmpty()) {
+            val my = (gTop + gBot) / 2f
+            pxText(c, "Nenhum item encontrado", (gx0 + gx1) / 2f, my - 14 * d, tsc(1.6f), Cz.TXT, 1, false)
+            pxText(c, "Tente outro nome ou categoria", (gx0 + gx1) / 2f, my + 6 * d, tsc(1.1f), Cz.TXT_SOFT, 1, false)
+        }
+        c.restore()
+        if (maxScroll > 0f) {   // barra de rolagem
+            val tl = sn(gx1 - 10 * d); val tr = tl + 3 * u; val trk = gBot - gTop - 2 * d
+            rc(c, tl, gTop + d, tr, gTop + d + trk, Color.argb(60, 120, 70, 40))
+            val th = max(18 * d, trk * (gBot - gTop) / (gBot - gTop + maxScroll)); val ty = gTop + d + (trk - th) * (invScroll / maxScroll)
+            rc(c, tl, ty, tr, ty + th, Cz.GOLD_D)
+        }
+        // painel de informações do item
+        val sel = if (invSel > 0) invSel else game.cur()
+        if (infoW > 0f) {
+            pxPanel(c, infoL, bodyTop, infoR, bodyBot, Cz.PANEL2)
+            val cx = (infoL + infoR) / 2f
+            val bs2 = min(64 * d, (bodyBot - bodyTop) * 0.32f); val bt = bodyTop + 10 * d
+            pxPanel(c, cx - bs2 / 2, bt, cx + bs2 / 2, bt + bs2, Cz.PANEL3, true)
+            icon(c, cx, bt + bs2 / 2f + sin(clock * 2f) * 1.5f * d, bs2 * 0.9f, sel)
+            var y = bt + bs2 + 8 * d
+            val maxw = (infoW - 22 * d).toInt()
+            val nm = Items.name(sel); var ns = tsc(1.8f); while (ns > 1 && PixFont.width(nm, ns) > maxw) ns--
+            pxText(c, nm, cx, y, ns, Cz.GOLD_D, 1, true); y += 7 * ns + 6 * d
+            val cat = Items.cat(sel); val cs2 = tsc(1.1f); val lb = Items.CATS[cat]; val pw = PixFont.width(lb, cs2) + 14 * d
+            rc(c, sn(cx - pw / 2), sn(y), sn(cx + pw / 2), sn(y + 7 * cs2 + 6 * d), Cz.INK)
+            rc(c, sn(cx - pw / 2) + u / 2, sn(y) + u / 2, sn(cx + pw / 2) - u / 2, sn(y + 7 * cs2 + 6 * d) - u / 2, catColor(cat))
+            pxText(c, lb, cx, y + 3 * d, cs2, Color.WHITE, 1, false)
+            y += 7 * cs2 + 13 * d
+            val tool = cat == 1
+            val hintY = bodyBot - 14 * d; val statsTop = hintY - 6 * d - 3 * 12 * d
+            val limit = (if (tool) statsTop else hintY) - 4 * d
+            val dsc = tsc(1.2f)
+            for (ln in wrap(Items.desc(sel), dsc, maxw)) { if (y + 7 * dsc > limit) break; pxText(c, ln, infoL + 11 * d, y, dsc, Cz.TXT, 0, false); y += 7 * dsc + 3 * d }
+            if (tool) {
+                val sx0 = infoL + 11 * d; val sw = infoW - 22 * d
+                pips(c, "Dano", sx0, statsTop, sw, Items.damage(sel).coerceIn(1, 5), Cz.RED)
+                pips(c, "Alcance", sx0, statsTop + 12 * d, sw, Math.round((Items.reach(sel) - 2f) * 3.3f).coerceIn(1, 5), Cz.SKY)
+                pips(c, "Rapidez", sx0, statsTop + 24 * d, sw, Math.round(5f - (Items.cooldown(sel) - 0.25f) / 0.4f * 4f).coerceIn(1, 5), Cz.GREEN)
+            }
+            pxText(c, "Arraste para a barra", cx, hintY, tsc(1f), Cz.TXT_SOFT, 1, false)
+        }
+        // dica da barra de itens
+        pxText(c, "Toque numa barrinha para escolher, arraste para trocar de lugar", w / 2, hb - 19 * d, tsc(1f), Color.WHITE, 1, outline = true)
+        // alvo do arraste
+        if (ptrId >= 0 && ptrDrag && ptrKind != 4) {
+            val s = dropSlot(ptrX, ptrY)
+            if (s >= 0) {
+                val x0 = hbLeft() + s * (slot + gap); val g = (150 + 100 * sin(clock * 8f)).toInt()
+                frame(c, sn(x0) - 2 * u, sn(hbTop()) - 2 * u, sn(x0 + slot) + 2 * u, sn(hbTop() + slot) + 2 * u, u, Color.argb(g, 255, 236, 140))
+            }
+            icon(c, ptrX, ptrY - 28 * d, 58 * d, ptrItem)
+        }
     }
 }
