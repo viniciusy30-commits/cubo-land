@@ -7,6 +7,7 @@
 - Barra de itens menor, com tabuleirinho, costura e plaquinhas de número
 - Ícones de blocos com contorno, relevo e brilho; ferramentas com contorno escuro
 - Título 'Mochila' centralizado e nomes de categoria maiores
+- Visual mágico: mochila translúcida com estrelinhas piscando, cada categoria com sua cor e ícone, e barra de itens só com os slots (sem retângulo em volta)
 - Agora você toca no item da mochila e depois no slot onde quer colocá-lo (ou arrasta direto). Não vai mais sozinho pro slot escolhido
 - Arraste um item da barra pra cima (pra fora da barra) e o slot fica vazio: só a mão do personagem
 
