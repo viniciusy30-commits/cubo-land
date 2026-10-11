@@ -1,3 +1,11 @@
+#id 2026-10-11-p
+#titulo Árvores de verdade, com galhinhos e folhas!
+- Galhos finíssimos (bem mais finos que um bloco) saem da madeira das árvores, com curvas, raminhos e tufos de folhinhas pontudas
+- A copa ganhou folhinhas espetando pra fora: acabou o contorno quadradão
+- As folhinhas balançam com o vento junto com a copa
+- Ao cortar a árvore, os galhos finos e as folhinhas caem junto; os que batem no chão se quebram
+- Tudo é desenhado na hora (nada muda no seu save): mundos antigos também ganham, nas árvores que já existem
+
 #id 2026-10-11-o
 #titulo Menu de pausa renovado!
 - Pausa redesenhada: título com faixa, plaquinha com o nome do mundo, divisor e ícones nos botões

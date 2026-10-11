@@ -167,9 +167,9 @@ object Atlas {
             val half = wid * (1f - t * t)
             if (abs(b) >= half) continue
             val side = b / max(half, 0.001f)
-            var c = lerp(0x72C47C, 0xC4F2A6, (lights[i] * 0.6f + (0.5f - side * 0.5f) * 0.4f).coerceIn(0f, 1f))
-            if (side > 0.5f) c = lerp(c, 0x469A60, 0.5f)
-            if (abs(b) < 0.016f && t > -0.8f) c = lerp(c, 0xE6FFC8, 0.5f)
+            var c = lerp(0x3A7519, 0x8AD04A, (lights[i] * 0.6f + (0.5f - side * 0.5f) * 0.4f).coerceIn(0f, 1f))   // mesma paleta das folhas dos blocos
+            if (side > 0.5f) c = lerp(c, 0x25500F, 0.5f)
+            if (abs(b) < 0.016f && t > -0.8f) c = lerp(c, 0xB4E86A, 0.5f)
             out = op(c)
         }
         return out

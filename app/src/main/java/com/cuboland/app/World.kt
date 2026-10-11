@@ -590,6 +590,130 @@ class World {
                 buf.vc += 4
             }
         }
+        decorate(cx, cz, o)
+    }
+
+    // ================= DECORAÇÃO DAS ÁRVORES =================
+    // galhos finos com folhagem e folhinhas soltas: tudo é calculado a partir dos blocos na hora de montar a malha (nada vai pro arquivo do mundo)
+
+    private fun quad(o: MeshBuf, tile: Int, ax: Float, ay: Float, az: Float, bx: Float, by: Float, bz: Float, cx: Float, cy: Float, cz: Float, dx: Float, dy: Float, dz: Float, s0: Float, s1: Float) {
+        val u0 = (tile + 0.01f) / Atlas.NT; val u1 = (tile + 0.99f) / Atlas.NT
+        o.vert(ax, ay, az, s0, s0, s0, u0, 0.99f); o.vert(bx, by, bz, s0, s0, s0, u1, 0.99f)
+        o.vert(cx, cy, cz, s1, s1, s1, u1, 0.01f); o.vert(dx, dy, dz, s1, s1, s1, u0, 0.01f)
+        o.tri(0, 1, 2); o.tri(0, 2, 3); o.tri(0, 2, 1); o.tri(0, 3, 2); o.vc += 4
+    }
+
+    /** tufo de folhinhas pontudas: dois cartões verticais cruzados + um deitado */
+    private fun cluster(o: MeshBuf, x: Float, y: Float, z: Float, size: Float, sd: Int) {
+        val r0 = hash(sd, 1, 410); val r1 = hash(sd, 2, 411); val r2 = hash(sd, 3, 412)
+        val tile = if (r0 > 0.5f) 21 else 20
+        val ang = r1 * 3.1416f
+        val sh = 0.88f + 0.26f * r2
+        val hs = size * 0.5f
+        for (k in 0 until 2) {
+            val a = ang + k * 1.5708f
+            val ax = cos(a) * hs; val az = sin(a) * hs
+            quad(o, tile, x - ax, y - hs * 0.8f, z - az, x + ax, y - hs * 0.8f, z + az, x + ax, y + hs * 0.8f, z + az, x - ax, y + hs * 0.8f, z - az, sh * 0.8f, sh)
+        }
+        val ux = cos(ang + 0.7f) * hs; val uz = sin(ang + 0.7f) * hs; val vx = -uz; val vz = ux
+        quad(o, if (tile == 20) 21 else 20, x - ux - vx, y - 0.04f, z - uz - vz, x + ux - vx, y - 0.04f, z + uz - vz,
+            x + ux + vx, y + 0.12f, z + uz + vz, x - ux + vx, y + 0.12f, z - uz + vz, sh * 0.92f, sh)
+    }
+
+    /** ripa fina de casca entre dois pontos, afinando da ponta 0 pra ponta 1 */
+    private fun prism(o: MeshBuf, x0: Float, y0: Float, z0: Float, x1: Float, y1: Float, z1: Float, w0: Float, w1: Float, sh: Float) {
+        var dx = x1 - x0; var dy = y1 - y0; var dz = z1 - z0
+        val len = sqrt(dx * dx + dy * dy + dz * dz); if (len < 0.01f) return
+        dx /= len; dy /= len; dz /= len
+        var ux = -dz; var uz = dx; var ul = sqrt(ux * ux + uz * uz)
+        if (ul < 0.05f) { ux = 1f; uz = 0f; ul = 1f }
+        ux /= ul; uz /= ul
+        val vx = dy * uz; val vy = dz * ux - dx * uz; val vz = -dy * ux
+        val su = floatArrayOf(-1f, 1f, 1f, -1f); val sv = floatArrayOf(-1f, -1f, 1f, 1f)
+        val tu0 = 6.08f / Atlas.NT; val tu1 = 6.36f / Atlas.NT
+        val vEnd = 0.1f + (len * 0.5f).coerceAtMost(0.8f)
+        for (i in 0 until 4) {
+            val j = (i + 1) and 3
+            val k = sh * (0.72f + 0.1f * i)
+            o.vert(x0 + ux * su[i] * w0 + vx * sv[i] * w0, y0 + vy * sv[i] * w0, z0 + uz * su[i] * w0 + vz * sv[i] * w0, k, k, k, tu0, 0.1f)
+            o.vert(x0 + ux * su[j] * w0 + vx * sv[j] * w0, y0 + vy * sv[j] * w0, z0 + uz * su[j] * w0 + vz * sv[j] * w0, k, k, k, tu1, 0.1f)
+            o.vert(x1 + ux * su[j] * w1 + vx * sv[j] * w1, y1 + vy * sv[j] * w1, z1 + uz * su[j] * w1 + vz * sv[j] * w1, k, k, k, tu1, vEnd)
+            o.vert(x1 + ux * su[i] * w1 + vx * sv[i] * w1, y1 + vy * sv[i] * w1, z1 + uz * su[i] * w1 + vz * sv[i] * w1, k, k, k, tu0, vEnd)
+            o.tri(0, 1, 2); o.tri(0, 2, 3); o.tri(0, 2, 1); o.tri(0, 3, 2); o.vc += 4
+        }
+    }
+
+    /** um galho fino com duas curvas, tufos de folhas no meio e na ponta e, às vezes, um raminho lateral */
+    private fun twig(o: MeshBuf, x: Int, y: Int, z: Int, k: Int) {
+        val sd = x * 131 + y * 71 + z * 173 + k * 997
+        val r = FloatArray(10) { hash(sd, it * 13 + y, 400 + it) }
+        var a = r[0] * 6.2832f; var p = 0.25f + r[1] * 0.5f
+        val sx = x + 0.5f + cos(a) * 0.3f; val sy = y + 0.5f + (r[3] - 0.3f) * 0.4f; val sz = z + 0.5f + sin(a) * 0.3f
+        val l1 = 0.55f + r[2] * 0.3f
+        val x1 = sx + cos(a) * cos(p) * l1; val y1 = sy + sin(p) * l1; val z1 = sz + sin(a) * cos(p) * l1
+        a += (r[4] - 0.5f) * 1.4f; p += 0.1f + r[5] * 0.4f
+        val l2 = 0.45f + r[6] * 0.3f
+        val x2 = x1 + cos(a) * cos(p) * l2; val y2 = y1 + sin(p) * l2; val z2 = z1 + sin(a) * cos(p) * l2
+        val sh = 0.8f + 0.2f * r[7]
+        prism(o, sx, sy, sz, x1, y1, z1, 0.07f, 0.05f, sh)
+        prism(o, x1, y1, z1, x2, y2, z2, 0.05f, 0.032f, sh)
+        cluster(o, x1, y1 + 0.1f, z1, 0.75f + 0.3f * r[8], sd + 1)
+        cluster(o, x2, y2 + 0.12f, z2, 1.0f + 0.4f * r[8], sd + 2)
+        if (r[9] > 0.5f) {   // raminho lateral saindo do meio do 2º trecho
+            val a3 = a + (if (r[8] > 0.5f) 1.2f else -1.2f); val p3 = p + 0.3f
+            val mx = (x1 + x2) * 0.5f; val my = (y1 + y2) * 0.5f; val mz = (z1 + z2) * 0.5f
+            val x3 = mx + cos(a3) * cos(p3) * 0.5f; val y3 = my + sin(p3) * 0.5f; val z3 = mz + sin(a3) * cos(p3) * 0.5f
+            prism(o, mx, my, mz, x3, y3, z3, 0.035f, 0.022f, sh)
+            cluster(o, x3, y3 + 0.08f, z3, 0.7f, sd + 3)
+        }
+    }
+
+    private fun decorate(cx: Int, cz: Int, o: MeshBuf) {
+        for (y in 1 until SY) for (z in cz * CH until cz * CH + CH) for (x in cx * CH until cx * CH + CH) {
+            if (o.vc > 58000) return
+            decorBlock(o, x, y, z)
+        }
+    }
+
+    /** galhos e folhinhas de UM bloco (madeira de árvore ou folha exposta) */
+    private fun decorBlock(o: MeshBuf, x: Int, y: Int, z: Int) {
+        val id = get(x, y, z)
+        if (id == B.WOOD) {
+            if (hidden.isNotEmpty() && hidden.contains((y * SZ + z) * SX + x)) return
+            var leaf = 0
+            for (dy in -1..2) for (dz in -2..2) for (dx in -2..2) if (get(x + dx, y + dy, z + dz) == B.LEAVES) leaf++
+            if (leaf < 3) return   // só madeira de árvore (com folhas por perto)
+            if (get(x, y + 1, z) != B.AIR && get(x + 1, y, z) != B.AIR && get(x - 1, y, z) != B.AIR && get(x, y, z + 1) != B.AIR && get(x, y, z - 1) != B.AIR) return
+            val n = if (hash(x * 7 + 1, z, y) > 0.4f) 2 else 1
+            for (k in 0 until n) twig(o, x, y, z, k)
+        } else if (id == B.LEAVES && leafOpen(x, y, z)) {   // folhinhas espetando pra fora da copa: quebra o contorno quadradão
+            for (f in 0 until 6) {
+                val a = f shr 1; val s = if ((f and 1) == 0) 1 else -1
+                if (get(x + if (a == 0) s else 0, y + if (a == 1) s else 0, z + if (a == 2) s else 0) != B.AIR) continue
+                val sd = x * 37 + y * 19 + z * 29 + f * 11
+                if (hash(sd, y, 420) > 0.3f) continue
+                val j = hash(sd, z, 421) - 0.5f; val j2 = hash(sd, x, 422) - 0.5f
+                val px = x + 0.5f + (if (a == 0) s * 0.62f else j * 0.8f)
+                val py = y + 0.5f + (if (a == 1) s * 0.62f else j2 * 0.8f)
+                val pz = z + 0.5f + (if (a == 2) s * 0.62f else (if (a == 0) j else j2) * 0.8f)
+                cluster(o, px, py, pz, 0.65f + 0.35f * hash(sd, 5, 423), sd)
+            }
+        }
+    }
+
+    /** decoração de uma árvore que vai tombar (chamar ANTES de tirar os blocos do mundo). Posições relativas ao pivô;
+     *  rs[i] = onde começam os índices do bloco i (rs[n] = fim), pra esconder os galhos dos blocos que já quebraram */
+    fun decorTree(bl: IntArray, ox: Int, oy: Int, oz: Int, yo: Float, rs: IntArray): MeshBuf {
+        val m = MeshBuf(); val n = bl.size / 4
+        for (i in 0 until n) {
+            rs[i] = m.inn
+            if (m.vc > 58000) continue
+            decorBlock(m, ox + bl[i * 4], oy + bl[i * 4 + 1], oz + bl[i * 4 + 2])
+        }
+        rs[n] = m.inn
+        var k = 0
+        while (k < m.vn) { m.v[k] -= ox + 0.5f; m.v[k + 1] -= oy + 0.5f - yo; m.v[k + 2] -= oz + 0.5f; k += 8 }
+        return m
     }
 
     private fun leafOpen(x: Int, y: Int, z: Int): Boolean {

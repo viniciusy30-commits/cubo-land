@@ -83,7 +83,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         void main() {
             vec2 uv = vUV;
             bool isWater = vTile > 9.5 && vTile < 10.5;
-            bool isLeaf = (vTile > 7.5 && vTile < 8.5) || (vTile > 21.5 && vTile < 22.5);
+            bool isLeaf = (vTile > 7.5 && vTile < 8.5) || (vTile > 19.5 && vTile < 22.5);
             vec4 t = texture2D(uTex, uv);
             if (t.a < 0.4) discard;
             float l = clamp((vCol.r - 0.3) / 0.7, 0.0, 1.0);
@@ -628,11 +628,33 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     }
 
     /** a árvore inteira (troncos e folhas) girando em volta do ponto de corte */
+    private val treeBuf = HashMap<FallTree, IntArray>()   // vbo, ibo, nº de índices dos galhos finos de cada árvore caindo
+
     private fun drawTrees() {
+        val it = treeBuf.entries.iterator()
+        while (it.hasNext()) { val e = it.next(); if (!game.trees.contains(e.key)) { G.glDeleteBuffers(2, e.value, 0); it.remove() } }
         for (f in game.trees) {
             Matrix.setIdentityM(base2, 0); Matrix.translateM(base2, 0, f.px, f.py, f.pz)
             Matrix.rotateM(base2, 0, f.ang * 57.29578f, f.kx, 0f, f.kz)
             for (i in 0 until f.n) if (!f.gone[i]) box(base2, f.bl[i * 4].toFloat(), f.bl[i * 4 + 1] + f.yo, f.bl[i * 4 + 2].toFloat(), 0f, 0f, 1f, 1f, 1f, 0f, 0xFFFFFF, 1f, 1f, null, f.bl[i * 4 + 3])
+            var bufs = treeBuf[f]
+            val dm = f.dm
+            if (bufs == null && dm != null) {
+                val ids = IntArray(3); G.glGenBuffers(2, ids, 0); ids[2] = upload(dm, ids[0], ids[1]); treeBuf[f] = ids; bufs = ids; f.dm = null
+            }
+            if (bufs != null && bufs[2] > 0) {   // galhos finos e folhinhas caem junto (os dos blocos já quebrados somem)
+                bindMesh(bufs[0], bufs[1])
+                G.glUniformMatrix4fv(uModel, 1, false, base2, 0); tint(0xFFFFFF, 1f)
+                var i = 0
+                while (i < f.n) {
+                    if (f.gone[i]) { i++; continue }
+                    var j = i; while (j < f.n && !f.gone[j]) j++
+                    val c = f.rs[j] - f.rs[i]
+                    if (c > 0) G.glDrawElements(G.GL_TRIANGLES, c, G.GL_UNSIGNED_SHORT, f.rs[i] * 2)
+                    i = j
+                }
+                bindMesh(cubeVb, cubeIb)
+            }
         }
     }
 

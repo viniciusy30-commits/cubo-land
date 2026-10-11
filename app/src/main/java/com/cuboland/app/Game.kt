@@ -47,6 +47,7 @@ class Debris(var x: Float, var y: Float, var z: Float, var vx: Float, var vy: Fl
 /** parte de cima de uma árvore caindo inteira. bl = (dx,dy,dz,id) por bloco, relativo ao bloco cortado */
 class FallTree(val px: Float, val py: Float, val pz: Float, val dx: Float, val dz: Float, val bl: IntArray, val yo: Float = 0f) {
     var ang = 0.03f; var vel = 0.25f; var t = 0f; val n = bl.size / 4
+    var dm: MeshBuf? = null; val rs = IntArray(bl.size / 4 + 1)   // galhos e folhinhas finas (malha própria), rs = faixa de índices de cada bloco
     val gone = BooleanArray(bl.size / 4)   // folhas e galhos que já bateram no chão e se quebraram
     /** só o tronco (perto do eixo do corte) segura a árvore; folhas e galhos finos se quebram ao tocar o chão */
     fun holds(i: Int) = bl[i * 4 + 3] == B.WOOD && abs(bl[i * 4]) <= 2 && abs(bl[i * 4 + 2]) <= 2
@@ -757,11 +758,14 @@ class Game(val world: World) {
         }
         if (out.isEmpty()) return false
         val arr = out.toIntArray()
+        val ftRs = IntArray(arr.size / 4 + 1)
+        val dmesh = world.decorTree(arr, x, y, z, if (cutY.isNaN()) 0f else -0.5f, ftRs)
         for (i in 0 until arr.size / 4) world.set(x + arr[i * 4], y + arr[i * 4 + 1], z + arr[i * 4 + 2], B.AIR)
         var dx = x + 0.5f - player.x; var dz = z + 0.5f - player.z
         if (hypot(dx, dz) < 0.2f) { dx = sin(yaw); dz = cos(yaw) }
         val an = atan2(dz, dx) + (rnd.nextFloat() - 0.5f) * 0.4f
         val ft = if (cutY.isNaN()) FallTree(x + 0.5f, y + 0.5f, z + 0.5f, cos(an), sin(an), arr) else FallTree(x + 0.5f, y + 0.5f + cutY, z + 0.5f, cos(an), sin(an), arr, -0.5f)   // com corte: pivô no plano do corte, base da árvore assenta nele
+        ft.dm = dmesh; System.arraycopy(ftRs, 0, ft.rs, 0, ftRs.size)
         ft.sx = x; ft.sy = y; ft.sz = z; trees.add(ft)
         shake = max(shake, 0.15f)
         return true
