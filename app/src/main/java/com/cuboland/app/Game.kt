@@ -95,7 +95,7 @@ class Game(val world: World) {
     private var pendingT = -1f; private var pendingPower = 0f
     val leafFall = ArrayList<LeafP>(); private var leafT = 0f; var comboT = 0f
     val drops = ArrayList<Drop>(); val ripples = ArrayList<Ripple>(); val prints = ArrayList<Foot>(); val picked = IntArray(16)
-    @Volatile var pickMsg = ""; @Volatile var pickT = 0f; @Volatile var swimAmt = 0f
+    @Volatile var pickMsg = ""; @Volatile var pickT = 0f; @Volatile var swimAmt = 0f; @Volatile var wetT = 0f; private var inWaterT = 0f   // wetT: efeito de "molhado" na tela ao sair da água (3s)
     private var stepDist = 0f; private var stepLeft = false; private var rippleT = 0f; private var bubbleT = 0f; private var regrowT = 0f
     // entrada (escrita pela UI)
     @Volatile var stickX = 0f; @Volatile var stickY = 0f
@@ -931,7 +931,7 @@ class Game(val world: World) {
             if (pressing) { pressing = false; if (charging) { val pw = charge; charging = false; charge = 0f; releasePower(pw) } else attack() }
         }
         if (!attackHeld && charging) { charging = false; charge = 0f }
-        hitPulse = max(0f, hitPulse - dt * 4.5f); pickT = max(0f, pickT - dt)
+        hitPulse = max(0f, hitPulse - dt * 4.5f); pickT = max(0f, pickT - dt); wetT = max(0f, wetT - dt)
         val dI = dmg.values.iterator()
         while (dI.hasNext()) {
             val d = dI.next(); d.idle += dt
@@ -1106,13 +1106,19 @@ class Game(val world: World) {
         val surf = World.WATER_Y + 0.88f
         val sp = hypot(p.vx, p.vz)
         swimAmt += ((if (p.inWater && !p.onGround && !flying) 1f else 0f) - swimAmt) * min(1f, 8f * dt)
-        if (p.inWater && !wasW) {   // entrou na água: onda proporcional à velocidade da queda
+        if (p.inWater) inWaterT += dt
+        if (p.inWater && !wasW) {   // entrou na água
+            wetT = 0f: onda proporcional à velocidade da queda
             val v = max(0f, -vyPre)
             val amp = (0.3f + v * 0.1f).coerceAtMost(1.8f)
             addRipple(p.x, p.z, amp)
             if (v > 7f) addRipple(p.x, p.z, amp * 0.6f, -0.18f)
             splash(p.x, surf, p.z, v)
-        } else if (!p.inWater && wasW) { addRipple(p.x, p.z, 0.4f); splash(p.x, surf, p.z, 2.5f) }
+        } else if (!p.inWater && wasW) {
+            addRipple(p.x, p.z, 0.4f); splash(p.x, surf, p.z, 2.5f)
+            if (inWaterT > 0.5f) wetT = 3f
+            inWaterT = 0f
+        }
         if (p.inWater) {
             rippleT -= dt
             if (p.y + 1.9f > surf && rippleT <= 0f) {   // nadando na superfície: marolas contínuas

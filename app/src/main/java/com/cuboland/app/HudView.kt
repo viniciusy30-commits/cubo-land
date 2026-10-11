@@ -388,9 +388,40 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onExit: (
         pxText(c, label.replace("ª", "A"), r.centerX(), r.centerY() - 3.5f * sc, sc, Color.WHITE, 1)
     }
 
+    private fun rnd(i: Int, k: Int): Float { val v = sin(i * 12.9898f + k * 78.233f) * 43758.547f; return v - floor(v) }
+
+    /** efeito de câmera molhada ao sair da água: véu azulado, brilho e gotas escorrendo (some em ~3s) */
+    private fun drawWet(c: Canvas) {
+        val wt = game.wetT
+        if (wt <= 0f) return
+        val w = width.toFloat(); val h = height.toFloat()
+        val e = 3f - wt
+        val f = min(1f, wt / 1.2f)
+        pt.color = Color.argb((26 * f).toInt(), 120, 190, 255); c.drawRect(0f, 0f, w, h, pt)
+        val fl = max(0f, 1f - e / 0.3f)
+        if (fl > 0f) { pt.color = Color.argb((80 * fl).toInt(), 225, 247, 255); c.drawRect(0f, 0f, w, h, pt) }
+        for (i in 0 until 38) {
+            val life = 1.4f + rnd(i, 1) * 1.6f
+            if (e > life) continue
+            val x = sn(rnd(i, 2) * w)
+            val y0 = rnd(i, 3) * h * 0.75f
+            val spd = (6f + rnd(i, 4) * 40f) * d
+            val y = y0 + spd * e + 16f * d * e * e
+            if (y > h) continue
+            val sz = sn(u * (1f + rnd(i, 5) * 2.4f)).coerceAtLeast(u)
+            val a = (210f * f * min(1f, (life - e) * 3f)).toInt().coerceIn(0, 255)
+            val trail = min(y - y0, 46f * d)
+            pt.color = Color.argb(a * 35 / 100, 200, 235, 255); c.drawRect(x, y - trail, x + u, y, pt)
+            pt.color = Color.argb(a * 55 / 100, 190, 225, 255); c.drawRect(x - sz / 2f, y, x + sz / 2f, y + sz * 1.4f, pt)
+            pt.color = Color.argb(a * 60 / 100, 90, 150, 210); c.drawRect(x - sz / 2f, y + sz * 1.4f - u, x + sz / 2f, y + sz * 1.4f, pt)
+            pt.color = Color.argb(a, 255, 255, 255); c.drawRect(x - sz / 2f + u * 0.5f, y + u * 0.5f, x - sz / 2f + u * 1.5f, y + u * 1.5f, pt)
+        }
+    }
+
     override fun onDraw(c: Canvas) {
         val w = width.toFloat(); val h = height.toFloat()
         val clock = System.nanoTime() / 1e9f
+        drawWet(c)
         if (game.hurtFlash > 0f) rc(c, 0f, 0f, w, h, Color.argb((game.hurtFlash * 90).toInt(), 255, 0, 0))
         if (aimTouch && lookId < 0 && game.aimOn && System.currentTimeMillis() - lastUpT > 350) game.aimOn = false
         if (!paused && !invOpen && lookId >= 0) {

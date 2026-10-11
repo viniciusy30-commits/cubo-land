@@ -14,6 +14,7 @@ class MainActivity : CozyActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Look.load(this)   // o personagem do menu usa o visual salvo (antes ficava no padrão até abrir a tela Personagem)
         val ver = packageManager.getPackageInfo(packageName, 0).versionName ?: ""
         val s = MenuScene(
             this, ver, continueLabel(), Novidades.hasUnseen(this), Look.name(this),
@@ -30,6 +31,7 @@ class MainActivity : CozyActivity() {
 
     override fun onResume() {
         super.onResume()
+        Look.load(this)
         Novidades.showIfNew(this)
         scene?.let {
             it.setNews(Novidades.hasUnseen(this))

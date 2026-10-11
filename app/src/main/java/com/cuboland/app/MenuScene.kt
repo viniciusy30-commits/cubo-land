@@ -47,6 +47,8 @@ class MenuScene(
         const val CW = 110
         const val CH = 144
         const val CFEET = 137
+        /** sobe o personagem pra ele pisar no centro do portal (antes ficava na beirada da frente, parecendo flutuar) */
+        const val FEET_LIFT = 5
 
         private val BAY = intArrayOf(0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5)
 
@@ -1014,14 +1016,15 @@ class MenuScene(
 
     /** sombra de contato no chão do portal: faz o personagem parecer pisando, não flutuando */
     private fun footShadow(cx: Int, a: Int) {
-        ell(cx, platY + 1, 17, 4, INK, a * 70 / 255)
-        ell(cx, platY + 1, 12, 3, INK, a * 120 / 255)
-        ell(cx, platY + 1, 7, 2, INK, a * 150 / 255)
+        val fy = platY + 1 - FEET_LIFT
+        ell(cx, fy, 17, 4, INK, a * 70 / 255)
+        ell(cx, fy, 12, 3, INK, a * 120 / 255)
+        ell(cx, fy, 7, 2, INK, a * 150 / 255)
     }
 
     private fun drawMe() {
         val x0 = midX - off - CW / 2
-        val y0 = platY + 1 - CFEET
+        val y0 = platY + 1 - CFEET - FEET_LIFT
         val rev = ((introT - 0.15f) / 0.8f).coerceIn(0f, 1f)
         if (rev <= 0f) return
         footShadow(midX - off, (255f * rev).toInt())
@@ -1045,7 +1048,7 @@ class MenuScene(
         val since = t - pokeT
         val shake = if (since < 0.5f) (sin(since * 50f) * 3f * (1f - since / 0.5f)).roundToInt() else 0
         val x0 = rx - CW / 2 + shake
-        val y0 = platY + 1 - CFEET
+        val y0 = platY + 1 - CFEET - FEET_LIFT
         BP.alpha = (120 + 40 * sin(t * 2.2f)).toInt()
         dstF.set(x0.toFloat(), y0.toFloat(), (x0 + CW).toFloat(), (y0 + CH).toFloat())
         cnv.drawBitmap(gb, null, dstF, BP)
