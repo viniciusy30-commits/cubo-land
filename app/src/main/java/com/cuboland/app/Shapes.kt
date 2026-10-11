@@ -13,7 +13,7 @@ object Shapes {
     }
 
     fun emit(o: MeshBuf, w: World, x: Int, y: Int, z: Int, id: Int, kind: Int, vr: Float) {
-        when (kind) { 1 -> cactus(o, w, x, y, z, id, vr); else -> fruit(o, x, y, z, id, kind == 3, vr) }
+        when (kind) { 1 -> cactus(o, w, x, y, z, id, vr); 4 -> chair(o, w, x, y, z, id, vr); 5 -> table(o, w, x, y, z, id, vr); 6 -> bed(o, w, x, y, z, id, vr); else -> fruit(o, x, y, z, id, kind == 3, vr) }
     }
 
     /** caixa de colisão/seleção (x0,y0,z0,x1,y1,z1 locais) do bloco com formato; null = cubo inteiro */
@@ -27,6 +27,9 @@ object Shapes {
             1 -> { val cx = 0.5f + (h(x, z, 1) - 0.5f) * 0.08f; val cz = 0.5f + (h(x, z, 2) - 0.5f) * 0.08f; floatArrayOf(cx - 0.3f, 0f, cz - 0.3f, cx + 0.3f, 1f, cz + 0.3f) }
             2 -> floatArrayOf(0.08f, 0f, 0.08f, 0.92f, 0.81f, 0.92f)
             3 -> floatArrayOf(0.04f, 0f, 0.04f, 0.96f, 0.73f, 0.96f)
+            4 -> floatArrayOf(0.12f, 0f, 0.12f, 0.88f, 1f, 0.88f)
+            5 -> floatArrayOf(0f, 0f, 0f, 1f, 0.94f, 1f)
+            6 -> floatArrayOf(0f, 0f, 0f, 1f, 0.65f, 1f)
             else -> null
         }
     }
@@ -175,5 +178,98 @@ object Shapes {
             val ax = cx + dx * 0.46f; val az = cz + dz * 0.46f
             box(o, tS, tT, ax - 0.1f, a0, az - 0.1f, ax + 0.1f, y + 1.05f, az + 0.1f, vr)
         }
+    }
+
+    // ---------- mobília ----------
+    /** caixa com 4 lados, tampa e fundo (fundo visível por baixo da mesa) */
+    private fun fbox(o: MeshBuf, side: Int, top: Int, bot: Int, x0: Float, y0: Float, z0: Float, x1: Float, y1: Float, z1: Float, vr: Float) {
+        box(o, side, top, x0, y0, z0, x1, y1, z1, vr)
+        vtx(o, bot, x0, y0, z0, 0f, 0f, 0.55f * vr); vtx(o, bot, x1, y0, z0, 1f, 0f, 0.55f * vr); vtx(o, bot, x1, y0, z1, 1f, 1f, 0.55f * vr); vtx(o, bot, x0, y0, z1, 0f, 1f, 0.55f * vr); fin(o)
+    }
+
+    /** direção da cadeira: 0 = +Z, 1 = -Z, 2 = +X, 3 = -X (vira para a mesa vizinha; sem mesa, depende da posição) */
+    fun chairDir(w: World, x: Int, y: Int, z: Int): Int {
+        val tbl = B.byName["Mesa"] ?: -1
+        return when {
+            w.get(x, y, z + 1) == tbl -> 0; w.get(x, y, z - 1) == tbl -> 1
+            w.get(x + 1, y, z) == tbl -> 2; w.get(x - 1, y, z) == tbl -> 3
+            else -> (h(x, z, 5) * 4f).toInt().coerceIn(0, 3)
+        }
+    }
+
+    /** cadeira: pernas, travessas, assento com almofada e encosto com ripas. Vira para a mesa vizinha (senão, direção fixa por posição). */
+    private fun chair(o: MeshBuf, w: World, x: Int, y: Int, z: Int, id: Int, vr: Float) {
+        val dir = chairDir(w, x, y, z)
+        val cu = B.tTop[id]; val wd = B.tSide[id]; val dk = B.tBot[id]
+        // geometria local virada pra +Z (encosto em z baixo); gira pra direção
+        fun b(t1: Int, t2: Int, t3: Int, lx0: Float, ly0: Float, lz0: Float, lx1: Float, ly1: Float, lz1: Float) {
+            fun mx(a: Float, c: Float) = when (dir) { 0 -> a; 1 -> 1f - a; 2 -> c; else -> 1f - c }
+            fun mz(a: Float, c: Float) = when (dir) { 0 -> c; 1 -> 1f - c; 2 -> 1f - a; else -> a }
+            val ax = mx(lx0, lz0); val bx = mx(lx1, lz1); val az = mz(lx0, lz0); val bz = mz(lx1, lz1)
+            fbox(o, t1, t2, t3, x + min(ax, bx), y + ly0, z + min(az, bz), x + max(ax, bx), y + ly1, z + max(az, bz), vr)
+        }
+        // pernas da frente e postes de trás (sobem até o encosto)
+        b(dk, dk, dk, 0.16f, 0f, 0.72f, 0.28f, 0.42f, 0.84f); b(dk, dk, dk, 0.72f, 0f, 0.72f, 0.84f, 0.42f, 0.84f)
+        b(dk, wd, dk, 0.16f, 0f, 0.16f, 0.28f, 1f, 0.28f); b(dk, wd, dk, 0.72f, 0f, 0.16f, 0.84f, 1f, 0.28f)
+        // travessas entre as pernas
+        b(dk, dk, dk, 0.28f, 0.17f, 0.74f, 0.72f, 0.23f, 0.82f); b(dk, dk, dk, 0.28f, 0.17f, 0.18f, 0.72f, 0.23f, 0.26f)
+        b(dk, dk, dk, 0.16f, 0.17f, 0.28f, 0.24f, 0.23f, 0.72f); b(dk, dk, dk, 0.76f, 0.17f, 0.28f, 0.84f, 0.23f, 0.72f)
+        // assento + almofada
+        b(wd, wd, dk, 0.14f, 0.42f, 0.14f, 0.86f, 0.50f, 0.86f)
+        b(cu, cu, cu, 0.2f, 0.50f, 0.3f, 0.8f, 0.58f, 0.82f)
+        // encosto: ripas e travessa de cima
+        b(wd, wd, wd, 0.28f, 0.62f, 0.19f, 0.72f, 0.69f, 0.25f); b(wd, wd, wd, 0.28f, 0.73f, 0.19f, 0.72f, 0.80f, 0.25f)
+        b(wd, wd, wd, 0.14f, 0.84f, 0.14f, 0.86f, 0.98f, 0.30f)
+    }
+
+    /** mesa: tampo que cresce ao juntar com outras mesas (L, comprida, quadrada...); pernas só nos cantos externos (e nos cantos internos do L) */
+    private fun table(o: MeshBuf, w: World, x: Int, y: Int, z: Int, id: Int, vr: Float) {
+        val tp = B.tTop[id]; val sd = B.tSide[id]; val lg = B.tBot[id]
+        fun t(dx: Int, dz: Int) = w.get(x + dx, y, z + dz) == id
+        val nW = t(-1, 0); val nE = t(1, 0); val nN = t(0, -1); val nS = t(0, 1)
+        val x0 = if (nW) 0f else 0.03f; val x1 = if (nE) 1f else 0.97f
+        val z0 = if (nN) 0f else 0.03f; val z1 = if (nS) 1f else 0.97f
+        fbox(o, sd, tp, sd, x + x0, y + 0.80f, z + z0, x + x1, y + 0.94f, z + z1, vr)
+        // saia (faixa escura logo abaixo do tampo) só nas bordas livres
+        val ax0 = if (nW) 0f else 0.09f; val ax1 = if (nE) 1f else 0.91f
+        val az0 = if (nN) 0f else 0.09f; val az1 = if (nS) 1f else 0.91f
+        if (!nN) fbox(o, lg, lg, lg, x + ax0, y + 0.69f, z + 0.09f, x + ax1, y + 0.80f, z + 0.14f, vr)
+        if (!nS) fbox(o, lg, lg, lg, x + ax0, y + 0.69f, z + 0.86f, x + ax1, y + 0.80f, z + 0.91f, vr)
+        if (!nW) fbox(o, lg, lg, lg, x + 0.09f, y + 0.69f, z + az0, x + 0.14f, y + 0.80f, z + az1, vr)
+        if (!nE) fbox(o, lg, lg, lg, x + 0.86f, y + 0.69f, z + az0, x + 0.91f, y + 0.80f, z + az1, vr)
+        // pernas nos cantos: externos, ou internos quando os dois lados têm mesa mas a diagonal não (formato em L)
+        for (sx in 0..1) for (sz in 0..1) {
+            val nx = if (sx == 0) nW else nE; val nz = if (sz == 0) nN else nS
+            val dg = t(if (sx == 0) -1 else 1, if (sz == 0) -1 else 1)
+            if (!((!nx && !nz) || (nx && nz && !dg))) continue
+            val lx = if (sx == 0) 0.07f else 0.80f; val lz = if (sz == 0) 0.07f else 0.80f
+            fbox(o, lg, lg, lg, x + lx, y + 0f, z + lz, x + lx + 0.13f, y + 0.69f, z + lz + 0.13f, vr)
+            fbox(o, lg, lg, lg, x + lx - 0.025f, y + 0f, z + lz - 0.025f, x + lx + 0.155f, y + 0.06f, z + lz + 0.155f, vr)   // pezinho
+        }
+    }
+
+    /** cama: camas em fila viram uma cama comprida (travesseiro e cabeceira só na ponta de trás, pé na ponta da frente) */
+    private fun bed(o: MeshBuf, w: World, x: Int, y: Int, z: Int, id: Int, vr: Float) {
+        val zAxis = w.get(x, y, z - 1) == id || w.get(x, y, z + 1) == id || (w.get(x - 1, y, z) != id && w.get(x + 1, y, z) != id)
+        val nH = if (zAxis) w.get(x, y, z - 1) == id else w.get(x - 1, y, z) == id
+        val nF = if (zAxis) w.get(x, y, z + 1) == id else w.get(x + 1, y, z) == id
+        val bl = B.tTop[id]; val sh = B.tSide[id]; val wd = B.tBot[id]
+        // local: lx = largura, lz = comprimento (cabeceira em lz baixo); no eixo X troca os dois
+        fun b(t: Int, t2: Int, t3: Int, lx0: Float, ly0: Float, lz0: Float, lx1: Float, ly1: Float, lz1: Float) {
+            val x0 = if (zAxis) lx0 else lz0; val x1 = if (zAxis) lx1 else lz1
+            val z0 = if (zAxis) lz0 else lx0; val z1 = if (zAxis) lz1 else lx1
+            fbox(o, t, t2, t3, x + x0, y + ly0, z + z0, x + x1, y + ly1, z + z1, vr)
+        }
+        val e0 = if (nH) 0f else 0.02f; val e1 = if (nF) 1f else 0.98f
+        b(wd, wd, wd, 0.02f, 0.18f, e0, 0.98f, 0.38f, e1)                       // estrado
+        if (!nH) { b(wd, wd, wd, 0.03f, 0f, 0.03f, 0.15f, 0.18f, 0.15f); b(wd, wd, wd, 0.85f, 0f, 0.03f, 0.97f, 0.18f, 0.15f) }
+        if (!nF) { b(wd, wd, wd, 0.03f, 0f, 0.85f, 0.15f, 0.18f, 0.97f); b(wd, wd, wd, 0.85f, 0f, 0.85f, 0.97f, 0.18f, 0.97f) }
+        b(sh, sh, sh, 0.06f, 0.38f, if (nH) 0f else 0.1f, 0.94f, 0.58f, if (nF) 1f else 0.9f)   // colchão
+        b(bl, bl, sh, 0.03f, 0.40f, if (nH) 0f else 0.44f, 0.97f, 0.64f, if (nF) 1f else 0.9f) // coberta que cai pelos lados
+        if (!nH) {
+            b(sh, sh, sh, 0.14f, 0.58f, 0.14f, 0.86f, 0.72f, 0.40f)               // travesseiro
+            b(wd, wd, wd, 0.02f, 0.18f, 0.02f, 0.98f, 0.95f, 0.10f)               // cabeceira alta
+        }
+        if (!nF) b(wd, wd, wd, 0.02f, 0.18f, 0.90f, 0.98f, 0.52f, 0.98f)          // peseira baixa
     }
 }

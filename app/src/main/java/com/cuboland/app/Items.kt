@@ -12,7 +12,7 @@ object Items {
     }
 
     /** categorias da mochila */
-    val CATS = arrayOf("Tudo", "Ferramentas", "Natureza", "Construção", "Decoração")
+    val CATS = arrayOf("Tudo", "Ferramentas", "Natureza", "Construção", "Decoração", "Mobília")
     fun cat(id: Int) = when (id) {
         SWORD, AXE, STAFF, PICK -> 1
         B.GRASS, B.DIRT, B.SAND, B.WOOD, B.LEAVES -> 2

@@ -9,11 +9,11 @@ object Blk {
     const val MAXT = 4096          // teto técnico de tiles (o atlas cresce sozinho em linhas de 32 tiles; GPU comum aguenta 8192 px)
     const val F_LIGHT = 1          // brilha (sem sombra/AO)
     const val F_GLASS = 2          // translúcido: desenhado junto com a água, vizinhos continuam visíveis
-    const val F_SHAPE = 16         // formato próprio (Shapes): tipo nos bits 5-7 (1 cacto, 2 melancia, 3 abóbora)
+    const val F_SHAPE = 16         // formato próprio (Shapes): tipo nos bits 5-7 (1 cacto, 2 melancia, 3 abóbora, 4 cadeira, 5 mesa)
     const val F_THIN = 8           // colmo fino (bambu): desenhado como haste fina, vizinhos continuam visíveis
     const val F_LEAF = 4           // folhagem: malha de folha (casca + cubo interno), buracos que deixam ver o miolo, balança no vento
     const val M_STONE = 1; const val M_WOOD = 2; const val M_SOFT = 3; const val M_GLASS = 4; const val M_METAL = 5
-    const val C_NAT = 2; const val C_BUILD = 3; const val C_DEC = 4
+    const val C_NAT = 2; const val C_BUILD = 3; const val C_DEC = 4; const val C_FURN = 5
 
     // tipos de textura (gerados por código em Atlas.genNew)
     const val K_FLAT = 0; const val K_STONE = 1; const val K_COBBLE = 2; const val K_BRICK = 3; const val K_PLANK = 4
@@ -327,5 +327,13 @@ object Blk {
         leaf3("Folhas de Bambu", NatArt.F_BAMBU, Leaf3D.BAMBU, 0x72AE34, "Folhas de bambu: finas e verdinhas.")
         leaf3("Verruga Carmesim", NatArt.F_CARMESIM, Leaf3D.CARMESIM, 0xC04068, "Verruga carmesim: copa vermelha do mundo sombrio.")
         leaf3("Verruga Distorcido", NatArt.F_DISTORCIDO, Leaf3D.DISTORCIDO, 0x2EA8A0, "Verruga distorcida: copa azul-turquesa do mundo sombrio.")
+
+        // ================= MOBÍLIA (ids novos sempre no fim!) =================
+        val tWTop = pal(Pix.PLANK, 0xD6A068); val tWSide = pal(Pix.PLANK, 0xB87D45); val tWLeg = pal(Pix.PLANK, 0x8A5A30)
+        val tCush = tl(K_WOOL, 0xE0566B, dk(0xE0566B, 0.14f))
+        blk("Cadeira", C_FURN, tCush, tWSide, tWLeg, 0xB87D45, M_WOOD, 4f, F_SHAPE or (4 shl 5), "Cadeirinha de madeira com almofada. Vira sozinha para a mesa que estiver ao lado.")
+        blk("Mesa", C_FURN, tWTop, tWSide, tWLeg, 0xD6A068, M_WOOD, 4f, F_SHAPE or (5 shl 5), "Mesa de madeira. Junte várias mesas: o tampo cresce e as pernas ficam só nas pontas.")
+        val tSheet = tl(K_WOOL, 0xF4F0EA, dk(0xF4F0EA, 0.1f)); val tBlank = tl(K_WOOL, 0x5A86D8, dk(0x5A86D8, 0.14f))
+        blk("Cama", C_FURN, tBlank, tSheet, tWLeg, 0x5A86D8, M_WOOD, 4f, F_SHAPE or (6 shl 5), "Cama com travesseiro e coberta azul. Junte camas em fila e ela fica mais comprida (travesseiro na ponta).")
     }
 }

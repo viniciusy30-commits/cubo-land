@@ -338,11 +338,54 @@ class Game(val world: World) {
     private val postH = floatArrayOf(1.8f, 1.45f, 1.1f, 0.9f)
     /** pede uma postura; repetir a mesma volta pra em pé. Não levanta se tiver teto em cima. */
     fun requestPosture(k: Int) {
+        if (seated) { standUp(); return }   // qualquer botão de postura levanta da cadeira
+        if (k == 2 && posture != 2 && player.onGround) { val c = nearestChair(); if (c != null) { sitOnChair(c[0], c[1], c[2]); return } }
         val target = if (posture == k) 0 else k
         if (postH[target] > player.h && collides(player.x, player.y, player.z, player.hw, postH[target])) return
         posture = target; player.h = postH[target]
         if (target != 0) { sprint = false; jumpHeld = false }
     }
+    // ---------- sentar na cadeira ----------
+    @Volatile var seated = false
+    private var seatX = 0; private var seatY = 0; private var seatZ = 0; private var seatDir = 0; private var seatT = 0f
+    /** cadeira livre mais perto do jogador (até ~1,7 bloco), preferindo a que está na mira */
+    private fun nearestChair(): IntArray? {
+        val cid = B.byName["Cadeira"] ?: return null
+        val p = player; var best: IntArray? = null; var bd = 1.7f
+        val fx = sin(yaw); val fz = cos(yaw)
+        for (dy in -1..1) for (dz in -2..2) for (dx in -2..2) {
+            val x = floor(p.x).toInt() + dx; val y = floor(p.y + 0.1f).toInt() + dy; val z = floor(p.z).toInt() + dz
+            if (world.get(x, y, z) != cid) continue
+            val ex = x + 0.5f - p.x; val ez = z + 0.5f - p.z
+            val d = hypot(ex, ez) - 0.25f * ((ex * fx + ez * fz) / max(0.001f, hypot(ex, ez)))   // pequeno bônus pra cadeira à frente
+            if (d < bd) { bd = d; best = intArrayOf(x, y, z) }
+        }
+        return best
+    }
+    fun sitOnChair(x: Int, y: Int, z: Int) {
+        val cid = B.byName["Cadeira"] ?: return
+        if (world.get(x, y, z) != cid || flying || player.inWater) return
+        val dir = Shapes.chairDir(world, x, y, z)
+        seatX = x; seatY = y; seatZ = z; seatDir = dir; seated = true; seatT = 0.5f
+        posture = 2; player.h = postH[2]; sprint = false; jumpHeld = false
+        val bx = floatArrayOf(0f, 0f, 1f, -1f)[dir]; val bz = floatArrayOf(1f, -1f, 0f, 0f)[dir]
+        player.x = x + 0.5f - bx * 0.06f; player.z = z + 0.5f - bz * 0.06f; player.y = y + 0.58f
+        player.vx = 0f; player.vy = 0f; player.vz = 0f; player.onGround = true
+        val a = floatArrayOf(0f, 3.1416f, 1.5708f, -1.5708f)[dir]
+        bodyYaw = a; yaw = a
+    }
+    private fun standUp() {
+        seated = false; posture = 0; player.h = 1.8f
+        val dxs = floatArrayOf(0f, 0f, 1f, -1f); val dzs = floatArrayOf(1f, -1f, 0f, 0f)
+        var nx = seatX + 0.5f; var ny = seatY + 1.0f; var nz = seatZ + 0.5f
+        val order = intArrayOf(seatDir, 2, 3, 0, 1)
+        for (d in order) {
+            val tx = seatX + 0.5f + dxs[d] * 0.95f; val tz = seatZ + 0.5f + dzs[d] * 0.95f
+            if (!collides(tx, seatY + 0.01f, tz, player.hw, 1.8f)) { nx = tx; ny = seatY + 0.01f; nz = tz; break }
+        }
+        player.x = nx; player.y = ny; player.z = nz; player.vx = 0f; player.vy = 0f; player.vz = 0f
+    }
+
     fun eyeH() = 1.6f - 0.35f * crouchA - 0.65f * sitA - 1.15f * lieA
     private fun aimVec(): FloatArray {
         val fx = fwdX(); val fy = fwdY(); val fz = fwdZ()
@@ -1001,6 +1044,11 @@ class Game(val world: World) {
         val p = player
         if (!creative) flying = false
         if (flying && p.onGround && downHeld) flying = false
+        if (seated) {
+            seatT -= dt
+            if (world.get(seatX, seatY, seatZ) != (B.byName["Cadeira"] ?: -1) || flying || p.inWater || posture != 2 ||
+                (seatT <= 0f && (hypot(stickX, stickY) > 0.4f || jumpHeld))) standUp()
+        }
         if (flying || player.inWater) { if (posture != 0) { posture = 0; player.h = 1.8f } }
         if (posture == 2) { stickX = 0f; stickY = 0f }   // sentado não anda; rastejando anda devagar
         val pk = min(1f, 10f * dt)
@@ -1025,8 +1073,10 @@ class Game(val world: World) {
             if (p.inWater) { if (p.onGround) { p.vy = max(p.vy, 5.5f); p.onGround = false } } else if (p.onGround) { p.vy = 8.6f; p.onGround = false }
         }
         val wasW = p.inWater; val vyPre = p.vy
-        for (i in 0 until 2) physics(p, dt / 2f)
-        waterAndSteps(dt, wasW, vyPre)
+        if (seated) { p.vx = 0f; p.vy = 0f; p.vz = 0f; p.onGround = true } else {
+            for (i in 0 until 2) physics(p, dt / 2f)
+            waterAndSteps(dt, wasW, vyPre)
+        }
         p.x = p.x.coerceIn(2f, World.SX - 2f); p.z = p.z.coerceIn(2f, World.SZ - 2f)
         if (p.y < -5f) respawn()
         // voo rápido: impulso de herói no começo e rastro luminoso atrás (sem tremer a tela)

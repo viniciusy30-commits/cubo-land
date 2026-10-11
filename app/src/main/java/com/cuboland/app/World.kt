@@ -252,7 +252,8 @@ class World {
         cats.add("NATUREZA" to (basicsOf(2) + Blk.defs.filter { it.cat == Blk.C_NAT && it.id !in Blk.hidden }.map { it.id }))
         cats.add("CONSTRUÇÃO" to (basicsOf(3) + Blk.defs.filter { it.cat == Blk.C_BUILD }.map { it.id }))
         cats.add("DECORAÇÃO" to (basicsOf(4) + Blk.defs.filter { it.cat == Blk.C_DEC }.map { it.id }))
-        val other = Blk.defs.filter { it.cat != Blk.C_NAT && it.cat != Blk.C_BUILD && it.cat != Blk.C_DEC }.map { it.id }
+        cats.add("MOBÍLIA" to Blk.defs.filter { it.cat == Blk.C_FURN }.map { it.id })
+        val other = Blk.defs.filter { it.cat != Blk.C_NAT && it.cat != Blk.C_BUILD && it.cat != Blk.C_DEC && it.cat != Blk.C_FURN }.map { it.id }
         if (other.isNotEmpty()) cats.add("OUTROS" to other)
         val perRow = 16; val x0 = 8; var zc = 8
         spawnX = x0 + 2; spawnZ = 4
@@ -274,7 +275,39 @@ class World {
             }
             zc += 3
         }
+        furnitureShowcase(top)
         plantTestTrees(top)
+    }
+
+    /** vitrine da mobília: mesas de vários tamanhos (as pernas ficam só nas pontas) com cadeiras viradas pra elas */
+    private fun furnitureShowcase(top: Int) {
+        val mesa = B.byName["Mesa"] ?: return; val cad = B.byName["Cadeira"] ?: return
+        val y = top + 1; val bx = 64
+        fun put(x: Int, z: Int, id: Int) { if (x in 0 until SX && z in 0 until SZ) blocks[(y * SZ + z) * SX + x] = id }
+        fun table(x0: Int, z0: Int, w: Int, d: Int, chairs: Boolean) {
+            for (i in 0 until w) for (j in 0 until d) put(x0 + i, z0 + j, mesa)
+            if (chairs) {
+                for (i in 0 until w) { put(x0 + i, z0 - 1, cad); put(x0 + i, z0 + d, cad) }
+                for (j in 0 until d) { put(x0 - 1, z0 + j, cad); put(x0 + w, z0 + j, cad) }
+            }
+        }
+        labels.add(Label(bx + 10f, top + 6f, 5.5f, "MOBÍLIA: junte as mesas e elas crescem!", true))
+        labels.add(Label(bx + 1.5f, y + 2.6f, 10.5f, "Mesa 1x1"));  table(bx + 1, 10, 1, 1, true)
+        labels.add(Label(bx + 7.5f, y + 2.6f, 10.5f, "Mesa 2x2"));  table(bx + 6, 10, 2, 2, true)
+        labels.add(Label(bx + 17f, y + 2.6f, 10.5f, "Mesa comprida 5x2")); table(bx + 14, 10, 5, 2, true)
+        labels.add(Label(bx + 6f, y + 2.6f, 22.5f, "Mesa em L")); 
+        for (i in 0 until 4) put(bx + 4 + i, 22, mesa); for (j in 1 until 3) put(bx + 4, 22 + j, mesa)
+        for (i in 0 until 4) put(bx + 4 + i, 21, cad); for (j in 1 until 3) put(bx + 3, 22 + j, cad)
+        put(bx + 8, 22, cad); put(bx + 5, 24, cad); put(bx + 4, 25, cad)
+        labels.add(Label(bx + 17f, y + 2.6f, 22.5f, "Cadeiras soltas"))
+        for (i in 0 until 5) put(bx + 14 + i * 2, 22, cad)
+        val cama = B.byName["Cama"]
+        if (cama != null) {
+            labels.add(Label(bx + 1.5f, y + 2.6f, 29.5f, "Cama 1x1")); put(bx + 1, 30, cama)
+            labels.add(Label(bx + 7.5f, y + 2.6f, 29.5f, "Cama 2 blocos")); put(bx + 7, 30, cama); put(bx + 7, 31, cama)
+            labels.add(Label(bx + 14.5f, y + 2.6f, 29.5f, "Cama 3 blocos")); for (i in 0 until 3) put(bx + 13 + i, 30, cama)
+            labels.add(Label(bx + 21f, y + 2.6f, 29.5f, "Camas lado a lado")); for (j in 0 until 2) { put(bx + 20, 30 + j, cama); put(bx + 22, 30 + j, cama) }
+        }
     }
 
     /** galeria de árvores: bem afastada dos blocos (x >= 90), uma fileira por espécie com 2 árvores, sobre um gramado */
