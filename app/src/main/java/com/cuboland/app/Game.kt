@@ -99,7 +99,7 @@ class Game(val world: World) {
     // água: direção desejada (pro degrau), escorrer ao quebrar bloco, controle do efeito de tela molhada
     private var wishX = 0f; private var wishZ = 0f
     private val waterQ = LinkedHashSet<Int>(); private var waterT = 0f
-    private var headWas = false; private var headWetT = 0f
+    private var headWas = false; private var headWetT = 0f; private var climbT = 0f; private var waterInit = false
     private var stepDist = 0f; private var stepLeft = false; private var rippleT = 0f; private var bubbleT = 0f; private var regrowT = 0f
     // entrada (escrita pela UI)
     @Volatile var stickX = 0f; @Volatile var stickY = 0f
@@ -183,11 +183,11 @@ class Game(val world: World) {
         val l = hypot(wishX, wishZ); if (l < 0.5f) return -1f
         val ax = e.x + wishX / l * (e.hw + 0.25f); val az = e.z + wishZ / l * (e.hw + 0.25f)
         val bx = floor(ax).toInt(); val bz = floor(az).toInt()
-        var by = floor(e.y + 0.05f).toInt()
+        var by = floor(e.y - 0.1f).toInt(); val minD = if (climbT > 0f && !e.onGround) -0.1f else 0.08f   // já subindo: continua até passar do topo
         while (by <= floor(e.y + reach).toInt()) {
             if (world.solid(bx, by, bz) && !world.solid(bx, by + 1, bz) && !world.solid(bx, by + 2, bz)) {
                 val top = by + 1f
-                if (top - e.y > 0.08f && top - e.y <= reach) return top
+                if (top - e.y > minD && top - e.y <= reach) return top
             }
             by++
         }
@@ -205,6 +205,11 @@ class Game(val world: World) {
     }
 
     private fun waterStep(dt: Float) {
+        if (!waterInit) {   // uma vez ao abrir o mundo: buracos secos abaixo do nível do mar encostados na água (de mundos salvos) também enchem
+            waterInit = true
+            for (y in 0..World.WATER_Y) for (z in 0 until World.SZ) for (x in 0 until World.SX)
+                if (world.get(x, y, z) == B.AIR && hasWaterNear(x, y, z) && waterQ.size < 3000) waterQ.add((y * World.SZ + z) * World.SX + x)
+        }
         waterT -= dt
         if (waterQ.isEmpty() || waterT > 0f) return
         waterT = 0.09f
@@ -226,8 +231,9 @@ class Game(val world: World) {
             move(e, e.vx * dt, e.vy * dt, e.vz * dt)
             return
         }
-        if (e === player && e.inWater) {   // nado: flutua com a cabeça fora, mergulha olhando pra baixo e nadando, sobe olhando pra cima
+        if (e === player && (e.inWater || climbT > 0f)) {   // nado (ou saindo da água num degrau): flutua com a cabeça fora, mergulha olhando pra baixo e nadando, sobe olhando pra cima
             val surf = World.WATER_Y + 0.88f
+            climbT = max(0f, climbT - dt)
             val mg = hypot(stickX, stickY)
             // empuxo de mola: a água empurra pra cima (mais forte quanto mais fundo), balança com as ondas e amortece o mergulho
             val bob = sin(time * 1.5f + e.x * 0.7f + e.z * 0.5f) * 0.05f + sin(time * 2.3f + e.z * 0.9f) * 0.025f
@@ -237,8 +243,8 @@ class Game(val world: World) {
             else if (mg > 0.15f && pitch < -0.28f) acc = sin(pitch) * 16f
             else if (mg > 0.15f && pitch > 0.28f) acc = sin(pitch) * 12f
             // degrau: tem bloco na frente que dá pra subir (1 de altura sem pular, até a margem com o botão de pular) -> empurra pra cima
-            val ledge = if (e === player) ledgeAhead(e, if (jumpHeld) 2.4f else 1.3f) else -1f
-            if (ledge > 0f && !downHeld && e.y < ledge) acc = max(acc, 15f)
+            val ledge = if (e === player) ledgeAhead(e, if (jumpHeld || e.y >= surf - 1.4f) 2.4f else 1.3f) else -1f
+            if (ledge > 0f && !downHeld) { climbT = 0.3f; if (e.y < ledge + 0.1f) acc = max(acc, 15f) }
             e.vy += (acc - 3.4f * e.vy) * dt
             e.vy = e.vy.coerceIn(-4.6f, 4.4f)
             e.vx *= 1f - 3f * dt; e.vz *= 1f - 3f * dt
@@ -246,7 +252,7 @@ class Game(val world: World) {
             if (e === player) {   // teto: o máximo é a cabeça pra fora (nada de ficar "em pé" na água), a não ser que o fundo seja raso ou tenha degrau
                 var cap = max(surf - 1.05f + 0.1f, groundBelow(e) + 0.9f)
                 if (ledge > 0f) cap = max(cap, ledge + 0.06f)
-                if (e.y > cap) { e.y = cap; if (e.vy > 0f) e.vy = 0f }
+                if (e.y > cap) { e.y = cap + (e.y - cap) * (1f - min(1f, 12f * dt)); if (e.vy > 0f) e.vy = 0f }
             }
             return
         }

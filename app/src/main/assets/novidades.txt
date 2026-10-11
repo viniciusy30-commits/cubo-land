@@ -1,3 +1,9 @@
+#id 2026-10-11-m
+#titulo Subir e descer na água, e água escorrendo!
+- Dentro da água agora sobe sozinho em blocos de até 2 de altura (nada de ficar preso embaixo da margem)
+- Descer da margem pra água ficou suave
+- Buracos secos abaixo do nível do mar encostados na água (inclusive de mundos antigos) agora enchem
+
 #id 2026-10-11-l
 #titulo Pés, agachar e água corrigidos!
 - Acabou o pé aparecendo embaixo de todos os calçados (dentro e fora do jogo)
