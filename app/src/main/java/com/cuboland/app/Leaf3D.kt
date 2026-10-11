@@ -168,6 +168,40 @@ object Leaf3D {
         Style(3, 0.38f, 0.45f, 0.60f, 0.00f, 0.40f, 0.3f, 0.2f)    // musgo
     )
 
+    fun kindOf(tile: Int): Int { val sp = Blk.spriteFor(tile); return if (sp == 0) -1 else (Blk.specs[sp]?.get(1) ?: -1) }
+    fun colorsOf(tile: Int): IntArray? { val sp = Blk.spriteFor(tile); if (sp == 0) return null; val art = Blk.specs[sp]?.get(2) ?: return null; return palette(art) }
+
+    /** folhinhas finas e compridas saindo de um colmo de bambu (centro cx,cy,cz), pendendo pra baixo nas pontas */
+    fun stalkLeaves(o: MeshBuf, cx: Float, cy: Float, cz: Float, x: Int, y: Int, z: Int, tile: Int, vr: Float, count: Int) {
+        val sp = Blk.spriteFor(tile); if (sp == 0) return
+        val tx = (sp % Atlas.NT).toFloat(); val ty = (sp / Atlas.NT).toFloat()
+        val nt = Atlas.NT.toFloat(); val nr = Atlas.ROWS.toFloat()
+        for (k in 0 until count) {
+            val ang = h(x, y, z, 200 + k * 5) * 2f * P
+            val oy = (h(x, y, z, 201 + k * 5) - 0.3f) * 0.9f
+            val dx = cos(ang) * 0.82f; val dz = sin(ang) * 0.82f; var dy = 0.35f - 0.5f * h(x, y, z, 202 + k * 5)
+            val dl = sqrt(dx * dx + dy * dy + dz * dz); val ddx = dx / dl; val ddy = dy / dl; val ddz = dz / dl
+            val len = 0.7f + 0.45f * h(x, y, z, 203 + k * 5); val half = 0.2f
+            val bx = cx + ddx * 0.08f; val by = cy + oy; val bz = cz + ddz * 0.08f
+            val tipX = bx + ddx * len; val tipY = by + ddy * len - 0.18f; val tipZ = bz + ddz * len
+            // lateral = d x up
+            var sx = -ddz; var sz = ddx
+            val sl = max(0.001f, sqrt(sx * sx + sz * sz)); sx /= sl; sz /= sl
+            val tone = (0.78f + 0.22f * h(x, y, z, 204 + k * 5)) * vr
+            for (side in 0..1) {
+                val sg = if (side == 0) -1f else 1f
+                val ex = sx * sg * half * 0.93f; val ez = sz * sg * half * 0.93f; val ey = -half * 0.36f
+                val ue = if (side == 0) 0f else 1f
+                val ub = (tx + 0.01f + 0.5f * 0.98f) / nt; val uE = (tx + 0.01f + ue * 0.98f) / nt
+                val vT = (ty + 0.01f) / nr; val vB = (ty + 0.01f + 0.98f) / nr
+                val sb = tone * 0.65f; val st = tone
+                o.vert(bx, by, bz, sb, sb, sb, ub, vB); o.vert(tipX, tipY, tipZ, st, st, st, ub, vT)
+                o.vert(tipX + ex, tipY + ey, tipZ + ez, st * 0.95f, st * 0.95f, st * 0.95f, uE, vT); o.vert(bx + ex, by + ey, bz + ez, sb * 0.95f, sb * 0.95f, sb * 0.95f, uE, vB)
+                o.tri(0, 1, 2); o.tri(0, 2, 3); o.tri(0, 2, 1); o.tri(0, 3, 2); o.vc += 4
+            }
+        }
+    }
+
     private fun h(x: Int, y: Int, z: Int, k: Int): Float {
         var n = x * 73856093 xor y * 19349663 xor z * 83492791 xor k * -1640531535
         n = n xor (n ushr 13); n *= 1274126177; n = n xor (n ushr 16)

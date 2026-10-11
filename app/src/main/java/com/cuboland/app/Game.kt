@@ -21,6 +21,7 @@ class WindP(val kind: Int, var x: Float, var y: Float, var z: Float, val dx: Flo
             val color: Int, val life: Float, val len: Float, val rad: Float, val ph: Float) { var age = 0f }
 
 class LeafP(var x: Float, var y: Float, var z: Float, var vx: Float, var vz: Float, val ph: Float, val color: Int, val size: Float, var life: Float, var landed: Boolean = false, var age: Float = 0f) {
+    var shape = 0   // espécie (Leaf3D.OAK..MUSGO): define o formato da folhinha
     var vy = 0f; var burst = 0f; var spin = 0f   // burst > 0: folhinha lançada por um corte (voa pra fora e depois flutua)
 }
 
@@ -688,8 +689,11 @@ class Game(val world: World) {
     /** cores das folhinhas de cada tipo de folha (as 4 cores da textura); o carvalho usa leafCols */
     private fun leafPal(id: Int): IntArray {
         val sp = Blk.specs[B.tSide[id]]
-        return if (sp != null && sp[0] == Blk.K_LEAF) intArrayOf(sp[1], sp[2], sp[3], sp[4]) else leafCols
+        if (sp != null && sp[0] == Blk.K_LEAF) return intArrayOf(sp[1], sp[2], sp[3], sp[4])
+        val pc = Leaf3D.colorsOf(B.tSide[id])   // cores da própria espécie (paleta da folha 3D)
+        return if (pc != null) intArrayOf(pc[1], pc[2], pc[3], pc[4], pc[2], pc[3]) else leafCols
     }
+    private fun leafShape(id: Int): Int = max(0, Leaf3D.kindOf(B.tSide[id]))
     /** a espada corta o bloco: ele vira, na hora, uma nuvem de folhinhas que escorrem no sentido do corte, girando e planando */
     private fun leafCutFx(x: Int, y: Int, z: Int, k: Int, bid: Int = B.LEAVES) {
         val pal = leafPal(bid)
@@ -705,7 +709,7 @@ class Game(val world: World) {
                 rxv * sg * s + fwx * (0.4f + rnd.nextFloat() * 1.5f) + (rnd.nextFloat() - 0.5f) * 0.8f,
                 rzv * sg * s + fwz * (0.4f + rnd.nextFloat() * 1.5f) + (rnd.nextFloat() - 0.5f) * 0.8f,
                 rnd.nextFloat() * 6.28f, pal[rnd.nextInt(pal.size)], 0.07f + rnd.nextFloat() * 0.07f, 3.4f + rnd.nextFloat() * 2.2f)
-            l.vy = 0.5f + rnd.nextFloat() * 2.0f + along * 1.6f; l.burst = 0.6f + rnd.nextFloat() * 0.5f; l.spin = 1.4f + rnd.nextFloat() * 2.4f
+            l.shape = leafShape(bid); l.vy = 0.5f + rnd.nextFloat() * 2.0f + along * 1.6f; l.burst = 0.6f + rnd.nextFloat() * 0.5f; l.spin = 1.4f + rnd.nextFloat() * 2.4f
             leafFall.add(l)
         }
         if (parts.size < 540) {
@@ -1131,16 +1135,21 @@ class Game(val world: World) {
         }
         // folhas caindo das árvores perto do jogador (quantidade moderada)
         leafT -= dt
-        if (leafT <= 0f && leafFall.size < 30) {
-            leafT = 0.2f + rnd.nextFloat() * 0.3f
-            for (t in 0 until 28) {
-                val x = (player.x + (rnd.nextFloat() - 0.5f) * 30f).toInt(); val z = (player.z + (rnd.nextFloat() - 0.5f) * 30f).toInt()
-                val y = (player.y + (rnd.nextFloat() - 0.4f) * 18f).toInt()
+        if (leafT <= 0f && leafFall.size < 120) {
+            leafT = 0.06f + rnd.nextFloat() * 0.14f
+            val bamb = B.byName["Colmo de Bambu"] ?: -1; val bamL = B.byName["Folhas de Bambu"] ?: B.LEAVES
+            for (t in 0 until 70) {
+                val x = (player.x + (rnd.nextFloat() - 0.5f) * 34f).toInt(); val z = (player.z + (rnd.nextFloat() - 0.5f) * 34f).toInt()
+                val y = (player.y + (rnd.nextFloat() - 0.4f) * 20f).toInt()
                 if (x < 1 || z < 1 || x >= World.SX - 1 || z >= World.SZ - 1 || y < 2 || y >= World.SY) continue
-                if (!B.leafy(world.get(x, y, z)) || world.get(x, y - 1, z) != B.AIR) continue
-                val cols = leafPal(world.get(x, y, z))
-                leafFall.add(LeafP(x + rnd.nextFloat(), y - 0.05f, z + rnd.nextFloat(), (rnd.nextFloat() - 0.5f) * 0.4f + 0.2f, (rnd.nextFloat() - 0.5f) * 0.5f,
-                    rnd.nextFloat() * 6.28f, cols[rnd.nextInt(cols.size)], 0.07f + rnd.nextFloat() * 0.05f, 9f))
+                val id = world.get(x, y, z)
+                val stalk = id == bamb && world.get(x, y - 1, z) == bamb && world.get(x, y - 2, z) == bamb && world.get(x, y - 3, z) == bamb
+                if (!stalk && (!B.leafy(id) || world.get(x, y - 1, z) != B.AIR)) continue
+                val lid = if (stalk) bamL else id
+                val cols = leafPal(lid)
+                val l = LeafP(x + rnd.nextFloat(), y - 0.05f, z + rnd.nextFloat(), (rnd.nextFloat() - 0.5f) * 0.4f + 0.2f, (rnd.nextFloat() - 0.5f) * 0.5f,
+                    rnd.nextFloat() * 6.28f, cols[rnd.nextInt(cols.size)], 0.12f + rnd.nextFloat() * 0.07f, 10f)
+                l.shape = leafShape(lid); leafFall.add(l)
                 break
             }
         }

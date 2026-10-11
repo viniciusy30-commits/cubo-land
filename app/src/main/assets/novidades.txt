@@ -1,3 +1,16 @@
+#id 2026-10-11-zzzzzzzzzzz
+#titulo Cacto, melancia, abóbora e musgo de verdade!
+- Cacto novo: coluna com costelas, topo arredondado, espinhos clarinhos, florzinha no topo e braços que saem de vez em quando
+- Melancia e abóbora agora são redondinhas (a abóbora com gomos) e têm cabinho, em vez de cubo inteiro. A abóbora luminosa também
+- Musgo agora é um bloco fofinho e opaco com tufinhos por cima, e não parece mais bloco de folha
+
+#id 2026-10-11-zzzzzzzzzz
+#titulo Sem limite de vértices, bambu fino e folhinhas caindo!
+- Tirei o limite de vértices dos chunks: folhas 3D, frutinhas e relevo agora aparecem em todos os blocos, sem cortar
+- Bambu novo: colmo fino com nós e folhinhas saindo dele, sem bloco de folha
+- Folhas caindo das árvores: mais folhinhas, cada espécie com a sua cor e o seu formato (agulha, bordo, leque, pétala, lâmina...)
+- Blocos de minério e relevo não piscam mais nas bordas (paredes de borda recuadas)
+
 #id 2026-10-11-zzzzzzzzz
 #titulo Folhas 3D de cada árvore!
 - Cada folhagem da Natureza agora tem a sua própria folha em 3D, dobrada na nervura e com a ponta caindo: carvalho oval, abeto com agulhas, bétula miudinha, selva enorme, acácia achatada, mangue pontudo, cerejeira florida, outono em bordo, amarelas em leque, bambu em lâminas, verrugas e musgo em tufos
