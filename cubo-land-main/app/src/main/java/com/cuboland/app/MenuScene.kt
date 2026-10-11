@@ -47,8 +47,11 @@ class MenuScene(
         const val CW = 110
         const val CH = 144
         const val CFEET = 137
-        /** sobe o personagem pra ele pisar no centro do portal (antes ficava na beirada da frente, parecendo flutuar) */
-        const val FEET_LIFT = 5
+        /** o personagem é desenhado a 80% do tamanho pra caber no portal (80 de largura) com folga */
+        const val CSCALE = 0.8f
+        const val CDW = 88    // 110 * 0.8
+        const val CDH = 115   // 144 * 0.8
+        const val CDFEET = 109   // 137 * 0.8: linha dos pés dentro do desenho reduzido
 
         private val BAY = intArrayOf(0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5)
 
@@ -1014,50 +1017,58 @@ class MenuScene(
         return f
     }
 
-    /** sombra de contato no chão do portal: faz o personagem parecer pisando, não flutuando */
-    private fun footShadow(cx: Int, a: Int) {
-        val fy = platY + 1 - FEET_LIFT
-        ell(cx, fy, 17, 4, INK, a * 70 / 255)
-        ell(cx, fy, 12, 3, INK, a * 120 / 255)
-        ell(cx, fy, 7, 2, INK, a * 150 / 255)
+    /** pés no centro da face de cima do portal (a elipse vai de platY-10 a platY+8; o centro é platY-1) */
+    private fun footY() = platY
+
+    /** sombra de contato + brilho do portal embaixo dos pés: o personagem pisa no centro, não flutua */
+    private fun footShadow(cx: Int, a: Int, lit: Boolean) {
+        val fy = footY()
+        if (lit) {
+            val pu = 0.5f + 0.5f * sin(t * 2.2f)
+            ell(cx, fy, 30, 7, cc(110, 255, 230), (a * (22 + 16 * pu) / 255f).toInt())
+            ell(cx, fy, 22, 5, cc(150, 255, 240), (a * (34 + 22 * pu) / 255f).toInt())
+        }
+        ell(cx, fy, 15, 4, INK, a * 70 / 255)
+        ell(cx, fy, 10, 3, INK, a * 120 / 255)
+        ell(cx, fy, 6, 2, INK, a * 150 / 255)
     }
 
     private fun drawMe() {
-        val x0 = midX - off - CW / 2
-        val y0 = platY + 1 - CFEET - FEET_LIFT
+        val x0 = midX - off - CDW / 2
+        val y0 = footY() - CDFEET
         val rev = ((introT - 0.15f) / 0.8f).coerceIn(0f, 1f)
         if (rev <= 0f) return
-        footShadow(midX - off, (255f * rev).toInt())
-        val vis = (rev * CH).toInt()
+        footShadow(midX - off, (255f * rev).toInt(), true)
+        val vis = (rev * CDH).toInt()
         cnv.save()
-        cnv.clipRect(x0.toFloat(), (y0 + CH - vis).toFloat(), (x0 + CW).toFloat(), (y0 + CH).toFloat())
+        cnv.clipRect(x0.toFloat(), (y0 + CDH - vis).toFloat(), (x0 + CDW).toFloat(), (y0 + CDH).toFloat())
         val flash = (1f - (introT - 0.5f) / 0.8f).coerceIn(0f, 1f)
         BP.colorFilter = if (flash > 0.04f) flashFilter(flash) else null
-        dstF.set(x0.toFloat(), y0.toFloat(), (x0 + CW).toFloat(), (y0 + CH).toFloat())
+        dstF.set(x0.toFloat(), y0.toFloat(), (x0 + CDW).toFloat(), (y0 + CDH).toFloat())
         cnv.drawBitmap(me.bitmap, null, dstF, BP)
         BP.colorFilter = null
         cnv.restore()
-        if (rev < 1f) ell(midX - off, y0 + CFEET + 7 - vis, 30, 3, WHITE, 140)
+        if (rev < 1f) ell(midX - off, y0 + CDFEET + 6 - vis, 26, 3, WHITE, 140)
     }
 
     private fun drawGhost() {
         val gb = ghostBmp
         val rx = midX + off
-        footShadow(rx, 255)
+        footShadow(rx, 255, false)
         if (gb == null) return
         val since = t - pokeT
         val shake = if (since < 0.5f) (sin(since * 50f) * 3f * (1f - since / 0.5f)).roundToInt() else 0
-        val x0 = rx - CW / 2 + shake
-        val y0 = platY + 1 - CFEET - FEET_LIFT
+        val x0 = rx - CDW / 2 + shake
+        val y0 = footY() - CDFEET
         BP.alpha = (120 + 40 * sin(t * 2.2f)).toInt()
-        dstF.set(x0.toFloat(), y0.toFloat(), (x0 + CW).toFloat(), (y0 + CH).toFloat())
+        dstF.set(x0.toFloat(), y0.toFloat(), (x0 + CDW).toFloat(), (y0 + CDH).toFloat())
         cnv.drawBitmap(gb, null, dstF, BP)
         BP.alpha = 255
         val sweep = ((t * 0.5f) % 1.6f) * 1.5f
-        val by0 = y0 + CH - (sweep * CH).toInt()
+        val by0 = y0 + CDH - (sweep * CDH).toInt()
         if (sweep < 1f) {
             cnv.save()
-            cnv.clipRect(x0.toFloat(), by0.toFloat(), (x0 + CW).toFloat(), (by0 + 9).toFloat())
+            cnv.clipRect(x0.toFloat(), by0.toFloat(), (x0 + CDW).toFloat(), (by0 + 9).toFloat())
             BP.alpha = 150
             BP.colorFilter = ghostLight
             cnv.drawBitmap(gb, null, dstF, BP)
@@ -1066,9 +1077,9 @@ class MenuScene(
             cnv.restore()
         }
         val q = bubbleQ
-        if (q != null && since > 1.6f) cnv.drawBitmap(q, (rx - 36).toFloat(), (platY - 1 - 101 + 2 + (sin(t * 2.4f) * 2f).roundToInt()).toFloat(), BP)
+        if (q != null && since > 1.6f) cnv.drawBitmap(q, (rx - 36).toFloat(), (platY - 1 - 81 + 2 + (sin(t * 2.4f) * 2f).roundToInt()).toFloat(), BP)
         val sb = bubbleSoon
-        if (sb != null && since < 1.6f) cnv.drawBitmap(sb, (rx - sb.width / 2).toFloat(), (platY - 1 - 112).toFloat(), BP)
+        if (sb != null && since < 1.6f) cnv.drawBitmap(sb, (rx - sb.width / 2).toFloat(), (platY - 1 - 92).toFloat(), BP)
     }
 
     private fun drawPlaques() {
@@ -1263,12 +1274,12 @@ class MenuScene(
 
     private fun inChar(lx: Int, ly: Int): Boolean {
         val cx = midX - off
-        return lx >= cx - 34 && lx <= cx + 34 && ly >= platY - 110 && ly <= platY
+        return lx >= cx - 34 && lx <= cx + 34 && ly >= platY - 92 && ly <= platY + 4
     }
 
     private fun inGhost(lx: Int, ly: Int): Boolean {
         val cx = midX + off
-        return lx >= cx - 34 && lx <= cx + 34 && ly >= platY - 110 && ly <= platY
+        return lx >= cx - 34 && lx <= cx + 34 && ly >= platY - 92 && ly <= platY + 4
     }
 
     private fun fire(i: Int) {

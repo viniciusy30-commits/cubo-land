@@ -1,3 +1,108 @@
+#id 2026-10-11-zzzzzz
+#titulo Reverter atualização!
+- Novo botão em Ajustes > Geral: Reverter atualização. Antes de confirmar ele mostra a entrega que vai sair (data, título, o que trouxe e a lista de arquivos que voltam, são apagados ou são restaurados)
+- Ao confirmar, o main do GitHub volta ao estado de antes daquela entrega e o GitHub gera um APK novo já revertido. Pode repetir quantas vezes quiser: cada toque volta a entrega anterior que ainda não foi revertida
+
+#id 2026-10-11-zzzzz
+#titulo Texturas com profundidade!
+- Todos os blocos ganharam relevo de verdade: luz vinda de cima-esquerda com realce e sombra em cada pixel, sombrinha nas frestas e buracos e granulado em volta (até os blocos que eram lisos ficaram com textura)
+- Folhas refeitas do zero: folhinhas pontudas sobrepostas em camadas, com nervura clara, lado de baixo mais escuro e sombra caindo nas folhas de baixo; as cores do carvalho continuam as originais
+- Todas as folhagens (abeto, bétula, selva, acácia, cerejeira, outono...) usam o novo desenho, cada uma na sua paleta, com florzinhas/frutinhas nas que têm
+- Grama do topo com lâminas e pontinhos escuros
+
+#id 2026-10-11-zzzz
+#titulo Árvores na Galeria!
+- A Galeria de blocos agora tem, bem afastado dos blocos, um gramado com uma fileira por espécie (carvalho, abeto, bétula, selva, acácia, carvalho escuro, mangue, cerejeira, outono, amarela, bambu, carmesim e distorcido), cada uma com 2 árvores e uma plaquinha
+
+#id 2026-10-11-zzz
+#titulo Natureza renovada!
+- Revisão da Natureza: as Moitas (Cerejeira, Outono e Amarela) eram cópias das Folhas com outro nome. Saíram da mochila e, nos mundos antigos, viram as Folhas na hora de abrir (nada some)
+- Todas as texturas da Natureza redesenhadas em pixel art 16x16 com paleta própria: terra grossa com pedrinhas, podzol com folhas secas, micélio com fios, neve e grama nevada com brilhos, lama com poças, argila em camadas, cascalho de seixos, areias com ondas
+- Minérios com pepitas de cada formato: carvão, ferro, cobre com azinhavre, ouro, redstone, lápis, diamante e esmeralda
+- Favo de mel em hexágonos, bloco de mel com bolhas, esponja furadinha, magma com rachaduras em brasa, gelo com brilhos e gelo compactado em placas
+- Cacto com costelas, espinhos e florzinha, feno amarrado com corda, melancia listrada, abóbora em gomos e a Abóbora Luminosa agora tem rosto
+- Cada folhagem com desenho próprio: agulhas de abeto, flores de cerejeira, folhas grandes da selva, lâminas de bambu, verrugas gordinhas e musgo florido
+
+#id 2026-10-11-zz
+#titulo Galeria de blocos!
+- Novo tipo de mundo, a Galeria de blocos: plano, sem monstros, com todos os blocos do jogo em fileiras por categoria (Básicos, Natureza, Construção, Decoração) e uma plaquinha com o nome de cada um pra você ver as texturas
+- Ela é gerada de novo toda vez que você entra, então sempre mostra os blocos que existem no momento
+
+#id 2026-10-11-z
+#titulo Folhas pra todas as árvores!
+- 12 folhagens novas na mochila: abeto, bétula, selva, acácia, carvalho escuro, mangue, cerejeira, outono, amarelas, bambu e as verrugas carmesim e distorcida, todas com a textura detalhada do carvalho (buraquinhos, 4 tons e balanço no vento)
+- As florestas dos mundos novos agora têm manchas de cada espécie, cada uma com o seu tronco e a sua folha
+- Moitas e Musgo também ganharam a folhagem nova
+- A espada corta cada folha com folhinhas na cor dela, e o machado derruba árvores de qualquer tronco
+- Os blocos agora ocupam 4 bytes no mundo: acabou o limite de 255 tipos de bloco (mundos antigos abrem normalmente)
+
+#id 2026-10-11-y
+#titulo Madeiras em pixel art!
+- Tábuas com veios e pregos, troncos com casca em relevo e anéis no topo, troncos descascados, bloco de bambu com gomos, bambu trançado e piso de madeira desenhados em pixel art 16x16
+
+#id 2026-10-11-x
+#titulo Pedras em pixel art de verdade!
+- Pedregulho, tijolos, granito, diorito, andesito, ardósia, tufo, arenitos, quartzo, nether, fim, purpur e obsidiana redesenhados em pixel art 16x16, com contorno, brilho e sombra em cada pedrinha
+
+#id 2026-10-11-w
+#titulo Blocos com mais detalhe!
+- Cacto com costelas e espinhos, moitas e musgo com folhinhas de contorno e brilho
+- Tábuas com veios e pregos, troncos com casca em relevo, esponja furadinha
+- Minérios, metais, gelo e cristais com brilhinhos
+
+#id 2026-10-11-v
+#titulo Blocos em pixel art!
+- Todos os blocos novos agora têm textura em pixel art estilo Minecraft, mais fofinha: pixels grandes, pintinhas de detalhe e brilho no cantinho de cima
+
+#id 2026-10-11-u
+#titulo Centenas de blocos novos!
+- Mais de 230 blocos novos na mochila: lãs, concretos, terracotas, terracotas vitrificadas e vidros coloridos em 16 cores
+- Madeiras de todo tipo (abeto, bétula, selva, acácia, cerejeira, bambu...) com tábuas, troncos e troncos descascados
+- Pedras e tijolos: pedregulho, granito, diorito, andesito, ardósia, quartzo, nether, fim, prismarinho, obsidiana e mais
+- Minérios e blocos de metal: carvão, ferro, cobre, ouro, diamante, esmeralda, lápis e redstone (minérios aparecem escondidos nos mundos novos)
+- Luzes que brilham: pedra luminosa, lanterna do mar, lâmpadas coloridas, cristais mágicos, magma
+- Blocos criados só pra Cubo Land: nuvem, algodão-doce, doces, gelatinas, cristais, degradês, telhados, gesso, azulejos e janelas
+- Vidro, gelo e gelatina são translúcidos e dá pra ver através
+
+#id 2026-10-11-t
+#titulo Mochila fofinha!
+- Mochila redesenhada: painel quentinho com bolinhas e costura, mochilinha colorida no título, etiquetas coloridas e bolsinhos pros itens
+- Fontes mais nítidas e fáceis de ler (sem aquela sombra borrada), acentos com espaço certo
+- Tiramos a sombra que ficava embaixo dos blocos
+- Botão de fechar (X) centralizado
+- Barra de itens menor, com tabuleirinho, costura e plaquinhas de número
+- Ícones de blocos com contorno, relevo e brilho; ferramentas com contorno escuro
+- Título 'Mochila' centralizado e nomes de categoria maiores
+- Visual mágico: mochila translúcida com estrelinhas piscando, cada categoria com sua cor e ícone, e barra de itens só com os slots (sem retângulo em volta)
+- Agora você toca no item da mochila e depois no slot onde quer colocá-lo (ou arrasta direto). Não vai mais sozinho pro slot escolhido
+- Arraste um item da barra pra cima (pra fora da barra) e o slot fica vazio: só a mão do personagem
+
+#id 2026-10-11-s
+#titulo Mochila nova!
+- Itens separados por categoria em abas: Tudo, Ferramentas, Natureza, Construção e Decoração
+- Barra de pesquisa: toque nela e digite o nome do item ou da categoria
+- Painel com o item em destaque, descrição e força das ferramentas (dano, alcance e rapidez)
+- A barra de itens fica ativa com a mochila aberta: toque pra escolher o slot, arraste um item da mochila direto pra um slot, ou arraste um slot sobre outro pra trocar
+- Plaquinha verde nos itens mostra em qual slot eles estão
+
+#id 2026-10-11-r
+#titulo Grama limpa!
+- Os matinhos da grama não têm mais o contorno preto serrilhado ao longe (nem as flores)
+- Galhos finos e folhinhas soltas saíram: as árvores voltam a ter só blocos de folha
+
+#id 2026-10-11-q
+#titulo Personagem pisando no portal!
+- No menu, o personagem ficou menor (80%) e os pés agora ficam no centro do portal, com sombra e brilho embaixo, sem flutuar
+- O fantasma do jogador 2 também encolheu e usa o mesmo ponto
+
+#id 2026-10-11-p
+#titulo Árvores de verdade, com galhinhos e folhas!
+- Galhos finíssimos (bem mais finos que um bloco) saem da madeira das árvores, com curvas, raminhos e tufos de folhinhas pontudas
+- A copa ganhou folhinhas espetando pra fora: acabou o contorno quadradão
+- As folhinhas balançam com o vento junto com a copa
+- Ao cortar a árvore, os galhos finos e as folhinhas caem junto; os que batem no chão se quebram
+- Tudo é desenhado na hora (nada muda no seu save): mundos antigos também ganham, nas árvores que já existem
+
 #id 2026-10-11-o
 #titulo Menu de pausa renovado!
 - Pausa redesenhada: título com faixa, plaquinha com o nome do mundo, divisor e ícones nos botões

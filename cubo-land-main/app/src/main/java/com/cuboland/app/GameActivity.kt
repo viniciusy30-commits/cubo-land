@@ -16,6 +16,7 @@ class GameActivity : AppCompatActivity() {
     private lateinit var world: World
     private lateinit var game: Game
     private var flat = false
+    private var test = false   // galeria de blocos
     private lateinit var saveFile: File
     private var hud: HudView? = null
 
@@ -30,7 +31,8 @@ class GameActivity : AppCompatActivity() {
         val info = Worlds.get(this, intent.getStringExtra("wid") ?: "")
         if (info == null) { finish(); return }
         Worlds.touch(this, info.id)
-        flat = info.type == Worlds.FLAT
+        test = info.type == Worlds.TEST
+        flat = info.type == Worlds.FLAT || test
         saveFile = Worlds.fileOf(this, info)
         val root = FrameLayout(this)
         val loading = LoadingView(this, info.name, flat)
@@ -43,7 +45,8 @@ class GameActivity : AppCompatActivity() {
         Thread {
             World.configure(flat)
             val w = World()
-            if (!w.load(saveFile)) { if (flat) w.generateFlat(info.seed) else w.generate(info.seed) }
+            if (test) { w.generateTest() }   // sempre gerada de novo: mostra os blocos que existem agora
+            else if (!w.load(saveFile)) { if (flat) w.generateFlat(info.seed) else w.generate(info.seed) }
             else if (!flat && info.file == "mundo.bin") {
                 val mark = File(filesDir, "arvores_v3")
                 if (!mark.exists()) { w.replantTrees(1234); try { mark.writeText("1") } catch (_: Exception) {} }
@@ -62,9 +65,10 @@ class GameActivity : AppCompatActivity() {
         game = Game(world)
         Look.load(this)
         getSharedPreferences("cfg", 0).getString("hb", null)?.split(",")?.mapNotNull { it.toIntOrNull() }
-            ?.takeIf { it.size == 8 }?.forEachIndexed { i, v -> if (Items.valid(v)) game.hotbar[i] = v }
+            ?.takeIf { it.size == 8 }?.forEachIndexed { i, v -> if (v == 0 || Items.valid(v)) game.hotbar[i] = v }
         game.sens = getSharedPreferences("cfg", 0).getFloat("sens", 1f)
-        game.creative = info.creative
+        game.creative = info.creative || test
+        game.noMobs = test
         gl = GLSurfaceView(this)
         gl.setEGLContextClientVersion(2)
         gl.setEGLConfigChooser(8, 8, 8, 8, 24, 0)
@@ -87,7 +91,7 @@ class GameActivity : AppCompatActivity() {
         super.onPause()
         if (!::gl.isInitialized) return
         gl.onPause()
-        world.save(saveFile)
+        if (!test) world.save(saveFile)
         getSharedPreferences("cfg", 0).edit().putString("hb", game.hotbar.joinToString(",")).apply()
     }
 

@@ -35,20 +35,22 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     private var lastId = -1; private var equip = 1f
     private var prevYaw = 0f; private var prevPitch = 0f; private var swayX = 0f; private var swayY = 0f
 
+    /** condição GLSL: o tile é de folhagem dos blocos novos (balança e ilumina como a folha do carvalho) */
+    private fun leafCond(v: String): String = Blk.leafRuns.joinToString(" || ") { "($v > ${it[0] - 0.5f} && $v < ${it[1] + 0.5f})" }.ifEmpty { "false" }
     private val VS = """
         uniform mat4 uVP; uniform mat4 uModel; uniform vec3 uCam; uniform float uTime; uniform float uWind; uniform float uUnder;
         attribute vec3 aPos; attribute vec3 aCol; attribute vec2 aUV;
         varying vec3 vCol; varying float vFog; varying vec2 vUV; varying vec3 vWP; varying float vTile; varying vec3 vView;
         void main() {
             vec4 wp = uModel * vec4(aPos, 1.0);
-            float tile = floor(aUV.x * 32.0);
+            float tile = floor(aUV.x * 32.0) + 32.0 * floor(aUV.y * 16.0);
             if (uWind > 0.5) {
                 float gust = 0.6 + 0.4 * sin(wp.x * 0.12 + wp.z * 0.08 + uTime * 0.7);
                 if (tile >= 16.0 && tile < 20.0) {
-                    float w = clamp((0.99 - aUV.y) / 0.98, 0.0, 1.0); w = w * w;
+                    float w = clamp((0.99 - aUV.y * 16.0) / 0.98, 0.0, 1.0); w = w * w;
                     wp.x += (sin(uTime * 2.3 + wp.x * 0.9 + wp.z * 0.6) * 0.07 + 0.04) * w * gust * 1.4;
                     wp.z += cos(uTime * 1.8 + wp.x * 0.5 + wp.z * 0.9) * 0.05 * w * gust * 1.4;
-                } else if (tile == 8.0 || tile == 20.0 || tile == 21.0 || tile == 22.0) {
+                } else if (tile == 8.0 || tile == 20.0 || tile == 21.0 || tile == 22.0 || ${leafCond("tile")}) {
                     float ph = wp.x * 0.8 + wp.z * 0.7;
                     float dx = (sin(uTime * 1.6 + wp.y * 1.2 + ph) * 0.05 + sin(uTime * 3.1 + ph * 1.7) * 0.015 + 0.02) * gust;
                     float dz = (cos(uTime * 1.3 + wp.y * 1.0 + ph) * 0.05 + cos(uTime * 2.7 + ph * 1.3) * 0.015) * gust;
@@ -83,7 +85,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         void main() {
             vec2 uv = vUV;
             bool isWater = vTile > 9.5 && vTile < 10.5;
-            bool isLeaf = (vTile > 7.5 && vTile < 8.5) || (vTile > 21.5 && vTile < 22.5);
+            bool isLeaf = (vTile > 7.5 && vTile < 8.5) || (vTile > 19.5 && vTile < 22.5) || ${leafCond("vTile")};
             vec4 t = texture2D(uTex, uv);
             if (t.a < 0.4) discard;
             float l = clamp((vCol.r - 0.3) / 0.7, 0.0, 1.0);
@@ -150,7 +152,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                 c *= mix(vec3(0.92, 1.0, 1.0), vec3(0.8, 0.95, 1.0), dep * 0.5);
                 c += vec3(0.55, 0.95, 1.0) * caus(vWP * 1.1, uTime) * 0.5 * (1.0 - dep * 0.6);
             }
-            if (vTile > 14.5 && vTile < 15.5) c = t.rgb * 1.25;
+            if ((vTile > 14.5 && vTile < 15.5) || vTile > 447.5) c = t.rgb * 1.25;
             if (uUnder > 0.5 && !isWater) {
                 c *= vec3(0.88, 1.02, 1.10);
                 c += vec3(0.5, 0.85, 1.0) * caus(vWP * 0.9, uTime * 1.2) * 0.35;
@@ -220,18 +222,26 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_MAG_FILTER, G.GL_LINEAR)
         G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_WRAP_S, G.GL_CLAMP_TO_EDGE)
         G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_WRAP_T, G.GL_CLAMP_TO_EDGE)
-        GLUtils.texImage2D(G.GL_TEXTURE_2D, 0, Atlas.bmp, 0); G.glGenerateMipmap(G.GL_TEXTURE_2D)
+        val atlasBmp = Atlas.bmp; val rawPx = Atlas.raw
+        if (rawPx != null) {   // sobe os pixels crus (RGBA sem pré-multiplicar): borda transparente mantém o verde e não vira contorno preto no mipmap
+            val bb = java.nio.ByteBuffer.allocateDirect(rawPx.size * 4).order(java.nio.ByteOrder.nativeOrder())
+            for (c in rawPx) { bb.put(((c shr 16) and 255).toByte()); bb.put(((c shr 8) and 255).toByte()); bb.put((c and 255).toByte()); bb.put(((c ushr 24) and 255).toByte()) }
+            bb.position(0)
+            G.glPixelStorei(G.GL_UNPACK_ALIGNMENT, 1)
+            G.glTexImage2D(G.GL_TEXTURE_2D, 0, G.GL_RGBA, Atlas.T * Atlas.NT, Atlas.T * Atlas.ROWS, 0, G.GL_RGBA, G.GL_UNSIGNED_BYTE, bb)
+        } else GLUtils.texImage2D(G.GL_TEXTURE_2D, 0, atlasBmp, 0)
+        G.glGenerateMipmap(G.GL_TEXTURE_2D)
         // buffers de chunk
         val ids = IntArray(vbo.size * 2); G.glGenBuffers(ids.size, ids, 0)
         for (i in vbo.indices) { vbo[i] = ids[i * 2]; ibo[i] = ids[i * 2 + 1]; cnt[i] = 0 }
         java.util.Arrays.fill(world.dirty, true)
-        // cubos unitários: 0 = branco (entidades), 1..13 = blocos com textura
+        // cubos unitários: 0 = branco (entidades), 1..255 = blocos com textura
         val cb = MeshBuf(); val p = FloatArray(3)
-        for (id in 0..13) for (face in 0 until 6) {
+        for (id in 0 until B.N) for (face in 0 until 6) {
             val a = face shr 1; val s = if ((face and 1) == 0) 1 else -1
             val u = (a + 1) % 3; val v = (a + 2) % 3
             val sh = when { a == 1 -> if (s > 0) 1f else 0.55f; a == 0 -> 0.82f; else -> 0.7f }
-            val tile = if (id == 0) 0 else if (id >= 14) 9 + id else if (a == 1) (if (s > 0) B.tTop[id] else B.tBot[id]) else B.tSide[id]
+            val tile = if (id == 0) 0 else if (a == 1) (if (s > 0) B.tTop[id] else B.tBot[id]) else B.tSide[id]
             for (q in 0 until 4) {
                 val cu = World.QU[q]; val cv = World.QV[q]
                 p[a] = 0.5f * s; p[u] = cu - 0.5f; p[v] = cv - 0.5f
@@ -239,7 +249,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                 if (id != 0) {
                     if (a == 0) { tu = cv.toFloat(); tv = 1f - cu } else if (a == 1) { tu = cu.toFloat(); tv = cv.toFloat() } else { tu = cu.toFloat(); tv = 1f - cv }
                 }
-                cb.vert(p[0], p[1], p[2], sh, sh, sh, (tile + 0.01f + tu * 0.98f) / Atlas.NT.toFloat(), 0.01f + tv * 0.98f)
+                cb.vert(p[0], p[1], p[2], sh, sh, sh, Atlas.u(tile, tu), Atlas.v(tile, tv))
             }
             if (s > 0) { cb.tri(0, 1, 2); cb.tri(0, 2, 3) } else { cb.tri(0, 2, 1); cb.tri(0, 3, 2) }
             cb.vc += 4
@@ -278,7 +288,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         G.glUniform1f(uAlpha, a)
     }
 
-    /** caixa: parent * T(px,py,pz) * Ry * Rx * T(0,oy,0) * S. cube: 0 = branco, 1..13 = textura do bloco */
+    /** caixa: parent * T(px,py,pz) * Ry * Rx * T(0,oy,0) * S. cube: 0 = branco, 1..255 = textura do bloco */
     private fun box(parent: FloatArray, px: Float, py: Float, pz: Float, rx: Float, ry: Float,
                     sx: Float, sy: Float, sz: Float, oy: Float, col: Int, a: Float = 1f, mul: Float = 1f,
                     outArm: FloatArray? = null, cube: Int = 0, rz: Float = 0f) {
@@ -452,7 +462,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                     val fu = (c[u] + cu).toFloat() / n; val fv = (c[w] + cv).toFloat() / n
                     val tu: Float; val tv: Float
                     if (a == 0) { tu = fv; tv = 1f - fu } else if (a == 1) { tu = fu; tv = fv } else { tu = fu; tv = 1f - fv }
-                    mb.vert(p[0], p[1], p[2], sh, sh, sh, (tile + 0.01f + tu * 0.98f) / Atlas.NT.toFloat(), 0.01f + tv * 0.98f)
+                    mb.vert(p[0], p[1], p[2], sh, sh, sh, Atlas.u(tile, tu), Atlas.v(tile, tv))
                 }
                 if (s > 0) { mb.tri(0, 1, 2); mb.tri(0, 2, 3) } else { mb.tri(0, 2, 1); mb.tri(0, 3, 2) }
                 mb.vc += 4
@@ -628,11 +638,33 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     }
 
     /** a árvore inteira (troncos e folhas) girando em volta do ponto de corte */
+    private val treeBuf = HashMap<FallTree, IntArray>()   // vbo, ibo, nº de índices dos galhos finos de cada árvore caindo
+
     private fun drawTrees() {
+        val it = treeBuf.entries.iterator()
+        while (it.hasNext()) { val e = it.next(); if (!game.trees.contains(e.key)) { G.glDeleteBuffers(2, e.value, 0); it.remove() } }
         for (f in game.trees) {
             Matrix.setIdentityM(base2, 0); Matrix.translateM(base2, 0, f.px, f.py, f.pz)
             Matrix.rotateM(base2, 0, f.ang * 57.29578f, f.kx, 0f, f.kz)
             for (i in 0 until f.n) if (!f.gone[i]) box(base2, f.bl[i * 4].toFloat(), f.bl[i * 4 + 1] + f.yo, f.bl[i * 4 + 2].toFloat(), 0f, 0f, 1f, 1f, 1f, 0f, 0xFFFFFF, 1f, 1f, null, f.bl[i * 4 + 3])
+            var bufs = treeBuf[f]
+            val dm = f.dm
+            if (bufs == null && dm != null) {
+                val ids = IntArray(3); G.glGenBuffers(2, ids, 0); ids[2] = upload(dm, ids[0], ids[1]); treeBuf[f] = ids; bufs = ids; f.dm = null
+            }
+            if (bufs != null && bufs[2] > 0) {   // galhos finos e folhinhas caem junto (os dos blocos já quebrados somem)
+                bindMesh(bufs[0], bufs[1])
+                G.glUniformMatrix4fv(uModel, 1, false, base2, 0); tint(0xFFFFFF, 1f)
+                var i = 0
+                while (i < f.n) {
+                    if (f.gone[i]) { i++; continue }
+                    var j = i; while (j < f.n && !f.gone[j]) j++
+                    val c = f.rs[j] - f.rs[i]
+                    if (c > 0) G.glDrawElements(G.GL_TRIANGLES, c, G.GL_UNSIGNED_SHORT, f.rs[i] * 2)
+                    i = j
+                }
+                bindMesh(cubeVb, cubeIb)
+            }
         }
     }
 
@@ -704,7 +736,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     private fun swingDelta(id: Int, sp: Float): Float {
         if (sp >= 1f) return 0f
         if (id == Items.STAFF) return -35f * sin(min(1f, sp * 1.5f) * 3.1416f)
-        val k = if (id == Items.AXE) 1.25f else if (id in 1..13) 0.7f else 1f
+        val k = if (id == Items.AXE) 1.25f else if (Items.isBlock(id)) 0.7f else 1f
         val d = when { sp < 0.3f -> -50f * (sp / 0.3f); sp < 0.55f -> -50f + 90f * ((sp - 0.3f) / 0.25f); else -> 40f * (1f - (sp - 0.55f) / 0.45f) }
         return k * d
     }
@@ -713,7 +745,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     private fun drawItem(m: FloatArray, id: Int, t: Float) {
         val glint = 0.5f + 0.5f * sin(t * 3f)
         when {
-            id in 1..13 -> {
+            Items.isBlock(id) -> {
                 box(m, 0f, 0.2f, 0.18f, 0f, 30f, 0.34f, 0.34f, 0.34f, 0f, 0xFFFFFF, 1f, 1f, null, id)
             }
             id == Items.SWORD -> {
@@ -888,7 +920,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         if (id > 0) {   // mesmo modelo 3D da 1ª pessoa e dos ícones: cabo pra cima, fio pra frente
             System.arraycopy(handM, 0, base2, 0, 16)
             if (an.toolA != 0f) Matrix.rotateM(base2, 0, an.toolA, 1f, 0f, 0f)   // nado e voo rápido: o item acompanha o corpo e não fura a cabeça
-            if (id in 1..13) {
+            if (Items.isBlock(id)) {
                 Matrix.translateM(base2, 0, 0f, -0.16f, 0.04f)
                 Matrix.scaleM(base2, 0, 0.8f, 0.8f, 0.8f)
                 drawItem(base2, id, t)
@@ -1241,7 +1273,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
 
     private fun kfFor(id: Int) = when {
         id == Items.SWORD -> (if (game.powerSwing) KF_SWORD_POWER else SWORD_COMBO[game.combo % SWORD_COMBO.size]); id == Items.AXE -> (if (game.powerSwing) KF_AXE_POWER else KF_AXE); id == Items.PICK -> KF_PICK; id == Items.STAFF -> KF_STAFF
-        id in 1..13 -> KF_BLOCK; else -> KF_FIST
+        Items.isBlock(id) -> KF_BLOCK; else -> KF_FIST
     }
 
     private fun evalPose(out: FloatArray, k: Array<FloatArray>, sp: Float) {
@@ -1320,7 +1352,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val breath = sin(tt * 1.8f) * 0.006f
         val ox = bobX + swayX; val oy = bobY + swayY + breath - inv * 0.55f
         val empty = id <= 0
-        val isTool = id > 0 && id !in 1..13
+        val isTool = id > 0 && !Items.isBlock(id)
         val armW = if (empty) 0.2f else 0.17f
         // punho (centro do punho = onde o cabo passa). Ferramenta: punho mais alto, inteiro na tela; mão vazia/bloco: poses das referências
         val hx = if (empty) 0.589f else if (isTool) 0.66f else 0.752f
@@ -1380,7 +1412,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             toolBase(toolM, p, hx, hy, hz)
             Matrix.multiplyMM(tmp2, 0, poseM, 0, toolM, 0)
             drawTool3D(tmp2, id, tt, p[9])
-        } else if (id in 1..13) {
+        } else if (Items.isBlock(id)) {
             // bloco grande no canto inferior direito, topo e lateral aparecendo (preso ao braço no golpe)
             Matrix.setIdentityM(camBlk, 0)
             Matrix.translateM(camBlk, 0, 0.786f, -0.773f, -1.068f)
@@ -1446,6 +1478,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val ez = game.camZ + (rnd.nextFloat() - 0.5f) * sh
         Matrix.setLookAtM(view, 0, ex, ey, ez, ex + game.lookDirX(), ey + game.lookDirY(), ez + game.lookDirZ(), 0f, 1f, 0f)
         Matrix.multiplyMM(vp, 0, proj, 0, view, 0)
+        game.vpm = vp.clone()
         updateFrustum(vp)
         cvx = ex; cvy = ey; cvz = ez; cdx = game.lookDirX(); cdy = game.lookDirY(); cdz = game.lookDirZ()
         val uwy = floor(ey).toInt()

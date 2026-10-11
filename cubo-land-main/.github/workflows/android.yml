@@ -3,7 +3,7 @@ name: Build APK
 on:
   workflow_dispatch:
   workflow_run:
-    workflows: ["Unpack and commit"]
+    workflows: ["Unpack and commit", "Reverter atualização"]
     types: [completed]
 
 permissions:
