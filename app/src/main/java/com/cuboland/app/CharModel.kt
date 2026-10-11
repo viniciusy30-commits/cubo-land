@@ -132,7 +132,9 @@ class CharModel {
         hb(x, tY + tH / 2f + 0.022f, z, wd, 0.03f, len, lite(hC, k))
 
     /** nuca: colunas de tamanhos diferentes (borda irregular), com ponta afilada nos cabelos longos */
-    private fun hBack(low: Float, tip: Float = 0f, cols: Int = 6, sway: Float = 0f, shade: Float = 1f, base: Int = 20, topY: Float = 1.68f) {
+    private var fem = false
+    private fun hBack(low0: Float, tip: Float = 0f, cols: Int = 6, sway: Float = 0f, shade: Float = 1f, base: Int = 20, topY: Float = 1.68f) {
+        val low = if (fem) min(low0, 1.08f) else low0
         val wv = 0.88f / cols
         for (i in 0 until cols) {
             val x = (i - (cols - 1) / 2f) * wv
@@ -144,7 +146,8 @@ class CharModel {
     }
 
     /** laterais (costeletas) em quatro colunas: a última cobre a têmpora até a testa (sem "entrada") */
-    private fun hSide(low: Float, tip: Float = 0f, shade: Float = 1f, base: Int = 40, topY: Float = 1.68f) {
+    private fun hSide(low0: Float, tip: Float = 0f, shade: Float = 1f, base: Int = 40, topY: Float = 1.68f) {
+        val low = if (fem) min(low0, 1.2f) else low0
         for (sd in intArrayOf(-1, 1)) {
             val s = sd.toFloat()
             for (j in 0..3) {
@@ -265,13 +268,13 @@ class CharModel {
         piv(hsA, hm, x, y, z, rx = rx0 + sin(t * 2.2f) * 4f + move * 10f, rz = rz0)
         var cur = hsA; var nx = hsB
         for (k in 0 until n) {
-            val f = (1f - 0.5f * k / n) * th / 0.1f
+            val f = (1f - 0.5f * k / n) * th
             b(cur, -0.045f * f, -0.1f, 0f, 0.1f * f, 0.22f, 0.13f * f, tone(base + k * 2), rz = 14f)
             b(cur, 0.045f * f, -0.1f, 0f, 0.1f * f, 0.22f, 0.13f * f, tone(base + 1 + k * 2), rz = -14f)
             piv(nx, cur, 0f, -0.17f, 0f, rx = bnx + sin(t * 2.2f + k * 0.7f) * 5f)
             val tmp = cur; cur = nx; nx = tmp
         }
-        b(cur, 0f, -0.04f, 0f, 0.15f * th / 0.1f, 0.07f, 0.15f * th / 0.1f, tie)
+        b(cur, 0f, -0.04f, 0f, 0.16f * th, 0.07f, 0.16f * th, tie)
         b(cur, -0.03f, -0.16f, 0f, 0.06f, 0.2f, 0.07f, tone(base + 40))
         b(cur, 0.03f, -0.15f, 0f, 0.06f, 0.17f, 0.07f, tone(base + 41))
     }
@@ -308,7 +311,7 @@ class CharModel {
     }
 
     private fun drawHair(hs0: Int, hatCovers: Boolean, hcol: Int, tie: Int, skin: Int, t: Float, move: Float, sw: Float) {
-        hC = hcol; hSk = skin
+        hC = hcol; hSk = skin; fem = Look.v[Look.GENDER] == 1
         val hc = hcol; val hd = shadeC(hc, 0.82f); val hl = lite(hc, 0.25f)
         val bulky = hs0 == 1 || hs0 == 5 || hs0 == 7 || hs0 == 10 || hs0 == 11 || hs0 == 12 || hs0 == 14 || hs0 == 18 || hs0 == 23 ||
             hs0 == 24 || hs0 == 25 || hs0 == 26 || hs0 == 28 || hs0 == 34 || hs0 == 35 || hs0 == 42 || hs0 == 43 || hs0 == 44 || hs0 == 47
@@ -427,7 +430,7 @@ class CharModel {
             17 -> {  // trança: grossa, com laço, franja lateral e mechas soltas
                 hTop(); hBack(1.2f); hSide(1.4f); hBangs(floatArrayOf(0.24f, 0.18f, 0.14f, 0.17f, 0.2f), 5f, 14f, 0.8f)
                 hLocks(0.42f, 0.08f, 2f, 5f, 280)
-                hBraid(0f, 1.45f, -0.45f, 9, 1.1f, 10f, 0f, t, move, 285, tie)
+                hBraid(0f, 1.45f, -0.45f, 8, 1.15f, 10f, 0f, t, move, 285, tie)
             }
             18 -> {  // dois coques com laços
                 hTop(); hBack(1.25f); hSide(1.42f); hBangs(floatArrayOf(0.2f, 0.15f, 0.15f, 0.2f, 0.17f), 0f, 12f)
@@ -589,7 +592,7 @@ class CharModel {
                 hBangs(floatArrayOf(0.26f, 0.2f, 0.16f, 0.14f, 0.16f), 7f, 16f, 0.8f)
                 strand(-0.435f, 1.64f, 0.14f, 0.5f, 0.09f, 0.2f, 0f, 2f, tone(690), tone(691), segs = 3, taper = 0.14f)
                 hb(0.47f, 1.5f, 0.0f, 0.14f, 0.3f, 0.3f, tone(692))
-                hBraid(0.5f, 1.4f, 0.0f, 9, 1.1f, -6f, -4f, t, move, 695, tie)
+                hBraid(0.5f, 1.4f, 0.0f, 7, 1.0f, -6f, -4f, t, move, 695, tie)
                 hBow(0.52f, 1.56f, 0.0f, 0.2f, tie, 1f)
             }
             46 -> {  // tranças duplas
@@ -597,7 +600,7 @@ class CharModel {
                 hb(0f, tY + tH / 2f + 0.02f, 0.1f, 0.025f, 0.03f, 0.8f, shadeC(hc, 0.5f))
                 for (sd in intArrayOf(-1, 1)) { val s = sd.toFloat()
                     hb(s * 0.47f, 1.52f, -0.02f, 0.14f, 0.24f, 0.26f, tone(700 + sd))
-                    hBraid(s * 0.5f, 1.44f, -0.02f, 8, 1.0f, 2f, s * 5f, t, move, 705 + sd * 5, tie)
+                    hBraid(s * 0.5f, 1.44f, -0.02f, 6, 0.9f, 2f, s * 5f, t, move, 705 + sd * 5, tie)
                     hBow(s * 0.52f, 1.58f, -0.02f, 0.18f, tie, s) }
             }
             47 -> {  // meio preso: laço no alto, resto solto e comprido
