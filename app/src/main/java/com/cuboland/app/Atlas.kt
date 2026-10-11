@@ -15,6 +15,7 @@ object Atlas {
     const val T = 64
     const val NT = 32          // slots (potência de 2). Usados: 0..19
     val bmp: Bitmap by lazy { build() }
+    @Volatile var raw: IntArray? = null   // preenchido por build()
     val tiles: Array<Bitmap> by lazy { Array(20) { Bitmap.createBitmap(bmp, it * T, 0, T, T) } }
     private const val TAU = 6.2831853f
     private const val CLEAR = 0x004F9A3A
@@ -376,8 +377,8 @@ object Atlas {
                 else ((a / 4) shl 24) or ((r / a).toInt() shl 16) or ((g / a).toInt() shl 8) or (bl / a).toInt()
         }
         for (t in 0 until 24) bleed(out, w, t * T)
+        raw = out.clone()   // cópia com a cor preservada nos pixels transparentes: vai direto pra GPU (o Bitmap do Android zera essa cor)
         val b = Bitmap.createBitmap(w, T, Bitmap.Config.ARGB_8888)
-        b.isPremultiplied = false   // senão o Android zera a cor dos pixels transparentes (viram preto e sujam as bordas ao longe)
         b.setPixels(out, 0, w, 0, 0, w, T)
         return b
     }

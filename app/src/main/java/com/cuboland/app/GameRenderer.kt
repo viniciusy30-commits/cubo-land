@@ -220,7 +220,15 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_MAG_FILTER, G.GL_LINEAR)
         G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_WRAP_S, G.GL_CLAMP_TO_EDGE)
         G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_WRAP_T, G.GL_CLAMP_TO_EDGE)
-        GLUtils.texImage2D(G.GL_TEXTURE_2D, 0, Atlas.bmp, 0); G.glGenerateMipmap(G.GL_TEXTURE_2D)
+        val atlasBmp = Atlas.bmp; val rawPx = Atlas.raw
+        if (rawPx != null) {   // sobe os pixels crus (RGBA sem pré-multiplicar): borda transparente mantém o verde e não vira contorno preto no mipmap
+            val bb = java.nio.ByteBuffer.allocateDirect(rawPx.size * 4).order(java.nio.ByteOrder.nativeOrder())
+            for (c in rawPx) { bb.put(((c shr 16) and 255).toByte()); bb.put(((c shr 8) and 255).toByte()); bb.put((c and 255).toByte()); bb.put(((c ushr 24) and 255).toByte()) }
+            bb.position(0)
+            G.glPixelStorei(G.GL_UNPACK_ALIGNMENT, 1)
+            G.glTexImage2D(G.GL_TEXTURE_2D, 0, G.GL_RGBA, Atlas.T * Atlas.NT, Atlas.T, 0, G.GL_RGBA, G.GL_UNSIGNED_BYTE, bb)
+        } else GLUtils.texImage2D(G.GL_TEXTURE_2D, 0, atlasBmp, 0)
+        G.glGenerateMipmap(G.GL_TEXTURE_2D)
         // buffers de chunk
         val ids = IntArray(vbo.size * 2); G.glGenBuffers(ids.size, ids, 0)
         for (i in vbo.indices) { vbo[i] = ids[i * 2]; ibo[i] = ids[i * 2 + 1]; cnt[i] = 0 }
