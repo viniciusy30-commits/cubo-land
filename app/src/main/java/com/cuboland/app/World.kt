@@ -271,7 +271,6 @@ class World {
         for (i in 1..len) {
             if (dx != 0 && dz != 0) { if (i % 2 == 1) bx += dx else bz += dz } else { bx += dx; bz += dz }
             wood(bx, by, bz)
-            if (depth == 0 && i <= 2 && air(bx, by - 1, bz)) wood(bx, by - 1, bz)   // base mais grossa
             if (i % rise == 0 || i == len) { by++; wood(bx, by, bz) }
             if (depth < 2 && len >= 3 && i >= 2 && i < len && rnd.nextInt(if (depth == 0) 2 else 3) == 0) {
                 val side = if (rnd.nextBoolean()) 1 + rnd.nextInt(2) else -1 - rnd.nextInt(2)
@@ -422,19 +421,20 @@ class World {
                 blob(x, y + 1, z, 1.7f, 1.3f, 1.7f, rnd)
                 if (rnd.nextBoolean()) blob(x + 1 - rnd.nextInt(3), y + 1, z + 1 - rnd.nextInt(3), 1.3f, 1.1f, 1.3f, rnd)
             }
-            7 -> {   // árvore de galhos: tronco + galhos grossos e finos, sem bloco de folha (as folhinhas nascem dos galhos, ver decorBlock)
-                val th = 8 + rnd.nextInt(3)
-                val tp = trunk(x, y, z, th, 2, rnd)
+            7 -> {   // árvore de galhos: tronco + galhos grossos e finos espalhados numa esfera; as folhas são cartões nos galhos (ver boughDecor), sem blocos de folha
+                val th = 7 + rnd.nextInt(3)
+                val tp = trunk(x, y, z, th + 2, 2, rnd)
                 root(x, y, z, 1, 0); root(x, y, z, 0, 1); root(x, y, z, -1, 0); root(x, y, z, 0, -1)
-                for (t in 1..2) wood(tp[0], y + th + t, tp[1])   // líder: o tronco passa da copa
-                val n = 7; val d0 = rnd.nextInt(8)
+                val cy = y + th; val R = 5.3f   // centro e raio da copa redonda
+                val n = 10; val d0 = rnd.nextInt(8)
                 for (k in 0 until n) {
-                    val d = (d0 + k * 8 / n + rnd.nextInt(2)) and 7
-                    val yy = y + th - 6 + k * 6 / (n - 1)
-                    val low = k < 3
-                    bough(tp[0], yy, tp[1], d, if (low) 5 + rnd.nextInt(3) else 3 + rnd.nextInt(3), if (low) 3 else 2, 0, rnd)
+                    val dy0 = -4 + k * 6 / (n - 1)   // alturas de cy-4 até cy+2
+                    val d = (d0 + k * 3 + rnd.nextInt(2)) and 7
+                    val dyEnd = dy0 + 1.5f
+                    val len = Math.round(Math.sqrt(Math.max(4f, R * R - dyEnd * dyEnd).toDouble())).toInt() - 1 + rnd.nextInt(2)
+                    bough(tp[0], cy + dy0, tp[1], d, Math.max(3, len), if (dy0 < -1) 3 else 2, 0, rnd)
                 }
-                for (k in 0 until 3) bough(tp[0], y + th + 1 + k % 2, tp[1], d0 + k * 3, 3 + rnd.nextInt(2), 1, 1, rnd)   // topo: galhos finos e empinados
+                for (k in 0 until 4) bough(tp[0], cy + 1 + k % 2, tp[1], d0 + k * 2 + 1, 3 + rnd.nextInt(2), 1, 1, rnd)   // topo da copa: galhos empinados
             }
             else -> {   // tronco caído, com folhas numa ponta
                 val ax = if (rnd.nextBoolean()) 1 else 0; val az = 1 - ax
@@ -755,7 +755,7 @@ class World {
         return m
     }
 
-    /** árvore de galhos: madeira solta no alto, ligada a outra madeira na horizontal, ganha galhinhos longos e, nas pontas, buquês de folhas */
+    /** árvore de galhos: madeira solta no alto, ligada a outra madeira na horizontal, ganha galhinhos e uma nuvem de folhinhas em volta (a copa redonda) */
     private fun boughDecor(o: MeshBuf, x: Int, y: Int, z: Int) {
         var hs = 0
         for (i in 0 until 4) if (get(x + DX8[i * 2], y, z + DZ8[i * 2]) == B.WOOD) hs++
@@ -764,12 +764,13 @@ class World {
         while (gy > 0 && (get(x, gy, z) == B.AIR || get(x, gy, z) == B.WOOD)) gy--
         if (y - gy < 4) return   // tronco e raízes ficam lisos
         val tip = hs == 1 && get(x, y + 1, z) != B.WOOD
-        val n = if (tip) 3 else if (hash(x * 7 + 1, z, y) > 0.35f) 2 else 1
+        val n = if (tip) 2 else if (hash(x * 7 + 1, z, y) > 0.5f) 1 else 0
         for (k in 0 until n) twig(o, x, y, z, k, 1.4f)
-        if (tip) for (q in 0 until 3) {   // buquê na ponta do galho
+        val cnt = if (tip) 7 else 5
+        for (q in 0 until cnt) {   // folhagem: cartões espalhados numa esfera em volta do galho, mais pra cima que pra baixo
             val sd = x * 53 + y * 31 + z * 17 + q * 7
-            cluster(o, x + 0.5f + (hash(sd, 1, 430) - 0.5f) * 1.1f, y + 0.9f + hash(sd, 2, 431) * 0.7f, z + 0.5f + (hash(sd, 3, 432) - 0.5f) * 1.1f,
-                1.5f + 0.6f * hash(sd, 4, 433), sd)
+            cluster(o, x + 0.5f + (hash(sd, 1, 430) - 0.5f) * 3.2f, y + 0.6f + (hash(sd, 2, 431) - 0.4f) * 2.8f, z + 0.5f + (hash(sd, 3, 432) - 0.5f) * 3.2f,
+                1.8f + 0.9f * hash(sd, 4, 433), sd)
         }
     }
 
