@@ -29,6 +29,26 @@ object Blk {
     const val K_BUILD = 46   // textura da Construção (BuildArt): c1 = padrão, c2 = cor base, c3 = acento (-1 = padrão), c4 = opacidade do miolo do vidro (%)
     const val K_PAL = 36; const val K_PLEAF = 37   // pixel art com paleta própria (NatArt); K_PLEAF = folhagem com buracos transparentes
 
+    /** flags de forma da Construção (BuildShapes): sub = tipo */
+    private fun shp(sub: Int, glass: Boolean = false): Int = F_SHAPE or (7 shl 5) or (sub shl 8) or (if (glass) F_GLASS else 0)
+    private const val PANE = F_SHAPE or (7 shl 5) or (BuildShapes.S_PANE shl 8) or F_GLASS
+    private const val PLATE = F_SHAPE or (7 shl 5) or (BuildShapes.S_PLATE shl 8) or F_GLASS
+    private const val ROOF_DESC = "Telhado inclinado de verdade: o lado alto fica pro lado que você olha. Ponha duas fileiras de frente uma pra outra e feche com a cumeeira."
+    /** bloco base -> [id virado pra +Z, -Z, +X, -X] (telhados e escadas) */
+    val rotIds = HashMap<Int, IntArray>()
+    /** laje de baixo -> laje de cima */
+    val slabTop = HashMap<Int, Int>()
+    /** cumeeira ao longo de Z -> cumeeira ao longo de X */
+    val ridgeAlt = HashMap<Int, Int>()
+    /** variante certa pra colocar: telhado/escada viram pra direção do olhar (dir 0 = +Z, 1 = -Z, 2 = +X, 3 = -X); laje sobe se estiver embaixo de um teto; cumeeira acompanha o olhar */
+    fun oriented(id: Int, dir: Int, ceiling: Boolean): Int {
+        defs
+        val r = rotIds[id]; if (r != null) return r[dir.coerceIn(0, 3)]
+        if (ceiling) { val t = slabTop[id]; if (t != null) return t }
+        val a = ridgeAlt[id]; if (a != null) return if (dir >= 2) a else id
+        return id
+    }
+
     class Def(val id: Int, val name: String, val cat: Int, val top: Int, val side: Int, val bot: Int,
               val color: Int, val flags: Int, val hard: Float, val mat: Int, val desc: String)
 
@@ -142,10 +162,10 @@ object Blk {
             uni("Terracota " + DF[i], C_BUILD, bt(BuildArt.CLAY, c), c, M_STONE, 8f) }
         for (i in 0 until 16) { val c = DYE[i]
             uni("Terracota Vitrificada " + DF[i], C_DEC, tl(K_GLAZE, dk(c, 0.2f), lt(c, 0.4f), lt(c, 0.8f), 0, 0, i and 3, 4), c, M_STONE, 8f) }
-        uni("Vidro", C_BUILD, bt(BuildArt.GLASS, 0xD8F2FF), 0xCDEAF5, M_GLASS, 2f, F_GLASS, "Vidro grosso e liso: transparente, emenda com os vizinhos sem marca.")
-        uni("Vidro Escuro", C_BUILD, bt(BuildArt.GLASS, 0x4A4256, -1, 210), 0x4A4256, M_GLASS, 2f, F_GLASS, "Vidro grosso fumê, liso, para janelas misteriosas.")
+        uni("Vidro", C_BUILD, bt(BuildArt.GLASS, 0xD8F2FF), 0xCDEAF5, M_GLASS, 2f, PANE, "Vidro grosso e liso: transparente, emenda com os vizinhos sem marca.")
+        uni("Vidro Escuro", C_BUILD, bt(BuildArt.GLASS, 0x4A4256, -1, 210), 0x4A4256, M_GLASS, 2f, PANE, "Vidro grosso fumê, liso, para janelas misteriosas.")
         for (i in 0 until 16) { val c = DYE[i]
-            uni("Vidro " + DM[i], C_BUILD, bt(BuildArt.GLASS, c, -1, 165), c, M_GLASS, 2f, F_GLASS, "Vidro grosso colorido, liso e translúcido.") }
+            uni("Vidro " + DM[i], C_BUILD, bt(BuildArt.GLASS, c, -1, 165), c, M_GLASS, 2f, PANE, "Vidro grosso colorido, liso e translúcido.") }
         val lampIdx = intArrayOf(0, 1, 6, 3, 4, 5, 10, 14)
         for (k in lampIdx.indices) { val i = lampIdx[k]; val c = DYE[i]
             uni("Lâmpada " + DF[i], C_DEC, tl(K_LAMP, c, dk(c, 0.45f), lt(c, 0.85f), 0, 0, 0, 0, true), c, 0, 3f, F_LIGHT, "Brilha com uma luz colorida.") }
@@ -246,9 +266,9 @@ object Blk {
         blk("Céu", C_DEC, tl(K_FLAT, 0x8CCBFF, 0xA6D8FF), tl(K_GRAD, 0x6DB6F5, 0xD4ECFF, 0), tl(K_FLAT, 0xD4ECFF, 0xE4F4FF), 0x8CCBFF, M_SOFT, 3f)
         blk("Oceano", C_DEC, tl(K_FLAT, 0x5FD0D8, 0x7ADCE0), tl(K_GRAD, 0x5FD0D8, 0x1F5FA8, 0), tl(K_FLAT, 0x1F5FA8, 0x2A6DB8), 0x3A9ACB, M_SOFT, 3f)
         uni("Xadrez", C_DEC, tl(K_CHECK, 0xF2F2EE, 0x2E3138, 0, 0, 0, 4), 0x8A8D90, M_STONE, 8f)
-        uni("Telhado Vermelho", C_BUILD, bt(BuildArt.SHINGLE, 0xD8584A), 0xD8584A, M_STONE, 8f)
-        uni("Telhado Azul", C_BUILD, bt(BuildArt.SHINGLE, 0x5A86D8), 0x5A86D8, M_STONE, 8f)
-        uni("Telhado Verde", C_BUILD, bt(BuildArt.SHINGLE, 0x5FAE6A), 0x5FAE6A, M_STONE, 8f)
+        uni("Telhado Vermelho", C_BUILD, bt(BuildArt.SHINGLE, 0xD8584A), 0xD8584A, M_STONE, 8f, shp(BuildShapes.S_ROOF), ROOF_DESC)
+        uni("Telhado Azul", C_BUILD, bt(BuildArt.SHINGLE, 0x5A86D8), 0x5A86D8, M_STONE, 8f, shp(BuildShapes.S_ROOF), ROOF_DESC)
+        uni("Telhado Verde", C_BUILD, bt(BuildArt.SHINGLE, 0x5FAE6A), 0x5FAE6A, M_STONE, 8f, shp(BuildShapes.S_ROOF), ROOF_DESC)
         uni("Palha", C_BUILD, pt(NatArt.PALHA), 0xE6C65A, M_SOFT, 3f)
         uni("Gesso Branco", C_BUILD, bt(BuildArt.PLASTER, 0xFAF6EE), 0xFAF6EE, M_STONE, 6f)
         uni("Gesso Rosa", C_BUILD, bt(BuildArt.PLASTER, 0xFFD6E4), 0xFFD6E4, M_STONE, 6f)
@@ -257,8 +277,8 @@ object Blk {
         uni("Piso de Madeira", C_BUILD, bt(BuildArt.MOSAIC, 0xC9935A), 0xC9935A, M_WOOD, 5f)
         uni("Azulejo Branco", C_BUILD, bt(BuildArt.AZ_PLAIN, 0xF4F4F0), 0xF4F4F0, M_STONE, 6f)
         uni("Azulejo Azul", C_BUILD, bt(BuildArt.AZ_DECOR, 0x2F63B5, 0xF6F6F0), 0x6FA8E8, M_STONE, 6f)
-        uni("Janela de Madeira", C_BUILD, bt(BuildArt.WINDOW, 0x8B6B43, 0xBFE6F5), 0xB6A070, M_GLASS, 2f, F_GLASS, "Janela com moldura de madeira.")
-        uni("Janela Branca", C_BUILD, bt(BuildArt.WINDOW, 0xF2F2EE, 0xBFE6F5), 0xDDE8EE, M_GLASS, 2f, F_GLASS, "Janela com moldura branca.")
+        uni("Janela de Madeira", C_BUILD, bt(BuildArt.WINDOW, 0x8B6B43, 0xBFE6F5), 0xB6A070, M_GLASS, 2f, PLATE, "Janela com moldura de madeira.")
+        uni("Janela Branca", C_BUILD, bt(BuildArt.WINDOW, 0xF2F2EE, 0xBFE6F5), 0xDDE8EE, M_GLASS, 2f, PLATE, "Janela com moldura branca.")
         // Moitas eram cópias idênticas das Folhas (outro nome, mesma textura): ficam só pra mundos antigos, escondidas, e viram Folhas ao carregar
         legacy(uni("Moita Cerejeira", C_NAT, pt(NatArt.F_CEREJEIRA, true), 0xF0A6C4, M_SOFT, 2f, F_LEAF), "Folhas de Cerejeira")
         legacy(uni("Moita de Outono", C_NAT, pt(NatArt.F_OUTONO, true), 0xE07A26, M_SOFT, 2f, F_LEAF), "Folhas de Outono")
@@ -394,27 +414,77 @@ object Blk {
         blk("Tapete Vermelho", C_FURN, F[Furniture.T_RUGR], F[Furniture.T_RUGR], F[Furniture.T_RUGR], 0xC8444E, M_SOFT, 2f, FU or (Furniture.S_RUGR shl 8), "Tapete macio com borda e losango.")
         blk("Tapete Azul", C_FURN, F[Furniture.T_RUGB], F[Furniture.T_RUGB], F[Furniture.T_RUGB], 0x4C74C4, M_SOFT, 2f, FU or (Furniture.S_RUGB shl 8), "Tapete macio com borda e losango.")
         // ---- vidros finos (lisos, sem moldura: blocos vizinhos se unem sem marca) ----
-        uni("Vidro Fino", C_BUILD, bt(BuildArt.GLASS_THIN, 0xD8F2FF), 0xCDEAF5, M_GLASS, 2f, F_GLASS, "Vidro fino e liso: bem transparente, emenda sem marca.")
-        uni("Vidro Fino Escuro", C_BUILD, bt(BuildArt.GLASS_THIN, 0x4A4256, -1, 300), 0x4A4256, M_GLASS, 2f, F_GLASS, "Vidro fino fumê e liso.")
+        uni("Vidro Fino", C_BUILD, bt(BuildArt.GLASS_THIN, 0xD8F2FF), 0xCDEAF5, M_GLASS, 2f, PANE, "Vidro fino e liso: bem transparente, emenda sem marca.")
+        uni("Vidro Fino Escuro", C_BUILD, bt(BuildArt.GLASS_THIN, 0x4A4256, -1, 300), 0x4A4256, M_GLASS, 2f, PANE, "Vidro fino fumê e liso.")
         for (i in 0 until 16) { val c = DYE[i]
-            uni("Vidro Fino " + DM[i], C_BUILD, bt(BuildArt.GLASS_THIN, c, -1, 230), c, M_GLASS, 2f, F_GLASS, "Vidro fino colorido e liso.") }
+            uni("Vidro Fino " + DM[i], C_BUILD, bt(BuildArt.GLASS_THIN, c, -1, 230), c, M_GLASS, 2f, PANE, "Vidro fino colorido e liso.") }
         // ---- mais janelas (todas translúcidas; moldura e vidraça lisas) ----
         val GL = 0xBFE6F5
-        uni("Janela Sem Moldura", C_BUILD, bt(BuildArt.JAN_FRAMELESS, 0xB8C0C8, GL), 0xCDEEFF, M_GLASS, 2f, F_GLASS, "Vidro liso com só quatro presilhas de metal nos cantos.")
-        uni("Janela de Correr Alumínio", C_BUILD, bt(BuildArt.JAN_SLIDE, 0xB8C0C8, GL), 0xB8C0C8, M_GLASS, 2f, F_GLASS, "Duas folhas grandes de vidro que correm, com puxador.")
-        uni("Janela de Correr Preta", C_BUILD, bt(BuildArt.JAN_SLIDE, 0x2E3138, GL), 0x2E3138, M_GLASS, 2f, F_GLASS, "Janela de correr com perfil preto.")
-        uni("Janela de Correr Branca", C_BUILD, bt(BuildArt.JAN_SLIDE, 0xF2F2EE, GL), 0xF2F2EE, M_GLASS, 2f, F_GLASS, "Janela de correr com perfil branco.")
-        uni("Janela de Correr Madeira", C_BUILD, bt(BuildArt.JAN_SLIDE, 0x8B6B43, GL), 0x8B6B43, M_GLASS, 2f, F_GLASS, "Janela de correr com perfil de madeira.")
-        uni("Janela Colonial Branca", C_BUILD, bt(BuildArt.JAN_COLONIAL, 0xF2F2EE, GL), 0xF2F2EE, M_GLASS, 2f, F_GLASS, "Janela colonial com seis vidraças.")
-        uni("Janela Colonial Madeira", C_BUILD, bt(BuildArt.JAN_COLONIAL, 0x8B6B43, GL), 0x8B6B43, M_GLASS, 2f, F_GLASS, "Janela colonial de madeira com seis vidraças.")
-        uni("Persiana de Madeira", C_BUILD, bt(BuildArt.JAN_LOUVER, 0x9A7448, GL), 0x9A7448, M_GLASS, 2f, F_GLASS, "Persiana de ripas: deixa ver pelas frestas.")
-        uni("Persiana Branca", C_BUILD, bt(BuildArt.JAN_LOUVER, 0xEDEBE4, GL), 0xEDEBE4, M_GLASS, 2f, F_GLASS, "Persiana branca de ripas.")
-        uni("Escotilha de Ferro", C_BUILD, bt(BuildArt.JAN_PORTHOLE, 0xB0B6BE, GL), 0xB0B6BE, M_GLASS, 2f, F_GLASS, "Janela redonda de navio, com aro de ferro e rebites.")
-        uni("Escotilha de Latão", C_BUILD, bt(BuildArt.JAN_PORTHOLE, 0xC8A040, GL), 0xC8A040, M_GLASS, 2f, F_GLASS, "Janela redonda de navio, com aro de latão.")
-        uni("Janela Gradeada", C_BUILD, bt(BuildArt.JAN_BARS, 0x2E3138, GL), 0x2E3138, M_GLASS, 2f, F_GLASS, "Vidro com grade de ferro.")
-        uni("Vitral Azul e Âmbar", C_BUILD, bt(BuildArt.VITRAL, 0x2F63D0, 0xE0A030), 0x2F63D0, M_GLASS, 2f, F_GLASS, "Vitral de pedaços coloridos presos por chumbo.")
-        uni("Vitral Rosa e Verde", C_BUILD, bt(BuildArt.VITRAL, 0xE86AA0, 0x4FB070), 0xE86AA0, M_GLASS, 2f, F_GLASS, "Vitral de pedaços coloridos presos por chumbo.")
-        uni("Vitral Roxo e Ciano", C_BUILD, bt(BuildArt.VITRAL, 0x8A4FD0, 0x4FD0D0), 0x8A4FD0, M_GLASS, 2f, F_GLASS, "Vitral de pedaços coloridos presos por chumbo.")
-        uni("Vitral Vermelho e Dourado", C_BUILD, bt(BuildArt.VITRAL, 0xD8403A, 0xF2C93A), 0xD8403A, M_GLASS, 2f, F_GLASS, "Vitral de pedaços coloridos presos por chumbo.")
+        uni("Janela Sem Moldura", C_BUILD, bt(BuildArt.JAN_FRAMELESS, 0xB8C0C8, GL), 0xCDEEFF, M_GLASS, 2f, PLATE, "Vidro liso com só quatro presilhas de metal nos cantos.")
+        uni("Janela de Correr Alumínio", C_BUILD, bt(BuildArt.JAN_SLIDE, 0xB8C0C8, GL), 0xB8C0C8, M_GLASS, 2f, PLATE, "Duas folhas grandes de vidro que correm, com puxador.")
+        uni("Janela de Correr Preta", C_BUILD, bt(BuildArt.JAN_SLIDE, 0x2E3138, GL), 0x2E3138, M_GLASS, 2f, PLATE, "Janela de correr com perfil preto.")
+        uni("Janela de Correr Branca", C_BUILD, bt(BuildArt.JAN_SLIDE, 0xF2F2EE, GL), 0xF2F2EE, M_GLASS, 2f, PLATE, "Janela de correr com perfil branco.")
+        uni("Janela de Correr Madeira", C_BUILD, bt(BuildArt.JAN_SLIDE, 0x8B6B43, GL), 0x8B6B43, M_GLASS, 2f, PLATE, "Janela de correr com perfil de madeira.")
+        uni("Janela Colonial Branca", C_BUILD, bt(BuildArt.JAN_COLONIAL, 0xF2F2EE, GL), 0xF2F2EE, M_GLASS, 2f, PLATE, "Janela colonial com seis vidraças.")
+        uni("Janela Colonial Madeira", C_BUILD, bt(BuildArt.JAN_COLONIAL, 0x8B6B43, GL), 0x8B6B43, M_GLASS, 2f, PLATE, "Janela colonial de madeira com seis vidraças.")
+        uni("Persiana de Madeira", C_BUILD, bt(BuildArt.JAN_LOUVER, 0x9A7448, GL), 0x9A7448, M_GLASS, 2f, PLATE, "Persiana de ripas: deixa ver pelas frestas.")
+        uni("Persiana Branca", C_BUILD, bt(BuildArt.JAN_LOUVER, 0xEDEBE4, GL), 0xEDEBE4, M_GLASS, 2f, PLATE, "Persiana branca de ripas.")
+        uni("Escotilha de Ferro", C_BUILD, bt(BuildArt.JAN_PORTHOLE, 0xB0B6BE, GL), 0xB0B6BE, M_GLASS, 2f, PLATE, "Janela redonda de navio, com aro de ferro e rebites.")
+        uni("Escotilha de Latão", C_BUILD, bt(BuildArt.JAN_PORTHOLE, 0xC8A040, GL), 0xC8A040, M_GLASS, 2f, PLATE, "Janela redonda de navio, com aro de latão.")
+        uni("Janela Gradeada", C_BUILD, bt(BuildArt.JAN_BARS, 0x2E3138, GL), 0x2E3138, M_GLASS, 2f, PLATE, "Vidro com grade de ferro.")
+        uni("Vitral Azul e Âmbar", C_BUILD, bt(BuildArt.VITRAL, 0x2F63D0, 0xE0A030), 0x2F63D0, M_GLASS, 2f, PLATE, "Vitral de pedaços coloridos presos por chumbo.")
+        uni("Vitral Rosa e Verde", C_BUILD, bt(BuildArt.VITRAL, 0xE86AA0, 0x4FB070), 0xE86AA0, M_GLASS, 2f, PLATE, "Vitral de pedaços coloridos presos por chumbo.")
+        uni("Vitral Roxo e Ciano", C_BUILD, bt(BuildArt.VITRAL, 0x8A4FD0, 0x4FD0D0), 0x8A4FD0, M_GLASS, 2f, PLATE, "Vitral de pedaços coloridos presos por chumbo.")
+        uni("Vitral Vermelho e Dourado", C_BUILD, bt(BuildArt.VITRAL, 0xD8403A, 0xF2C93A), 0xD8403A, M_GLASS, 2f, PLATE, "Vitral de pedaços coloridos presos por chumbo.")
+        // ---- Construção v2: bloco de vidro, mais telhados, cumeeiras, lajes e escadas (ids novos sempre no fim!) ----
+        uni("Bloco de Vidro", C_BUILD, bt(BuildArt.GLASS, 0xD8F2FF), 0xCDEAF5, M_GLASS, 2f, F_GLASS, "Cubo inteiro de vidro liso, para aquários e vitrines.")
+        fun last(): Def = list[list.size - 1]
+        fun rot4(base: Def, sub0: Int) {
+            val ids = IntArray(4); ids[0] = base.id
+            for (f in 1..3) {
+                val id = blk(base.name + " " + (f + 1), base.cat, base.top, base.side, base.bot, base.color, base.mat, base.hard, shp(sub0 + f), base.desc)
+                hidden.add(id); ids[f] = id
+            }
+            rotIds[base.id] = ids
+        }
+        val roofs = ArrayList<Def>()
+        for (n in arrayOf("Telhado Vermelho", "Telhado Azul", "Telhado Verde")) { val d = list.firstOrNull { it.name == n }; if (d != null) roofs.add(d) }
+        fun newRoof(n: String, c: Int, tile: Int = -1) {
+            val t = if (tile >= 0) tile else bt(BuildArt.SHINGLE, c)
+            blk(n, C_BUILD, t, t, t, c, M_STONE, 8f, shp(BuildShapes.S_ROOF), ROOF_DESC); roofs.add(last())
+        }
+        newRoof("Telhado Preto", 0x3A3C44)
+        newRoof("Telhado de Barro", 0xC4683F)
+        newRoof("Telhado de Ardósia", 0x5A5E6A)
+        newRoof("Telhado Marrom", 0x7A4A32)
+        newRoof("Telhado Amarelo", 0xE0B040)
+        newRoof("Telhado Branco", 0xE8E8E8)
+        newRoof("Telhado Rosa", 0xE88AA8)
+        newRoof("Telhado de Cobre Oxidado", 0x4FB59A)
+        newRoof("Telhado de Palha", 0xE6C65A, pt(NatArt.PALHA))
+        for (d in roofs) rot4(d, BuildShapes.S_ROOF)
+        for (n in arrayOf("Telhado Vermelho", "Telhado Azul", "Telhado Verde", "Telhado Preto", "Telhado de Barro", "Telhado de Palha")) {
+            val d = list.firstOrNull { it.name == n } ?: continue
+            val cn = n.replace("Telhado", "Cumeeira")
+            val a = blk(cn, C_BUILD, d.top, d.side, d.bot, d.color, M_STONE, 8f, shp(BuildShapes.S_RIDGE), "Telhado de duas águas num bloco só: a crista corre pra onde você olha.")
+            val b = blk(cn + " 2", C_BUILD, d.top, d.side, d.bot, d.color, M_STONE, 8f, shp(BuildShapes.S_RIDGE + 1), "Telhado de duas águas num bloco só.")
+            hidden.add(b); ridgeAlt[a] = b
+        }
+        val mats = arrayOf("Tábua de Abeto", "Tábua de Bétula", "Tábua de Selva", "Tábua de Acácia", "Tábua de Carvalho Escuro", "Tábua de Cerejeira",
+            "Pedregulho", "Pedra Lisa", "Tijolos de Pedra", "Granito Polido", "Diorito Polido", "Arenito Liso", "Quartzo", "Tijolos de Quartzo",
+            "Ardósia Polida", "Tijolos do Nether", "Gesso Branco", "Concreto Branco", "Terracota", "Piso de Madeira")
+        for (mn in mats) {
+            val m = list.firstOrNull { it.name == mn } ?: continue
+            val nm = if (mn.startsWith("Tábua de ")) mn.substring(9) else mn
+            val sl = blk("Laje de " + nm, C_BUILD, m.top, m.side, m.bot, m.color, m.mat, m.hard, shp(BuildShapes.S_SLAB), "Laje de meio bloco. Coloque embaixo de um teto pra ela ficar virada pra cima.")
+            val st = blk("Laje de " + nm + " (cima)", C_BUILD, m.top, m.side, m.bot, m.color, m.mat, m.hard, shp(BuildShapes.S_SLABT), "Laje de meio bloco, em cima.")
+            hidden.add(st); slabTop[sl] = st
+        }
+        for (mn in mats) {
+            val m = list.firstOrNull { it.name == mn } ?: continue
+            val nm = if (mn.startsWith("Tábua de ")) mn.substring(9) else mn
+            blk("Escada de " + nm, C_BUILD, m.top, m.side, m.bot, m.color, m.mat, m.hard, shp(BuildShapes.S_STAIR), "Escada de degrau único: o lado alto fica pro lado que você olha.")
+            rot4(last(), BuildShapes.S_STAIR)
+        }
     }
 }

@@ -1,3 +1,12 @@
+#id 2026-10-12-e
+#titulo Construção de verdade
+- Vidros e janelas agora são finos como vidro de verdade: o vidro se liga nos vizinhos e a janela acompanha a parede
+- Telhados inclinados pontudos: o lado alto vira pra onde você olha; 12 cores, inclusive palha e cobre oxidado
+- Cumeeiras: telhado de duas águas num bloco só (vermelho, azul, verde, preto, barro e palha)
+- Lajes (meio bloco, sobem sozinhas embaixo de um teto) e escadas de 20 materiais: tábuas, pedras, tijolos, quartzo e mais
+- Bloco de Vidro: o cubo inteiro continua existindo, pra aquários
+- Texturas refeitas: concreto, terracota, pedras ásperas, polidas, granito, tábuas, piso, telhas, gesso, metais, troncos descascados, pilar, obsidiana e cinzelado
+
 #id 2026-10-12-d
 #titulo Construção mais bonita
 - Tijolos, pedras, tábuas, telhados, azulejos e metais redesenhados pixel a pixel

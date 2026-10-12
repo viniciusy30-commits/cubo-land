@@ -1004,7 +1004,8 @@ class Game(val world: World) {
         val overlap = px + 1 > p.x - p.hw && px < p.x + p.hw && pz + 1 > p.z - p.hw && pz < p.z + p.hw &&
             py + 1 > p.y && py < p.y + p.h
         if (overlap) return
-        world.set(px, py, pz, cur())
+        val ceil = world.solid(px, py + 1, pz) && !world.solid(px, py - 1, pz)
+        world.set(px, py, pz, Blk.oriented(cur(), BuildShapes.lookDir(yaw), ceil))   // telhado/escada viram pra onde você olha; laje sobe sob um teto
         swing = 0.3f
     }
 

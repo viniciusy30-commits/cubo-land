@@ -159,7 +159,7 @@ class World {
     /** o ponto de mundo está dentro do bloco real? (mira/raio) */
     fun solidPt(x: Int, y: Int, z: Int, px: Float, py: Float, pz: Float): Boolean {
         val id = get(x, y, z); if (!B.solid(id)) return false
-        val b = Shapes.box(this, id, x, z, y) ?: return true
+        val b = Shapes.pickBox(this, id, x, z, y) ?: return true
         return px >= x + b[0] && px <= x + b[3] && py >= y + b[1] && py <= y + b[4] && pz >= z + b[2] && pz <= z + b[5]
     }
 
@@ -250,7 +250,7 @@ class World {
         val basic = ArrayList<Int>(); for (id in 1..13) if (id != B.WATER && B.defined[id]) basic.add(id)
         fun basicsOf(c: Int) = basic.filter { Items.cat(it) == c }
         cats.add("NATUREZA" to (basicsOf(2) + Blk.defs.filter { it.cat == Blk.C_NAT && it.id !in Blk.hidden }.map { it.id }))
-        cats.add("CONSTRUÇÃO" to (basicsOf(3) + Blk.defs.filter { it.cat == Blk.C_BUILD }.map { it.id }))
+        cats.add("CONSTRUÇÃO" to (basicsOf(3) + Blk.defs.filter { it.cat == Blk.C_BUILD && it.id !in Blk.hidden }.map { it.id }))
         cats.add("DECORAÇÃO" to (basicsOf(4) + Blk.defs.filter { it.cat == Blk.C_DEC }.map { it.id }))
         cats.add("MOBÍLIA" to Blk.defs.filter { it.cat == Blk.C_FURN }.map { it.id })
         val other = Blk.defs.filter { it.cat != Blk.C_NAT && it.cat != Blk.C_BUILD && it.cat != Blk.C_DEC && it.cat != Blk.C_FURN }.map { it.id }
@@ -276,6 +276,7 @@ class World {
             zc += 3
         }
         furnitureShowcase(top)
+        modernHouse(top)
         plantTestTrees(top)
     }
 
@@ -324,6 +325,70 @@ class World {
         put(bx + 12, 38, "Cômoda"); put(bx + 14, 38, "Abajur"); 
         lab(bx + 22f, 36f, "Cadeiras e poltronas")
         for ((i, n) in listOf("Cadeira", "Cadeira Estofada", "Banco", "Poltrona", "Cadeira de Escritório", "Sofá").withIndex()) put(bx + 19 + i * 2, 38, n)
+    }
+
+    /** casa moderna de vitrine (trancada, dá pra entrar e subir a escada): concreto, vidro fino, janelas de correr, lajes, escada e mobília */
+    private fun modernHouse(top: Int) {
+        val x0 = 64; val z0 = 52; val y0 = top + 1
+        fun id(n: String) = B.byName[n] ?: 0
+        fun setB(x: Int, y: Int, z: Int, b: Int) { if (x in 0 until SX && z in 0 until SZ && y in 0 until SY) blocks[(y * SZ + z) * SX + x] = b }
+        fun put(rx: Int, ry: Int, rz: Int, n: String) { val b = id(n); if (b != 0) setB(x0 + rx, y0 + ry, z0 + rz, b) }
+        fun fill(ax: Int, ay: Int, az: Int, bx: Int, by: Int, bz: Int, n: String) {
+            val b = id(n); if (b == 0) return
+            for (y in ay..by) for (z in az..bz) for (x in ax..bx) setB(x0 + x, y0 + y, z0 + z, b)
+        }
+        fun hole(ax: Int, ay: Int, az: Int, bx: Int, by: Int, bz: Int) {
+            for (y in ay..by) for (z in az..bz) for (x in ax..bx) setB(x0 + x, y0 + y, z0 + z, 0)
+        }
+        val W = "Concreto Branco"; val G = "Concreto Cinza"; val K = "Concreto Preto"; val P = "Janela de Correr Preta"; val V = "Vidro"
+        labels.add(Label(x0 + 10f, y0 + 10f, z0 - 7f, "CASA MODERNA", true))
+        // pátio, jardim e piso
+        fill(-2, -1, -6, 21, -1, -1, G)
+        for (z in 14..19) for (x in -2..21) setB(x0 + x, y0 - 1, z0 + z, B.GRASS)
+        fill(0, -1, 0, 19, -1, 13, "Piso de Madeira")
+        fill(7, -1, 10, 13, -1, 12, "Ladrilhos de Ardósia")
+        // paredes do térreo
+        fill(0, 0, 13, 19, 2, 13, W); fill(0, 0, 0, 0, 2, 13, W); fill(19, 0, 0, 19, 2, 13, W)
+        fill(0, 0, 3, 0, 2, 10, V); fill(19, 0, 3, 19, 2, 10, V)
+        fill(3, 1, 13, 5, 2, 13, P); fill(14, 1, 13, 16, 2, 13, P)
+        // frente: colunas pretas, vidro de piso a teto e entrada
+        for (cx in intArrayOf(0, 5, 12, 19)) fill(cx, 0, 0, cx, 2, 0, K)
+        fill(1, 0, 0, 1, 2, 0, V); fill(4, 0, 0, 4, 2, 0, V); fill(6, 0, 0, 11, 2, 0, V); fill(13, 0, 0, 18, 2, 0, V)
+        fill(2, 2, 0, 3, 2, 0, K)
+        // laje do segundo andar, com a pontinha em balanço na frente e o buraco da escada
+        fill(0, 3, 0, 19, 3, 13, G); fill(6, 3, -3, 19, 3, -1, G)
+        hole(16, 3, 1, 17, 3, 4)
+        for (sx in 16..17) for (s in 0..3) {
+            for (k in 0 until s) put(sx, k, 2 + s, W)
+            val st = Blk.rotIds[id("Escada de Concreto Branco")]?.get(0) ?: 0
+            if (st != 0) setB(x0 + sx, y0 + s, z0 + 2 + s, st)
+        }
+        // andar de cima
+        fill(6, 4, -2, 6, 6, 10, W); fill(6, 4, 10, 19, 6, 10, W)
+        fill(6, 4, -3, 6, 6, -3, K); fill(19, 4, -3, 19, 6, -3, K)
+        fill(7, 4, -3, 18, 6, -3, V); fill(19, 4, -2, 19, 6, 9, V)
+        fill(6, 5, 0, 6, 6, 2, P); fill(6, 5, 6, 6, 6, 8, P)
+        fill(6, 7, -3, 19, 7, 10, W)
+        val lj = "Laje de Concreto Branco"
+        for (x in 5..20) { put(x, 7, -4, lj); put(x, 7, 11, lj) }
+        for (z in -4..11) { put(5, 7, z, lj); put(20, 7, z, lj) }
+        put(2, 4, 2, "Vaso de Planta"); put(3, 4, 2, "Vaso de Planta")
+        // térreo: sala
+        for (x in 2..4) { put(x, 0, 12, "Sofá"); put(x, 0, 5, "Cômoda") }
+        put(3, 1, 5, "Televisão"); put(2, 1, 5, "Abajur"); put(4, 1, 5, "Vaso de Planta")
+        put(3, 0, 9, "Mesa de Centro"); put(1, 0, 9, "Poltrona"); put(5, 0, 11, "Vaso de Planta")
+        // térreo: cozinha e jantar
+        put(8, 0, 12, "Armário"); for (x in 9..11) { put(x, 0, 12, "Mesa de Mármore"); put(x, 0, 10, "Mesa de Mármore"); put(x, 0, 9, "Banco") }
+        put(12, 0, 12, "Geladeira")
+        for (x in 13..14) { put(x, 0, 6, "Mesa Escura"); put(x, 0, 7, "Mesa Escura"); put(x, 0, 5, "Cadeira Estofada"); put(x, 0, 8, "Cadeira Estofada") }
+        put(3, 2, 8, "Lâmpada Branca"); put(10, 2, 8, "Lâmpada Branca"); put(13, 2, 9, "Lâmpada Branca")
+        // andar de cima: quarto e escritório
+        for (x in 7..9) put(x, 4, 8, "Cama")
+        put(7, 4, 7, "Cômoda"); put(7, 5, 7, "Abajur"); put(7, 4, 9, "Armário")
+        for (x in 12..14) put(x, 4, 9, "Escrivaninha")
+        put(13, 5, 9, "Computador"); put(13, 4, 8, "Cadeira de Escritório"); put(18, 4, 9, "Vaso de Planta")
+        for (x in 11..13) for (z in 2..4) put(x, 4, z, "Tapete Azul")
+        put(10, 4, 2, "Vaso de Planta"); put(10, 6, 5, "Lâmpada Branca"); put(14, 6, 5, "Lâmpada Branca")
     }
 
     /** galeria de árvores: bem afastada dos blocos (x >= 90), uma fileira por espécie com 2 árvores, sobre um gramado */
@@ -905,7 +970,7 @@ class World {
             val vr = 0.94f + 0.06f * hash(x, z, y)
             c[0] = x; c[1] = y; c[2] = z
             if (B.thin(id)) { stalk(o, x, y, z, id, vr); continue }
-            val shp = B.shape(id); if (shp != 0) { Shapes.emit(o, this, x, y, z, id, shp, vr); continue }
+            val shp = B.shape(id); if (shp != 0) { Shapes.emit(if (isG) w else o, this, x, y, z, id, shp, vr); continue }
             if (B.leafy(id)) {
                 val lt = B.tSide[id]
                 if (!leafOpen(x, y, z)) {

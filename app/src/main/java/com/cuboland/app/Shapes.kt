@@ -13,11 +13,18 @@ object Shapes {
     }
 
     fun emit(o: MeshBuf, w: World, x: Int, y: Int, z: Int, id: Int, kind: Int, vr: Float) {
-        when (kind) { 1 -> cactus(o, w, x, y, z, id, vr); 4, 5, 6, 7 -> Furniture.emit(o, w, x, y, z, id, vr); else -> fruit(o, x, y, z, id, kind == 3, vr) }
+        when (kind) { 1 -> cactus(o, w, x, y, z, id, vr); 4, 5, 6 -> Furniture.emit(o, w, x, y, z, id, vr); 7 -> { if (BuildShapes.isBuild(Furniture.sub(id))) BuildShapes.emit(o, w, x, y, z, id, vr) else Furniture.emit(o, w, x, y, z, id, vr) }; else -> fruit(o, x, y, z, id, kind == 3, vr) }
     }
 
     /** caixa de colisão/seleção (x0,y0,z0,x1,y1,z1 locais) do bloco com formato; null = cubo inteiro */
+    /** caixa de mira/quebra: nas peças finas e inclinadas é mais gordinha que a de colisão */
+    fun pickBox(w: World, id: Int, x: Int, z: Int, y: Int = -1): FloatArray? {
+        if (B.shape(id) == 7 && BuildShapes.isBuild(Furniture.sub(id))) return BuildShapes.pick(w, id, x, y, z)
+        return box(w, id, x, z, y)
+    }
+
     fun box(w: World, id: Int, x: Int, z: Int, y: Int = -1): FloatArray? {
+        if (B.shape(id) == 7 && BuildShapes.isBuild(Furniture.sub(id))) return BuildShapes.box(w, id, x, y, z)
         if (B.thin(id)) {
             val cx = 0.5f + (w.hash(x, z, 31) - 0.5f) * 0.4f; val cz = 0.5f + (w.hash(x, z, 32) - 0.5f) * 0.4f
             val r = 0.105f + 0.03f * w.hash(x, z, 33) + 0.035f
