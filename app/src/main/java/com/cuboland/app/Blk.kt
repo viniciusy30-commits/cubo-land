@@ -78,6 +78,18 @@ object Blk {
         out
     }
 
+    /** trechos de tiles seguidos de vidro (K_BUILD com padrão de vidro): o shader dá brilho e deixa passar luz */
+    val glassRuns: List<IntArray> by lazy {
+        defs; val out = ArrayList<IntArray>(); var s = -1
+        for (i in 24..nextTile) {
+            val sp = if (i < nextTile) specs[i] else null
+            val on = sp != null && sp[0] == K_BUILD && BuildArt.isGlass(sp[1])
+            if (on && s < 0) s = i
+            if (!on && s >= 0) { out.add(intArrayOf(s, i - 1)); s = -1 }
+        }
+        out
+    }
+
     private fun tl(kind: Int, c1: Int, c2: Int = c1, c3: Int = c1, c4: Int = 0, seed: Int = 0, par: Int = 0, fl: Int = 0, glow: Boolean = false): Int {
         val i = nextTile; nextTile++   // brilhantes e normais na mesma fila: sem região reservada
         if (i >= MAXT) return 1
@@ -165,7 +177,7 @@ object Blk {
         uni("Vidro", C_BUILD, bt(BuildArt.GLASS, 0xD8F2FF), 0xCDEAF5, M_GLASS, 2f, PANE, "Vidro grosso e liso: transparente, emenda com os vizinhos sem marca.")
         uni("Vidro Escuro", C_BUILD, bt(BuildArt.GLASS, 0x4A4256, -1, 210), 0x4A4256, M_GLASS, 2f, PANE, "Vidro grosso fumê, liso, para janelas misteriosas.")
         for (i in 0 until 16) { val c = DYE[i]
-            uni("Vidro " + DM[i], C_BUILD, bt(BuildArt.GLASS, c, -1, 165), c, M_GLASS, 2f, PANE, "Vidro grosso colorido, liso e translúcido.") }
+            uni("Vidro " + DM[i], C_BUILD, bt(BuildArt.GLASS, c, -1, 290), c, M_GLASS, 2f, PANE, "Vidro grosso colorido, liso e translúcido.") }
         val lampIdx = intArrayOf(0, 1, 6, 3, 4, 5, 10, 14)
         for (k in lampIdx.indices) { val i = lampIdx[k]; val c = DYE[i]
             uni("Lâmpada " + DF[i], C_DEC, tl(K_LAMP, c, dk(c, 0.45f), lt(c, 0.85f), 0, 0, 0, 0, true), c, 0, 3f, F_LIGHT, "Brilha com uma luz colorida.") }
@@ -417,7 +429,7 @@ object Blk {
         uni("Vidro Fino", C_BUILD, bt(BuildArt.GLASS_THIN, 0xD8F2FF), 0xCDEAF5, M_GLASS, 2f, PANE, "Vidro fino e liso: bem transparente, emenda sem marca.")
         uni("Vidro Fino Escuro", C_BUILD, bt(BuildArt.GLASS_THIN, 0x4A4256, -1, 300), 0x4A4256, M_GLASS, 2f, PANE, "Vidro fino fumê e liso.")
         for (i in 0 until 16) { val c = DYE[i]
-            uni("Vidro Fino " + DM[i], C_BUILD, bt(BuildArt.GLASS_THIN, c, -1, 230), c, M_GLASS, 2f, PANE, "Vidro fino colorido e liso.") }
+            uni("Vidro Fino " + DM[i], C_BUILD, bt(BuildArt.GLASS_THIN, c, -1, 320), c, M_GLASS, 2f, PANE, "Vidro fino colorido e liso.") }
         // ---- mais janelas (todas translúcidas; moldura e vidraça lisas) ----
         val GL = 0xBFE6F5
         uni("Janela Sem Moldura", C_BUILD, bt(BuildArt.JAN_FRAMELESS, 0xB8C0C8, GL), 0xCDEEFF, M_GLASS, 2f, PLATE, "Vidro liso com só quatro presilhas de metal nos cantos.")
@@ -484,6 +496,85 @@ object Blk {
             val m = list.firstOrNull { it.name == mn } ?: continue
             val nm = if (mn.startsWith("Tábua de ")) mn.substring(9) else mn
             blk("Escada de " + nm, C_BUILD, m.top, m.side, m.bot, m.color, m.mat, m.hard, shp(BuildShapes.S_STAIR), "Escada de degrau único: o lado alto fica pro lado que você olha.")
+            rot4(last(), BuildShapes.S_STAIR)
+        }
+
+        // ================= CONSTRUÇÃO FOFINHA (v3): ids novos sempre no fim! =================
+        fun pc(i: Int) = mixc(DYE[i], 0xFFFFFF, 0.30f)
+        val GL2 = 0xBFE6F5
+        // ---- vidros especiais (cubo + fino dividem o tile; tiles de vidro seguidos) ----
+        fun gstyle(n: String, pat: Int, c: Int, acc: Int = -1, sc: Int = 0, desc: String) {
+            val t = bt(pat, c, acc, sc)
+            uni("Vidro $n", C_BUILD, t, c, M_GLASS, 2f, F_GLASS, "$desc (cubo inteiro)")
+            uni("Vidro Fino $n", C_BUILD, t, c, M_GLASS, 2f, PANE, "$desc (fino, emenda com os vizinhos)")
+        }
+        gstyle("Facetado", BuildArt.GL_FACET, 0xD8F2FF, desc = "Vidro lapidado em losangos que brilham")
+        gstyle("de Bolhas", BuildArt.GL_BUBBLE, 0xCFF0FF, desc = "Vidro com bolhinhas de sabão")
+        gstyle("Fosco", BuildArt.GL_FROST, 0xF2F8FF, sc = 100, desc = "Vidro leitoso e fosco, deixa a luz passar")
+        gstyle("Estrelado", BuildArt.GL_STAR, 0xDCE4FF, desc = "Vidro com estrelinhas cintilantes")
+        gstyle("Quadriculado", BuildArt.GL_GRID, 0xD8F2FF, desc = "Vidro de quadradinhos")
+        gstyle("de Gotas", BuildArt.GL_DROPS, 0xCFEFFF, desc = "Vidro com gotinhas de chuva")
+        gstyle("Arco-Íris", BuildArt.GL_RAINBOW, 0xFFB8D8, 0x9EDCFF, desc = "Vidro com reflexo de arco-íris")
+        gstyle("de Gelo", BuildArt.GL_ICE, 0xCFEFFF, desc = "Vidro rachadinho como gelo")
+        gstyle("Rosa Cintilante", BuildArt.GL_STAR, 0xFFC4DD, sc = 260, desc = "Vidro rosa com estrelinhas")
+        gstyle("Lilás Facetado", BuildArt.GL_FACET, 0xD2B8FF, sc = 260, desc = "Vidro lilás lapidado")
+        gstyle("Menta de Bolhas", BuildArt.GL_BUBBLE, 0xB8F0D8, sc = 260, desc = "Vidro menta com bolhinhas")
+        gstyle("Âmbar Quadriculado", BuildArt.GL_GRID, 0xFFD27A, sc = 260, desc = "Vidro âmbar de quadradinhos")
+        // ---- janelas fofinhas ----
+        val pn = arrayOf("Rosa", "Menta", "Lavanda", "Céu", "Amarela", "Preta", "Vermelha", "Coral")
+        val pcol = intArrayOf(0xFFB6D0, 0xA8E6C8, 0xCDB8F5, 0x9FD0F5, 0xFFE08A, 0x3A3C44, 0xE5584A, 0xFF9C84)
+        for (i in pn.indices) uni("Janela " + pn[i], C_BUILD, bt(BuildArt.WINDOW, pcol[i], GL2), pcol[i], M_GLASS, 2f, PLATE, "Janela com moldura gordinha e vidraças brilhantes.")
+        for (i in 0 until 5) uni("Janela Colonial " + pn[i], C_BUILD, bt(BuildArt.JAN_COLONIAL, pcol[i], GL2), pcol[i], M_GLASS, 2f, PLATE, "Janela colonial com seis vidraças.")
+        for (i in 0 until 6) uni("Janela em Arco " + pn[i], C_BUILD, bt(BuildArt.JAN_ARCH, pcol[i], GL2), pcol[i], M_GLASS, 2f, PLATE, "Janela com arco no topo.")
+        for (i in 0 until 6) uni("Janela de Coração " + pn[i], C_BUILD, bt(BuildArt.JAN_HEART, pcol[i], GL2), pcol[i], M_GLASS, 2f, PLATE, "Vidraça em forma de coração.")
+        for (i in 0 until 6) uni("Janela de Estrela " + pn[i], C_BUILD, bt(BuildArt.JAN_STAR, pcol[i], GL2), pcol[i], M_GLASS, 2f, PLATE, "Vidraça em forma de estrela.")
+        uni("Vitral Verde e Turquesa", C_BUILD, bt(BuildArt.VITRAL, 0x3FBF6A, 0x3FC8D8), 0x3FBF6A, M_GLASS, 2f, PLATE, "Vitral de pedaços coloridos presos por chumbo.")
+        uni("Vitral Rosa Pastel", C_BUILD, bt(BuildArt.VITRAL, 0xFFA8CC, 0xFFE08A), 0xFFA8CC, M_GLASS, 2f, PLATE, "Vitral doce em tons pastel.")
+        uni("Vitral Azul Céu", C_BUILD, bt(BuildArt.VITRAL, 0x6FB4F5, 0xBFA8FF), 0x6FB4F5, M_GLASS, 2f, PLATE, "Vitral em tons de céu.")
+        uni("Vitral Laranja e Lima", C_BUILD, bt(BuildArt.VITRAL, 0xFF9A3C, 0xA8E05A), 0xFF9A3C, M_GLASS, 2f, PLATE, "Vitral alegre de cítricos.")
+        // ---- tijolos fofos, tábuas pintadas e ladrilhos nas 16 cores ----
+        for (i in 0 until 16) { val c = pc(i); uni("Tijolo Fofo " + DM[i], C_BUILD, bt(BuildArt.BRICK, c), c, M_STONE, 8f, 0, "Tijolinhos gordinhos e coloridos.") }
+        for (i in 0 until 16) { val c = pc(i); uni("Tábua Pintada " + DF[i], C_BUILD, bt(BuildArt.PAINTED, c), c, M_WOOD, 6f, 0, "Madeira pintada com tinta lisinha.") }
+        for (i in 0 until 16) { val c = pc(i); uni("Ladrilho Fofo " + DM[i], C_BUILD, bt(BuildArt.SUBWAY, c), c, M_STONE, 6f, 0, "Azulejinho de metrô brilhante.") }
+        for (i in 0 until 16) { val c = pc(i); uni("Pedra Fofa " + DF[i], C_BUILD, bt(BuildArt.SBRICK, c), c, M_STONE, 9f, 0, "Tijolos de pedra em tom pastel.") }
+        for (i in 0 until 16) { val c = pc(i); uni("Gema " + DF[i], C_BUILD, bt(BuildArt.GEM, c), c, M_STONE, 12f, 0, "Gema lapidada e brilhante.") }
+        for (i in 0 until 16) { val c = pc(i); uni("Acolchoado " + DM[i], C_BUILD, bt(BuildArt.QUILT, c), c, M_SOFT, 3f, 0, "Almofadinhas macias.") }
+        for (i in 0 until 16) { val c = pc(i); uni("Reboco " + DM[i], C_BUILD, bt(BuildArt.PLASTER, c), c, M_STONE, 6f) }
+        for (i in 0 until 16) { val c = pc(i); uni("Lambri " + DM[i], C_BUILD, bt(BuildArt.PANEL, c), c, M_WOOD, 5f, 0, "Painéis embutidos para paredes.") }
+        for (i in 0 until 8) { val c = pc(i); uni("Telhado Fofo " + DM[i], C_BUILD, bt(BuildArt.SHAKE, c), c, M_WOOD, 6f, shp(BuildShapes.S_ROOF), ROOF_DESC); roofs.add(last()); rot4(last(), BuildShapes.S_ROOF) }
+        for (i in 8 until 16) { val c = pc(i); uni("Telhado Fofo " + DM[i], C_BUILD, bt(BuildArt.SHINGLE, c), c, M_STONE, 6f, shp(BuildShapes.S_ROOF), ROOF_DESC); rot4(last(), BuildShapes.S_ROOF) }
+        // ---- pisos e paredes especiais ----
+        uni("Piso Xadrez Rosa", C_BUILD, bt(BuildArt.CHECKER, 0xFFB6D0, 0xFFF4E4), 0xFFB6D0, M_STONE, 6f)
+        uni("Piso Xadrez Azul", C_BUILD, bt(BuildArt.CHECKER, 0x9FD0F5, 0xFFF4E4), 0x9FD0F5, M_STONE, 6f)
+        uni("Piso Xadrez Menta", C_BUILD, bt(BuildArt.CHECKER, 0xA8E6C8, 0xFFF4E4), 0xA8E6C8, M_STONE, 6f)
+        uni("Piso Xadrez Preto e Branco", C_BUILD, bt(BuildArt.CHECKER, 0x4A4658, 0xFAF8F4), 0x4A4658, M_STONE, 6f)
+        uni("Piso Xadrez Vermelho", C_BUILD, bt(BuildArt.CHECKER, 0xE5584A, 0xFFF4E4), 0xE5584A, M_STONE, 6f)
+        for (n in arrayOf("Carvalho" to 0xDDB57A, "Cerejeira" to 0xE0A0A0, "Escuro" to 0x8A6040, "Bétula" to 0xEFDCA8)) uni("Piso Espinha " + n.first, C_BUILD, bt(BuildArt.HERRING, n.second), n.second, M_WOOD, 5f, 0, "Piso de madeira em espinha de peixe.")
+        for (n in arrayOf("Água" to 0x9CCFE8, "Rosa" to 0xFFB6D0, "Menta" to 0xA8E6C8, "Branco" to 0xF4F4F0, "Lavanda" to 0xCDB8F5)) uni("Ladrilho Hexagonal " + n.first, C_BUILD, bt(BuildArt.HEXTILE, n.second), n.second, M_STONE, 6f)
+        for (n in arrayOf("Cinza" to 0xB9C2D0, "Creme" to 0xF0E4C8, "Rosa" to 0xF4C0CC, "Verde" to 0xBFE0B0)) uni("Caminho de Pedras " + n.first, C_BUILD, bt(BuildArt.STEPPING, n.second), n.second, M_STONE, 8f)
+        for (n in arrayOf("Cinza" to 0xB9C2D0, "Areia" to 0xE8D4A8, "Rosa" to 0xF0B8C0, "Água" to 0xA8D0E0)) uni("Seixos " + n.first, C_BUILD, bt(BuildArt.PEBBLE, n.second), n.second, M_STONE, 8f, 0, "Pedrinhas de rio redondinhas.")
+        for (n in arrayOf("Branco" to 0xFAF6EE, "Rosa" to 0xFFD6E4, "Céu" to 0xCFE4FA, "Menta" to 0xCFF0DC)) uni("Enxaimel " + n.first, C_BUILD, bt(BuildArt.TIMBER, n.second, 0x8A5E3C), n.second, M_WOOD, 6f, 0, "Parede de gesso com vigas de madeira, estilo casinha de conto de fadas.")
+        for (n in arrayOf("Carvalho" to 0xC9A06B, "Abeto" to 0x9A7448, "Bétula" to 0xE8D8A0, "Cerejeira" to 0xDDA5A0, "Escuro" to 0x6A4A32)) {
+            val tp = bt(BuildArt.RINGS, n.second)
+            blk("Toras " + n.first, C_BUILD, tp, bt(BuildArt.LOGWALL, n.second), tp, n.second, M_WOOD, 7f, 0, "Parede de toras empilhadas.")
+        }
+        for (n in arrayOf("Ferro" to 0xC8CED8, "Cobre" to 0xE09A70, "Ouro" to 0xF6D860, "Rosa" to 0xF4B0C0, "Azul" to 0x8CB8E8, "Verde" to 0x8CD8A8)) uni("Chapa Ondulada " + n.first, C_BUILD, bt(BuildArt.CORRUG, n.second), n.second, M_METAL, 10f, 0, "Chapa de metal ondulada.")
+        for (n in arrayOf("Rosa" to 0xF4B8D0, "Azul" to 0x9CCFE8, "Amarelo" to 0xFFE08A, "Menta" to 0xA8E6C8)) uni("Losangos " + n.first, C_BUILD, bt(BuildArt.DIAMOND, n.second), n.second, M_STONE, 8f, 0, "Almofadas em losango.")
+        for (n in arrayOf("Rosa" to 0xFFB6D0, "Azul" to 0x9FD0F5, "Menta" to 0xA8E6C8)) uni("Listrado " + n.first, C_BUILD, bt(BuildArt.STRIPES, n.second, 0xFFF4E4), n.second, M_SOFT, 3f, 0, "Papel de parede listrado.")
+        uni("Azulejo Verde", C_BUILD, bt(BuildArt.AZ_DECOR, 0x3FAF7A, 0xF6F6F0), 0x3FAF7A, M_STONE, 6f)
+        uni("Azulejo Rosa", C_BUILD, bt(BuildArt.AZ_DECOR, 0xE8789F, 0xF6F6F0), 0xE8789F, M_STONE, 6f)
+        uni("Azulejo Amarelo", C_BUILD, bt(BuildArt.AZ_DECOR, 0xE8B030, 0xF6F6F0), 0xE8B030, M_STONE, 6f)
+        uni("Azulejo Roxo", C_BUILD, bt(BuildArt.AZ_DECOR, 0x8A5FD0, 0xF6F6F0), 0x8A5FD0, M_STONE, 6f)
+        uni("Azulejo Rosa Liso", C_BUILD, bt(BuildArt.AZ_PLAIN, 0xFFC4DD), 0xFFC4DD, M_STONE, 6f)
+        uni("Azulejo Céu Liso", C_BUILD, bt(BuildArt.AZ_PLAIN, 0xBFE0FF), 0xBFE0FF, M_STONE, 6f)
+        uni("Azulejo Menta Liso", C_BUILD, bt(BuildArt.AZ_PLAIN, 0xBFEAD4), 0xBFEAD4, M_STONE, 6f)
+        // lajes e escadas dos materiais fofos
+        for (mn in arrayOf("Tijolo Fofo Rosa", "Tijolo Fofo Azul-claro", "Tábua Pintada Branca", "Tábua Pintada Rosa", "Pedra Fofa Cinza-clara", "Piso Espinha Carvalho", "Reboco Rosa")) {
+            val m = list.firstOrNull { it.name == mn } ?: continue
+            val sl = blk("Laje de " + mn, C_BUILD, m.top, m.side, m.bot, m.color, m.mat, m.hard, shp(BuildShapes.S_SLAB), "Laje de meio bloco. Coloque embaixo de um teto pra ela ficar virada pra cima.")
+            val st = blk("Laje de " + mn + " (cima)", C_BUILD, m.top, m.side, m.bot, m.color, m.mat, m.hard, shp(BuildShapes.S_SLABT), "Laje de meio bloco, em cima.")
+            hidden.add(st); slabTop[sl] = st
+            blk("Escada de " + mn, C_BUILD, m.top, m.side, m.bot, m.color, m.mat, m.hard, shp(BuildShapes.S_STAIR), "Escada de degrau único: o lado alto fica pro lado que você olha.")
             rot4(last(), BuildShapes.S_STAIR)
         }
     }

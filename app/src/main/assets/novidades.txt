@@ -1,3 +1,12 @@
+#id 2026-10-12-g
+#titulo Construção fofinha
+- Todas as texturas da Construção foram refeitas no estilo fofinho (Hytale/KoGaMa): cores clarinhas, quinas arredondadas, luz suave e relevo 3D almofadado (tijolos gordinhos, seixos redondos, tábuas com pregos, telhas de escama)
+- Vidros transparentes de verdade: película quase invisível, listras de reflexo que continuam de bloco em bloco, estrelinha cintilante e um brilho que passeia pelo vidro
+- Novos vidros: facetado, de bolhas, fosco, estrelado, quadriculado, de gotas, arco-íris, de gelo e coloridos (cubo e fino)
+- Novas janelas: 8 cores gordinhas, colonial, em arco, de coração e de estrela, mais 4 vitrais
+- Novos blocos nas 16 cores: Tijolo Fofo, Tábua Pintada, Ladrilho Fofo, Pedra Fofa, Gema, Acolchoado, Reboco, Lambri e Telhado Fofo
+- Pisos xadrez, espinha de peixe, hexagonais, caminho de pedras, seixos, enxaimel, toras, chapas onduladas, losangos, listrados e azulejos novos, com lajes e escadas
+
 #id 2026-10-12-f
 #titulo TV de verdade
 - Olhe pra uma TV e toque em USAR TV: liga a TV com navegador (YouTube, Google ou qualquer site)

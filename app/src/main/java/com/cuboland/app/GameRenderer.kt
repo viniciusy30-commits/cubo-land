@@ -37,10 +37,11 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
 
     /** condição GLSL: o tile é de folhagem dos blocos novos (balança e ilumina como a folha do carvalho) */
     private fun leafCond(v: String): String = Blk.leafRuns.joinToString(" || ") { "($v > ${it[0] - 0.5f} && $v < ${it[1] + 0.5f})" }.ifEmpty { "false" }
+    private fun glassCond(v: String): String = Blk.glassRuns.joinToString(" || ") { "($v > ${it[0] - 0.5f} && $v < ${it[1] + 0.5f})" }.ifEmpty { "false" }
     private val VS = """
         uniform mat4 uVP; uniform mat4 uModel; uniform vec3 uCam; uniform float uTime; uniform float uWind; uniform float uUnder;
         attribute vec3 aPos; attribute vec3 aCol; attribute vec2 aUV;
-        varying vec3 vCol; varying float vFog; varying vec2 vUV; varying vec3 vWP; varying float vTile; varying vec3 vView;
+        varying vec3 vCol; varying float vFog; varying vec2 vUV; varying vec3 vWP; varying float vTile; varying vec3 vView; varying float vGlass;
         void main() {
             vec4 wp = uModel * vec4(aPos, 1.0);
             float tile = floor(aUV.x * 32.0) + 32.0 * floor(aUV.y * ${Atlas.ROWS}.0);
@@ -61,7 +62,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                 }
             }
             gl_Position = uVP * wp;
-            vCol = aCol; vUV = aUV; vWP = wp.xyz; vTile = tile; vView = uCam - wp.xyz;
+            vGlass = (${glassCond("tile")}) ? 1.0 : 0.0; vCol = aCol; vUV = aUV; vWP = wp.xyz; vTile = tile; vView = uCam - wp.xyz;
             vFog = clamp((length(wp.xyz - uCam) - mix(38.0, 6.0, uUnder)) / mix(52.0, 62.0, uUnder), 0.0, 1.0);
             vFog = vFog * vFog * (3.0 - 2.0 * vFog);
         }"""
@@ -72,7 +73,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         precision mediump float;
         #endif
         uniform vec3 uTint; uniform vec3 uFog; uniform float uAlpha; uniform sampler2D uTex; uniform float uTime; uniform float uUnder; uniform float uWind; uniform vec4 uRip[4];
-        varying vec3 vCol; varying float vFog; varying vec2 vUV; varying vec3 vWP; varying float vTile; varying vec3 vView;
+        varying vec3 vCol; varying float vFog; varying vec2 vUV; varying vec3 vWP; varying float vTile; varying vec3 vView; varying float vGlass;
 
         // brilho de luz no fundo (cáusticas): rede de linhas que dançam
         float caus(vec3 p, float t) {
@@ -87,11 +88,20 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             bool isWater = vTile > 9.5 && vTile < 10.5;
             bool isLeaf = (vTile > 7.5 && vTile < 8.5) || (vTile > 19.5 && vTile < 22.5) || ${leafCond("vTile")};
             vec4 t = texture2D(uTex, uv);
-            if (t.a < 0.4) discard;
+            bool isGlass = vGlass > 0.5;
+            if (t.a < (isGlass ? 0.03 : 0.4)) discard;
             float l = clamp((vCol.r - 0.3) / 0.7, 0.0, 1.0);
             vec3 light = mix(vec3(0.80, 0.84, 1.0), vec3(1.05, 1.02, 0.95), l);
             vec3 c = t.rgb * vCol * uTint * light * 0.9;
             float alpha = uAlpha * t.a;
+            if (isGlass) {   // vidro: reflexo de céu + brilho que passeia pelas listras
+                float sheen = clamp((t.a - 0.16) * 3.0, 0.0, 1.0);
+                float ph = fract(dot(vWP, vec3(0.62, 0.9, 0.62)) * 0.11 - uTime * 0.06);
+                float band = exp(-pow((ph - 0.5) * 7.0, 2.0));
+                c = t.rgb * (0.92 + 0.12 * l) + vec3(0.07, 0.10, 0.14) * sheen;
+                c += vec3(1.0, 0.97, 0.88) * band * sheen * 0.55;
+                alpha = clamp(alpha + band * sheen * 0.25, 0.0, 1.0);
+            }
             if (isLeaf) { float shl = sin(vWP.x * 0.9 + vWP.z * 0.8 + uTime * 1.1) * sin(vWP.y * 1.3 + vWP.x * 0.4 - uTime * 0.8); c *= 1.18 + 0.09 * shl; c += vec3(0.03, 0.05, 0.0) * max(shl, 0.0); }
             if (isWater) {
                 float tm = uTime;
@@ -152,7 +162,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                 c *= mix(vec3(0.92, 1.0, 1.0), vec3(0.8, 0.95, 1.0), dep * 0.5);
                 c += vec3(0.55, 0.95, 1.0) * caus(vWP * 1.1, uTime) * 0.5 * (1.0 - dep * 0.6);
             }
-            if ((vTile > 14.5 && vTile < 15.5) || vTile > 447.5) c = t.rgb * 1.25;
+            if ((vTile > 14.5 && vTile < 15.5) ) c = t.rgb * 1.25;
             if (uUnder > 0.5 && !isWater) {
                 c *= vec3(0.88, 1.02, 1.10);
                 c += vec3(0.5, 0.85, 1.0) * caus(vWP * 0.9, uTime * 1.2) * 0.35;
