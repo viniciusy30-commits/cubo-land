@@ -25,10 +25,16 @@ class GameActivity : AppCompatActivity() {
         }
         world = World()
         if (!world.load(File(filesDir, "mundo.bin"))) world.generate(1234)
+        else {
+            val mark = File(filesDir, "arvores_v3")
+            if (!mark.exists()) { world.replantTrees(1234); try { mark.writeText("1") } catch (_: Exception) {} }
+        }
+        File(filesDir, "arvores_v3").let { if (!it.exists()) try { it.writeText("1") } catch (_: Exception) {} }
         game = Game(world)
         getSharedPreferences("cfg", 0).getString("hb", null)?.split(",")?.mapNotNull { it.toIntOrNull() }
             ?.takeIf { it.size == 8 }?.forEachIndexed { i, v -> if (Items.valid(v)) game.hotbar[i] = v }
         game.sens = getSharedPreferences("cfg", 0).getFloat("sens", 1f)
+        game.creative = getSharedPreferences("cfg", 0).getBoolean("creative", false)
         gl = GLSurfaceView(this)
         gl.setEGLContextClientVersion(2)
         gl.setEGLConfigChooser(8, 8, 8, 8, 16, 0)

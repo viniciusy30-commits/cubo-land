@@ -21,6 +21,7 @@ class WindP(val kind: Int, var x: Float, var y: Float, var z: Float, val dx: Flo
             val color: Int, val life: Float, val len: Float, val rad: Float, val ph: Float) { var age = 0f }
 
 class LeafP(var x: Float, var y: Float, var z: Float, var vx: Float, var vz: Float, val ph: Float, val color: Int, val size: Float, var life: Float, var landed: Boolean = false, var age: Float = 0f) {
+    var shape = 0   // espécie (Leaf3D.OAK..MUSGO): define o formato da folhinha
     var vy = 0f; var burst = 0f; var spin = 0f   // burst > 0: folhinha lançada por um corte (voa pra fora e depois flutua)
 }
 
@@ -102,7 +103,7 @@ class Game(val world: World) {
     private var hitT = -1f; private var hitItem = 0; private var hitStab = false
     private var pendingT = -1f; private var pendingPower = 0f
     val leafFall = ArrayList<LeafP>(); private var leafT = 0f; var comboT = 0f
-    val drops = ArrayList<Drop>(); val ripples = ArrayList<Ripple>(); val prints = ArrayList<Foot>(); val picked = IntArray(256)
+    val drops = ArrayList<Drop>(); val ripples = ArrayList<Ripple>(); val prints = ArrayList<Foot>(); val picked = IntArray(16384)   // contagem por id de bloco (ids passam de 255: com 256 o jogo caía ao pegar o item de cama/verruga)
     @Volatile var pickMsg = ""; @Volatile var pickT = 0f; @Volatile var swimAmt = 0f; @Volatile var wetT = 0f; private var inWaterT = 0f   // wetT: efeito de "molhado" na tela ao sair da água (3s)
     // água: direção desejada (pro degrau), escorrer ao quebrar bloco, controle do efeito de tela molhada
     private var wishX = 0f; private var wishZ = 0f
@@ -138,22 +139,38 @@ class Game(val world: World) {
         for (bx in floor(x - hw).toInt()..floor(x + hw).toInt())
             for (bz in floor(z - hw).toInt()..floor(z + hw).toInt())
                 for (by in floor(y).toInt()..floor(y + h).toInt())
-                    if (world.solid(bx, by, bz)) return true
+                    if (world.solidBox(bx, by, bz, x - hw, y, z - hw, x + hw, y + h, z + hw)) return true
         return false
+    }
+
+    /** borda mais próxima (no eixo 0=x,1=y,2=z) dos blocos reais que a caixa do corpo atravessa; dir>0: face de baixo/trás, dir<0: face de cima/frente */
+    private fun edgeAt(e: Ent, axis: Int, dir: Float): Float {
+        var best = if (dir > 0) Float.MAX_VALUE else -Float.MAX_VALUE
+        val x = e.x; val y = e.y; val z = e.z; val hw = e.hw; val h = e.h
+        for (bx in floor(x - hw).toInt()..floor(x + hw).toInt())
+            for (bz in floor(z - hw).toInt()..floor(z + hw).toInt())
+                for (by in floor(y).toInt()..floor(y + h).toInt()) {
+                    if (!world.solidBox(bx, by, bz, x - hw, y, z - hw, x + hw, y + h, z + hw)) continue
+                    val b = world.boxOf(bx, by, bz)
+                    val o = when (axis) { 0 -> bx; 1 -> by; else -> bz }
+                    val lo = o + (b?.get(axis) ?: 0f); val hi = o + (b?.get(axis + 3) ?: 1f)
+                    best = if (dir > 0) min(best, lo) else max(best, hi)
+                }
+        return best
     }
 
     private fun move(e: Ent, dx: Float, dy: Float, dz: Float) {
         e.x += dx
         if (collides(e.x, e.y, e.z, e.hw, e.h)) {
-            e.x = if (dx > 0) floor(e.x + e.hw) - e.hw - 0.001f else floor(e.x - e.hw) + 1 + e.hw + 0.001f; e.vx = 0f
+            e.x = if (dx > 0) edgeAt(e, 0, 1f) - e.hw - 0.001f else edgeAt(e, 0, -1f) + e.hw + 0.001f; e.vx = 0f
         }
         e.z += dz
         if (collides(e.x, e.y, e.z, e.hw, e.h)) {
-            e.z = if (dz > 0) floor(e.z + e.hw) - e.hw - 0.001f else floor(e.z - e.hw) + 1 + e.hw + 0.001f; e.vz = 0f
+            e.z = if (dz > 0) edgeAt(e, 2, 1f) - e.hw - 0.001f else edgeAt(e, 2, -1f) + e.hw + 0.001f; e.vz = 0f
         }
         e.y += dy; e.onGround = false
         if (collides(e.x, e.y, e.z, e.hw, e.h)) {
-            if (dy < 0) { e.y = floor(e.y) + 1.001f; e.onGround = true } else e.y = floor(e.y + e.h) - e.h - 0.002f
+            if (dy < 0) { e.y = edgeAt(e, 1, -1f) + 0.001f; e.onGround = true } else e.y = edgeAt(e, 1, 1f) - e.h - 0.002f
             e.vy = 0f
         }
         if (!e.onGround && dy <= 0f && e.vy <= 0f && collides(e.x, e.y - 0.03f, e.z, e.hw, e.h)) { e.onGround = true; e.vy = 0f }
@@ -182,7 +199,7 @@ class Game(val world: World) {
     private fun groundBelow(e: Ent): Float {
         val bx = floor(e.x).toInt(); val bz = floor(e.z).toInt()
         var y = floor(e.y + 0.05f).toInt()
-        while (y >= 0) { if (world.solid(bx, y, bz)) return y + 1f; y-- }
+        while (y >= 0) { if (world.solid(bx, y, bz)) return y + (world.boxOf(bx, y, bz)?.get(4) ?: 1f); y-- }
         return 0f
     }
 
@@ -194,7 +211,7 @@ class Game(val world: World) {
         var by = floor(e.y - 0.1f).toInt(); val minD = if (climbT > 0f && !e.onGround) -0.08f else 0.08f   // já subindo: continua até passar do topo
         while (by <= floor(e.y + reach).toInt()) {
             if (world.solid(bx, by, bz) && !world.solid(bx, by + 1, bz) && !world.solid(bx, by + 2, bz)) {
-                val top = by + 1f
+                val top = by + (world.boxOf(bx, by, bz)?.get(4) ?: 1f)
                 if (top - e.y > minD && top - e.y <= reach) return top
             }
             by++
@@ -299,7 +316,7 @@ class Game(val world: World) {
         var lx = Int.MIN_VALUE; var ly = 0; var lz = 0
         while (t < t1) {
             val cx = floor(ox + dx * t).toInt(); val cy = floor(oy + dy * t).toInt(); val cz = floor(oz + dz * t).toInt()
-            if (world.solid(cx, cy, cz)) {
+            if (world.solidPt(cx, cy, cz, ox + dx * t, oy + dy * t, oz + dz * t)) {
                 if (lx != Int.MIN_VALUE) { hasHit = true; hx = cx; hy = cy; hz = cz; px = lx; py = ly; pz = lz; rT = t }
                 return
             }
@@ -321,11 +338,54 @@ class Game(val world: World) {
     private val postH = floatArrayOf(1.8f, 1.45f, 1.1f, 0.9f)
     /** pede uma postura; repetir a mesma volta pra em pé. Não levanta se tiver teto em cima. */
     fun requestPosture(k: Int) {
+        if (seated) { standUp(); return }   // qualquer botão de postura levanta da cadeira
+        if (k == 2 && posture != 2 && player.onGround) { val c = nearestChair(); if (c != null) { sitOnChair(c[0], c[1], c[2]); return } }
         val target = if (posture == k) 0 else k
         if (postH[target] > player.h && collides(player.x, player.y, player.z, player.hw, postH[target])) return
         posture = target; player.h = postH[target]
         if (target != 0) { sprint = false; jumpHeld = false }
     }
+    // ---------- sentar na cadeira ----------
+    @Volatile var seated = false
+    private var seatX = 0; private var seatY = 0; private var seatZ = 0; private var seatDir = 0; private var seatT = 0f
+    /** cadeira livre mais perto do jogador (até ~1,7 bloco), preferindo a que está na mira */
+    private fun nearestChair(): IntArray? {
+        val p = player; var best: IntArray? = null; var bd = 1.7f
+        val fx = sin(yaw); val fz = cos(yaw)
+        for (dy in -1..1) for (dz in -2..2) for (dx in -2..2) {
+            val x = floor(p.x).toInt() + dx; val y = floor(p.y + 0.1f).toInt() + dy; val z = floor(p.z).toInt() + dz
+            if (!Furniture.sittable(world.get(x, y, z))) continue
+            val ex = x + 0.5f - p.x; val ez = z + 0.5f - p.z
+            val d = hypot(ex, ez) - 0.25f * ((ex * fx + ez * fz) / max(0.001f, hypot(ex, ez)))   // pequeno bônus pra cadeira à frente
+            if (d < bd) { bd = d; best = intArrayOf(x, y, z) }
+        }
+        return best
+    }
+    fun sitOnChair(x: Int, y: Int, z: Int) {
+        val bid = world.get(x, y, z)
+        if (!Furniture.sittable(bid) || flying || player.inWater) return
+        val sb = Furniture.sub(bid)
+        val dir = Furniture.facing(world, x, y, z, sb)
+        seatX = x; seatY = y; seatZ = z; seatDir = dir; seated = true; seatT = 0.5f
+        posture = 2; player.h = postH[2]; sprint = false; jumpHeld = false
+        val bx = floatArrayOf(0f, 0f, 1f, -1f)[dir]; val bz = floatArrayOf(1f, -1f, 0f, 0f)[dir]
+        player.x = x + 0.5f - bx * 0.06f; player.z = z + 0.5f - bz * 0.06f; player.y = y + Furniture.seatH(sb)
+        player.vx = 0f; player.vy = 0f; player.vz = 0f; player.onGround = true
+        val a = floatArrayOf(0f, 3.1416f, 1.5708f, -1.5708f)[dir]
+        bodyYaw = a; yaw = a
+    }
+    private fun standUp() {
+        seated = false; posture = 0; player.h = 1.8f
+        val dxs = floatArrayOf(0f, 0f, 1f, -1f); val dzs = floatArrayOf(1f, -1f, 0f, 0f)
+        var nx = seatX + 0.5f; var ny = seatY + 1.0f; var nz = seatZ + 0.5f
+        val order = intArrayOf(seatDir, 2, 3, 0, 1)
+        for (d in order) {
+            val tx = seatX + 0.5f + dxs[d] * 0.95f; val tz = seatZ + 0.5f + dzs[d] * 0.95f
+            if (!collides(tx, seatY + 0.01f, tz, player.hw, 1.8f)) { nx = tx; ny = seatY + 0.01f; nz = tz; break }
+        }
+        player.x = nx; player.y = ny; player.z = nz; player.vx = 0f; player.vy = 0f; player.vz = 0f
+    }
+
     fun eyeH() = 1.6f - 0.35f * crouchA - 0.65f * sitA - 1.15f * lieA
     private fun aimVec(): FloatArray {
         val fx = fwdX(); val fy = fwdY(); val fz = fwdZ()
@@ -420,6 +480,7 @@ class Game(val world: World) {
         raycast(camX, camY, camZ, dirX(), dirY(), dirZ(), camDist, camDist + 5.5f)
         if (!hasHit || hy <= 0) return
         val id = world.get(hx, hy, hz)
+        if (world.isLocked(hx, hy, hz)) { hitPulse = 0.3f; return }   // bloco de apresentação do mundo de testes: não quebra
         // ponto exato do impacto: refina a entrada do raio no bloco
         val dx = dirX(); val dy = dirY(); val dz = dirZ()
         var lo = max(camDist, rT - 0.05f); var hi = rT
@@ -687,8 +748,11 @@ class Game(val world: World) {
     /** cores das folhinhas de cada tipo de folha (as 4 cores da textura); o carvalho usa leafCols */
     private fun leafPal(id: Int): IntArray {
         val sp = Blk.specs[B.tSide[id]]
-        return if (sp != null && sp[0] == Blk.K_LEAF) intArrayOf(sp[1], sp[2], sp[3], sp[4]) else leafCols
+        if (sp != null && sp[0] == Blk.K_LEAF) return intArrayOf(sp[1], sp[2], sp[3], sp[4])
+        val pc = Leaf3D.colorsOf(B.tSide[id])   // cores da própria espécie (paleta da folha 3D)
+        return if (pc != null) intArrayOf(pc[1], pc[2], pc[3], pc[4], pc[2], pc[3]) else leafCols
     }
+    private fun leafShape(id: Int): Int = max(0, Leaf3D.kindOf(B.tSide[id]))
     /** a espada corta o bloco: ele vira, na hora, uma nuvem de folhinhas que escorrem no sentido do corte, girando e planando */
     private fun leafCutFx(x: Int, y: Int, z: Int, k: Int, bid: Int = B.LEAVES) {
         val pal = leafPal(bid)
@@ -704,7 +768,7 @@ class Game(val world: World) {
                 rxv * sg * s + fwx * (0.4f + rnd.nextFloat() * 1.5f) + (rnd.nextFloat() - 0.5f) * 0.8f,
                 rzv * sg * s + fwz * (0.4f + rnd.nextFloat() * 1.5f) + (rnd.nextFloat() - 0.5f) * 0.8f,
                 rnd.nextFloat() * 6.28f, pal[rnd.nextInt(pal.size)], 0.07f + rnd.nextFloat() * 0.07f, 3.4f + rnd.nextFloat() * 2.2f)
-            l.vy = 0.5f + rnd.nextFloat() * 2.0f + along * 1.6f; l.burst = 0.6f + rnd.nextFloat() * 0.5f; l.spin = 1.4f + rnd.nextFloat() * 2.4f
+            l.shape = leafShape(bid); l.vy = 0.5f + rnd.nextFloat() * 2.0f + along * 1.6f; l.burst = 0.6f + rnd.nextFloat() * 0.5f; l.spin = 1.4f + rnd.nextFloat() * 2.4f
             leafFall.add(l)
         }
         if (parts.size < 540) {
@@ -732,7 +796,7 @@ class Game(val world: World) {
             val offs = if (hitStab) arrayOf(intArrayOf(0, 0, 0)) else arrayOf(intArrayOf(0, 0, 0), intArrayOf(1, 0, 0), intArrayOf(-1, 0, 0), intArrayOf(0, 1, 0), intArrayOf(0, -1, 0), intArrayOf(0, 0, 1), intArrayOf(0, 0, -1))
             for (o in offs) {
                 val x = bx + o[0]; val y = by + o[1]; val z = bz + o[2]
-                val nb = world.get(x, y, z); if (!B.leafy(nb)) continue
+                val nb = world.get(x, y, z); if (!B.leafy(nb) || world.isLocked(x, y, z)) continue
                 world.set(x, y, z, B.AIR); leafCutFx(x, y, z, if (o[0] == 0 && o[1] == 0 && o[2] == 0) 0 else 1, nb)
             }
         }
@@ -750,7 +814,7 @@ class Game(val world: World) {
     /** corta o tronco: tudo de madeira/folha conectado acima do corte vira uma árvore que tomba */
     private fun fellTree(x: Int, y: Int, z: Int, cutY: Float = Float.NaN): Boolean {
         val s0 = world.get(x, y + 1, z)
-        if (!B.log(s0) && !B.leafy(s0)) return false
+        if ((!B.log(s0) && !B.leafy(s0)) || world.isLocked(x, y + 1, z)) return false
         val seen = HashSet<Int>(); val q = ArrayDeque<Int>(); val out = ArrayList<Int>()
         fun enc(a: Int, b: Int, c: Int) = ((b * World.SZ + c) * World.SX + a)
         seen.add(enc(x, y + 1, z)); q.add(enc(x, y + 1, z))
@@ -762,7 +826,7 @@ class Game(val world: World) {
                 if (ny <= y || ny >= World.SY || abs(nx - x) > 5 || abs(nz - z) > 5 || nx < 0 || nz < 0 || nx >= World.SX || nz >= World.SZ) continue
                 val k = enc(nx, ny, nz); if (seen.contains(k)) continue
                 val nid = world.get(nx, ny, nz)
-                if (!B.log(nid) && !B.leafy(nid)) continue
+                if ((!B.log(nid) && !B.leafy(nid)) || world.isLocked(nx, ny, nz)) continue
                 seen.add(k); q.add(k)
             }
         }
@@ -980,6 +1044,11 @@ class Game(val world: World) {
         val p = player
         if (!creative) flying = false
         if (flying && p.onGround && downHeld) flying = false
+        if (seated) {
+            seatT -= dt
+            if (!Furniture.sittable(world.get(seatX, seatY, seatZ)) || flying || p.inWater || posture != 2 ||
+                (seatT <= 0f && (hypot(stickX, stickY) > 0.4f || jumpHeld))) standUp()
+        }
         if (flying || player.inWater) { if (posture != 0) { posture = 0; player.h = 1.8f } }
         if (posture == 2) { stickX = 0f; stickY = 0f }   // sentado não anda; rastejando anda devagar
         val pk = min(1f, 10f * dt)
@@ -1004,8 +1073,10 @@ class Game(val world: World) {
             if (p.inWater) { if (p.onGround) { p.vy = max(p.vy, 5.5f); p.onGround = false } } else if (p.onGround) { p.vy = 8.6f; p.onGround = false }
         }
         val wasW = p.inWater; val vyPre = p.vy
-        for (i in 0 until 2) physics(p, dt / 2f)
-        waterAndSteps(dt, wasW, vyPre)
+        if (seated) { p.vx = 0f; p.vy = 0f; p.vz = 0f; p.onGround = true } else {
+            for (i in 0 until 2) physics(p, dt / 2f)
+            waterAndSteps(dt, wasW, vyPre)
+        }
         p.x = p.x.coerceIn(2f, World.SX - 2f); p.z = p.z.coerceIn(2f, World.SZ - 2f)
         if (p.y < -5f) respawn()
         // voo rápido: impulso de herói no começo e rastro luminoso atrás (sem tremer a tela)
@@ -1130,16 +1201,21 @@ class Game(val world: World) {
         }
         // folhas caindo das árvores perto do jogador (quantidade moderada)
         leafT -= dt
-        if (leafT <= 0f && leafFall.size < 30) {
-            leafT = 0.2f + rnd.nextFloat() * 0.3f
-            for (t in 0 until 28) {
-                val x = (player.x + (rnd.nextFloat() - 0.5f) * 30f).toInt(); val z = (player.z + (rnd.nextFloat() - 0.5f) * 30f).toInt()
-                val y = (player.y + (rnd.nextFloat() - 0.4f) * 18f).toInt()
+        if (leafT <= 0f && leafFall.size < 120) {
+            leafT = 0.06f + rnd.nextFloat() * 0.14f
+            val bamb = B.byName["Colmo de Bambu"] ?: -1; val bamL = B.byName["Folhas de Bambu"] ?: B.LEAVES
+            for (t in 0 until 70) {
+                val x = (player.x + (rnd.nextFloat() - 0.5f) * 34f).toInt(); val z = (player.z + (rnd.nextFloat() - 0.5f) * 34f).toInt()
+                val y = (player.y + (rnd.nextFloat() - 0.4f) * 20f).toInt()
                 if (x < 1 || z < 1 || x >= World.SX - 1 || z >= World.SZ - 1 || y < 2 || y >= World.SY) continue
-                if (!B.leafy(world.get(x, y, z)) || world.get(x, y - 1, z) != B.AIR) continue
-                val cols = leafPal(world.get(x, y, z))
-                leafFall.add(LeafP(x + rnd.nextFloat(), y - 0.05f, z + rnd.nextFloat(), (rnd.nextFloat() - 0.5f) * 0.4f + 0.2f, (rnd.nextFloat() - 0.5f) * 0.5f,
-                    rnd.nextFloat() * 6.28f, cols[rnd.nextInt(cols.size)], 0.07f + rnd.nextFloat() * 0.05f, 9f))
+                val id = world.get(x, y, z)
+                val stalk = id == bamb && world.get(x, y - 1, z) == bamb && world.get(x, y - 2, z) == bamb && world.get(x, y - 3, z) == bamb
+                if (!stalk && (!B.leafy(id) || world.get(x, y - 1, z) != B.AIR)) continue
+                val lid = if (stalk) bamL else id
+                val cols = leafPal(lid)
+                val l = LeafP(x + rnd.nextFloat(), y - 0.05f, z + rnd.nextFloat(), (rnd.nextFloat() - 0.5f) * 0.4f + 0.2f, (rnd.nextFloat() - 0.5f) * 0.5f,
+                    rnd.nextFloat() * 6.28f, cols[rnd.nextInt(cols.size)], 0.12f + rnd.nextFloat() * 0.07f, 10f)
+                l.shape = leafShape(lid); leafFall.add(l)
                 break
             }
         }
@@ -1354,7 +1430,7 @@ class Game(val world: World) {
             if (d.age > 0.5f && dist2 < 2.8f) {
                 val k = min(1f, 9f * dt); d.x += dx * k; d.y += dy * k; d.z += dz * k   // puxa pro jogador
                 if (dist2 < 0.5f) {
-                    picked[d.id]++; pickMsg = "+1 " + B.names[d.id]; pickT = 1.6f
+                    if (d.id in picked.indices) picked[d.id]++; pickMsg = "+1 " + B.names[d.id]; pickT = 1.6f
                     burst(d.x, d.y, d.z, B.top[d.id], 4, 1.5f); di.remove(); continue
                 }
             }

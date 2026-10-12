@@ -735,13 +735,13 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         return shownList
     }
 
-    private fun catColor(k: Int) = when (k) { 0 -> Cz.GOLD_D; 1 -> Cz.SKY; 2 -> Cz.GREEN; 3 -> Cz.ORANGE; else -> Cz.LILAC }
+    private fun catColor(k: Int) = when (k) { 0 -> Cz.GOLD_D; 1 -> Cz.SKY; 2 -> Cz.GREEN; 3 -> Cz.ORANGE; 5 -> Cz.PINK; else -> Cz.LILAC }
 
     private fun layout() {
         val L = pl(); val R = pr(); val T = pt0(); val PB = pb()
         bodyTop = T + 54 * d; bodyBot = PB - 12 * d
         tabL = L + 14 * d; tabR = tabL + 52 * d
-        tabH = min(40 * d, (bodyBot - bodyTop - 16 * d) / 5f)
+        tabH = min(40 * d, (bodyBot - bodyTop - 16 * d) / Items.CATS.size.toFloat())
         infoW = if ((R - L) / d >= 600f) 176 * d else 0f
         infoR = R - 14 * d; infoL = infoR - infoW
         gx0 = tabR + 10 * d; gx1 = if (infoW > 0f) infoL - 10 * d else R - 14 * d
@@ -778,7 +778,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
             if (query.isNotEmpty() && x > sR - 30 * d) { query = ""; invScroll = 0f } else start(4)
             return
         }
-        for (k in 0 until 5) if (x >= tabL && x <= tabR + 4 * d && y >= tabY(k) && y <= tabY(k) + tabH) { invCat = k; query = ""; invScroll = 0f; return }
+        for (k in 0 until Items.CATS.size) if (x >= tabL && x <= tabR + 4 * d && y >= tabY(k) && y <= tabY(k) + tabH) { invCat = k; query = ""; invScroll = 0f; return }
         if (x >= gx0 && x <= gx1 && y >= gTop && y <= gBot) {
             val list = shown()
             for (i in list.indices) {
@@ -904,8 +904,8 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
             rc(c, xx + (k - 2.5f) * u, yy + (r - 2.5f) * u, xx + (k - 1.5f) * u, yy + (r - 1.5f) * u, Color.WHITE)
         // abas de categoria
         val searching = query.isNotEmpty()
-        val tabIcon = intArrayOf(-1, Items.SWORD, B.GRASS, B.BRICK, B.PINK)
-        for (k in 0 until 5) {
+        val tabIcon = intArrayOf(-1, Items.SWORD, B.GRASS, B.BRICK, B.PINK, B.byName["Cadeira"] ?: B.PLANK)
+        for (k in 0 until Items.CATS.size) {
             val on = !searching && invCat == k
             val y0 = tabY(k); val cck = catColor(k)
             val tr2 = tabR + (if (on) 6 * d else 0f)

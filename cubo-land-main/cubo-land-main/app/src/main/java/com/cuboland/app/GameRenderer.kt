@@ -1,5 +1,6 @@
 package com.cuboland.app
 
+import android.graphics.Bitmap
 import android.opengl.GLES20 as G
 import android.opengl.GLSurfaceView
 import android.opengl.GLUtils
@@ -15,7 +16,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     private var prog = 0
     private var aPos = 0; private var aCol = 0; private var aUV = 0
     private var uVP = 0; private var uModel = 0; private var uCam = 0; private var uTint = 0
-    private var uTime = 0; private var uWind = 0; private var uUnder = 0; private var uAlpha = 0; private var uFog = 0; private var uTex = 0
+    private var uRip = 0; private var uTime = 0; private var uWind = 0; private var uUnder = 0; private var uAlpha = 0; private var uFog = 0; private var uTex = 0
     private val proj = FloatArray(16); private val view = FloatArray(16); private val vp = FloatArray(16)
     private val ident = FloatArray(16)
     private val tmp = FloatArray(16); private val base = FloatArray(16); private val arm = FloatArray(16)
@@ -30,35 +31,38 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     private var skyProg = 0; private var skyP = 0; private var skyInv = 0; private var skyCam = 0; private var skyHor = 0; private var skyTime = 0
     private val inv = FloatArray(16)
     private val quad = ByteBuffer.allocateDirect(32).order(ByteOrder.nativeOrder()).asFloatBuffer().apply { put(floatArrayOf(-1f, -1f, 1f, -1f, -1f, 1f, 1f, 1f)); position(0) }
+    private var atlasTex = 0; private var iconsBaked = false; private var vw = 1; private var vh = 1
     private var lastId = -1; private var equip = 1f
     private var prevYaw = 0f; private var prevPitch = 0f; private var swayX = 0f; private var swayY = 0f
 
+    /** condição GLSL: o tile é de folhagem dos blocos novos (balança e ilumina como a folha do carvalho) */
+    private fun leafCond(v: String): String = Blk.leafRuns.joinToString(" || ") { "($v > ${it[0] - 0.5f} && $v < ${it[1] + 0.5f})" }.ifEmpty { "false" }
     private val VS = """
         uniform mat4 uVP; uniform mat4 uModel; uniform vec3 uCam; uniform float uTime; uniform float uWind; uniform float uUnder;
         attribute vec3 aPos; attribute vec3 aCol; attribute vec2 aUV;
         varying vec3 vCol; varying float vFog; varying vec2 vUV; varying vec3 vWP; varying float vTile; varying vec3 vView;
         void main() {
             vec4 wp = uModel * vec4(aPos, 1.0);
-            float tile = floor(aUV.x * 32.0);
+            float tile = floor(aUV.x * 32.0) + 32.0 * floor(aUV.y * 16.0);
             if (uWind > 0.5) {
                 float gust = 0.6 + 0.4 * sin(wp.x * 0.12 + wp.z * 0.08 + uTime * 0.7);
                 if (tile >= 16.0 && tile < 20.0) {
-                    float w = clamp((0.99 - aUV.y) / 0.98, 0.0, 1.0); w = w * w;
+                    float w = clamp((0.99 - aUV.y * 16.0) / 0.98, 0.0, 1.0); w = w * w;
                     wp.x += (sin(uTime * 2.3 + wp.x * 0.9 + wp.z * 0.6) * 0.07 + 0.04) * w * gust * 1.4;
                     wp.z += cos(uTime * 1.8 + wp.x * 0.5 + wp.z * 0.9) * 0.05 * w * gust * 1.4;
-                } else if (tile == 8.0 || tile == 20.0 || tile == 21.0 || tile == 22.0) {
+                } else if (tile == 8.0 || tile == 20.0 || tile == 21.0 || tile == 22.0 || ${leafCond("tile")}) {
                     float ph = wp.x * 0.8 + wp.z * 0.7;
                     float dx = (sin(uTime * 1.6 + wp.y * 1.2 + ph) * 0.05 + sin(uTime * 3.1 + ph * 1.7) * 0.015 + 0.02) * gust;
                     float dz = (cos(uTime * 1.3 + wp.y * 1.0 + ph) * 0.05 + cos(uTime * 2.7 + ph * 1.3) * 0.015) * gust;
                     float dy = sin(uTime * 2.0 + ph * 1.4 + wp.y) * 0.03;
                     wp.x += dx; wp.z += dz; wp.y += dy;
                 } else if (tile == 10.0) {
-                    wp.y += sin(uTime * 1.8 + wp.x * 1.3 + wp.z * 0.7) * 0.03 + cos(uTime * 1.4 + wp.z * 1.5 - wp.x * 0.6) * 0.025;
+                    wp.y += sin(uTime * 1.2 + wp.x * 0.7 + wp.z * 0.4) * 0.018 + cos(uTime * 0.9 + wp.z * 0.8 - wp.x * 0.4) * 0.014;
                 }
             }
             gl_Position = uVP * wp;
             vCol = aCol; vUV = aUV; vWP = wp.xyz; vTile = tile; vView = uCam - wp.xyz;
-            vFog = clamp((length(wp.xyz - uCam) - mix(38.0, 1.0, uUnder)) / mix(52.0, 22.0, uUnder), 0.0, 1.0);
+            vFog = clamp((length(wp.xyz - uCam) - mix(38.0, 6.0, uUnder)) / mix(52.0, 62.0, uUnder), 0.0, 1.0);
             vFog = vFog * vFog * (3.0 - 2.0 * vFog);
         }"""
     private val FS = """
@@ -67,22 +71,21 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         #else
         precision mediump float;
         #endif
-        uniform vec3 uTint; uniform vec3 uFog; uniform float uAlpha; uniform sampler2D uTex; uniform float uTime; uniform float uUnder; uniform float uWind;
+        uniform vec3 uTint; uniform vec3 uFog; uniform float uAlpha; uniform sampler2D uTex; uniform float uTime; uniform float uUnder; uniform float uWind; uniform vec4 uRip[4];
         varying vec3 vCol; varying float vFog; varying vec2 vUV; varying vec3 vWP; varying float vTile; varying vec3 vView;
 
         // brilho de luz no fundo (cáusticas): rede de linhas que dançam
         float caus(vec3 p, float t) {
             float a = sin(p.x * 1.7 + p.y * 0.9 + t * 0.9 + sin(p.z * 1.3 - t * 0.6) * 1.4);
             float b = sin(p.z * 1.9 - p.y * 0.7 - t * 0.8 + sin(p.x * 1.1 + t * 0.5) * 1.4);
-            float c = sin((p.x + p.z) * 1.2 + p.y * 0.5 + t * 0.7 + sin((p.x - p.z) * 1.5 - t * 0.4) * 1.2);
-            float k = abs(a + b + c) / 3.0;
-            return pow(1.0 - k, 6.0);
+            float k = abs(a + b) * 0.5;
+            return pow(1.0 - k, 5.0);
         }
 
         void main() {
             vec2 uv = vUV;
             bool isWater = vTile > 9.5 && vTile < 10.5;
-            bool isLeaf = (vTile > 7.5 && vTile < 8.5) || (vTile > 21.5 && vTile < 22.5);
+            bool isLeaf = (vTile > 7.5 && vTile < 8.5) || (vTile > 19.5 && vTile < 22.5) || ${leafCond("vTile")};
             vec4 t = texture2D(uTex, uv);
             if (t.a < 0.4) discard;
             float l = clamp((vCol.r - 0.3) / 0.7, 0.0, 1.0);
@@ -94,37 +97,54 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                 float tm = uTime;
                 vec2 P = vWP.xz;
                 vec2 g = vec2(0.0);
-                g += vec2(0.80, 0.60) * cos(dot(P, vec2(0.80, 0.60)) * 1.9 + tm * 1.3) * 0.040 * 1.9;
-                g += vec2(-0.50, 0.87) * cos(dot(P, vec2(-0.50, 0.87)) * 2.7 + tm * 1.6) * 0.030 * 2.7;
-                g += vec2(0.95, -0.31) * cos(dot(P, vec2(0.95, -0.31)) * 4.3 + tm * 2.1) * 0.020 * 4.3;
-                g += vec2(-0.20, -0.98) * cos(dot(P, vec2(-0.20, -0.98)) * 6.1 + tm * 2.6) * 0.012 * 6.1;
-                vec3 n = normalize(vec3(-g.x * 1.6, 1.0, -g.y * 1.6));
+                // ondas largas e suaves (nada de serrilhado)
+                g += vec2(0.80, 0.60) * cos(dot(P, vec2(0.80, 0.60)) * 0.85 + tm * 0.75) * 0.040;
+                g += vec2(-0.50, 0.87) * cos(dot(P, vec2(-0.50, 0.87)) * 1.35 + tm * 0.95) * 0.030;
+                g += vec2(0.95, -0.31) * cos(dot(P, vec2(0.95, -0.31)) * 2.5 + tm * 1.3) * 0.013;
+                float ripGlow = 0.0;
+                for (int ri = 0; ri < 4; ri++) {
+                    vec4 rp = uRip[ri];
+                    if (rp.w > 0.0) {
+                        vec2 dd = P - rp.xy; float dl = max(length(dd), 0.001);
+                        float xx = dl - rp.z * 1.7;
+                        float env = exp(-xx * xx * 2.4) * rp.w * exp(-rp.z * 0.8);
+                        g += (dd / dl) * sin(xx * 3.0) * env * 0.35;
+                        ripGlow += env * 0.5;
+                    }
+                }
+                vec3 n = normalize(vec3(-g.x * 1.25, 1.0, -g.y * 1.25));
                 vec3 V = normalize(vView);
                 if (dot(n, V) < 0.0) n = -n;
                 vec3 L = normalize(vec3(0.55, 0.5, 0.65));
                 float depth = clamp(vCol.g, 0.0, 1.0);
-                vec3 shallow = vec3(0.30, 0.76, 0.76);
-                vec3 deep = vec3(0.03, 0.20, 0.58);
-                vec3 base = shallow;   // cor única: toda a água igual à parte clara
+                vec3 shallow = vec3(0.38, 0.86, 0.84);
+                vec3 deep = vec3(0.10, 0.48, 0.78);
+                vec3 base = mix(shallow, deep, smoothstep(0.12, 0.95, depth) * 0.6);
                 float ndv = max(dot(n, V), 0.0);
                 float fres = 0.02 + 0.98 * pow(1.0 - ndv, 5.0);
                 vec3 R = reflect(-V, n);
-                vec3 sky = mix(uFog, vec3(0.34, 0.56, 0.94), pow(clamp(R.y, 0.0, 1.0), 0.45));
+                vec3 sky = mix(uFog, vec3(0.42, 0.66, 0.97), pow(clamp(R.y, 0.0, 1.0), 0.45));
                 float rl = max(dot(R, L), 0.0);
-                float spec = pow(rl, 30.0) * 0.16;
-                vec3 wc = base * (0.84 + 0.26 * dot(n, L));
-                wc = mix(wc, sky, clamp(fres * 1.1 + 0.06, 0.0, 0.9));
-                // cintilados do sol nas ondinhas
-                float sp = max(0.0, sin(P.x * 9.0 + tm * 2.2) * sin(P.y * 8.0 - tm * 1.9));
-                wc += vec3(1.0, 0.97, 0.88) * spec;
-                // espuma na beirada
-                float foam = smoothstep(0.17, 0.0, depth) * (0.55 + 0.45 * sin(P.x * 5.0 + P.y * 4.0 + tm * 1.8 + sin(P.y * 3.0 - tm) * 2.0));
-                wc = mix(wc, vec3(1.0), clamp(foam, 0.0, 1.0) * 0.5);
-                float wa = mix(0.46, 0.74, smoothstep(0.0, 0.5, depth));
-                wa = clamp(wa + fres * 0.35 + foam * 0.3, 0.0, 1.0);
-                if (uUnder > 0.5) {   // vendo a superfície por baixo
-                    wc = mix(vec3(0.30, 0.68, 0.92), sky * 0.9, 0.4) + vec3(1.0) * spec * 0.4;
-                    wa = 0.55;
+                vec3 wc = base * (0.88 + 0.22 * dot(n, L));
+                // luz suave desenhando teia na superfície
+                wc += vec3(0.55, 0.95, 0.95) * caus(vec3(P.x * 0.9, 0.0, P.y * 0.9), tm * 0.7) * 0.10;
+                wc = mix(wc, sky, clamp(fres * 1.05 + 0.05, 0.0, 0.85));
+                wc += vec3(0.6) * ripGlow * 0.16;
+                // brilho do sol: halo suave + cintilado delicado
+                wc += vec3(1.0, 0.97, 0.88) * (pow(rl, 48.0) * 0.28);
+                // espuma macia na beirada
+                float foam = smoothstep(0.17, 0.0, depth) * (0.55 + 0.45 * sin(P.x * 4.0 + P.y * 3.5 + tm * 1.4 + sin(P.y * 2.5 - tm) * 2.0));
+                wc = mix(wc, vec3(1.0), clamp(foam, 0.0, 1.0) * 0.45);
+                float wa = mix(0.50, 0.78, smoothstep(0.0, 0.5, depth));
+                wa = clamp(wa + fres * 0.30 + foam * 0.3, 0.0, 1.0);
+                if (uUnder > 0.5) {   // vista de baixo: lisa, degradê suave com brilho do sol e um balanço bem leve
+                    float win = smoothstep(0.52, 0.80, ndv);
+                    float sh = 0.5 + 0.5 * sin(P.x * 0.45 + P.y * 0.35 + tm * 0.5);
+                    vec3 mir = mix(vec3(0.20, 0.58, 0.80), vec3(0.30, 0.70, 0.88), sh);
+                    float sun = pow(max(dot(-V, L), 0.0), 8.0);
+                    vec3 winc = mix(vec3(0.58, 0.88, 0.98), vec3(0.76, 0.96, 1.0), sh) + vec3(0.18) * ripGlow + vec3(1.0, 0.98, 0.88) * sun * 0.40;
+                    wc = mix(mir, winc, win);
+                    wa = mix(0.50, 0.16, win);
                 }
                 c = wc; alpha = wa;
             } else if (uWind > 0.5 && vWP.y < 9.86) {   // tudo que está debaixo d'água: azulado, escuro com a profundidade e luz dançando
@@ -132,11 +152,10 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                 c *= mix(vec3(0.92, 1.0, 1.0), vec3(0.8, 0.95, 1.0), dep * 0.5);
                 c += vec3(0.55, 0.95, 1.0) * caus(vWP * 1.1, uTime) * 0.5 * (1.0 - dep * 0.6);
             }
-            if (vTile > 14.5 && vTile < 15.5) c = t.rgb * 1.25;
+            if ((vTile > 14.5 && vTile < 15.5) || vTile > 447.5) c = t.rgb * 1.25;
             if (uUnder > 0.5 && !isWater) {
-                c *= vec3(0.78, 0.95, 1.05);
-                float k1 = sin(vWP.x * 3.0 + uTime * 1.5) + sin(vWP.z * 3.3 - uTime * 1.2) + sin((vWP.x + vWP.z) * 2.0 + uTime);
-                c += vec3(0.6, 0.9, 1.0) * pow(max(0.0, k1 * 0.33), 3.0) * 0.5;
+                c *= vec3(0.88, 1.02, 1.10);
+                c += vec3(0.5, 0.85, 1.0) * caus(vWP * 0.9, uTime * 1.2) * 0.35;
             }
             float g2 = dot(c, vec3(0.299, 0.587, 0.114));
             c = mix(vec3(g2), c, 1.12); c = mix(c, smoothstep(0.0, 1.0, c), 0.3);
@@ -177,6 +196,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     }
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
+        for (d in voxOwned) { d.vb = 0; d.ib = 0; d.vdirty = true }; voxOwned.clear()
         G.glClearColor(fogR, fogG, fogB, 1f)
         prog = G.glCreateProgram()
         G.glAttachShader(prog, shader(G.GL_VERTEX_SHADER, VS)); G.glAttachShader(prog, shader(G.GL_FRAGMENT_SHADER, FS))
@@ -185,7 +205,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         uVP = G.glGetUniformLocation(prog, "uVP"); uModel = G.glGetUniformLocation(prog, "uModel")
         uCam = G.glGetUniformLocation(prog, "uCam"); uTint = G.glGetUniformLocation(prog, "uTint")
         uAlpha = G.glGetUniformLocation(prog, "uAlpha"); uFog = G.glGetUniformLocation(prog, "uFog")
-        uTex = G.glGetUniformLocation(prog, "uTex"); uTime = G.glGetUniformLocation(prog, "uTime"); uWind = G.glGetUniformLocation(prog, "uWind"); uUnder = G.glGetUniformLocation(prog, "uUnder")
+        uTex = G.glGetUniformLocation(prog, "uTex"); uTime = G.glGetUniformLocation(prog, "uTime"); uWind = G.glGetUniformLocation(prog, "uWind"); uUnder = G.glGetUniformLocation(prog, "uUnder"); uRip = G.glGetUniformLocation(prog, "uRip")
         skyProg = G.glCreateProgram()
         G.glAttachShader(skyProg, shader(G.GL_VERTEX_SHADER, SVS)); G.glAttachShader(skyProg, shader(G.GL_FRAGMENT_SHADER, SFS))
         G.glLinkProgram(skyProg)
@@ -196,20 +216,28 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         G.glEnable(G.GL_DEPTH_TEST); G.glEnable(G.GL_CULL_FACE); G.glCullFace(G.GL_BACK); G.glFrontFace(G.GL_CCW)
         G.glBlendFunc(G.GL_SRC_ALPHA, G.GL_ONE_MINUS_SRC_ALPHA)
         // textura (atlas)
-        val tex = IntArray(1); G.glGenTextures(1, tex, 0)
+        val tex = IntArray(1); G.glGenTextures(1, tex, 0); atlasTex = tex[0]; iconsBaked = false
         G.glActiveTexture(G.GL_TEXTURE0); G.glBindTexture(G.GL_TEXTURE_2D, tex[0])
         G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_MIN_FILTER, G.GL_LINEAR_MIPMAP_NEAREST)
         G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_MAG_FILTER, G.GL_LINEAR)
         G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_WRAP_S, G.GL_CLAMP_TO_EDGE)
         G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_WRAP_T, G.GL_CLAMP_TO_EDGE)
-        GLUtils.texImage2D(G.GL_TEXTURE_2D, 0, Atlas.bmp, 0); G.glGenerateMipmap(G.GL_TEXTURE_2D)
+        val atlasBmp = Atlas.bmp; val rawPx = Atlas.raw
+        if (rawPx != null) {   // sobe os pixels crus (RGBA sem pré-multiplicar): borda transparente mantém o verde e não vira contorno preto no mipmap
+            val bb = java.nio.ByteBuffer.allocateDirect(rawPx.size * 4).order(java.nio.ByteOrder.nativeOrder())
+            for (c in rawPx) { bb.put(((c shr 16) and 255).toByte()); bb.put(((c shr 8) and 255).toByte()); bb.put((c and 255).toByte()); bb.put(((c ushr 24) and 255).toByte()) }
+            bb.position(0)
+            G.glPixelStorei(G.GL_UNPACK_ALIGNMENT, 1)
+            G.glTexImage2D(G.GL_TEXTURE_2D, 0, G.GL_RGBA, Atlas.T * Atlas.NT, Atlas.T * Atlas.ROWS, 0, G.GL_RGBA, G.GL_UNSIGNED_BYTE, bb)
+        } else GLUtils.texImage2D(G.GL_TEXTURE_2D, 0, atlasBmp, 0)
+        G.glGenerateMipmap(G.GL_TEXTURE_2D)
         // buffers de chunk
         val ids = IntArray(vbo.size * 2); G.glGenBuffers(ids.size, ids, 0)
         for (i in vbo.indices) { vbo[i] = ids[i * 2]; ibo[i] = ids[i * 2 + 1]; cnt[i] = 0 }
         java.util.Arrays.fill(world.dirty, true)
-        // cubos unitários: 0 = branco (entidades), 1..13 = blocos com textura
+        // cubos unitários: 0 = branco (entidades), 1..255 = blocos com textura
         val cb = MeshBuf(); val p = FloatArray(3)
-        for (id in 0..13) for (face in 0 until 6) {
+        for (id in 0 until B.N) for (face in 0 until 6) {
             val a = face shr 1; val s = if ((face and 1) == 0) 1 else -1
             val u = (a + 1) % 3; val v = (a + 2) % 3
             val sh = when { a == 1 -> if (s > 0) 1f else 0.55f; a == 0 -> 0.82f; else -> 0.7f }
@@ -221,7 +249,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                 if (id != 0) {
                     if (a == 0) { tu = cv.toFloat(); tv = 1f - cu } else if (a == 1) { tu = cu.toFloat(); tv = cv.toFloat() } else { tu = cu.toFloat(); tv = 1f - cv }
                 }
-                cb.vert(p[0], p[1], p[2], sh, sh, sh, (tile + 0.01f + tu * 0.98f) / Atlas.NT.toFloat(), 0.01f + tv * 0.98f)
+                cb.vert(p[0], p[1], p[2], sh, sh, sh, Atlas.u(tile, tu), Atlas.v(tile, tv))
             }
             if (s > 0) { cb.tri(0, 1, 2); cb.tri(0, 2, 3) } else { cb.tri(0, 2, 1); cb.tri(0, 3, 2) }
             cb.vc += 4
@@ -242,8 +270,9 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     }
 
     override fun onSurfaceChanged(gl: GL10?, w: Int, h: Int) {
+        vw = w; vh = h
         G.glViewport(0, 0, w, h)
-        Matrix.perspectiveM(proj, 0, 70f, w.toFloat() / h, 0.05f, 200f)
+        Matrix.perspectiveM(proj, 0, 70f, w.toFloat() / h, 0.1f, 200f)
     }
 
     private fun bindMesh(vb: Int, ib: Int) {
@@ -259,7 +288,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         G.glUniform1f(uAlpha, a)
     }
 
-    /** caixa: parent * T(px,py,pz) * Ry * Rx * T(0,oy,0) * S. cube: 0 = branco, 1..13 = textura do bloco */
+    /** caixa: parent * T(px,py,pz) * Ry * Rx * T(0,oy,0) * S. cube: 0 = branco, 1..255 = textura do bloco */
     private fun box(parent: FloatArray, px: Float, py: Float, pz: Float, rx: Float, ry: Float,
                     sx: Float, sy: Float, sz: Float, oy: Float, col: Int, a: Float = 1f, mul: Float = 1f,
                     outArm: FloatArray? = null, cube: Int = 0, rz: Float = 0f) {
@@ -281,49 +310,414 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         if (yawDeg != 0f) Matrix.rotateM(base, 0, yawDeg, 0f, 1f, 0f)
     }
 
-    /** rachaduras ramificadas 16x16 que crescem do ponto de impacto a cada batida */
-    private val crackCells: IntArray = run {
-        val rd = java.util.Random(91); val list = ArrayList<IntArray>(); val seen = HashSet<Int>()
-        fun walk(x0: Int, y0: Int, ang0: Float, steps: Int, start: Int) {
-            var x = x0.toFloat(); var y = y0.toFloat(); var a = ang0
-            for (s in 0 until steps) {
-                x += cos(a); y += sin(a); a += (rd.nextFloat() - 0.5f) * 0.9f
-                val ix = x.roundToInt(); val iy = y.roundToInt()
-                if (ix !in 0..15 || iy !in 0..15) break
-                if (seen.add(iy * 16 + ix)) list.add(intArrayOf(ix, iy, start + s))
-                if (s > 2 && start < 6 && rd.nextFloat() < 0.14f) walk(ix, iy, a + (if (rd.nextBoolean()) 1f else -1f), steps - s - 2, start + s + 1)
-            }
-        }
-        for (k in 0 until 7) walk(8, 8, k * 6.283f / 7f + rd.nextFloat() * 0.5f, 9 + rd.nextInt(4), 0)
-        list.sortBy { it[2] }
-        val out = IntArray(list.size * 2)
-        for ((i, e) in list.withIndex()) { out[i * 2] = e[0]; out[i * 2 + 1] = e[1] }
-        out
+    // ---------- marcas de impacto (decalques desenhados em cima da face do bloco) ----------
+    private val dm = FloatArray(16)
+    private val fT1 = arrayOf(floatArrayOf(0f, 0f, 1f), floatArrayOf(1f, 0f, 0f), floatArrayOf(1f, 0f, 0f))
+    private val fT2 = arrayOf(floatArrayOf(0f, 1f, 0f), floatArrayOf(0f, 0f, 1f), floatArrayOf(0f, 1f, 0f))
+
+    /** retângulo fino colado na face (a = eixo, s = sinal), centrado em (u,v), girado ang, comprimento len x largura wid */
+    private var fadeMul = 1f
+    private fun decal(bx: Int, by: Int, bz: Int, a: Int, s: Int, u: Float, v: Float, ang: Float, len: Float, wid: Float, col: Int, al0: Float) {
+        val al = al0 * fadeMul
+        if (al < 0.02f || len <= 0.001f || wid <= 0.001f) return
+        val t1 = fT1[a]; val t2 = fT2[a]
+        val c = cos(ang); val sn = sin(ang)
+        val e1x = t1[0] * c + t2[0] * sn; val e1y = t1[1] * c + t2[1] * sn; val e1z = t1[2] * c + t2[2] * sn
+        val n3x = if (a == 0) s.toFloat() else 0f; val n3y = if (a == 1) s.toFloat() else 0f; val n3z = if (a == 2) s.toFloat() else 0f
+        val e2x = n3y * e1z - n3z * e1y; val e2y = n3z * e1x - n3x * e1z; val e2z = n3x * e1y - n3y * e1x
+        val lift = 0.5f + 0.006f
+        dm[0] = e1x * len; dm[1] = e1y * len; dm[2] = e1z * len; dm[3] = 0f
+        dm[4] = e2x * wid; dm[5] = e2y * wid; dm[6] = e2z * wid; dm[7] = 0f
+        dm[8] = n3x * 0.008f; dm[9] = n3y * 0.008f; dm[10] = n3z * 0.008f; dm[11] = 0f
+        dm[12] = bx + 0.5f + t1[0] * (u - 0.5f) + t2[0] * (v - 0.5f) + n3x * lift
+        dm[13] = by + 0.5f + t1[1] * (u - 0.5f) + t2[1] * (v - 0.5f) + n3y * lift
+        dm[14] = bz + 0.5f + t1[2] * (u - 0.5f) + t2[2] * (v - 0.5f) + n3z * lift
+        dm[15] = 1f
+        G.glUniformMatrix4fv(uModel, 1, false, dm, 0)
+        tint(col, al)
+        G.glDrawElements(G.GL_TRIANGLES, 36, G.GL_UNSIGNED_SHORT, 0)
     }
 
-    private fun drawCracks(bx: Int, by: Int, bz: Int, prog: Float) {
-        val total = crackCells.size / 2
-        val n = (sqrt(prog) * total).toInt().coerceIn(4, total)
-        val pulse = game.hitPulse
-        setBase(bx + 0.5f, by + 0.5f, bz + 0.5f, 0f)
-        G.glDepthMask(false)
-        val k = 1.004f + 0.035f * pulse
-        box(base, 0f, 0f, 0f, 0f, 0f, k, k, k, 0f, 0x000000, 0.06f + 0.30f * prog)
-        if (pulse > 0f) box(base, 0f, 0f, 0f, 0f, 0f, k + 0.004f, k + 0.004f, k + 0.004f, 0f, 0xFFFFFF, 0.22f * pulse)
-        val cc = floatArrayOf(game.camX - (bx + 0.5f), game.camY - (by + 0.5f), game.camZ - (bz + 0.5f))
-        val pos = FloatArray(3); val sc = FloatArray(3)
-        for (a in 0 until 3) {
-            val s = if (cc[a] >= 0f) 1f else -1f
-            val u = (a + 1) % 3; val v = (a + 2) % 3
-            for (i in 0 until n) {
-                pos[a] = s * (0.506f + 0.01f * pulse); pos[u] = (crackCells[i * 2] - 7.5f) / 16f; pos[v] = (crackCells[i * 2 + 1] - 7.5f) / 16f
-                sc[a] = 0.01f; sc[u] = 0.0625f; sc[v] = 0.0625f
-                box(base, pos[0], pos[1], pos[2], 0f, 0f, sc[0], sc[1], sc[2], 0f, 0x140B05, 0.85f)
-                // brilho claro nas rachaduras mais novas
-                if (i > n - 6) { pos[a] = s * 0.5065f; box(base, pos[0], pos[1], pos[2], 0f, 0f, sc[0] * 0.5f, sc[1] * 0.45f, sc[2] * 0.45f, 0f, 0xFFE7B0, 0.5f) }
+    private fun mixCol(a: Int, b: Int, t: Float): Int {
+        val r = ((a shr 16 and 255) * (1 - t) + (b shr 16 and 255) * t).toInt(); val g = ((a shr 8 and 255) * (1 - t) + (b shr 8 and 255) * t).toInt(); val bl = ((a and 255) * (1 - t) + (b and 255) * t).toInt()
+        return (r shl 16) or (g shl 8) or bl
+    }
+
+    private fun octa(d: Dmg, m: Mark, u: Float, v: Float, size: Float, col: Int, al: Float) {
+        decal(d.x, d.y, d.z, m.a, m.s, u, v, 0.2f, size, size * 0.86f, col, al)
+        decal(d.x, d.y, d.z, m.a, m.s, u, v, 0.2f + 0.7854f, size, size * 0.86f, col, al)
+    }
+
+    private fun drawMark(d: Dmg, m: Mark, dt: Float) {
+        val age = game.time - m.born
+        val pop = max(0f, 1f - age * 3f)            // estufadinha de impacto, dura ~0.33s
+        val kk = 1f + 0.3f * pop
+        val pale = mixCol(B.top[d.id], 0xFFF3DC, 0.55f)
+        val tgt = (0.3f + 0.85f * d.prog).coerceAtMost(1f)
+        m.g += (tgt - m.g) * min(1f, dt * 9f)
+        val a = m.a; val s = m.s; val bx = d.x; val by = d.y; val bz = d.z
+        // pedaço arrancado: cratera irregular mostrando o miolo do bloco, com borda iluminada embaixo
+        val gs = (1f + 0.6f * d.prog.coerceIn(0f, 1f)) * kk
+        val dark = mixCol(B.top[d.id], 0x000000, 0.5f); val deep = mixCol(B.top[d.id], 0x000000, 0.75f)
+        var bi = 0
+        while (bi < m.blobs.size && d.vox == null) {
+            val bu = (m.u + m.blobs[bi]).coerceIn(0.04f, 0.96f); val bv = (m.v + m.blobs[bi + 1]).coerceIn(0.04f, 0.96f); val ba = m.blobs[bi + 2]; val sz = m.blobs[bi + 3] * gs
+            decal(bx, by, bz, a, s, bu, bv, ba, sz * 1.3f, sz * 1.05f, 0x120904, 0.28f)
+            decal(bx, by, bz, a, s, bu, bv, ba, sz, sz * 0.8f, dark, 0.92f)
+            decal(bx, by, bz, a, s, bu, bv, ba + 0.7f, sz * 0.7f, sz * 0.55f, deep, 0.95f)
+            decal(bx, by, bz, a, s, bu, bv - sz * 0.45f, 0f, sz * 0.8f, sz * 0.12f, pale, 0.4f)
+            bi += 4
+        }
+        // rachaduras: sombra suave, brilho de borda e miolo escuro
+        if (d.vox == null) for (sg in m.segs) {
+            val r = ((m.g - sg.t0) / (sg.t1 - sg.t0)).coerceIn(0f, 1f)
+            if (r <= 0f) continue
+            val x2 = sg.x1 + (sg.x2 - sg.x1) * r; val y2 = sg.y1 + (sg.y2 - sg.y1) * r
+            val ddx = x2 - sg.x1; val ddy = y2 - sg.y1; val l = hypot(ddx, ddy)
+            if (l < 0.004f || !surfaceHas(d, a, s, (sg.x1 + x2) * 0.5f, (sg.y1 + y2) * 0.5f)) continue
+            val an = atan2(ddy, ddx); val cx = (sg.x1 + x2) * 0.5f; val cy = (sg.y1 + y2) * 0.5f; val w = sg.w * 0.6f * (1f + 0.4f * pop)
+            decal(bx, by, bz, a, s, cx, cy, an, l + w * 0.9f, w * 2.4f, 0x120904, 0.2f)
+            decal(bx, by, bz, a, s, cx - sin(an) * w * 0.85f, cy + cos(an) * w * 0.85f, an, l, w * 0.5f, pale, 0.25f)
+            decal(bx, by, bz, a, s, cx, cy, an, l + w * 0.8f, w, 0x2B1B12, 0.88f)
+        }
+        val u = m.u; val v = m.v; val c = cos(m.ang); val sn = sin(m.ang)
+        if (d.vox != null) {   // bloco esculpido: o próprio formato já mostra o golpe; sobra só o brilhinho da espada
+            if (m.kind == 2 && pop > 0f) for (e in 0 until 3) { val t = (e - 1) * m.len * 0.4f
+                decal(bx, by, bz, a, s, u + c * t, v + sn * t, 0.785f, 0.045f * pop, 0.045f * pop, 0xCFF6FF, pop)
+                decal(bx, by, bz, a, s, u + c * t, v + sn * t, 0f, 0.07f * pop, 0.01f, 0xFFFFFF, pop * 0.8f) }
+        } else when (m.kind) {
+            0 -> {   // machado: corte em cunha com lábios claros e lascas
+                val L = m.len
+                decal(bx, by, bz, a, s, u, v, m.ang, L * 1.14f, 0.09f * kk, 0x120904, 0.22f)
+                decal(bx, by, bz, a, s, u, v, m.ang, L, 0.05f * kk, 0x24150C, 0.93f)
+                decal(bx, by, bz, a, s, u, v, m.ang, L * 0.86f, 0.02f * kk, 0x050201, 1f)
+                decal(bx, by, bz, a, s, u - sn * 0.033f, v + c * 0.033f, m.ang, L * 0.86f, 0.011f, pale, 0.7f)
+                decal(bx, by, bz, a, s, u + sn * 0.03f, v - c * 0.03f, m.ang, L * 0.8f, 0.008f, 0x000000, 0.3f)
+                var i = 0; while (i < m.chips.size) { decal(bx, by, bz, a, s, u + m.chips[i], v + m.chips[i + 1], m.chips[i + 2], m.chips[i + 3], m.chips[i + 3] * 0.6f, pale, 0.88f); i += 4 }
+            }
+            1 -> {   // picareta: furo fundo e destrutivo, borda esfarelada
+                octa(d, m, u, v, 0.21f * kk, 0x120904, 0.24f)
+                octa(d, m, u, v, 0.13f * kk, 0x2A190F, 0.92f)
+                octa(d, m, u, v, 0.085f * kk, 0x0A0503, 1f)
+                decal(bx, by, bz, a, s, u - 0.03f, v + 0.03f, 2.36f, 0.06f, 0.011f, pale, 0.55f)
+                var i = 0; while (i < m.chips.size) { decal(bx, by, bz, a, s, u + m.chips[i], v + m.chips[i + 1], m.chips[i + 2], m.chips[i + 3], m.chips[i + 3] * 0.7f, pale, 0.9f); i += 4 }
+            }
+            2 -> {   // espada: talho fino e limpo, com brilhinho de cristal
+                val L = m.len
+                decal(bx, by, bz, a, s, u, v, m.ang, L * 1.06f, 0.032f, 0x120904, 0.2f)
+                decal(bx, by, bz, a, s, u, v, m.ang, L, 0.012f * kk, 0x2A190F, 0.9f)
+                decal(bx, by, bz, a, s, u, v, m.ang, L * 0.5f, 0.022f * kk, 0x1A0E08, 0.92f)
+                decal(bx, by, bz, a, s, u - sn * 0.016f, v + c * 0.016f, m.ang, L * 0.9f, 0.006f, pale, 0.55f)
+                if (pop > 0f) for (e in 0 until 3) { val t = (e - 1) * L * 0.4f
+                    decal(bx, by, bz, a, s, u + c * t, v + sn * t, 0.785f, 0.045f * pop, 0.045f * pop, 0xCFF6FF, pop)
+                    decal(bx, by, bz, a, s, u + c * t, v + sn * t, 0f, 0.07f * pop, 0.01f, 0xFFFFFF, pop * 0.8f) }
+            }
+            3 -> {   // estocada: furinho fino
+                octa(d, m, u, v, 0.09f * kk, 0x120904, 0.25f)
+                octa(d, m, u, v, 0.05f * kk, 0x1A0E08, 0.95f)
+                octa(d, m, u, v, 0.025f * kk, 0x050201, 1f)
+                var i = 0; while (i < m.chips.size) { decal(bx, by, bz, a, s, u + m.chips[i], v + m.chips[i + 1], m.chips[i + 2], m.chips[i + 3], m.chips[i + 3] * 0.7f, pale, 0.85f); i += 4 }
+            }
+            else -> { octa(d, m, u, v, 0.16f * kk, 0x000000, 0.16f); octa(d, m, u, v, 0.09f * kk, 0x000000, 0.14f) }
+        }
+    }
+
+    private val voxOwned = ArrayList<Dmg>(); private val voxBuf = MeshBuf()
+
+    private fun surfaceHas(d: Dmg, a: Int, s: Int, u: Float, v: Float): Boolean {
+        val vx = d.vox ?: return true; val n = VN
+        val i1 = (u * n).toInt().coerceIn(0, n - 1); val i2 = (v * n).toInt().coerceIn(0, n - 1); val io = if (s > 0) n - 1 else 0
+        val x: Int; val y: Int; val z: Int
+        when (a) { 0 -> { x = io; z = i1; y = i2 } 1 -> { x = i1; y = io; z = i2 } else -> { x = i1; y = i2; z = io } }
+        return vx[(z * n + y) * n + x]
+    }
+
+    /** monta a malha do bloco esculpido: só as faces expostas dos mini-voxels que sobraram, com a textura do bloco */
+    private fun buildVox(d: Dmg) {
+        val v = d.vox ?: return
+        val n = VN; val mb = voxBuf; mb.clear()
+        val c = IntArray(3); val nb = IntArray(3); val p = FloatArray(3)
+        for (k in 0 until n) for (j in 0 until n) for (i in 0 until n) {
+            if (!v[(k * n + j) * n + i]) continue
+            c[0] = i; c[1] = j; c[2] = k
+            for (face in 0 until 6) {
+                val a = face shr 1; val s = if ((face and 1) == 0) 1 else -1
+                nb[0] = i; nb[1] = j; nb[2] = k; nb[a] += s
+                val boundary = nb[a] < 0 || nb[a] >= n
+                if (!boundary && v[(nb[2] * n + nb[1]) * n + nb[0]]) continue
+                val u = (a + 1) % 3; val w = (a + 2) % 3
+                var sh = when { a == 1 -> if (s > 0) 1f else 0.55f; a == 0 -> 0.82f; else -> 0.7f }
+                var tile = if (a == 1) (if (s > 0) B.tTop[d.id] else B.tBot[d.id]) else B.tSide[d.id]
+                var hh = (i * 73856093) xor (j * 19349663) xor (k * 83492791) xor (face * 2654435); hh = (hh xor (hh ushr 13)) * 1274126177; hh = hh xor (hh ushr 16)
+                sh *= 0.95f + 0.1f * ((hh and 255) / 255f)
+                if (!boundary) {   // miolo exposto: madeira mostra os anéis, grama mostra terra; escurece conforme afunda
+                    val shell = min(min(i, n - 1 - i), min(min(j, n - 1 - j), min(k, n - 1 - k)))
+                    sh *= (0.95f - 0.05f * min(shell, 6)).coerceAtLeast(0.66f)
+                    tile = when (d.id) { B.WOOD -> 23; B.GRASS, B.DIRT -> B.tTop[B.DIRT]; else -> B.tSide[d.id] }
+                }
+                for (q in 0 until 4) {
+                    val cu = World.QU[q]; val cv = World.QV[q]
+                    p[a] = (if (s > 0) c[a] + 1 else c[a]).toFloat() / n - 0.5f
+                    p[u] = (c[u] + cu).toFloat() / n - 0.5f; p[w] = (c[w] + cv).toFloat() / n - 0.5f
+                    val fu = (c[u] + cu).toFloat() / n; val fv = (c[w] + cv).toFloat() / n
+                    val tu: Float; val tv: Float
+                    if (a == 0) { tu = fv; tv = 1f - fu } else if (a == 1) { tu = fu; tv = fv } else { tu = fu; tv = 1f - fv }
+                    mb.vert(p[0], p[1], p[2], sh, sh, sh, Atlas.u(tile, tu), Atlas.v(tile, tv))
+                }
+                if (s > 0) { mb.tri(0, 1, 2); mb.tri(0, 2, 3) } else { mb.tri(0, 2, 1); mb.tri(0, 3, 2) }
+                mb.vc += 4
             }
         }
+        if (d.vb == 0) { val ids = IntArray(2); G.glGenBuffers(2, ids, 0); d.vb = ids[0]; d.ib = ids[1]; voxOwned.add(d) }
+        d.icnt = upload(mb, d.vb, d.ib); d.vdirty = false
+    }
+
+    private fun drawVox(d: Dmg) {
+        if (d.vdirty || d.vb == 0) buildVox(d)
+        if (d.icnt == 0) return
+        bindMesh(d.vb, d.ib)
+        setBase(d.x + 0.5f, d.y + 0.5f, d.z + 0.5f, 0f)
+        G.glUniformMatrix4fv(uModel, 1, false, base, 0); tint(0xFFFFFF, 1f)
+        G.glDrawElements(G.GL_TRIANGLES, d.icnt, G.GL_UNSIGNED_SHORT, 0)
+        bindMesh(cubeVb, cubeIb)
+    }
+
+    private fun drawDamage(dt: Float) {
+        if (voxOwned.isNotEmpty()) {
+            val it = voxOwned.iterator()
+            while (it.hasNext()) { val d = it.next(); if (d.dead) { G.glDeleteBuffers(2, intArrayOf(d.vb, d.ib), 0); d.vb = 0; d.ib = 0; it.remove() } }
+        }
+        if (game.dmg.isEmpty() && game.slashes.isEmpty()) return
+        for (d in game.dmg.values) {
+            if (!d.carved) continue
+            val dx = d.x + 0.5f - game.camX; val dy = d.y + 0.5f - game.camY; val dz = d.z + 0.5f - game.camZ
+            if (dx * dx + dy * dy + dz * dz < 40f * 40f) drawVox(d)
+        }
+        G.glDepthMask(false)
+        for (d in game.dmg.values) {
+            val dx = d.x + 0.5f - game.camX; val dy = d.y + 0.5f - game.camY; val dz = d.z + 0.5f - game.camZ
+            if (dx * dx + dy * dy + dz * dz > 18f * 18f) continue
+            if (!d.carved) {
+                setBase(d.x + 0.5f, d.y + 0.5f, d.z + 0.5f, 0f)
+                box(base, 0f, 0f, 0f, 0f, 0f, 1.004f, 1.004f, 1.004f, 0f, 0x000000, 0.02f + 0.13f * d.prog.coerceIn(0f, 1f))
+                if (d.x == game.brX && d.y == game.brY && d.z == game.brZ && game.hitPulse > 0f) { val kp = 1.012f + 0.03f * game.hitPulse; box(base, 0f, 0f, 0f, 0f, 0f, kp, kp, kp, 0f, 0xFFFFFF, 0.1f * game.hitPulse) }
+            }
+            for (m in d.marks) drawMark(d, m, dt)
+        }
+        for (sl in game.slashes) {
+            val dx = sl.d.x + 0.5f - game.camX; val dy = sl.d.y + 0.5f - game.camY; val dz = sl.d.z + 0.5f - game.camZ
+            if (dx * dx + dy * dy + dz * dz > 22f * 22f) continue
+            fadeMul = ((Game.SLASH_LIFE - (game.time - sl.born)) / 25f).coerceIn(0f, 1f)
+            drawMark(sl.d, sl.m, dt)
+        }
+        fadeMul = 1f
         G.glDepthMask(true)
+    }
+
+    private val ripArr = FloatArray(16)
+    private fun fillRip() {
+        java.util.Arrays.fill(ripArr, 0f)
+        var k = 0; var i = game.ripples.size - 1
+        while (i >= 0 && k < 4) {
+            val r = game.ripples[i]; i--
+            if (r.age > 3.1f) continue
+            ripArr[k * 4] = r.x; ripArr[k * 4 + 1] = r.z; ripArr[k * 4 + 2] = r.age; ripArr[k * 4 + 3] = r.amp * (1f - r.age / 3.2f); k++
+        }
+    }
+
+    /** bloco de folha cortado: treme, racha em 8 cubinhos que se afastam girando e encolhem (as folhinhas saem junto) */
+    private fun drawLeafBreaks() {
+        for (b in game.leafBreaks) {
+            val cx = b.x + 0.5f; val cy = b.y + 0.5f; val cz = b.z + 0.5f
+            if (!seen(cx, cy, cz, 30f)) continue
+            if (b.t < Game.LB_SHAKE) {
+                val u = max(0f, b.t) / Game.LB_SHAKE
+                val j = sin(b.t * 140f) * 0.025f * (0.4f + u)
+                val sc = 1f - 0.12f * u
+                setBase(cx + j, cy + cos(b.t * 120f) * 0.015f, cz - j, 0f)
+                box(base, 0f, 0f, 0f, j * 120f, sin(b.t * 90f) * 6f, sc, sc, sc, 0f, 0xFFFFFF, 1f, 1f + 0.12f * u, null, B.LEAVES)
+            } else {
+                val p = min(1f, (b.t - Game.LB_SHAKE) / Game.LB_FLY); val e = 1f - (1f - p) * (1f - p)
+                val sz = 0.5f * (1f - p * 0.85f) * 0.88f
+                val al = min(1f, (1f - p) * 1.6f)
+                if (al <= 0.02f) continue
+                for (i in 0 until 8) {
+                    val sx = if (i and 1 == 0) -1f else 1f; val sy = if (i and 2 == 0) -1f else 1f; val sz2 = if (i and 4 == 0) -1f else 1f
+                    val out = 0.25f + e * (0.55f + 0.12f * ((i * 5) % 3))
+                    setBase(cx + sx * out, cy + sy * out * 0.8f + 0.25f * e - p * p * 0.9f, cz + sz2 * out, 0f)
+                    box(base, 0f, 0f, 0f, p * (260f + i * 40f) * sx, p * (320f - i * 30f) * sy, sz, sz, sz, 0f, 0xFFFFFF, al, 1.08f, null, B.LEAVES, p * 200f * sz2)
+                }
+            }
+        }
+    }
+
+    /** pegadinha fofa de patinha: almofada grande + 4 dedinhos redondos (quadrados girados 45 graus parecem círculos) */
+    private fun paw(y: Float, grow: Float, col: Int, a: Float, big: Boolean) {
+        val k = 1f + grow
+        box(base, 0f, y, -0.030f, 0f, 0f, 0.115f * k, 0.012f, 0.085f * k, 0f, col, a)
+        box(base, 0f, y, -0.030f, 0f, 45f, 0.082f * k, 0.012f, 0.082f * k, 0f, col, a)
+        box(base, 0f, y, -0.030f, 0f, 22f, 0.095f * k, 0.012f, 0.095f * k, 0f, col, a * 0.8f)
+        box(base, -0.062f, y, 0.050f, 0f, 45f, 0.040f * k, 0.012f, 0.040f * k, 0f, col, a)
+        box(base, -0.021f, y, 0.075f, 0f, 45f, 0.044f * k, 0.012f, 0.044f * k, 0f, col, a)
+        box(base, 0.021f, y, 0.075f, 0f, 45f, 0.044f * k, 0.012f, 0.044f * k, 0f, col, a)
+        box(base, 0.062f, y, 0.050f, 0f, 45f, 0.040f * k, 0.012f, 0.040f * k, 0f, col, a)
+    }
+
+    /** pegadas fofinhas: areia = patinha funda com borda macia levantada, terra = patinha escura, grama = patinha de folhinha */
+    private fun drawPrints() {
+        for (q in game.prints) {
+            if (!seen(q.x, q.y, q.z, 22f)) continue
+            val fade = min(1f, (q.life() - (game.time - q.born)) / 4f)
+            if (fade <= 0f) continue
+            setBase(q.x, q.y + 0.012f, q.z, Math.toDegrees(q.ang.toDouble()).toFloat())
+            when (q.id) {
+                B.SAND -> {
+                    paw(0.000f, 0.32f, 0xFFF5D2, 0.50f * fade, true)    // borda de areia levantada, bem macia
+                    paw(0.004f, 0.00f, 0xB59C58, 0.80f * fade, true)    // fundo da patinha
+                    paw(0.008f, -0.25f, 0x96813F, 0.40f * fade, true)   // sombra funda no meio
+                }
+                B.DIRT -> {
+                    paw(0.003f, 0.20f, 0x7A5634, 0.40f * fade, true)
+                    paw(0.006f, 0.00f, 0x4A3321, 0.78f * fade, true)
+                }
+                else -> {
+                    paw(0.003f, 0.15f, 0x7FCB5E, 0.30f * fade, true)
+                    paw(0.005f, -0.05f, 0x3F8A2E, 0.45f * fade, true)
+                }
+            }
+            // as patinhas ficam alternadas: lado esquerdo/direito
+        }
+    }
+
+    /** o 1 bloquinho que sobra no chão: gira e balança */
+    private fun drawDrops() {
+        for (q in game.drops) {
+            val bob = sin(game.time * 3f + q.x * 2f) * 0.045f
+            setBase(q.x, q.y + 0.06f + bob, q.z, game.time * 80f + q.z * 40f)
+            box(base, 0f, 0f, 0f, 0f, 0f, 0.28f, 0.28f, 0.28f, 0f, 0xFFFFFF, 1f, 1f, null, q.id)
+        }
+    }
+
+    /** anéis de espuma que se espalham a partir de onde algo entrou na água */
+    private fun drawRipples() {
+        val sy = World.WATER_Y + 0.9f
+        for (r in game.ripples) {
+            if (r.age < 0f) continue
+            val life = 1f - r.age / 3.2f
+            if (life <= 0.02f) continue
+            // três anéis por onda: o da frente é forte, os de trás ficam mais finos e transparentes (dá volume/movimento)
+            for (ring in 0 until 3) {
+                val rad = 0.25f + r.age * 1.7f - ring * 0.32f
+                if (rad < 0.15f) continue
+                val al = life * min(1f, r.amp + 0.25f) * (0.8f - ring * 0.22f)
+                if (al <= 0.02f) continue
+                val n = (12 + rad * 6f).toInt().coerceAtMost(28)
+                val seg = 6.2832f * rad / n * 1.08f
+                val wob = r.age * 2f + ring
+                for (k in 0 until n) {
+                    val a = k * 6.2832f / n
+                    val rr = rad * (1f + 0.04f * sin(a * 5f + wob))   // borda levemente ondulada
+                    val x = r.x + cos(a) * rr; val z = r.z + sin(a) * rr
+                    if (world.get(floor(x).toInt(), World.WATER_Y, floor(z).toInt()) != B.WATER) continue
+                    val glint = if ((k + ring) % 3 == 0) 0xFFFFFF else 0xCDEFFF
+                    setBase(x, sy + ring * 0.002f, z, a * 57.29578f - 90f)
+                    box(base, 0f, 0f, 0f, 0f, 0f, seg * (if (ring == 0) 1f else 0.8f), 0.012f, if (ring == 0) 0.06f else 0.035f, 0f, glint, al)
+                }
+            }
+        }
+    }
+
+    private fun drawDebris() {
+        for (q in game.debris) {
+            if (!seen(q.x, q.y, q.z, 40f)) continue
+            val sc = q.size * min(1f, q.life * 2f)
+            if (sc < 0.01f) continue
+            setBase(q.x, q.y, q.z, 0f)
+            box(base, 0f, 0f, 0f, q.rx, q.ry, sc, sc, sc, 0f, 0xFFFFFF, 1f, 1f, null, q.id, q.rz)
+        }
+    }
+
+    /** a árvore inteira (troncos e folhas) girando em volta do ponto de corte */
+    private val treeBuf = HashMap<FallTree, IntArray>()   // vbo, ibo, nº de índices dos galhos finos de cada árvore caindo
+
+    private fun drawTrees() {
+        val it = treeBuf.entries.iterator()
+        while (it.hasNext()) { val e = it.next(); if (!game.trees.contains(e.key)) { G.glDeleteBuffers(2, e.value, 0); it.remove() } }
+        for (f in game.trees) {
+            Matrix.setIdentityM(base2, 0); Matrix.translateM(base2, 0, f.px, f.py, f.pz)
+            Matrix.rotateM(base2, 0, f.ang * 57.29578f, f.kx, 0f, f.kz)
+            for (i in 0 until f.n) if (!f.gone[i]) box(base2, f.bl[i * 4].toFloat(), f.bl[i * 4 + 1] + f.yo, f.bl[i * 4 + 2].toFloat(), 0f, 0f, 1f, 1f, 1f, 0f, 0xFFFFFF, 1f, 1f, null, f.bl[i * 4 + 3])
+            var bufs = treeBuf[f]
+            val dm = f.dm
+            if (bufs == null && dm != null) {
+                val ids = IntArray(3); G.glGenBuffers(2, ids, 0); ids[2] = upload(dm, ids[0], ids[1]); treeBuf[f] = ids; bufs = ids; f.dm = null
+            }
+            if (bufs != null && bufs[2] > 0) {   // galhos finos e folhinhas caem junto (os dos blocos já quebrados somem)
+                bindMesh(bufs[0], bufs[1])
+                G.glUniformMatrix4fv(uModel, 1, false, base2, 0); tint(0xFFFFFF, 1f)
+                var i = 0
+                while (i < f.n) {
+                    if (f.gone[i]) { i++; continue }
+                    var j = i; while (j < f.n && !f.gone[j]) j++
+                    val c = f.rs[j] - f.rs[i]
+                    if (c > 0) G.glDrawElements(G.GL_TRIANGLES, c, G.GL_UNSIGNED_SHORT, f.rs[i] * 2)
+                    i = j
+                }
+                bindMesh(cubeVb, cubeIb)
+            }
+        }
+    }
+
+    /** renderiza as ferramentas 3D da mão (mesmo modelo) em texturas para os ícones do HUD */
+    private fun bakeIcons() {
+        iconsBaked = true
+        val S = 256
+        val fbo = IntArray(1); val tx = IntArray(1); val rb = IntArray(1)
+        G.glGenFramebuffers(1, fbo, 0); G.glGenTextures(1, tx, 0); G.glGenRenderbuffers(1, rb, 0)
+        G.glBindTexture(G.GL_TEXTURE_2D, tx[0])
+        G.glTexImage2D(G.GL_TEXTURE_2D, 0, G.GL_RGBA, S, S, 0, G.GL_RGBA, G.GL_UNSIGNED_BYTE, null as java.nio.Buffer?)
+        G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_MIN_FILTER, G.GL_LINEAR); G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_MAG_FILTER, G.GL_LINEAR)
+        G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_WRAP_S, G.GL_CLAMP_TO_EDGE); G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_WRAP_T, G.GL_CLAMP_TO_EDGE)
+        G.glBindRenderbuffer(G.GL_RENDERBUFFER, rb[0]); G.glRenderbufferStorage(G.GL_RENDERBUFFER, G.GL_DEPTH_COMPONENT16, S, S)
+        G.glBindFramebuffer(G.GL_FRAMEBUFFER, fbo[0])
+        G.glFramebufferTexture2D(G.GL_FRAMEBUFFER, G.GL_COLOR_ATTACHMENT0, G.GL_TEXTURE_2D, tx[0], 0)
+        G.glFramebufferRenderbuffer(G.GL_FRAMEBUFFER, G.GL_DEPTH_ATTACHMENT, G.GL_RENDERBUFFER, rb[0])
+        if (G.glCheckFramebufferStatus(G.GL_FRAMEBUFFER) == G.GL_FRAMEBUFFER_COMPLETE) {
+            G.glUseProgram(prog)
+            G.glActiveTexture(G.GL_TEXTURE0); G.glBindTexture(G.GL_TEXTURE_2D, atlasTex); G.glUniform1i(uTex, 0)
+            G.glViewport(0, 0, S, S)
+            G.glEnable(G.GL_DEPTH_TEST); G.glEnable(G.GL_CULL_FACE); G.glEnable(G.GL_BLEND)
+            G.glBlendFuncSeparate(G.GL_SRC_ALPHA, G.GL_ONE_MINUS_SRC_ALPHA, G.GL_ONE, G.GL_ONE_MINUS_SRC_ALPHA)
+            val ipj = FloatArray(16)
+            G.glUniform3f(uCam, 0f, 0f, 0f); G.glUniform3f(uFog, 1f, 1f, 1f)
+            G.glUniform1f(uTime, 0f); G.glUniform1f(uWind, 0f); G.glUniform1f(uUnder, 0f)
+            bindMesh(cubeVb, cubeIb)
+            val ids = intArrayOf(Items.SWORD, Items.AXE, Items.PICK, Items.STAFF)
+            val cy = floatArrayOf(0.42f, 0.38f, 0.40f, 0.55f)
+            val hf = floatArrayOf(0.74f, 0.62f, 0.66f, 0.92f)
+            val mm = FloatArray(16)
+            val px = ByteBuffer.allocateDirect(S * S * 4).order(ByteOrder.nativeOrder())
+            for ((i, id) in ids.withIndex()) {
+                G.glClearColor(0f, 0f, 0f, 0f); G.glClear(G.GL_COLOR_BUFFER_BIT or G.GL_DEPTH_BUFFER_BIT)
+                Matrix.orthoM(ipj, 0, -hf[i], hf[i], -hf[i], hf[i], -6f, 6f)
+                G.glUniformMatrix4fv(uVP, 1, false, ipj, 0)
+                Matrix.setIdentityM(mm, 0)
+                Matrix.rotateM(mm, 0, -42f, 0f, 0f, 1f)
+                Matrix.rotateM(mm, 0, -72f, 0f, 1f, 0f)
+                Matrix.translateM(mm, 0, 0f, -cy[i], 0f)
+                drawTool3D(mm, id, 0.5f, 0f)
+                px.clear(); G.glReadPixels(0, 0, S, S, G.GL_RGBA, G.GL_UNSIGNED_BYTE, px); px.position(0)
+                val raw = Bitmap.createBitmap(S, S, Bitmap.Config.ARGB_8888); raw.copyPixelsFromBuffer(px)
+                val fm = android.graphics.Matrix(); fm.preScale(1f, -1f)
+                ToolIcons.map[id] = Bitmap.createBitmap(raw, 0, 0, S, S, fm, true)
+            }
+        }
+        G.glBindFramebuffer(G.GL_FRAMEBUFFER, 0)
+        G.glBlendFunc(G.GL_SRC_ALPHA, G.GL_ONE_MINUS_SRC_ALPHA)
+        G.glClearColor(fogR, fogG, fogB, 1f)
+        G.glBindTexture(G.GL_TEXTURE_2D, atlasTex)
+        G.glViewport(0, 0, vw, vh)
+        G.glDeleteFramebuffers(1, fbo, 0); G.glDeleteRenderbuffers(1, rb, 0); G.glDeleteTextures(1, tx, 0)
     }
 
     private fun groundY(x: Float, y: Float, z: Float): Float {
@@ -342,7 +736,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     private fun swingDelta(id: Int, sp: Float): Float {
         if (sp >= 1f) return 0f
         if (id == Items.STAFF) return -35f * sin(min(1f, sp * 1.5f) * 3.1416f)
-        val k = if (id == Items.AXE) 1.25f else if (id in 1..13) 0.7f else 1f
+        val k = if (id == Items.AXE) 1.25f else if (Items.isBlock(id)) 0.7f else 1f
         val d = when { sp < 0.3f -> -50f * (sp / 0.3f); sp < 0.55f -> -50f + 90f * ((sp - 0.3f) / 0.25f); else -> 40f * (1f - (sp - 0.55f) / 0.45f) }
         return k * d
     }
@@ -351,7 +745,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     private fun drawItem(m: FloatArray, id: Int, t: Float) {
         val glint = 0.5f + 0.5f * sin(t * 3f)
         when {
-            id in 1..13 -> {
+            Items.isBlock(id) -> {
                 box(m, 0f, 0.2f, 0.18f, 0f, 30f, 0.34f, 0.34f, 0.34f, 0f, 0xFFFFFF, 1f, 1f, null, id)
             }
             id == Items.SWORD -> {
@@ -465,56 +859,128 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         }
     }
 
+    /** ângulo do cabo na 3ª pessoa: TILT = quanto deita pra frente (0 = em pé), OUT = quanto abre pro lado (inverta o sinal se abrir pra dentro) */
+    private val TOOL_TILT = -93f; private val TOOL_OUT = 0f
+    private val cm = CharModel()
+    private val handM = FloatArray(16)
+    private val charBox: BoxFn = { m, px, py, pz, rx, ry, sx, sy, sz, oy, col, a, rz -> box(m, px, py, pz, rx, ry, sx, sy, sz, oy, col, a, 1f, null, 0, rz) }
+
+    private val an = Anim()
+    private var lastPT = 0f; private var phaseA = 0f; private var runA = 0f; private var landA = 0f
+    private var wasAirP = false; private var lastVyP = 0f; private var airSm = 0f; private var landSm = 0f; private var vyHold = 0f; private var flySm = 0f; private var flySp = 0f; private val tpP = FloatArray(10); private var diveSm = 0f; private var tiltSm = 0f; private var dashSm = 0f; private var swimPhA = 0f; private var swimFastA = 0f
+
     private fun drawPlayer(t: Float) {
         val p = game.player
-        val wp = game.walkPhase; val wa = game.walkAmt
-        val sw = sin(wp) * 38f * wa
-        val air = if (p.onGround) 0f else 1f
-        val idle = sin(t * 2f) * 3f * (1f - wa)
-        val bob = if (wa < 0.1f) sin(t * 2f) * 0.012f else abs(sin(wp)) * 0.05f * wa
-        setBase(p.x, p.y + bob, p.z, Math.toDegrees(game.bodyYaw.toDouble()).toFloat())
-        val skin = 0xF2C29B; val hair = 0x6B3FA0; val shirt = 0x7FD9C8
-        // pernas e botas
-        box(base, -0.13f, 0.55f, 0f, sw, 0f, 0.24f, 0.55f, 0.26f, -0.275f, 0x4A5BB5)
-        box(base, 0.13f, 0.55f, 0f, -sw, 0f, 0.24f, 0.55f, 0.26f, -0.275f, 0x4A5BB5)
-        box(base, -0.13f, 0.55f, 0f, sw, 0f, 0.25f, 0.13f, 0.29f, -0.49f, 0x5B3A29)
-        box(base, 0.13f, 0.55f, 0f, -sw, 0f, 0.25f, 0.13f, 0.29f, -0.49f, 0x5B3A29)
-        // corpo, cinto, cachecol
-        box(base, 0f, 0.86f, 0f, 0f, 0f, 0.54f, 0.62f, 0.32f, 0f, shirt)
-        box(base, 0f, 0.6f, 0f, 0f, 0f, 0.56f, 0.07f, 0.34f, 0f, 0xFFD060)
-        box(base, 0f, 1.16f, 0f, 0f, 0f, 0.58f, 0.1f, 0.36f, 0f, 0xFFA3C8)
-        box(base, 0.14f, 1.0f, 0.2f, 0f, 0f, 0.1f, 0.3f, 0.06f, 0f, 0xFFA3C8)
-        // braço esquerdo
-        box(base, -0.37f, 1.12f, 0f, -sw * 0.9f - 40f * air + idle, 0f, 0.2f, 0.4f, 0.22f, -0.2f, shirt)
-        box(base, -0.37f, 1.12f, 0f, -sw * 0.9f - 40f * air + idle, 0f, 0.19f, 0.15f, 0.21f, -0.47f, skin)
-        // braço direito com item
+        val dtp = (t - lastPT).coerceIn(0f, 0.1f); lastPT = t
+        val wa = game.walkAmt
+        val swm = game.swimAmt
+        val airNow = !p.onGround && swm < 0.2f
+        val runTarget = if (p.onGround && swm < 0.2f) ((wa - 0.62f) / 0.3f).coerceIn(0f, 1f) else 0f
+        runA += (runTarget - runA) * min(1f, 8f * dtp)
+        // passada ligada à velocidade real do chão: o pé não desliza (nem devagar)
+        val spdH = sqrt(p.vx * p.vx + p.vz * p.vz)
+        val strideA = (26f + 30f * runA) * 0.01745f
+        phaseA += dtp * (if (wa > 0.02f && p.onGround) (spdH / ((0.58f - 0.32f * game.lieA) * strideA)).coerceIn(0f, 30f) else 0f)
+        if (wasAirP && p.onGround && lastVyP < -4f) landA = (-lastVyP / 12f).coerceIn(0.35f, 1f)
+        landA = max(0f, landA - dtp * 5f)
+        wasAirP = airNow; lastVyP = p.vy
         val id = game.cur()
-        val ang = -28f + sw * 0.5f - 25f * air - idle + swingDelta(id, game.swing)
-        box(base, 0.37f, 1.12f, 0f, ang, 0f, 0.2f, 0.4f, 0.22f, -0.2f, shirt, outArm = arm)
-        box(base, 0.37f, 1.12f, 0f, ang, 0f, 0.19f, 0.15f, 0.21f, -0.47f, skin)
-        System.arraycopy(arm, 0, base2, 0, 16)
-        Matrix.translateM(base2, 0, 0f, -0.5f, 0f)
-        if (id !in 1..13) Matrix.rotateM(base2, 0, -35f, 1f, 0f, 0f)
-        if (id == Items.AXE) Matrix.rotateM(base2, 0, 180f, 0f, 0f, 1f)
-        if (id !in 1..13) Matrix.scaleM(base2, 0, 0.78f, 0.78f, 0.78f)
-        drawItem(base2, id, t)
-        // cabeça grandinha e fofa
-        box(base, 0f, 1.17f, 0f, 0f, 0f, 0.58f, 0.58f, 0.58f, 0.29f, skin)
-        box(base, 0f, 1.73f, -0.01f, 0f, 0f, 0.62f, 0.14f, 0.62f, 0f, hair)
-        box(base, 0f, 1.48f, -0.27f, 0f, 0f, 0.62f, 0.5f, 0.14f, 0f, hair)
-        box(base, -0.3f, 1.56f, 0.02f, 0f, 0f, 0.06f, 0.34f, 0.5f, 0f, hair)
-        box(base, 0.3f, 1.56f, 0.02f, 0f, 0f, 0.06f, 0.34f, 0.5f, 0f, hair)
-        box(base, -0.14f, 1.66f, 0.28f, 0f, 0f, 0.3f, 0.08f, 0.06f, 0f, hair)
-        box(base, 0.16f, 1.66f, 0.28f, 0f, 0f, 0.26f, 0.1f, 0.06f, 0f, hair)
-        box(base, -0.14f, 1.5f, 0.295f, 0f, 0f, 0.1f, 0.15f, 0.02f, 0f, 0x20232E)
-        box(base, 0.14f, 1.5f, 0.295f, 0f, 0f, 0.1f, 0.15f, 0.02f, 0f, 0x20232E)
-        box(base, -0.12f, 1.54f, 0.3f, 0f, 0f, 0.045f, 0.045f, 0.02f, 0f, 0xFFFFFF)
-        box(base, 0.16f, 1.54f, 0.3f, 0f, 0f, 0.045f, 0.045f, 0.02f, 0f, 0xFFFFFF)
-        box(base, -0.24f, 1.4f, 0.295f, 0f, 0f, 0.1f, 0.05f, 0.02f, 0f, 0xFF9AA8)
-        box(base, 0.24f, 1.4f, 0.295f, 0f, 0f, 0.1f, 0.05f, 0.02f, 0f, 0xFF9AA8)
-        box(base, 0f, 1.37f, 0.295f, 0f, 0f, 0.08f, 0.025f, 0.02f, 0f, 0x8A3A3A)
-        // lacinho
-        box(base, 0.26f, 1.72f, 0.1f, 0f, 0f, 0.14f, 0.14f, 0.1f, 0f, 0xFFA3C8)
+        airSm += ((if (airNow) 1f else 0f) - airSm) * min(1f, 9f * dtp)
+        if (airNow) vyHold += (p.vy - vyHold) * min(1f, 12f * dtp)   // segura a pose de queda até os pés tocarem de verdade (sem pulo de frame)
+        landSm += (landA - landSm) * min(1f, 16f * dtp)
+        val flyNow = game.flying && !p.onGround
+        flySm += ((if (flyNow) 1f else 0f) - flySm) * min(1f, 6f * dtp)
+        flySp += (min(1f, spdH / 10f) - flySp) * min(1f, 5f * dtp)
+        dashSm += ((if (flyNow && spdH > 11f) 1f else 0f) - dashSm) * min(1f, 3.5f * dtp)   // transição suave pro voo rápido (e de volta)
+        swimFastA += ((if (swm > 0.2f && game.sprint && wa > 0.1f) 1f else 0f) - swimFastA) * min(1f, 7f * dtp)
+        swimPhA += dtp * (2.2f + 1.8f * min(1f, wa * 2f)) * (if (game.sprint) 1.3f else 1f)
+        val surfY = World.WATER_Y + 0.88f
+        val diveTarget = ((surfY - (p.y + 1.55f)) / 0.45f).coerceIn(0f, 1f)
+        diveSm += (diveTarget - diveSm) * min(1f, 6f * dtp)
+        val pitchDeg = Math.toDegrees(game.pitch.toDouble()).toFloat()
+        // superfície: quase em pé, inclinado pra frente; mergulhado: deitado, seguindo o olhar
+        val tiltTarget = swm * (32f + (((78f - pitchDeg * 0.35f).coerceIn(40f, 110f)) - 32f) * diveSm)
+        tiltSm += (tiltTarget - tiltSm) * min(1f, 9f * dtp)
+        an.t = t; an.phase = phaseA; an.move = wa; an.run = runA; an.vy = vyHold; an.air = airNow; an.airA = airSm; an.fly = flySm; an.flySpd = flySp
+        val impK = ((1f - game.flyImp) * 3f).coerceIn(0f, 1f)   // o impulso entra em ~0,2s em vez de estalar
+        an.dash = dashSm; an.imp = game.flyImp * impK * impK * (3f - 2f * impK); an.swimFast = swimFastA; an.swimPh = swimPhA; an.crouch = game.crouchA; an.sit = game.sitA; an.lie = game.lieA; an.landT = landSm; an.swim = swm; an.dive = diveSm; an.tilt = tiltSm
+        an.atk = game.swing; an.atkArm = swingDelta(id, game.swing); an.hasTool = id > 0
+        // mesmos keyframes de golpe/carga da 1ª pessoa, aplicados no braço do boneco
+        if (game.charging) { chargePose(tpP, id, game.charge, t); an.charge = min(1f, game.charge) }
+        else { evalPose(tpP, kfFor(id), game.swing); an.charge = 0f }
+        an.poseOn = true; an.pP = tpP[3]; an.pY = tpP[4]; an.pR = tpP[5]; an.pW = tpP[6]
+        setBase(p.x, p.y, p.z, Math.toDegrees(game.bodyYaw.toDouble()).toFloat())
+        if (swm > 0.01f) {   // nadando: boia na superfície (cabeça fora) ou desliza deitado quando mergulha
+            Matrix.translateM(base, 0, 0f, sin(t * 2.2f) * 0.025f * (1f - diveSm) * swm, 0f)
+            Matrix.translateM(base, 0, 0f, 0.9f, 0f)
+            Matrix.rotateM(base, 0, tiltSm, 1f, 0f, 0f)
+            Matrix.translateM(base, 0, 0f, -0.9f, 0f)
+        }
+        cm.draw(charBox, base, an, handM)
+        if (id > 0) {   // mesmo modelo 3D da 1ª pessoa e dos ícones: cabo pra cima, fio pra frente
+            System.arraycopy(handM, 0, base2, 0, 16)
+            if (an.toolA != 0f) Matrix.rotateM(base2, 0, an.toolA, 1f, 0f, 0f)   // nado e voo rápido: o item acompanha o corpo e não fura a cabeça
+            if (Items.isBlock(id)) {
+                Matrix.translateM(base2, 0, 0f, -0.16f, 0.04f)
+                Matrix.scaleM(base2, 0, 0.8f, 0.8f, 0.8f)
+                drawItem(base2, id, t)
+            } else {
+                Matrix.rotateM(base2, 0, 180f, 0f, 1f, 0f)
+                Matrix.rotateM(base2, 0, TOOL_OUT, 0f, 0f, 1f)   // abre o cabo pra fora (longe da cabeça)
+                Matrix.rotateM(base2, 0, TOOL_TILT, 1f, 0f, 0f)
+                Matrix.scaleM(base2, 0, 0.7f, 0.7f, 0.7f)
+                drawTool3D(base2, id, t, 0f)
+            }
+        }
+    }
+
+    /** rastro de vento do voo rápido: riscos finos ao longo do voo, hélice dupla saindo das mãos e anéis se abrindo */
+    private val wu = FloatArray(3); private val wv = FloatArray(3)
+    private fun windAxes(w: WindP) {
+        val up = abs(w.dy) < 0.9f
+        var ux = if (up) -w.dz else 0f; var uy = if (up) 0f else w.dz; var uz = if (up) w.dx else -w.dy
+        val ul = max(0.001f, sqrt(ux * ux + uy * uy + uz * uz)); ux /= ul; uy /= ul; uz /= ul
+        wu[0] = ux; wu[1] = uy; wu[2] = uz
+        wv[0] = w.dy * uz - w.dz * uy; wv[1] = w.dz * ux - w.dx * uz; wv[2] = w.dx * uy - w.dy * ux
+    }
+    private fun yawOf(dx: Float, dz: Float) = Math.toDegrees(atan2(dx, dz).toDouble()).toFloat()
+    private fun pitchOf(dy: Float) = -Math.toDegrees(asin(dy.coerceIn(-1f, 1f).toDouble())).toFloat()
+    private fun drawWind() {
+        if (game.wind.isEmpty()) return
+        G.glDepthMask(false)
+        for (w in game.wind) {
+            if (!seen(w.x, w.y, w.z, 44f)) continue
+            val k = w.age / w.life; val fade = 1f - k
+            when (w.kind) {
+                0 -> {   // risco fino, esticado na direção do voo
+                    val grow = min(1f, 0.4f + w.age * 8f)
+                    setBase(w.x, w.y, w.z, yawOf(w.dx, w.dz))
+                    box(base, 0f, 0f, 0f, pitchOf(w.dy), 0f, 0.028f, 0.028f, w.len * grow, 0f, w.color, min(0.85f, fade * 1.7f) * min(1f, w.age * 14f), 1.1f)
+                }
+                1 -> {   // ponto da hélice: gira em volta do eixo do voo e vai abrindo
+                    windAxes(w)
+                    val ang = w.ph + w.age * 9f; val r = w.rad * min(1f, 0.12f + w.age * 2.4f)
+                    val c = cos(ang) * r; val s = sin(ang) * r
+                    setBase(w.x + wu[0] * c + wv[0] * s, w.y + wu[1] * c + wv[1] * s, w.z + wu[2] * c + wv[2] * s, yawOf(w.dx, w.dz))
+                    val ps = 0.075f * (1f - 0.5f * k)
+                    box(base, 0f, 0f, 0f, pitchOf(w.dy), 0f, ps, ps, ps * 3f, 0f, w.color, min(0.9f, fade * 1.8f) * min(1f, w.age * 20f), 1.1f)
+                }
+                else -> {   // anel de vento: segmentos finos ao redor do eixo, raio abrindo com desaceleração
+                    windAxes(w)
+                    val e = 1f - (1f - k) * (1f - k); val r = w.rad * (0.22f + 0.78f * e)
+                    val n = (10 + w.rad * 5f).toInt().coerceAtMost(34)
+                    val seg = 6.2832f * r / n * 0.85f; val th = 0.05f + 0.03f * min(1f, w.rad / 3f) * fade
+                    val al = min(0.75f, fade * 1.3f) * min(1f, w.age * 16f)
+                    for (i in 0 until n) {
+                        val a = 6.2832f * i / n; val ca = cos(a); val sa = sin(a)
+                        val tx = -wu[0] * sa + wv[0] * ca; val ty = -wu[1] * sa + wv[1] * ca; val tz = -wu[2] * sa + wv[2] * ca
+                        setBase(w.x + (wu[0] * ca + wv[0] * sa) * r, w.y + (wu[1] * ca + wv[1] * sa) * r, w.z + (wu[2] * ca + wv[2] * sa) * r, yawOf(tx, tz))
+                        box(base, 0f, 0f, 0f, pitchOf(ty), 0f, th, th, seg, 0f, w.color, al, 1.1f)
+                    }
+                }
+            }
+        }
+        G.glDepthMask(true)
     }
 
     private fun drawSlime(s: Slime) {
@@ -536,7 +1002,10 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         box(base, 0.3f * sxz, y - 0.1f * sy, 0.4f * sxz, 0f, 0f, 0.1f, 0.05f, 0.03f, 0f, 0xFF8FA8, 0.8f)
     }
 
-    private val SKIN = 0xF2C29B; private val SKIN_D = 0xD9A07A
+    private val SKIN: Int get() = Look.skin()
+    private val SKIN_D: Int get() = shadeC(Look.skin(), 0.85f)
+    private val SLEEVE: Int get() = when (Look.v[Look.TOP]) { 5 -> 0x4A5568; 6, 8, 15, 16 -> 0xF4F4F4; else -> Look.pal(Look.TOPC) }
+    private val SLEEVE_L: Int get() = mixC(SLEEVE, 0xFFFFFF, 0.35f)
     private val showLeftHand = false   // mão esquerda vazia no canto, como no Minecraft (false = esconde)
 
     /** Base do braço: origem no ombro (sx,sy,sz), eixo Z apontando pra mão (hx,hy,hz), Y pra cima. Retorna o comprimento. */
@@ -557,27 +1026,27 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     private fun drawArm(m: FloatArray, len: Float, w: Float = 0.17f, fist: Boolean = true) {
         if (!fist) {   // ferramenta: só a manga; o punho é desenhado alinhado com o cabo (drawToolFist)
             val sl = len - 0.08f
-            box(m, 0f, 0f, sl / 2f, 0f, 0f, w, w, sl, 0f, 0x7FD9C8)
+            box(m, 0f, 0f, sl / 2f, 0f, 0f, w, w, sl, 0f, SLEEVE)
             return
         }
         val sl = len - 0.17f
-        box(m, 0f, 0f, sl / 2f, 0f, 0f, w, w, sl, 0f, 0x7FD9C8)                                   // manga
-        box(m, 0f, 0f, sl + 0.02f, 0f, 0f, w * 1.14f, w * 1.14f, 0.05f, 0f, 0xA6EBDD)             // barra da manga
+        box(m, 0f, 0f, sl / 2f, 0f, 0f, w, w, sl, 0f, SLEEVE)                                   // manga
+        box(m, 0f, 0f, sl + 0.02f, 0f, 0f, w * 1.14f, w * 1.14f, 0.05f, 0f, SLEEVE_L)             // barra da manga
         val fw = w * 1.25f; val fh = w * 1.15f
         box(m, 0f, 0f, len, 0f, 0f, fw, fh, 0.24f, 0f, SKIN)                                      // punho
         box(m, 0f, -fh * 0.5f + 0.013f, len, 0f, 0f, fw * 1.003f, 0.028f, 0.243f, 0f, SKIN_D)     // sombra por baixo
-        box(m, 0f, fh * 0.5f - 0.01f, len + 0.02f, 0f, 0f, fw * 0.92f, 0.02f, 0.18f, 0f, 0xF8D9BC) // luz em cima
+        box(m, 0f, fh * 0.5f - 0.01f, len + 0.02f, 0f, 0f, fw * 0.92f, 0.02f, 0.18f, 0f, mixC(SKIN, 0xFFFFFF, 0.35f)) // luz em cima
     }
 
     /** braço + punho RETOS, mesma seção, face com face. Origem = ponto fixo ATRÁS da câmera (nunca aparece), Z aponta pro punho; len = distância até o centro do punho. */
     private fun drawToolArm(m: FloatArray, len: Float) {
         val fz = 0.12f
         val sl = len - fz - 0.06f
-        box(m, 0f, 0f, sl / 2f, 0f, 0f, 0.21f, 0.19f, sl, 0f, 0x7FD9C8)                  // manga
-        box(m, 0f, 0f, sl + 0.03f, 0f, 0f, 0.225f, 0.205f, 0.06f, 0f, 0xA6EBDD)          // barra da manga
+        box(m, 0f, 0f, sl / 2f, 0f, 0f, 0.21f, 0.19f, sl, 0f, SLEEVE)                  // manga
+        box(m, 0f, 0f, sl + 0.03f, 0f, 0f, 0.225f, 0.205f, 0.06f, 0f, SLEEVE_L)          // barra da manga
         box(m, 0f, 0f, len, 0f, 0f, 0.21f, 0.19f, 0.24f, 0f, SKIN)                       // punho
         box(m, 0f, -0.095f + 0.014f, len, 0f, 0f, 0.213f, 0.03f, 0.243f, 0f, SKIN_D)     // sombra de baixo
-        box(m, 0f, 0.095f - 0.008f, len, 0f, 0f, 0.213f, 0.02f, 0.243f, 0f, 0xF8D9BC)    // luz de cima
+        box(m, 0f, 0.095f - 0.008f, len, 0f, 0f, 0.213f, 0.02f, 0.243f, 0f, mixC(SKIN, 0xFFFFFF, 0.35f))    // luz de cima
     }
 
     private val tmp2 = FloatArray(16); private val restM = FloatArray(16); private val restInv = FloatArray(16); private val camBlk = FloatArray(16)
@@ -804,7 +1273,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
 
     private fun kfFor(id: Int) = when {
         id == Items.SWORD -> (if (game.powerSwing) KF_SWORD_POWER else SWORD_COMBO[game.combo % SWORD_COMBO.size]); id == Items.AXE -> (if (game.powerSwing) KF_AXE_POWER else KF_AXE); id == Items.PICK -> KF_PICK; id == Items.STAFF -> KF_STAFF
-        id in 1..13 -> KF_BLOCK; else -> KF_FIST
+        Items.isBlock(id) -> KF_BLOCK; else -> KF_FIST
     }
 
     private fun evalPose(out: FloatArray, k: Array<FloatArray>, sp: Float) {
@@ -883,7 +1352,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val breath = sin(tt * 1.8f) * 0.006f
         val ox = bobX + swayX; val oy = bobY + swayY + breath - inv * 0.55f
         val empty = id <= 0
-        val isTool = id > 0 && id !in 1..13
+        val isTool = id > 0 && !Items.isBlock(id)
         val armW = if (empty) 0.2f else 0.17f
         // punho (centro do punho = onde o cabo passa). Ferramenta: punho mais alto, inteiro na tela; mão vazia/bloco: poses das referências
         val hx = if (empty) 0.589f else if (isTool) 0.66f else 0.752f
@@ -943,7 +1412,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             toolBase(toolM, p, hx, hy, hz)
             Matrix.multiplyMM(tmp2, 0, poseM, 0, toolM, 0)
             drawTool3D(tmp2, id, tt, p[9])
-        } else if (id in 1..13) {
+        } else if (Items.isBlock(id)) {
             // bloco grande no canto inferior direito, topo e lateral aparecendo (preso ao braço no golpe)
             Matrix.setIdentityM(camBlk, 0)
             Matrix.translateM(camBlk, 0, 0.786f, -0.773f, -1.068f)
@@ -962,7 +1431,32 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         }
     }
 
+    // ---------- culling: não desenha o que está fora da tela (grande ganho de desempenho) ----------
+    private val fpl = FloatArray(24); private val chunkVis = BooleanArray(World.CX * World.CZ)
+    private var cvx = 0f; private var cvy = 0f; private var cvz = 0f; private var cdx = 0f; private var cdy = 0f; private var cdz = 0f
+    private fun updateFrustum(m: FloatArray) {
+        for (i in 0 until 6) {
+            val sg = if (i % 2 == 0) 1f else -1f; val r = i / 2
+            var a = m[3] + sg * m[r]; var b = m[7] + sg * m[4 + r]; var c = m[11] + sg * m[8 + r]; var d = m[15] + sg * m[12 + r]
+            val l = Math.sqrt((a * a + b * b + c * c).toDouble()).toFloat().coerceAtLeast(1e-6f)
+            fpl[i * 4] = a / l; fpl[i * 4 + 1] = b / l; fpl[i * 4 + 2] = c / l; fpl[i * 4 + 3] = d / l
+        }
+        for (cz in 0 until World.CZ) for (cx in 0 until World.CX) {
+            val x = cx * World.CH + World.CH / 2f; val y = World.SY / 2f; val z = cz * World.CH + World.CH / 2f
+            var ok = true
+            for (i in 0 until 6) if (fpl[i * 4] * x + fpl[i * 4 + 1] * y + fpl[i * 4 + 2] * z + fpl[i * 4 + 3] < -21f) { ok = false; break }
+            chunkVis[cz * World.CX + cx] = ok
+        }
+    }
+    /** ponto à frente da câmera e perto o bastante? */
+    private fun seen(x: Float, y: Float, z: Float, maxD: Float = 34f): Boolean {
+        val dx = x - cvx; val dy = y - cvy; val dz = z - cvz
+        if (dx * dx + dy * dy + dz * dz > maxD * maxD) return false
+        return dx * cdx + dy * cdy + dz * cdz > -1.5f
+    }
+
     override fun onDrawFrame(gl: GL10?) {
+        if (!iconsBaked) bakeIcons()
         val now = System.nanoTime()
         val dt = ((now - last) / 1e9f).coerceIn(0.001f, 0.05f); last = now
         game.update(dt)
@@ -984,8 +1478,12 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val ez = game.camZ + (rnd.nextFloat() - 0.5f) * sh
         Matrix.setLookAtM(view, 0, ex, ey, ez, ex + game.lookDirX(), ey + game.lookDirY(), ez + game.lookDirZ(), 0f, 1f, 0f)
         Matrix.multiplyMM(vp, 0, proj, 0, view, 0)
-        val under = world.get(floor(ex).toInt(), floor(ey).toInt(), floor(ez).toInt()) == B.WATER
-        val fr = if (under) 0.38f else fogR; val fg = if (under) 0.76f else fogG; val fb = if (under) 0.93f else fogB
+        game.vpm = vp.clone()
+        updateFrustum(vp)
+        cvx = ex; cvy = ey; cvz = ez; cdx = game.lookDirX(); cdy = game.lookDirY(); cdz = game.lookDirZ()
+        val uwy = floor(ey).toInt()
+        val under = world.get(floor(ex).toInt(), uwy, floor(ez).toInt()) == B.WATER && (world.get(floor(ex).toInt(), uwy + 1, floor(ez).toInt()) != B.AIR || ey < uwy + 0.88f)
+        val fr = if (under) 0.36f else fogR; val fg = if (under) 0.78f else fogG; val fb = if (under) 0.95f else fogB
         // céu: degradê, sol, nuvens suaves
         Matrix.invertM(inv, 0, vp, 0)
         G.glDisable(G.GL_DEPTH_TEST); G.glDisable(G.GL_CULL_FACE)
@@ -1003,12 +1501,13 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         G.glUniform3f(uCam, ex, ey, ez)
         G.glUniform3f(uFog, fr, fg, fb)
         G.glUniform1f(uTime, game.time); G.glUniform1f(uWind, 1f); G.glUniform1f(uUnder, if (under) 1f else 0f)
+        fillRip(); G.glUniform4fv(uRip, 4, ripArr, 0)
         G.glDisable(G.GL_BLEND)
 
         G.glUniformMatrix4fv(uModel, 1, false, ident, 0)
         tint(0xFFFFFF, 1f)
         for (i in 0 until World.CX * World.CZ) {
-            if (cnt[i * 2] == 0) continue
+            if (cnt[i * 2] == 0 || !chunkVis[i]) continue
             bindMesh(vbo[i * 2], ibo[i * 2]); G.glDrawElements(G.GL_TRIANGLES, cnt[i * 2], G.GL_UNSIGNED_SHORT, 0)
         }
         G.glUniform1f(uWind, 0f)
@@ -1018,19 +1517,33 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         G.glDepthMask(false)
         for (s in game.slimes) shadow(s.x, s.y, s.z, 0.9f)
         if (game.thirdPerson) shadow(game.player.x, game.player.y, game.player.z, 0.8f)
+        drawPrints()
         G.glDepthMask(true)
         for (s in game.slimes) drawSlime(s)
+        drawDebris(); drawTrees(); drawDrops()
         for (q in game.parts) {
+            if (!seen(q.x, q.y, q.z, 28f)) continue
+            if (q.dust) {   // poeira: nasce pequena, vai inchando devagar e some suave
+                setBase(q.x, q.y, q.z, q.age * 55f + q.z * 90f)
+                val ps = q.size * (1f + q.age * 2.4f)
+                box(base, 0f, 0f, 0f, q.age * 30f, 0f, ps, ps * 0.8f, ps, 0f, q.color, min(0.5f, q.life * 0.9f) * min(1f, q.age * 12f), 1.05f)
+                continue
+            }
             setBase(q.x, q.y, q.z, game.time * 200f)
-            box(base, 0f, 0f, 0f, 0f, 0f, q.size, q.size, q.size, 0f, q.color, min(1f, q.life * 2f))
+            val ps = q.size * min(1f, 0.35f + q.life * 1.6f)
+            box(base, 0f, 0f, 0f, 0f, 0f, ps, ps, ps, 0f, q.color, min(1f, q.life * 2.2f))
         }
+        drawWind()
         for (l in game.leafFall) {
-            setBase(l.x, l.y, l.z, l.age * 50f + l.ph * 57f)
-            val tl = if (l.landed) 0f else sin(l.age * 3f + l.ph) * 50f; val rl = if (l.landed) 0f else cos(l.age * 2.3f + l.ph) * 40f
-            val al = min(1f, min(l.age * 3f, l.life * 1.2f))
-            box(base, 0f, 0f, 0f, tl, 0f, l.size * 0.95f, 0.01f, l.size * 1.05f, 0f, l.color, al, 1f, null, 0, rl)
-            box(base, 0f, 0f, 0f, tl, 0f, l.size * 0.5f, 0.011f, l.size * 1.75f, 0f, l.color, al, 1.08f, null, 0, rl)
-            box(base, 0f, 0.004f, 0f, tl, 0f, l.size * 0.1f, 0.012f, l.size * 1.8f, 0f, 0x2F6B1E, al * 0.8f, 1f, null, 0, rl)
+            if (!seen(l.x, l.y, l.z, 30f)) continue
+            val sp = if (l.spin > 0f) l.spin else 1f
+            setBase(l.x, l.y, l.z, l.age * 50f * sp + l.ph * 57f)
+            val tl = if (l.landed) 0f else sin(l.age * 3f * sp + l.ph) * 55f; val rl = if (l.landed) 0f else cos(l.age * 2.3f * sp + l.ph) * 45f
+            val al = min(1f, min(l.age * (if (l.spin > 0f) 14f else 3f), l.life * 1.2f))
+            val edge = mixCol(l.color, 0xE6F59A, 0.35f)
+            box(base, 0f, 0f, 0f, tl, 0f, l.size * 0.95f, 0.01f, l.size * 1.15f, 0f, l.color, al, 1f, null, 0, rl)
+            box(base, 0f, 0.003f, l.size * 0.28f, tl, 0f, l.size * 0.55f, 0.011f, l.size * 0.55f, 0f, edge, al * 0.9f, 1.05f, null, 0, rl)
+            box(base, 0f, 0.006f, 0f, tl, 0f, l.size * 0.09f, 0.012f, l.size * 1.9f, 0f, 0x2F6B1E, al * 0.85f, 1f, null, 0, rl)
         }
         for (b in game.bolts) {
             setBase(b.x, b.y, b.z, 0f)
@@ -1045,15 +1558,17 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             box(base, 0f, 0f, 0f, 0f, 0f, 1.01f, 1.01f, 1.01f, 0f, 0xFFFFFF, 0.18f + 0.1f * sin(game.time * 6f))
             G.glDepthMask(true)
         }
-        if (game.brProg > 0f && game.brY > 0 && game.deadTimer <= 0f && world.get(game.brX, game.brY, game.brZ) != 0) drawCracks(game.brX, game.brY, game.brZ, game.brProg)
+        if (game.deadTimer <= 0f) drawDamage(dt)
         G.glUniform1f(uWind, 1f)
         G.glUniformMatrix4fv(uModel, 1, false, ident, 0)
         G.glDisable(G.GL_CULL_FACE)
         tint(0xFFFFFF, 1f)
         for (i in 0 until World.CX * World.CZ) {
-            if (cnt[i * 2 + 1] == 0) continue
+            if (cnt[i * 2 + 1] == 0 || !chunkVis[i]) continue
             bindMesh(vbo[i * 2 + 1], ibo[i * 2 + 1]); G.glDrawElements(G.GL_TRIANGLES, cnt[i * 2 + 1], G.GL_UNSIGNED_SHORT, 0)
         }
+        G.glUniform1f(uWind, 0f); bindMesh(cubeVb, cubeIb)
+        
         G.glEnable(G.GL_CULL_FACE)
         G.glUniform1f(uWind, 0f)
         if (!game.thirdPerson && game.deadTimer <= 0f) drawHand(dt)

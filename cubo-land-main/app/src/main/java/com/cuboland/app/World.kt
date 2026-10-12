@@ -13,7 +13,9 @@ object B {
     const val AIR = 0; const val GRASS = 1; const val DIRT = 2; const val STONE = 3; const val SAND = 4
     const val WOOD = 5; const val LEAVES = 6; const val PLANK = 7; const val WATER = 8; const val BRICK = 9
     const val PINK = 10; const val BLUE = 11; const val YELLOW = 12; const val LANTERN = 13
-    const val N = 1024
+    const val N = 16384
+    /** maior id definido + 1 (a malha de cubos por tipo só vai até aqui) */
+    @JvmField var used = 14
     val top = IntArray(N); val side = IntArray(N); val bot = IntArray(N)
     val names = Array(N) { "" }
     val hotbar = intArrayOf(GRASS, STONE, PLANK, BRICK, PINK, BLUE, YELLOW, LANTERN)
@@ -25,7 +27,9 @@ object B {
     val defined = BooleanArray(N)
     /** troncos de qualquer árvore (carvalho + Tronco/Caule dos blocos novos): o machado/espada derruba a árvore inteira */
     val isLog = BooleanArray(N)
-    fun log(id: Int) = isLog[id and 1023]
+    /** blocos com relevo em geometria (peças saindo e entrando na face); terreno básico (ids 1..13) continua liso pra não pesar */
+    val relief = BooleanArray(N)
+    fun log(id: Int) = isLog[id and 16383]
     val byName = HashMap<String, Int>()
     private fun s(id: Int, t: Int, sd: Int, b: Int) { top[id] = t; side[id] = sd; bot[id] = b }
     private fun t(id: Int, a: Int, b: Int, c: Int) { tTop[id] = a; tSide[id] = b; tBot[id] = c }
@@ -50,25 +54,28 @@ object B {
             val id = d.id
             names[id] = d.name; s(id, d.color, d.color, d.color); t(id, d.top, d.side, d.bot)
             flags[id] = d.flags; hard[id] = d.hard; mat[id] = d.mat; cat[id] = d.cat; desc[id] = d.desc
-            defined[id] = true
+            defined[id] = true; if (id + 1 > used) used = id + 1
             byName[d.name] = id
             if (d.name.startsWith("Tronco ") || d.name.startsWith("Caule ")) isLog[id] = true
+            relief[id] = (d.flags and (Blk.F_GLASS or Blk.F_LIGHT or Blk.F_LEAF)) == 0 && !d.name.startsWith("Lã ") && !d.name.startsWith("Concreto") && !d.name.startsWith("Gesso")
         }
     }
     fun solid(id: Int) = id != AIR && id != WATER
     /** bloco que brilha: sem sombra nem oclusão */
-    fun light(id: Int) = (flags[id and 1023] and Blk.F_LIGHT) != 0
+    fun light(id: Int) = (flags[id and 16383] and Blk.F_LIGHT) != 0
     /** bloco translúcido (vidro, gelo, gelatina): desenhado junto com a água */
-    fun glass(id: Int) = (flags[id and 1023] and Blk.F_GLASS) != 0
+    fun glass(id: Int) = (flags[id and 16383] and Blk.F_GLASS) != 0
     /** dá pra ver através: a face do vizinho precisa ser desenhada */
     /** folhagem: o carvalho (LEAVES) e os blocos com F_LEAF usam a malha de folha */
-    fun leafy(id: Int) = id == LEAVES || (flags[id and 1023] and Blk.F_LEAF) != 0
-    fun see(id: Int) = id == AIR || id == WATER || leafy(id) || (flags[id and 1023] and Blk.F_GLASS) != 0
+    fun leafy(id: Int) = id == LEAVES || (flags[id and 16383] and Blk.F_LEAF) != 0
+    fun shape(id: Int): Int { val f = flags[id and 16383]; return if ((f and Blk.F_SHAPE) != 0) (f shr 5) and 7 else 0 }
+    fun thin(id: Int) = (flags[id and 16383] and Blk.F_THIN) != 0
+    fun see(id: Int) = id == AIR || id == WATER || leafy(id) || thin(id) || shape(id) != 0 || (flags[id and 16383] and Blk.F_GLASS) != 0
 }
 
 class MeshBuf {
     var v = FloatArray(16384); var vn = 0
-    var ix = ShortArray(4096); var inn = 0; var vc = 0
+    var ix = IntArray(4096); var inn = 0; var vc = 0
     fun clear() { vn = 0; inn = 0; vc = 0 }
     fun vert(x: Float, y: Float, z: Float, r: Float, g: Float, b: Float, u: Float, w: Float) {
         if (vn + 8 > v.size) v = v.copyOf(v.size * 2)
@@ -76,7 +83,7 @@ class MeshBuf {
     }
     fun tri(a: Int, b: Int, c: Int) {
         if (inn + 3 > ix.size) ix = ix.copyOf(ix.size * 2)
-        ix[inn++] = (vc + a).toShort(); ix[inn++] = (vc + b).toShort(); ix[inn++] = (vc + c).toShort()
+        ix[inn++] = vc + a; ix[inn++] = vc + b; ix[inn++] = vc + c
     }
 }
 
@@ -141,6 +148,29 @@ class World {
 
     fun solid(x: Int, y: Int, z: Int) = B.solid(get(x, y, z))
 
+    /** caixa real (coords locais do bloco: x0,y0,z0,x1,y1,z1) dos blocos com formato próprio; null = cubo inteiro */
+    fun boxOf(x: Int, y: Int, z: Int): FloatArray? = Shapes.box(this, get(x, y, z), x, z, y)
+    /** o bloco (x,y,z) é sólido dentro da caixa de mundo dada? (respeita o formato real) */
+    fun solidBox(x: Int, y: Int, z: Int, ax0: Float, ay0: Float, az0: Float, ax1: Float, ay1: Float, az1: Float): Boolean {
+        val id = get(x, y, z); if (!B.solid(id)) return false
+        val b = Shapes.box(this, id, x, z, y) ?: return true
+        return ax1 > x + b[0] && ax0 < x + b[3] && ay1 > y + b[1] && ay0 < y + b[4] && az1 > z + b[2] && az0 < z + b[5]
+    }
+    /** o ponto de mundo está dentro do bloco real? (mira/raio) */
+    fun solidPt(x: Int, y: Int, z: Int, px: Float, py: Float, pz: Float): Boolean {
+        val id = get(x, y, z); if (!B.solid(id)) return false
+        val b = Shapes.box(this, id, x, z, y) ?: return true
+        return px >= x + b[0] && px <= x + b[3] && py >= y + b[1] && py <= y + b[4] && pz >= z + b[2] && pz <= z + b[5]
+    }
+
+    /** mundo de testes: blocos da apresentação (chão, árvores, vitrines) ficam travados; só dá pra quebrar o que o jogador colocar */
+    var locked: java.util.BitSet? = null
+    fun isLocked(x: Int, y: Int, z: Int): Boolean {
+        val l = locked ?: return false
+        if (x < 0 || x >= SX || z < 0 || z >= SZ || y < 0 || y >= SY) return false
+        return l.get((y * SZ + z) * SX + x)
+    }
+
     fun set(x: Int, y: Int, z: Int, id: Int) {
         if (x < 0 || x >= SX || z < 0 || z >= SZ || y < 0 || y >= SY) return
         blocks[(y * SZ + z) * SX + x] = id
@@ -155,7 +185,7 @@ class World {
         return 0
     }
 
-    private fun hash(x: Int, z: Int, s: Int): Float {
+    fun hash(x: Int, z: Int, s: Int): Float {
         var h = x * 374761393 + z * 668265263 + s * 1442695041.toInt()
         h = (h xor (h ushr 13)) * 1274126177
         h = h xor (h ushr 16)
@@ -210,17 +240,20 @@ class World {
     /** Mapa plano: planície de grama (y=10), camadas de terra/pedra embaixo, um rio enorme serpenteando e árvores bem espaçadas. */
     /** galeria de blocos: chão liso e fileiras por categoria, com todos os blocos do jogo e uma plaquinha com o nome de cada um */
     fun generateTest() {
+        locked = null
         java.util.Arrays.fill(blocks, 0); labels.clear()
         val floor = B.byName["Concreto Cinza-claro"] ?: B.STONE
         val top = 10
         for (z in 0 until SZ) for (x in 0 until SX) for (y in 0..top) blocks[(y * SZ + z) * SX + x] = floor
         val cats = ArrayList<Pair<String, List<Int>>>()
+        // os blocos básicos (ids 1..13) não têm categoria própria: entram no começo de cada categoria, a mesma da mochila (Items.cat)
         val basic = ArrayList<Int>(); for (id in 1..13) if (id != B.WATER && B.defined[id]) basic.add(id)
-        cats.add("BÁSICOS" to basic)
-        cats.add("NATUREZA" to Blk.defs.filter { it.cat == Blk.C_NAT && it.id !in Blk.hidden }.map { it.id })
-        cats.add("CONSTRUÇÃO" to Blk.defs.filter { it.cat == Blk.C_BUILD }.map { it.id })
-        cats.add("DECORAÇÃO" to Blk.defs.filter { it.cat == Blk.C_DEC }.map { it.id })
-        val other = Blk.defs.filter { it.cat != Blk.C_NAT && it.cat != Blk.C_BUILD && it.cat != Blk.C_DEC }.map { it.id }
+        fun basicsOf(c: Int) = basic.filter { Items.cat(it) == c }
+        cats.add("NATUREZA" to (basicsOf(2) + Blk.defs.filter { it.cat == Blk.C_NAT && it.id !in Blk.hidden }.map { it.id }))
+        cats.add("CONSTRUÇÃO" to (basicsOf(3) + Blk.defs.filter { it.cat == Blk.C_BUILD }.map { it.id }))
+        cats.add("DECORAÇÃO" to (basicsOf(4) + Blk.defs.filter { it.cat == Blk.C_DEC }.map { it.id }))
+        cats.add("MOBÍLIA" to Blk.defs.filter { it.cat == Blk.C_FURN }.map { it.id })
+        val other = Blk.defs.filter { it.cat != Blk.C_NAT && it.cat != Blk.C_BUILD && it.cat != Blk.C_DEC && it.cat != Blk.C_FURN }.map { it.id }
         if (other.isNotEmpty()) cats.add("OUTROS" to other)
         val perRow = 16; val x0 = 8; var zc = 8
         spawnX = x0 + 2; spawnZ = 4
@@ -242,7 +275,55 @@ class World {
             }
             zc += 3
         }
+        furnitureShowcase(top)
         plantTestTrees(top)
+    }
+
+    /** vitrine da mobília: conjuntos de mesas, sala, escritório e quartos (ficam trancados, mas dá pra sentar) */
+    private fun furnitureShowcase(top: Int) {
+        val y = top + 1; val bx = 62
+        fun id(n: String) = B.byName[n] ?: 0
+        fun put(x: Int, z: Int, n: String, yy: Int = y) { val b = id(n); if (b != 0 && x in 0 until SX && z in 0 until SZ) blocks[(yy * SZ + z) * SX + x] = b }
+        fun lab(x: Float, z: Float, t: String) { labels.add(Label(x, y + 2.9f, z, t)) }
+        fun grupo(x0: Int, z0: Int, w: Int, d: Int, mesa: String, cad: String) {
+            for (i in 0 until w) for (j in 0 until d) put(x0 + i, z0 + j, mesa)
+            for (i in 0 until w) { put(x0 + i, z0 - 1, cad); put(x0 + i, z0 + d, cad) }
+            for (j in 0 until d) { put(x0 - 1, z0 + j, cad); put(x0 + w, z0 + j, cad) }
+        }
+        labels.add(Label(bx + 12f, top + 7f, 4f, "MOBÍLIA: mesas crescem, camas e sofás emendam, dá pra sentar!", true))
+        // mesas
+        lab(bx + 2f, 7f, "Mesa de Madeira"); grupo(bx + 1, 9, 2, 2, "Mesa", "Cadeira")
+        lab(bx + 9f, 7f, "Mesa Escura"); grupo(bx + 7, 9, 3, 2, "Mesa Escura", "Cadeira Estofada")
+        lab(bx + 16f, 7f, "Mesa de Mármore"); grupo(bx + 14, 9, 2, 2, "Mesa de Mármore", "Cadeira Estofada")
+        lab(bx + 22f, 7f, "Mesa com Toalha"); grupo(bx + 20, 9, 2, 2, "Mesa com Toalha", "Cadeira")
+        // redondas, banco e centro
+        lab(bx + 2f, 15f, "Mesa Redonda + Bancos"); put(bx + 2, 17, "Mesa Redonda")
+        put(bx + 2, 16, "Banco"); put(bx + 2, 18, "Banco"); put(bx + 1, 17, "Banco"); put(bx + 3, 17, "Banco")
+        lab(bx + 9f, 15f, "Redonda de Mármore"); put(bx + 9, 17, "Mesa Redonda de Mármore")
+        put(bx + 9, 16, "Cadeira"); put(bx + 9, 18, "Cadeira"); put(bx + 8, 17, "Cadeira"); put(bx + 10, 17, "Cadeira")
+        lab(bx + 16f, 15f, "Mesa de Centro"); put(bx + 16, 17, "Mesa de Centro")
+        lab(bx + 22f, 15f, "Tapetes"); for (i in 0 until 3) for (j in 0 until 3) { put(bx + 20 + i, 16 + j, "Tapete Vermelho"); put(bx + 24 + i, 16 + j, "Tapete Azul") }
+        // sala: TV na cômoda, sofá de costas pra parede, poltronas, abajur e planta
+        lab(bx + 3f, 23f, "Sala de estar")
+        put(bx + 1, 25, "Cômoda"); put(bx + 2, 25, "Cômoda"); put(bx + 3, 25, "Cômoda")
+        put(bx + 2, 25, "Televisão", y + 1); put(bx + 1, 25, "Abajur", y + 1); put(bx + 3, 25, "Vaso de Planta", y + 1)
+        for (i in 0 until 5) for (k in 0..2) { val wb = id("Concreto Branco"); if (wb != 0) blocks[((y + k) * SZ + 32) * SX + bx + i] = wb }
+        for (i in 1..3) put(bx + i, 31, "Sofá")
+        put(bx + 2, 28, "Mesa de Centro"); put(bx + 0, 28, "Poltrona"); put(bx + 4, 28, "Poltrona")
+        // escritório
+        lab(bx + 12f, 23f, "Escritório")
+        for (i in 0 until 3) put(bx + 10 + i, 25, "Escrivaninha")
+        put(bx + 11, 25, "Computador", y + 1); put(bx + 12, 25, "Abajur", y + 1); put(bx + 11, 26, "Cadeira de Escritório")
+        for (i in 0 until 3) put(bx + 15 + i, 25, "Estante de Livros")
+        put(bx + 16, 25, "Vaso de Planta", y + 1); put(bx + 18, 25, "Armário"); put(bx + 19, 25, "Geladeira")
+        // quartos: camas de 1, 2 e 3 blocos
+        lab(bx + 3f, 36f, "Camas"); put(bx + 1, 38, "Cama")
+        put(bx + 4, 38, "Cama"); put(bx + 4, 39, "Cama")
+        for (i in 0 until 3) put(bx + 7 + i, 38, "Cama")
+        put(bx + 13, 38, "Cama"); put(bx + 13, 39, "Cama"); put(bx + 15, 38, "Cama"); put(bx + 15, 39, "Cama")
+        put(bx + 12, 38, "Cômoda"); put(bx + 14, 38, "Abajur"); 
+        lab(bx + 22f, 36f, "Cadeiras e poltronas")
+        for ((i, n) in listOf("Cadeira", "Cadeira Estofada", "Banco", "Poltrona", "Cadeira de Escritório", "Sofá").withIndex()) put(bx + 19 + i * 2, 38, n)
     }
 
     /** galeria de árvores: bem afastada dos blocos (x >= 90), uma fileira por espécie com 2 árvores, sobre um gramado */
@@ -267,10 +348,13 @@ class World {
                 woodId = if (r[1].isEmpty()) B.WOOD else (B.byName[r[1]] ?: B.WOOD)
                 leafId = if (r[2].isEmpty()) B.LEAVES else (B.byName[r[2]] ?: B.LEAVES)
                 val type = if (r[0] == "ABETO") 4 else if (k == 0) 1 else 2
-                plantTree(x, top, z, type, rnd)
+                if (r[0] == "BAMBU") plantBamboo(x, top, z, rnd) else plantTree(x, top, z, type, rnd)
             }
         }
         woodId = B.WOOD; leafId = B.LEAVES
+        val lk = java.util.BitSet(blocks.size)
+        for (i in blocks.indices) if (blocks[i] != B.AIR) lk.set(i)
+        locked = lk
     }
 
     fun generateFlat(seed: Int) {
@@ -486,6 +570,18 @@ class World {
         }
     }
 
+    /** touceira de bambu: várias hastes finas de alturas diferentes (sem blocos de folha; as folhinhas saem do colmo) */
+    private fun plantBamboo(x: Int, y: Int, z: Int, rnd: Random) {
+        val id = B.byName["Colmo de Bambu"] ?: return
+        val n = 6 + rnd.nextInt(4)
+        for (k in 0 until n) {
+            val bx = x + rnd.nextInt(5) - 2; val bz = z + rnd.nextInt(5) - 2
+            if (get(bx, y, bz) != B.GRASS) continue
+            val hgt = 8 + rnd.nextInt(8)
+            for (t in 1..hgt) if (air(bx, y + t, bz)) set(bx, y + t, bz, id) else break
+        }
+    }
+
     private fun plantTree(x: Int, y: Int, z: Int, type: Int, rnd: Random) {
         when (type) {
             0 -> {
@@ -653,7 +749,7 @@ class World {
                 bb.asIntBuffer().get(blocks)
             } else return false
             val al = Blk.alias
-            for (i in blocks.indices) { val b = blocks[i]; if (b in 14..1023 && al[b] != 0) blocks[i] = al[b] }
+            for (i in blocks.indices) { val b = blocks[i]; if (b in 14..16383 && al[b] != 0) blocks[i] = al[b] }
             java.util.Arrays.fill(dirty, true); true
         } catch (_: Exception) { false }
     }
@@ -687,9 +783,118 @@ class World {
         return n
     }
 
+
+    /** oclusão do canto (mesma conta das faces lisas) */
+    private fun cornerAo(c: IntArray, a: Int, s: Int, u: Int, v: Int, cu: Int, cv: Int): Float {
+        val du = if (cu == 1) 1 else -1; val dv = if (cv == 1) 1 else -1
+        val bx = IntArray(3); bx[0] = c[0]; bx[1] = c[1]; bx[2] = c[2]; bx[a] += s
+        val s1 = bx.clone(); s1[u] += du
+        val s2 = bx.clone(); s2[v] += dv
+        val cc = s1.clone(); cc[v] += dv
+        val a1 = if (solid(s1[0], s1[1], s1[2])) 1 else 0
+        val a2 = if (solid(s2[0], s2[1], s2[2])) 1 else 0
+        val a3 = if (solid(cc[0], cc[1], cc[2])) 1 else 0
+        val lvl = if (a1 == 1 && a2 == 1) 0 else 3 - (a1 + a2 + a3)
+        return AOB[lvl]
+    }
+
+    /** face com relevo de verdade: grade de peças (8x8 no automático, 16x16 nos mapas escritos à mão), cada uma sai ou entra até 2 degraus (Relief.map),
+     *  com paredinhas entre alturas diferentes. Peças vizinhas do mesmo nível viram um retângulo só, e as frestas que chegam na borda do bloco ganham parede
+     *  (senão dava pra ver o miolo do vizinho por ela). */
+    private fun reliefFace(o: MeshBuf, c: IntArray, a: Int, s: Int, tile: Int, shade: Float, ao: FloatArray) {
+        val rm = Relief.map(tile)
+        val G = rm.g
+        val map = rm.lv
+        val u = (a + 1) % 3; val v = (a + 2) % 3
+        val lv = IntArray(G * G)
+        for (iv in 0 until G) for (iu in 0 until G) {
+            val ti: Int; val tj: Int
+            when (a) { 0 -> { ti = iv; tj = G - 1 - iu }; 2 -> { ti = iu; tj = G - 1 - iv }; else -> { ti = iu; tj = iv } }
+            lv[iv * G + iu] = map[tj * G + ti].toInt()
+        }
+        val pos = FloatArray(3)
+        fun emit(fu: Float, fv: Float, h: Float, sh: Float, tu: Float, tv: Float) {
+            pos[0] = c[0].toFloat(); pos[1] = c[1].toFloat(); pos[2] = c[2].toFloat()
+            pos[a] += (if (s > 0) 1f else 0f) + s * h
+            pos[u] += fu; pos[v] += fv
+            val k = sh * ((1f - fu) * (1f - fv) * ao[0] + fu * (1f - fv) * ao[1] + fu * fv * ao[2] + (1f - fu) * fv * ao[3])
+            o.vert(pos[0], pos[1], pos[2], k, k, k, Atlas.u(tile, tu), Atlas.v(tile, tv))
+        }
+        fun tx(fu: Float, fv: Float): Float = when (a) { 0 -> fv; else -> fu }
+        fun ty(fu: Float, fv: Float): Float = when (a) { 0 -> 1f - fu; 2 -> 1f - fv; else -> fv }
+        fun quadV(f0u: Float, f0v: Float, h0: Float, f1u: Float, f1v: Float, h1: Float, f2u: Float, f2v: Float, h2: Float, f3u: Float, f3v: Float, h3: Float, sh: Float, both: Boolean) {
+            emit(f0u, f0v, h0, sh, tx(f0u, f0v), ty(f0u, f0v)); emit(f1u, f1v, h1, sh, tx(f1u, f1v), ty(f1u, f1v))
+            emit(f2u, f2v, h2, sh, tx(f2u, f2v), ty(f2u, f2v)); emit(f3u, f3v, h3, sh, tx(f3u, f3v), ty(f3u, f3v))
+            if (both) { o.tri(0, 1, 2); o.tri(0, 2, 3); o.tri(0, 2, 1); o.tri(0, 3, 2) }
+            else if (s > 0) { o.tri(0, 1, 2); o.tri(0, 2, 3) } else { o.tri(0, 2, 1); o.tri(0, 3, 2) }
+            o.vc += 4
+        }
+        val inv = 1f / G
+        val step = Relief.STEP
+        fun lvOf(iu: Int, iv: Int): Int = if (iu < 0 || iv < 0 || iu >= G || iv >= G) 0 else lv[iv * G + iu]
+        // topos: retângulos de peças com o mesmo nível
+        val used = BooleanArray(G * G)
+        for (iv in 0 until G) for (iu in 0 until G) {
+            if (used[iv * G + iu]) continue
+            val l = lv[iv * G + iu]
+            var w = 1
+            while (iu + w < G && !used[iv * G + iu + w] && lv[iv * G + iu + w] == l) w++
+            var hh = 1
+            while (iv + hh < G) {
+                var ok = true
+                for (k in 0 until w) if (used[(iv + hh) * G + iu + k] || lv[(iv + hh) * G + iu + k] != l) { ok = false; break }
+                if (!ok) break
+                hh++
+            }
+            for (yy in iv until iv + hh) for (xx in iu until iu + w) used[yy * G + xx] = true
+            val h = l * step
+            val sh = shade * Relief.tone(l)
+            val fu0 = iu * inv; val fu1 = (iu + w) * inv; val fv0 = iv * inv; val fv1 = (iv + hh) * inv
+            quadV(fu0, fv0, h, fu1, fv0, h, fu1, fv1, h, fu0, fv1, h, sh, false)
+        }
+        // paredinhas: da peça mais alta pra mais baixa, mescladas ao longo da aresta. Na borda do bloco o "vizinho" é o nível 0 (frestas também fecham ali).
+        fun wallTone(bot: Int): Float = if (bot < 0) 0.64f else 0.82f
+        for (side in 0..1) {      // planos de u constante (esquerda/direita)
+            val du = if (side == 0) -1 else 1
+            for (iu in 0 until G) {
+                val outside = iu + du < 0 || iu + du >= G
+                var iv = 0
+                while (iv < G) {
+                    val l = lvOf(iu, iv); val n = lvOf(iu + du, iv)
+                    if (!(n < l || (outside && n > l))) { iv++; continue }
+                    var e = iv
+                    while (e + 1 < G && lvOf(iu, e + 1) == l && lvOf(iu + du, e + 1) == n) e++
+                    val fu = (if (side == 0) iu else iu + 1) * inv + (if (!outside) 0f else if (side == 0) 0.004f else -0.004f)   // parede na borda do bloco: recuada, senão briga (z-fighting) com a do vizinho e fica piscando
+                    val top = maxOf(l, n) * step; val bot = minOf(l, n) * step
+                    val wsh = shade * wallTone(minOf(l, n)) * (if (side == 1) 0.92f else 1f)
+                    quadV(fu, iv * inv, top, fu, (e + 1) * inv, top, fu, (e + 1) * inv, bot, fu, iv * inv, bot, wsh, true)
+                    iv = e + 1
+                }
+            }
+        }
+        for (side in 0..1) {      // planos de v constante (frente/trás)
+            val dv = if (side == 0) -1 else 1
+            for (iv in 0 until G) {
+                val outside = iv + dv < 0 || iv + dv >= G
+                var iu = 0
+                while (iu < G) {
+                    val l = lvOf(iu, iv); val n = lvOf(iu, iv + dv)
+                    if (!(n < l || (outside && n > l))) { iu++; continue }
+                    var e = iu
+                    while (e + 1 < G && lvOf(e + 1, iv) == l && lvOf(e + 1, iv + dv) == n) e++
+                    val fv = (if (side == 0) iv else iv + 1) * inv + (if (!outside) 0f else if (side == 0) 0.004f else -0.004f)
+                    val top = maxOf(l, n) * step; val bot = minOf(l, n) * step
+                    val wsh = shade * wallTone(minOf(l, n)) * (if (side == 1) 0.88f else 0.96f)
+                    quadV(iu * inv, fv, top, (e + 1) * inv, fv, top, (e + 1) * inv, fv, bot, iu * inv, fv, bot, wsh, true)
+                    iu = e + 1
+                }
+            }
+        }
+    }
+
     fun buildChunk(cx: Int, cz: Int, o: MeshBuf, w: MeshBuf) {
         o.clear(); w.clear()
-        val c = IntArray(3); val p = FloatArray(3); val col = FloatArray(3); val ao = FloatArray(4)
+        val c = IntArray(3); val p = FloatArray(3); val col = FloatArray(3); val ao = FloatArray(4); val lop = BooleanArray(6); val leafPos = ArrayList<Int>()
         for (y in 0 until SY) for (z in cz * CH until cz * CH + CH) for (x in cx * CH until cx * CH + CH) {
             val id = get(x, y, z)
             if (id == B.AIR) continue
@@ -699,9 +904,10 @@ class World {
             val lowered = isW && get(x, y + 1, z) == B.AIR
             val vr = 0.94f + 0.06f * hash(x, z, y)
             c[0] = x; c[1] = y; c[2] = z
+            if (B.thin(id)) { stalk(o, x, y, z, id, vr); continue }
+            val shp = B.shape(id); if (shp != 0) { Shapes.emit(o, this, x, y, z, id, shp, vr); continue }
             if (B.leafy(id)) {
                 val lt = B.tSide[id]
-                if (o.vc > 55000) continue
                 if (!leafOpen(x, y, z)) {
                     // segunda camada: folha escondida mas vizinha de uma folha exposta desenha só o cubo interno (aparece pelos buraquinhos)
                     var near = false
@@ -710,14 +916,15 @@ class World {
                         val qx = x + if (aa == 0) ss else 0; val qy = y + if (aa == 1) ss else 0; val qz = z + if (aa == 2) ss else 0
                         if (B.leafy(get(qx, qy, qz)) && leafOpen(qx, qy, qz)) { near = true; break }
                     }
-                    if (near && o.vc < 50000) leafFaces(o, x, y, z, 0.16f, 0.84f, false, vr, 0.72f, lt)
+                    if (near) { leafFaces(o, x, y, z, 0.16f, 0.84f, false, vr, 0.72f, lt); leafPos.add(-((y * SZ + z) * SX + x) - 1) }
                     continue
                 }
                 leafFaces(o, x, y, z, 0f, 1f, true, vr, 1f, lt)        // casca externa (só faces expostas)
                 leafFaces(o, x, y, z, 0.16f, 0.84f, false, vr, 0.72f, lt)   // cubo interno: dá profundidade pelos buracos
+                leafPos.add((y * SZ + z) * SX + x)   // folhas 3D e frutinhas saem num passe só no fim (de cima pra baixo)
                 continue
             }
-            if (id == B.GRASS && get(x, y + 1, z) == B.AIR) {
+            if ((id == B.GRASS || id == mossId) && get(x, y + 1, z) == B.AIR) {
                 val r = hash(x, z, 3)
                 if (r > 0.55f && (cut.isEmpty() || !cut.containsKey((y * SZ + z) * SX + x))) {
                     val fl = r > 0.94f
@@ -750,6 +957,12 @@ class World {
                 val u = (a + 1) % 3; val v = (a + 2) % 3
                 val shade = when { B.light(id) -> 1f; id == B.LEAVES -> (if (a == 1) (if (s > 0) 1f else 0.8f) else if (a == 0) 0.92f else 0.86f); a == 1 -> if (s > 0) 1f else 0.55f; a == 0 -> 0.82f; else -> 0.7f }
                 val buf = if (isW || isG) w else o
+                if (!isW && !isG && B.relief[id and 16383]) {
+                    val rt = if (a == 1) (if (s > 0) Blk.pickTile(B.tTop[id], hash(x, z, y * 7 + 11)) else B.tBot[id]) else B.tSide[id]
+                    for (q in 0 until 4) ao[q] = cornerAo(c, a, s, u, v, QU[q], QV[q])
+                    reliefFace(o, c, a, s, rt, shade * vr, ao)
+                    continue
+                }
                 for (q in 0 until 4) {
                     val cu = QU[q]; val cv = QV[q]
                     p[0] = c[0].toFloat(); p[1] = c[1].toFloat(); p[2] = c[2].toFloat()
@@ -768,7 +981,7 @@ class World {
                         val lvl = if (a1 == 1 && a2 == 1) 0 else 3 - (a1 + a2 + a3)
                         ao[q] = AOB[lvl]; aob = ao[q]
                     } else ao[q] = 1f
-                    val tile = if (a == 1) (if (s > 0) B.tTop[id] else B.tBot[id]) else B.tSide[id]
+                    val tile = if (a == 1) (if (s > 0) Blk.pickTile(B.tTop[id], hash(x, z, y * 7 + 11)) else B.tBot[id]) else B.tSide[id]
                     var tu = cu.toFloat(); var tv = cv.toFloat()
                     if (a == 0) { tu = cv.toFloat(); tv = 1f - cu } else if (a == 2) { tv = 1f - cv }
                     val gr = shade * vr * aob
@@ -788,16 +1001,70 @@ class World {
                 buf.vc += 4
             }
         }
+        // folhas 3D da espécie + frutinhas, de cima pra baixo; quanto menos orçamento de vértices, menos cartões por bloco
+        var li = leafPos.size - 1
+        while (li >= 0) {
+            val e = leafPos[li]; li--
+            val inner = e < 0; val e2 = if (inner) -e - 1 else e
+            val ex = e2 % SX; val ez = (e2 / SX) % SZ; val ey = e2 / (SX * SZ)
+            var any = false
+            for (f in 0 until 6) {
+                val aa = f shr 1; val ss = if ((f and 1) == 0) 1 else -1
+                val nid = get(ex + if (aa == 0) ss else 0, ey + if (aa == 1) ss else 0, ez + if (aa == 2) ss else 0)
+                lop[f] = nid == B.AIR || nid == B.WATER
+                if (lop[f]) any = true
+            }
+            if (inner) { for (f in 0 until 6) lop[f] = true; any = true }   // folha de segunda camada: 1 cartão preenche o volume da copa
+            if (!any) continue
+            val mc = if (inner) 1 else 99
+            Leaf3D.emit(o, ex, ey, ez, B.tSide[get(ex, ey, ez)], lop, 0.94f + 0.06f * hash(ex, ez, ey), mc)
+        }
         decorate(cx, cz, o)
+    }
+
+    // ================= BAMBU: colmo fino com nós e folhinhas =================
+    private val mossId: Int by lazy { B.byName["Musgo"] ?: -1 }
+    private val bambuLeaf: Int by lazy { B.tSide[B.byName["Folhas de Bambu"] ?: B.LEAVES] }
+    private fun stalk(o: MeshBuf, x: Int, y: Int, z: Int, id: Int, vr: Float) {
+        val cx = x + 0.5f + (hash(x, z, 31) - 0.5f) * 0.4f; val cz = z + 0.5f + (hash(x, z, 32) - 0.5f) * 0.4f
+        val r = 0.105f + 0.03f * hash(x, z, 33)
+        val tile = B.tSide[id]
+        val y0 = y.toFloat(); val y1 = y + 1f
+        val sh = floatArrayOf(0.84f * vr, 0.7f * vr, 0.96f * vr, 0.78f * vr)
+        val sx = floatArrayOf(-1f, 1f, 1f, -1f); val sz = floatArrayOf(-1f, -1f, 1f, 1f)
+        for (i in 0 until 4) {
+            val j = (i + 1) and 3
+            quad(o, tile, cx + sx[i] * r, y0, cz + sz[i] * r, cx + sx[j] * r, y0, cz + sz[j] * r, cx + sx[j] * r, y1, cz + sz[j] * r, cx + sx[i] * r, y1, cz + sz[i] * r, sh[i] * 0.9f, sh[i])
+        }
+        if (get(x, y + 1, z) != id) {   // ponta de cima
+            val t = Blk.pickTile(B.tTop[id], 0f); val tc = (t % Atlas.NT).toFloat(); val tr = (t / Atlas.NT).toFloat()
+            val u0 = (tc + 0.01f) / Atlas.NT; val u1 = (tc + 0.99f) / Atlas.NT; val vt = (tr + 0.01f) / Atlas.ROWS; val vb = (tr + 0.99f) / Atlas.ROWS
+            o.vert(cx - r, y1, cz - r, vr, vr, vr, u0, vt); o.vert(cx + r, y1, cz - r, vr, vr, vr, u1, vt)
+            o.vert(cx + r, y1, cz + r, vr, vr, vr, u1, vb); o.vert(cx - r, y1, cz + r, vr, vr, vr, u0, vb)
+            o.tri(0, 1, 2); o.tri(0, 2, 3); o.tri(0, 2, 1); o.tri(0, 3, 2); o.vc += 4
+        }
+        // nó (anel um pouco mais grosso) a cada 3 blocos
+        if ((y + (hash(x, z, 34) * 3f).toInt()) % 3 == 0) {
+            val rn = r + 0.028f; val a0 = y + 0.42f; val a1 = y + 0.58f
+            for (i in 0 until 4) {
+                val j = (i + 1) and 3
+                quad(o, tile, cx + sx[i] * rn, a0, cz + sz[i] * rn, cx + sx[j] * rn, a0, cz + sz[j] * rn, cx + sx[j] * rn, a1, cz + sz[j] * rn, cx + sx[i] * rn, a1, cz + sz[i] * rn, sh[i] * 0.72f, sh[i] * 0.78f)
+            }
+        }
+        // folhinhas saindo do colmo (da altura 3 pra cima)
+        var below = 0; while (below < 4 && get(x, y - 1 - below, z) == id) below++
+        if (below >= 3) Leaf3D.stalkLeaves(o, cx, y + 0.5f, cz, x, y, z, bambuLeaf, vr, if (get(x, y + 1, z) != id) 5 else 3)
     }
 
     // ================= DECORAÇÃO DAS ÁRVORES =================
     // galhos finos com folhagem e folhinhas soltas: tudo é calculado a partir dos blocos na hora de montar a malha (nada vai pro arquivo do mundo)
 
     private fun quad(o: MeshBuf, tile: Int, ax: Float, ay: Float, az: Float, bx: Float, by: Float, bz: Float, cx: Float, cy: Float, cz: Float, dx: Float, dy: Float, dz: Float, s0: Float, s1: Float) {
-        val u0 = (tile + 0.01f) / Atlas.NT; val u1 = (tile + 0.99f) / Atlas.NT
-        o.vert(ax, ay, az, s0, s0, s0, u0, 0.99f / Atlas.ROWS); o.vert(bx, by, bz, s0, s0, s0, u1, 0.99f / Atlas.ROWS)
-        o.vert(cx, cy, cz, s1, s1, s1, u1, 0.01f / Atlas.ROWS); o.vert(dx, dy, dz, s1, s1, s1, u0, 0.01f / Atlas.ROWS)
+        val tc = (tile % Atlas.NT).toFloat(); val tr = (tile / Atlas.NT).toFloat()   // coluna e linha do tile no atlas (antes só valia pra linha 0: o bambu saía cinza)
+        val u0 = (tc + 0.01f) / Atlas.NT; val u1 = (tc + 0.99f) / Atlas.NT
+        val vb = (tr + 0.99f) / Atlas.ROWS; val vt = (tr + 0.01f) / Atlas.ROWS
+        o.vert(ax, ay, az, s0, s0, s0, u0, vb); o.vert(bx, by, bz, s0, s0, s0, u1, vb)
+        o.vert(cx, cy, cz, s1, s1, s1, u1, vt); o.vert(dx, dy, dz, s1, s1, s1, u0, vt)
         o.tri(0, 1, 2); o.tri(0, 2, 3); o.tri(0, 2, 1); o.tri(0, 3, 2); o.vc += 4
     }
 
@@ -869,7 +1136,7 @@ class World {
     private fun decorate(cx: Int, cz: Int, o: MeshBuf) {
         if (!DECOR) return   // galhos finos e folhinhas soltas desligados
         for (y in 1 until SY) for (z in cz * CH until cz * CH + CH) for (x in cx * CH until cx * CH + CH) {
-            if (o.vc > 58000) return
+            if (o.vc > 3000000) return
             decorBlock(o, x, y, z)
         }
     }
@@ -907,7 +1174,7 @@ class World {
         if (!DECOR) { java.util.Arrays.fill(rs, 0, n + 1, 0); return m }
         for (i in 0 until n) {
             rs[i] = m.inn
-            if (m.vc > 58000) continue
+            if (m.vc > 3000000) continue
             decorBlock(m, ox + bl[i * 4], oy + bl[i * 4 + 1], oz + bl[i * 4 + 2])
         }
         rs[n] = m.inn

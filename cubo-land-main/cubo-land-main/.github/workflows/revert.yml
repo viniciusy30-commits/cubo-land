@@ -1,0 +1,53 @@
+name: Reverter atualização
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  revert:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Reverter a última entrega que ainda não foi revertida
+        run: |
+          set -e
+          git config user.name "entrega-bot"
+          git config user.email "entrega-bot@users.noreply.github.com"
+          git config core.quotepath false
+
+          # entregas já revertidas: commits "Reverter: <sha7> ..."
+          reverted=$(git log main --format=%s | sed -n 's/^Reverter: \([0-9a-f]\{7\}\).*/\1/p')
+          target=""
+          for c in $(git log main --format=%H --grep='^Entrega autom'); do
+            s=${c:0:7}
+            if ! echo "$reverted" | grep -qx "$s"; then target=$c; break; fi
+          done
+          if [ -z "$target" ]; then echo "Nada para reverter"; exit 1; fi
+          s=${target:0:7}
+          parent=$(git rev-parse "$target^")
+          echo "Revertendo a entrega $s (estado anterior: ${parent:0:7})"
+
+          # só os arquivos do jogo: _incoming e .github ficam como estão
+          git diff --name-status --no-renames "$parent" "$target" -- . ':!_incoming' ':!.github' > /tmp/changes.txt
+          cat /tmp/changes.txt
+          while IFS=$'\t' read -r st f; do
+            [ -z "$f" ] && continue
+            if [ "$st" = "A" ]; then
+              git rm -q -f -- "$f" || true
+            else
+              git checkout "$parent" -- "$f"
+            fi
+          done < /tmp/changes.txt
+
+          if git diff --cached --quiet; then
+            echo "Nada mudou"; exit 1
+          fi
+          git commit -m "Reverter: $s (entrega de $(git log -1 --format=%cd --date=short $target))"
+          git push

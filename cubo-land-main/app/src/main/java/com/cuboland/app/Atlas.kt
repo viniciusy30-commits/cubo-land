@@ -14,7 +14,8 @@ import kotlin.math.sqrt
 object Atlas {
     const val T = 64
     const val NT = 32          // colunas do atlas (potência de 2)
-    const val ROWS = 16        // linhas: 32 x 16 = 512 tiles. 0..23 = tiles originais, 24..447 = blocos novos, 448..511 = brilhantes (Blk)
+    /** linhas do atlas: começa em 16 (512 tiles) e dobra sozinho quando faltar espaço (potência de 2 pros mipmaps); 0..23 = tiles originais, depois os blocos novos (Blk) */
+    val ROWS: Int by lazy { var r = 16; val n = Blk.tileCount; while (r * NT < n && r < 512) r *= 2; r }
     val bmp: Bitmap by lazy { build() }
     @Volatile var raw: IntArray? = null   // preenchido por build()
     private val tileCache = arrayOfNulls<Bitmap>(NT * ROWS)
@@ -602,6 +603,19 @@ object Atlas {
                 val ch = art.rows[py][px]
                 if (ch == '.') a = 0 else { val p = art.pal[Character.digit(ch, 16)]; c = p and 0xFFFFFF; a = p ushr 24 }
             }
+            Blk.K_BUILD -> {
+                val p = BuildArt.pixel(c1, c2, c3, c4, floor(u * 16f).toInt().coerceIn(0, 15), floor(v * 16f).toInt().coerceIn(0, 15))
+                if ((p ushr 24) == 0) a = 0 else { c = p and 0xFFFFFF; a = p ushr 24 }
+            }
+            Blk.K_PALV -> {
+                val p = NatVar.pixel(c1, c2, floor(u * 16f).toInt().coerceIn(0, 15), floor(v * 16f).toInt().coerceIn(0, 15))
+                if ((p ushr 24) == 0) a = 0 else { c = p and 0xFFFFFF; a = p ushr 24 }
+            }
+            Blk.K_SPRITE -> {
+                val spx = floor(u * 16f).toInt().coerceIn(0, 15); val spy = floor(v * 16f).toInt().coerceIn(0, 15)
+                val p = if (c1 >= 20) Leaf3D.fruitPixel(c1 - 20, spx, spy) else Leaf3D.pixel(c1, c2, spx, spy)
+                if ((p ushr 24) == 0) a = 0 else { c = p and 0xFFFFFF; a = 255 }
+            }
             Blk.K_PLEAF -> {
                 val art = NatArt.all[c1]
                 val px = floor(u * 16f).toInt().coerceIn(0, 15); val py = floor(v * 16f).toInt().coerceIn(0, 15)
@@ -612,6 +626,68 @@ object Atlas {
                 val px = floor(u * 16f).toInt().coerceIn(0, 15); val py = floor(v * 16f).toInt().coerceIn(0, 15)
                 val t = Pix.P[par][py][px] - '0'
                 c = if (t <= 0) c1 else if (t == 1) c2 else if (t == 2) c3 else c4
+            }
+            Blk.K_MARBLE -> {
+                val n1 = vn(u, v, 3, 3, s); val n2 = vn(u, v, 6, 6, s + 4)
+                c = lerp(c1, c2, n1 * 0.7f + n2 * 0.3f)
+                val w1 = abs(sin((u * 2f + v * 1f + n1 * 1.6f + n2 * 0.6f) * TAU))
+                c = lerp(c, c3, sm(0.10f, 0f, w1) * 0.85f)
+                val w2 = abs(sin((u * -1f + v * 3f + n2 * 1.3f) * TAU))
+                c = lerp(c, c3, sm(0.05f, 0f, w2) * 0.45f)
+            }
+            Blk.K_SCREEN -> {
+                if (par == 1) {   // televisão: paisagem
+                    c = lerp(0x79C8F5, 0xCFEEFF, 1f - v)
+                    val hill = 0.62f + 0.1f * sin(u * TAU)
+                    if (v > hill) c = lerp(0x58B060, 0x3A8A3F, v)
+                    val dx = u - 0.75f; val dy = v - 0.25f
+                    if (dx * dx + dy * dy < 0.012f) c = 0xFFE680
+                } else {   // computador: área de trabalho com janela
+                    c = lerp(c1, c2, v * 0.8f)
+                    if (u > 0.12f && u < 0.66f && v > 0.14f && v < 0.72f) {
+                        c = 0xF2F6FA
+                        if (v < 0.24f) c = c3
+                        else {
+                            val ln = (v - 0.28f) / 0.075f; val li = floor(ln).toInt(); val fy = fr(ln)
+                            if (fy < 0.5f && li in 0..4 && u < 0.18f + 0.25f + 0.25f * h(li, 1, s)) c = lerp(0xF2F6FA, c2, 0.8f)
+                        }
+                    }
+                    if (u > 0.74f && u < 0.9f && v > 0.14f && v < 0.74f) {
+                        val ic = (v - 0.14f) / 0.2f; val fy = fr(ic)
+                        if (fy < 0.6f) c = lerp(c2, 0xFFFFFF, 0.5f + 0.2f * h(floor(ic).toInt(), 2, s))
+                    }
+                    if (v > 0.9f) c = mul(c1, 0.5f)
+                }
+            }
+            Blk.K_FABRIC -> {
+                val wv = 0.5f + 0.5f * sin(u * TAU * 16f) * sin(v * TAU * 16f)
+                c = mul(lerp(c1, c2, vn(u, v, 4, 4, s) * 0.5f), 0.92f + 0.1f * wv)
+                if (par == 1) {   // capitonê: losangos com botões
+                    val du = fr(u * 2f) - 0.5f; val dv = fr(v * 2f) - 0.5f
+                    val dd = abs(du) + abs(dv)
+                    c = mul(c, 0.82f + 0.3f * sm(0.5f, 0.12f, dd))
+                    if (dd < 0.05f) c = mul(c1, 0.5f)
+                }
+            }
+            Blk.K_WGRAIN -> {
+                val pl = floor(v * 4f).toInt(); val fy = fr(v * 4f)
+                var p = lerp(c1, c2, 0.2f + 0.55f * h(pl, 3, s))
+                p = mul(p, 0.93f + 0.14f * (0.5f + 0.5f * sin((u * 3f + vn(u, v, 3, 12, s + 2) * 1.2f + h(pl, 0, s)) * TAU)))
+                c = lerp(p, c3, max(sm(0.07f, 0f, fy), sm(0.93f, 1f, fy)) * 0.8f)
+            }
+            Blk.K_RUG -> {
+                val e = min(min(u, v), min(1f - u, 1f - v))
+                c = mul(lerp(c1, mul(c1, 0.9f), vn(u, v, 6, 6, s)), 0.94f + 0.08f * (0.5f + 0.5f * sin(u * TAU * 20f) * sin(v * TAU * 20f)))
+                if (e < 0.1f) c = c2
+                if (e < 0.04f || (e > 0.1f && e < 0.15f)) c = c3
+                val dd = abs(u - 0.5f) + abs(v - 0.5f)
+                if (dd < 0.28f && dd > 0.2f) c = c2
+                if (dd < 0.1f) c = c3
+            }
+            Blk.K_GINGHAM -> {
+                val a1 = if (fr(u * 4f) < 0.5f) 1 else 0; val b1 = if (fr(v * 4f) < 0.5f) 1 else 0
+                c = if (a1 + b1 == 2) mul(c1, 0.85f) else if (a1 + b1 == 1) lerp(c1, c2, 0.5f) else c2
+                c = mul(c, 0.96f + 0.06f * vn(u, v, 8, 8, s))
             }
             else -> c = c1
         }
@@ -758,8 +834,8 @@ object Atlas {
         val a = (c ushr 24) and 255
         if (a == 0) return c
         val r0 = h(px, py, sd)
-        var k = 1f + (r0 - 0.5f) * 0.18f + (h(px / 2, py / 2, sd + 9) - 0.5f) * 0.1f
-        if (r0 > 0.93f) k *= 0.88f else if (r0 < 0.06f) k *= 1.1f
+        var k = 1f + (r0 - 0.5f) * 0.09f + (h(px / 2, py / 2, sd + 9) - 0.5f) * 0.06f   // ruído suave: antes parecia estática de TV
+        if (r0 > 0.95f) k *= 0.94f else if (r0 < 0.05f) k *= 1.05f
         if (px == 0 || py == 0) k *= 1.07f
         if (px == 15 || py == 15) k *= 0.9f
         val lv = 14f
@@ -785,7 +861,39 @@ object Atlas {
             out[y * w + t * T + x] = if (a == 0) CLEAR
                 else ((a / 4) shl 24) or ((r / a).toInt() shl 16) or ((g / a).toInt() shl 8) or (bl / a).toInt()
         }
-        for (t in intArrayOf(1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 23)) depth(out, w, t * T, 0, if (t == 8) 1f else 0.85f, t == 8, t * 17)
+        // terreno básico (grama, terra, pedra, areia, madeira, tábua, tijolo, cores): vira pixel art 16x16 como os blocos novos
+        for (t in intArrayOf(1, 2, 3, 4, 5, 6, 7, 9, 11, 12, 13, 14)) {
+            var opaque = true
+            for (y in 0 until T) for (x in 0 until T) if ((out[y * w + t * T + x] ushr 24) != 255) { opaque = false; break }
+            if (!opaque) continue
+            for (qy in 0 until 16) for (qx in 0 until 16) {
+                var r = 0; var g = 0; var bl = 0
+                for (y in 0 until 4) for (x in 0 until 4) { val c = out[(qy * 4 + y) * w + t * T + qx * 4 + x]; r += (c shr 16) and 255; g += (c shr 8) and 255; bl += c and 255 }
+                val avg = (255 shl 24) or ((r / 16) shl 16) or ((g / 16) shl 8) or (bl / 16)
+                val pc = pixelArt(avg, qx, qy, t * 31 + 7)
+                for (y in 0 until 4) for (x in 0 until 4) out[(qy * 4 + y) * w + t * T + qx * 4 + x] = pc
+            }
+        }
+        // tronco do carvalho (tiles 6 = casca, 7 = topo): mesmos desenhos 16x16 dos outros troncos (Pix.BARK / Pix.LOGTOP), só com a paleta do carvalho
+        val oakBark = intArrayOf(0x3F2B17, 0x5E4023, 0x7C5732, lerp(0x7C5732, 0xFFFFFF, 0.12f))
+        val oakRings = intArrayOf(0x5E4426, 0xB08555, 0xC9A06B, lerp(0xC9A06B, 0xFFFFFF, 0.15f))
+        for (t in 6..7) {
+            val pat = if (t == 6) Pix.BARK else Pix.LOGTOP
+            val cs = if (t == 6) oakBark else oakRings
+            for (qy in 0 until 16) for (qx in 0 until 16) {
+                val k = (Pix.P[pat][qy][qx] - '0').coerceIn(0, 3)
+                val pc = (255 shl 24) or (cs[k] and 0xFFFFFF)
+                for (y in 0 until 4) for (x in 0 until 4) out[(qy * 4 + y) * w + t * T + qx * 4 + x] = pc
+            }
+        }
+        // pedra (4), tábua (9) e tijolo (11) do terreno básico: mesmos padrões da Construção
+        for (t in intArrayOf(4, 9, 11)) {
+            val bt = BuildArt.baseTile(t) ?: continue
+            for (qy in 0 until 16) for (qx in 0 until 16) {
+                val pc = BuildArt.pixel(bt[0], bt[1], bt[2], 0, qx, qy) or (255 shl 24)
+                for (y in 0 until 4) for (x in 0 until 4) out[(qy * 4 + y) * w + t * T + qx * 4 + x] = pc
+            }
+        }
         for (t in 0 until 24) bleed(out, w, t * T, 0)
         // blocos novos (receitas em Blk): 1 amostra por pixel, as formas já são suaves
         val nDefs = Blk.defs.size
@@ -795,12 +903,9 @@ object Atlas {
             for (y in 0 until T) for (x in 0 until T) {
                 val qx = x / 4; val qy = y / 4   // grade de 16x16 pixels grandes (pixel art)
                 val g0 = genNew(sp, (qx + 0.5f) / 16f, (qy + 0.5f) / 16f)
-                val c = if (sp[0] == Blk.K_PIX || sp[0] == Blk.K_LEAF || sp[0] == Blk.K_PAL || sp[0] == Blk.K_PLEAF) g0 else pixelArt(g0, qx, qy, sp[5])
+                val c = if (sp[0] == Blk.K_PIX || sp[0] == Blk.K_LEAF || sp[0] == Blk.K_PAL || sp[0] == Blk.K_PLEAF || sp[0] == Blk.K_SPRITE || sp[0] == Blk.K_PALV || sp[0] == Blk.K_BUILD) g0 else pixelArt(g0, qx, qy, sp[5])
                 out[(y0 + y) * w + x0 + x] = if ((c ushr 24) == 0) CLEAR else c
             }
-            val k0 = sp[0]
-            val dst = if (k0 == Blk.K_GLASS || k0 == Blk.K_JELLY || k0 == Blk.K_ICE) 0.4f else if (t >= Blk.GLOW0) 0.55f else 1f
-            depth(out, w, x0, y0, dst, true, sp[5])
             bleed(out, w, x0, y0)
         }
         raw = out.clone()   // cópia com a cor preservada nos pixels transparentes: vai direto pra GPU (o Bitmap do Android zera essa cor)

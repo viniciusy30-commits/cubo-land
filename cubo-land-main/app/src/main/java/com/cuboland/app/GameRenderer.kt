@@ -43,11 +43,11 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         varying vec3 vCol; varying float vFog; varying vec2 vUV; varying vec3 vWP; varying float vTile; varying vec3 vView;
         void main() {
             vec4 wp = uModel * vec4(aPos, 1.0);
-            float tile = floor(aUV.x * 32.0) + 32.0 * floor(aUV.y * 16.0);
+            float tile = floor(aUV.x * 32.0) + 32.0 * floor(aUV.y * ${Atlas.ROWS}.0);
             if (uWind > 0.5) {
                 float gust = 0.6 + 0.4 * sin(wp.x * 0.12 + wp.z * 0.08 + uTime * 0.7);
                 if (tile >= 16.0 && tile < 20.0) {
-                    float w = clamp((0.99 - aUV.y * 16.0) / 0.98, 0.0, 1.0); w = w * w;
+                    float w = clamp((0.99 - aUV.y * ${Atlas.ROWS}.0) / 0.98, 0.0, 1.0); w = w * w;
                     wp.x += (sin(uTime * 2.3 + wp.x * 0.9 + wp.z * 0.6) * 0.07 + 0.04) * w * gust * 1.4;
                     wp.z += cos(uTime * 1.8 + wp.x * 0.5 + wp.z * 0.9) * 0.05 * w * gust * 1.4;
                 } else if (tile == 8.0 || tile == 20.0 || tile == 21.0 || tile == 22.0 || ${leafCond("tile")}) {
@@ -218,8 +218,8 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         // textura (atlas)
         val tex = IntArray(1); G.glGenTextures(1, tex, 0); atlasTex = tex[0]; iconsBaked = false
         G.glActiveTexture(G.GL_TEXTURE0); G.glBindTexture(G.GL_TEXTURE_2D, tex[0])
-        G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_MIN_FILTER, G.GL_LINEAR_MIPMAP_NEAREST)
-        G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_MAG_FILTER, G.GL_LINEAR)
+        G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_MIN_FILTER, G.GL_LINEAR_MIPMAP_LINEAR)
+        G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_MAG_FILTER, G.GL_NEAREST)
         G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_WRAP_S, G.GL_CLAMP_TO_EDGE)
         G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_WRAP_T, G.GL_CLAMP_TO_EDGE)
         val atlasBmp = Atlas.bmp; val rawPx = Atlas.raw
@@ -237,7 +237,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         java.util.Arrays.fill(world.dirty, true)
         // cubos unitários: 0 = branco (entidades), 1..255 = blocos com textura
         val cb = MeshBuf(); val p = FloatArray(3)
-        for (id in 0 until B.N) for (face in 0 until 6) {
+        for (id in 0 until B.used) for (face in 0 until 6) {
             val a = face shr 1; val s = if ((face and 1) == 0) 1 else -1
             val u = (a + 1) % 3; val v = (a + 2) % 3
             val sh = when { a == 1 -> if (s > 0) 1f else 0.55f; a == 0 -> 0.82f; else -> 0.7f }
@@ -263,16 +263,16 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val fb = ByteBuffer.allocateDirect(max(4, b.vn * 4)).order(ByteOrder.nativeOrder()).asFloatBuffer()
         fb.put(b.v, 0, b.vn); fb.position(0)
         G.glBindBuffer(G.GL_ARRAY_BUFFER, vb); G.glBufferData(G.GL_ARRAY_BUFFER, b.vn * 4, fb, G.GL_STATIC_DRAW)
-        val sb = ByteBuffer.allocateDirect(max(2, b.inn * 2)).order(ByteOrder.nativeOrder()).asShortBuffer()
+        val sb = ByteBuffer.allocateDirect(max(4, b.inn * 4)).order(ByteOrder.nativeOrder()).asIntBuffer()
         sb.put(b.ix, 0, b.inn); sb.position(0)
-        G.glBindBuffer(G.GL_ELEMENT_ARRAY_BUFFER, ib); G.glBufferData(G.GL_ELEMENT_ARRAY_BUFFER, b.inn * 2, sb, G.GL_STATIC_DRAW)
+        G.glBindBuffer(G.GL_ELEMENT_ARRAY_BUFFER, ib); G.glBufferData(G.GL_ELEMENT_ARRAY_BUFFER, b.inn * 4, sb, G.GL_STATIC_DRAW)
         return b.inn
     }
 
     override fun onSurfaceChanged(gl: GL10?, w: Int, h: Int) {
         vw = w; vh = h
         G.glViewport(0, 0, w, h)
-        Matrix.perspectiveM(proj, 0, 70f, w.toFloat() / h, 0.1f, 200f)
+        Matrix.perspectiveM(proj, 0, 70f, w.toFloat() / h, 0.15f, 200f)   // near maior = menos z-fighting (as faces piscando)
     }
 
     private fun bindMesh(vb: Int, ib: Int) {
@@ -302,7 +302,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         Matrix.scaleM(tmp, 0, sx, sy, sz)
         G.glUniformMatrix4fv(uModel, 1, false, tmp, 0)
         tint(col, a, mul)
-        G.glDrawElements(G.GL_TRIANGLES, 36, G.GL_UNSIGNED_SHORT, cube * 72)
+        G.glDrawElements(G.GL_TRIANGLES, 36, G.GL_UNSIGNED_INT, cube * 144)
     }
 
     private fun setBase(x: Float, y: Float, z: Float, yawDeg: Float) {
@@ -335,7 +335,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         dm[15] = 1f
         G.glUniformMatrix4fv(uModel, 1, false, dm, 0)
         tint(col, al)
-        G.glDrawElements(G.GL_TRIANGLES, 36, G.GL_UNSIGNED_SHORT, 0)
+        G.glDrawElements(G.GL_TRIANGLES, 36, G.GL_UNSIGNED_INT, 0)
     }
 
     private fun mixCol(a: Int, b: Int, t: Float): Int {
@@ -478,7 +478,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         bindMesh(d.vb, d.ib)
         setBase(d.x + 0.5f, d.y + 0.5f, d.z + 0.5f, 0f)
         G.glUniformMatrix4fv(uModel, 1, false, base, 0); tint(0xFFFFFF, 1f)
-        G.glDrawElements(G.GL_TRIANGLES, d.icnt, G.GL_UNSIGNED_SHORT, 0)
+        G.glDrawElements(G.GL_TRIANGLES, d.icnt, G.GL_UNSIGNED_INT, 0)
         bindMesh(cubeVb, cubeIb)
     }
 
@@ -640,6 +640,48 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     /** a árvore inteira (troncos e folhas) girando em volta do ponto de corte */
     private val treeBuf = HashMap<FallTree, IntArray>()   // vbo, ibo, nº de índices dos galhos finos de cada árvore caindo
 
+    /** folhinha que cai: cada espécie com o seu formato (octógono = 2 retângulos girados 45°) */
+    private fun drawLeafShape(l: LeafP, tl: Float, rl: Float, al: Float) {
+        val s = l.size; val c = l.color
+        val lite = mixCol(c, 0xFFFFFF, 0.28f); val dark = mixCol(c, 0x000000, 0.32f)
+        val th = 0.01f
+        fun round(w: Float, len: Float, y0: Float, col: Int, mul: Float = 1f) {
+            box(base, 0f, y0, 0f, tl, 0f, w, th, len, 0f, col, al, mul, null, 0, rl)
+            box(base, 0f, y0 + 0.0008f, 0f, tl, 45f, w * 0.86f, th, len * 0.86f, 0f, col, al, mul, null, 0, rl)
+        }
+        fun vein(len: Float, z0: Float = 0f) = box(base, 0f, 0.006f, z0, tl, 0f, s * 0.07f, th * 1.2f, len, 0f, dark, al * 0.9f, 1f, null, 0, rl)
+        when (l.shape) {
+            Leaf3D.ABETO -> {   // agulhas
+                for (k in -1..1) box(base, 0f, 0.001f * (k + 2), 0f, tl, k * 28f, s * 0.07f, th, s * 1.7f, 0f, if (k == 0) dark else c, al, 1f, null, 0, rl)
+            }
+            Leaf3D.CEREJA -> {   // pétala arredondada com pontinha clara
+                round(s * 0.9f, s * 1.05f, 0f, c); box(base, 0f, 0.004f, s * 0.2f, tl, 0f, s * 0.5f, th, s * 0.5f, 0f, lite, al * 0.9f, 1.05f, null, 0, rl)
+            }
+            Leaf3D.OUTONO -> {   // folha de bordo: três lâminas em estrela
+                for (k in 0..2) box(base, 0f, 0.001f * k, 0f, tl, k * 60f, s * 0.5f, th, s * 1.7f, 0f, if (k == 1) lite else c, al, 1f, null, 0, rl)
+                vein(s * 1.6f)
+            }
+            Leaf3D.GINKGO -> {   // leque
+                box(base, 0f, 0f, s * 0.35f, tl, 0f, s * 1.5f, th, s * 0.8f, 0f, c, al, 1f, null, 0, rl)
+                box(base, 0f, 0.001f, s * 0.35f, tl, 40f, s * 1.1f, th, s * 0.8f, 0f, c, al, 1f, null, 0, rl)
+                box(base, 0f, 0.003f, s * 0.35f, tl, 0f, s * 0.8f, th, s * 0.5f, 0f, lite, al * 0.9f, 1.05f, null, 0, rl)
+                box(base, 0f, 0.005f, -s * 0.25f, tl, 0f, s * 0.07f, th, s * 0.7f, 0f, dark, al, 1f, null, 0, rl)
+            }
+            Leaf3D.BAMBU -> {   // lâmina fina e comprida
+                box(base, 0f, 0f, 0f, tl, 0f, s * 0.38f, th, s * 2.3f, 0f, c, al, 1f, null, 0, rl)
+                box(base, 0f, 0.002f, s * 0.1f, tl, 0f, s * 0.2f, th, s * 1.5f, 0f, lite, al * 0.9f, 1.05f, null, 0, rl)
+                vein(s * 2.2f)
+            }
+            Leaf3D.ACACIA -> {   // folíolos em fileira
+                for (k in -2..2) { box(base, -s * 0.28f, 0.001f * k, k * s * 0.34f, tl, 0f, s * 0.5f, th, s * 0.3f, 0f, c, al, 1f, null, 0, rl); box(base, s * 0.28f, 0.001f * k, k * s * 0.34f, tl, 0f, s * 0.5f, th, s * 0.3f, 0f, lite, al, 1f, null, 0, rl) }
+                vein(s * 1.8f)
+            }
+            Leaf3D.SELVA -> { round(s * 1.25f, s * 1.6f, 0f, c); round(s * 0.7f, s * 0.8f, 0.003f, lite, 1.04f); vein(s * 1.8f) }
+            Leaf3D.CARMESIM, Leaf3D.DISTORCIDO, Leaf3D.MUSGO -> { round(s * 0.85f, s * 0.85f, 0f, c); round(s * 0.45f, s * 0.45f, 0.003f, lite, 1.05f) }
+            else -> { round(s * 0.95f, s * 1.2f, 0f, c); round(s * 0.5f, s * 0.55f, 0.003f, lite, 1.04f); vein(s * 1.7f) }   // carvalho, bétula, mangue…
+        }
+    }
+
     private fun drawTrees() {
         val it = treeBuf.entries.iterator()
         while (it.hasNext()) { val e = it.next(); if (!game.trees.contains(e.key)) { G.glDeleteBuffers(2, e.value, 0); it.remove() } }
@@ -660,7 +702,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                     if (f.gone[i]) { i++; continue }
                     var j = i; while (j < f.n && !f.gone[j]) j++
                     val c = f.rs[j] - f.rs[i]
-                    if (c > 0) G.glDrawElements(G.GL_TRIANGLES, c, G.GL_UNSIGNED_SHORT, f.rs[i] * 2)
+                    if (c > 0) G.glDrawElements(G.GL_TRIANGLES, c, G.GL_UNSIGNED_INT, f.rs[i] * 4)
                     i = j
                 }
                 bindMesh(cubeVb, cubeIb)
@@ -1508,7 +1550,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         tint(0xFFFFFF, 1f)
         for (i in 0 until World.CX * World.CZ) {
             if (cnt[i * 2] == 0 || !chunkVis[i]) continue
-            bindMesh(vbo[i * 2], ibo[i * 2]); G.glDrawElements(G.GL_TRIANGLES, cnt[i * 2], G.GL_UNSIGNED_SHORT, 0)
+            bindMesh(vbo[i * 2], ibo[i * 2]); G.glDrawElements(G.GL_TRIANGLES, cnt[i * 2], G.GL_UNSIGNED_INT, 0)
         }
         G.glUniform1f(uWind, 0f)
         bindMesh(cubeVb, cubeIb)
@@ -1540,10 +1582,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             setBase(l.x, l.y, l.z, l.age * 50f * sp + l.ph * 57f)
             val tl = if (l.landed) 0f else sin(l.age * 3f * sp + l.ph) * 55f; val rl = if (l.landed) 0f else cos(l.age * 2.3f * sp + l.ph) * 45f
             val al = min(1f, min(l.age * (if (l.spin > 0f) 14f else 3f), l.life * 1.2f))
-            val edge = mixCol(l.color, 0xE6F59A, 0.35f)
-            box(base, 0f, 0f, 0f, tl, 0f, l.size * 0.95f, 0.01f, l.size * 1.15f, 0f, l.color, al, 1f, null, 0, rl)
-            box(base, 0f, 0.003f, l.size * 0.28f, tl, 0f, l.size * 0.55f, 0.011f, l.size * 0.55f, 0f, edge, al * 0.9f, 1.05f, null, 0, rl)
-            box(base, 0f, 0.006f, 0f, tl, 0f, l.size * 0.09f, 0.012f, l.size * 1.9f, 0f, 0x2F6B1E, al * 0.85f, 1f, null, 0, rl)
+            drawLeafShape(l, tl, rl, al)
         }
         for (b in game.bolts) {
             setBase(b.x, b.y, b.z, 0f)
@@ -1553,9 +1592,10 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             G.glDepthMask(true)
         }
         if (game.hasHit && game.deadTimer <= 0f) {
-            setBase(game.hx + 0.5f, game.hy + 0.5f, game.hz + 0.5f, 0f)
+            val hb = game.world.boxOf(game.hx, game.hy, game.hz)
+            if (hb != null) setBase(game.hx + (hb[0] + hb[3]) / 2f, game.hy + (hb[1] + hb[4]) / 2f, game.hz + (hb[2] + hb[5]) / 2f, 0f) else setBase(game.hx + 0.5f, game.hy + 0.5f, game.hz + 0.5f, 0f)
             G.glDepthMask(false)
-            box(base, 0f, 0f, 0f, 0f, 0f, 1.01f, 1.01f, 1.01f, 0f, 0xFFFFFF, 0.18f + 0.1f * sin(game.time * 6f))
+            box(base, 0f, 0f, 0f, 0f, 0f, if (hb != null) hb[3] - hb[0] + 0.01f else 1.01f, if (hb != null) hb[4] - hb[1] + 0.01f else 1.01f, if (hb != null) hb[5] - hb[2] + 0.01f else 1.01f, 0f, 0xFFFFFF, 0.18f + 0.1f * sin(game.time * 6f))
             G.glDepthMask(true)
         }
         if (game.deadTimer <= 0f) drawDamage(dt)
@@ -1565,7 +1605,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         tint(0xFFFFFF, 1f)
         for (i in 0 until World.CX * World.CZ) {
             if (cnt[i * 2 + 1] == 0 || !chunkVis[i]) continue
-            bindMesh(vbo[i * 2 + 1], ibo[i * 2 + 1]); G.glDrawElements(G.GL_TRIANGLES, cnt[i * 2 + 1], G.GL_UNSIGNED_SHORT, 0)
+            bindMesh(vbo[i * 2 + 1], ibo[i * 2 + 1]); G.glDrawElements(G.GL_TRIANGLES, cnt[i * 2 + 1], G.GL_UNSIGNED_INT, 0)
         }
         G.glUniform1f(uWind, 0f); bindMesh(cubeVb, cubeIb)
         
