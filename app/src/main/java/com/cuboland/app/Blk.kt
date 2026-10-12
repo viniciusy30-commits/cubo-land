@@ -25,12 +25,16 @@ object Blk {
     const val K_BLOCKY = 30; const val K_GLAZE = 31; const val K_CACTUS = 32; const val K_LEAFY = 33; const val K_PIX = 34; const val K_LEAF = 35
     const val K_PALV = 39   // variante do topo com grãos em posição/quantidade diferentes (NatVar): c1 = índice da NatArt, c2 = variante
     const val K_SPRITE = 38   // folha desenhada por espécie (Leaf3D): c1 = estilo, c2 = índice da NatArt (paleta; -1 = carvalho)
+    const val K_MARBLE = 40; const val K_SCREEN = 41; const val K_FABRIC = 42; const val K_WGRAIN = 43; const val K_RUG = 44; const val K_GINGHAM = 45
     const val K_PAL = 36; const val K_PLEAF = 37   // pixel art com paleta própria (NatArt); K_PLEAF = folhagem com buracos transparentes
 
     class Def(val id: Int, val name: String, val cat: Int, val top: Int, val side: Int, val bot: Int,
               val color: Int, val flags: Int, val hard: Float, val mat: Int, val desc: String)
 
     /** receita de cada tile novo: [tipo, c1, c2, c3, c4, semente, par | (flags shl 8)] */
+    /** tiles da mobília (índices T_* de Furniture) */
+    val ft = IntArray(48)
+    val fts: IntArray get() { defs; return ft }
     val specs = arrayOfNulls<IntArray>(MAXT)
     private var nextTile = 24
     /** quantos tiles já foram usados (o atlas ajusta as linhas a isso) */
@@ -329,11 +333,61 @@ object Blk {
         leaf3("Verruga Distorcido", NatArt.F_DISTORCIDO, Leaf3D.DISTORCIDO, 0x2EA8A0, "Verruga distorcida: copa azul-turquesa do mundo sombrio.")
 
         // ================= MOBÍLIA (ids novos sempre no fim!) =================
-        val tWTop = pal(Pix.PLANK, 0xD6A068); val tWSide = pal(Pix.PLANK, 0xB87D45); val tWLeg = pal(Pix.PLANK, 0x8A5A30)
-        val tCush = tl(K_WOOL, 0xE0566B, dk(0xE0566B, 0.14f))
-        blk("Cadeira", C_FURN, tCush, tWSide, tWLeg, 0xB87D45, M_WOOD, 4f, F_SHAPE or (4 shl 5), "Cadeirinha de madeira com almofada. Vira sozinha para a mesa que estiver ao lado.")
-        blk("Mesa", C_FURN, tWTop, tWSide, tWLeg, 0xD6A068, M_WOOD, 4f, F_SHAPE or (5 shl 5), "Mesa de madeira. Junte várias mesas: o tampo cresce e as pernas ficam só nas pontas.")
-        val tSheet = tl(K_WOOL, 0xF4F0EA, dk(0xF4F0EA, 0.1f)); val tBlank = tl(K_WOOL, 0x5A86D8, dk(0x5A86D8, 0.14f))
-        blk("Cama", C_FURN, tBlank, tSheet, tWLeg, 0x5A86D8, M_WOOD, 4f, F_SHAPE or (6 shl 5), "Cama com travesseiro e coberta azul. Junte camas em fila e ela fica mais comprida (travesseiro na ponta).")
+        val F = ft
+        F[Furniture.T_OAK] = tl(K_WGRAIN, 0xE0B070, 0xC8935A, 0x8C5E34)
+        F[Furniture.T_OAKD] = tl(K_WGRAIN, 0xB87D45, 0x9C6535, 0x6B4524)
+        F[Furniture.T_DARK] = tl(K_WGRAIN, 0x7A4E34, 0x6A422B, 0x3E2518)
+        F[Furniture.T_DARKD] = tl(K_WGRAIN, 0x4E3020, 0x422818, 0x24150C)
+        F[Furniture.T_BIRCH] = tl(K_WGRAIN, 0xEBDDB0, 0xDCCB98, 0xA89868)
+        F[Furniture.T_MARB] = tl(K_MARBLE, 0xF4F1EC, 0xDCD8D2, 0x8E8A92)
+        F[Furniture.T_MARBK] = tl(K_MARBLE, 0x2A2830, 0x3A3840, 0xC8B070)
+        F[Furniture.T_GOLD] = tl(K_FLAT, 0xF2CF68, 0xD8A940)
+        F[Furniture.T_STEEL] = tl(K_FLAT, 0xC8CED6, 0xA5ADB8)
+        F[Furniture.T_GING] = tl(K_GINGHAM, 0xD84A4A, 0xFFF8F0)
+        F[Furniture.T_FABR] = tl(K_FABRIC, 0xC8444E, 0x9A2E3A, 0, 0, 0, 1)
+        F[Furniture.T_FABB] = tl(K_FABRIC, 0x4C74C4, 0x36549A, 0, 0, 0, 1)
+        F[Furniture.T_FABG] = tl(K_FABRIC, 0x5FA070, 0x417A52, 0, 0, 0, 1)
+        F[Furniture.T_CREAM] = tl(K_FABRIC, 0xF1E6CF, 0xD9CBAE)
+        F[Furniture.T_WHITE] = tl(K_FLAT, 0xF6F6F2, 0xE4E6E8)
+        F[Furniture.T_SCREEN] = tl(K_SCREEN, 0x2E5FA8, 0x7CC4F2, 0x3E7BD0)
+        F[Furniture.T_BLACK] = tl(K_FLAT, 0x2A2C30, 0x1E2024)
+        F[Furniture.T_KEYS] = tl(K_TILES, 0xD8DCE2, 0xC8CDD6, 0x70757E, 0, 0, 8)
+        F[Furniture.T_POT] = tl(K_FLAT, 0xC4693B, 0xA8552E)
+        F[Furniture.T_LEAFA] = tl(K_FLAT, 0x4F9F3C, 0x6FC24E)
+        F[Furniture.T_LEAFB] = tl(K_FLAT, 0x3A8A3A, 0x56AE48)
+        F[Furniture.T_SOIL] = tl(K_FLAT, 0x5A4030, 0x4A3326)
+        val bookC = intArrayOf(0xC8444E, 0x4C74C4, 0x5FA070, 0xE0B040, 0x8A5BB8, 0x3FA8A8)
+        for (i in 0 until 6) F[Furniture.T_BOOK0 + i] = tl(K_FLAT, bookC[i], dk(bookC[i], 0.2f))
+        F[Furniture.T_RUGR] = tl(K_RUG, 0xC8444E, 0xF1E6CF, 0x8A2A36)
+        F[Furniture.T_RUGB] = tl(K_RUG, 0x4C74C4, 0xF1E6CF, 0x2E4E8E)
+        F[Furniture.T_SHADE] = tl(K_FABRIC, 0xFFE9B0, 0xF2D58A)
+        F[Furniture.T_GREY] = tl(K_FABRIC, 0x5A5F6A, 0x45494F)
+        F[Furniture.T_TVSCR] = tl(K_SCREEN, 0x2E5FA8, 0x7CC4F2, 0x3E7BD0, 0, 0, 1)
+        val FU = F_SHAPE or (7 shl 5)
+        blk("Cadeira", C_FURN, F[Furniture.T_FABR], F[Furniture.T_OAK], F[Furniture.T_OAKD], 0xB87D45, M_WOOD, 4f, F_SHAPE or (4 shl 5), "Cadeira de madeira com almofada e encosto de ripas. Vira sozinha para a mesa ao lado. Dá pra sentar!")
+        blk("Mesa", C_FURN, F[Furniture.T_OAK], F[Furniture.T_OAKD], F[Furniture.T_OAKD], 0xD6A068, M_WOOD, 4f, F_SHAPE or (5 shl 5), "Mesa de madeira. Junte várias: o tampo cresce e as pernas ficam só nas pontas.")
+        blk("Cama", C_FURN, F[Furniture.T_FABB], F[Furniture.T_CREAM], F[Furniture.T_OAKD], 0x5A86D8, M_WOOD, 4f, F_SHAPE or (6 shl 5), "Cama com cabeceira, travesseiro e coberta. Junte em fila e ela fica mais comprida.")
+        blk("Cadeira Estofada", C_FURN, F[Furniture.T_FABB], F[Furniture.T_DARKD], F[Furniture.T_DARKD], 0x4C74C4, M_WOOD, 4f, FU or (Furniture.S_CHAIR2 shl 8), "Cadeira elegante de madeira escura com assento e encosto estofados. Dá pra sentar.")
+        blk("Banco", C_FURN, F[Furniture.T_FABG], F[Furniture.T_DARKD], F[Furniture.T_DARKD], 0x5FA070, M_WOOD, 4f, FU or (Furniture.S_STOOL shl 8), "Banquinho redondo com almofada. Dá pra sentar.")
+        blk("Poltrona", C_FURN, F[Furniture.T_FABR], F[Furniture.T_FABR], F[Furniture.T_DARKD], 0xC8444E, M_SOFT, 4f, FU or (Furniture.S_ARM shl 8), "Poltrona fofa com braços e almofada. Encosta na parede ou vira pra mesa. Dá pra sentar.")
+        blk("Cadeira de Escritório", C_FURN, F[Furniture.T_GREY], F[Furniture.T_GREY], F[Furniture.T_STEEL], 0x5A5F6A, M_METAL, 4f, FU or (Furniture.S_OFFICE shl 8), "Cadeira giratória com rodinhas, braços e encosto alto. Dá pra sentar.")
+        blk("Sofá", C_FURN, F[Furniture.T_FABB], F[Furniture.T_FABB], F[Furniture.T_DARKD], 0x4C74C4, M_SOFT, 4f, FU or (Furniture.S_SOFA shl 8), "Sofá estofado. Junte em fila para um sofá comprido (braços só nas pontas). Dá pra sentar.")
+        blk("Mesa Escura", C_FURN, F[Furniture.T_DARK], F[Furniture.T_DARKD], F[Furniture.T_DARKD], 0x6A422B, M_WOOD, 4f, FU or (Furniture.S_TDARK shl 8), "Mesa de madeira escura com pernas torneadas. Junte várias para crescer.")
+        blk("Mesa de Mármore", C_FURN, F[Furniture.T_MARB], F[Furniture.T_MARB], F[Furniture.T_GOLD], 0xE8E4DE, M_STONE, 6f, FU or (Furniture.S_TMARB shl 8), "Tampo de mármore com pés dourados. Junte várias para crescer.")
+        blk("Mesa com Toalha", C_FURN, F[Furniture.T_GING], F[Furniture.T_GING], F[Furniture.T_OAKD], 0xD84A4A, M_SOFT, 4f, FU or (Furniture.S_TCLOTH shl 8), "Mesa com toalha xadrez que cai pelos lados. Junte várias para crescer.")
+        blk("Mesa Redonda", C_FURN, F[Furniture.T_OAK], F[Furniture.T_OAKD], F[Furniture.T_OAKD], 0xD6A068, M_WOOD, 4f, FU or (Furniture.S_TROUND shl 8), "Mesa redonda de madeira com pé central.")
+        blk("Mesa Redonda de Mármore", C_FURN, F[Furniture.T_MARB], F[Furniture.T_MARB], F[Furniture.T_GOLD], 0xE8E4DE, M_STONE, 6f, FU or (Furniture.S_TROUNDM shl 8), "Mesa redonda de mármore com pé dourado.")
+        blk("Mesa de Centro", C_FURN, F[Furniture.T_BIRCH], F[Furniture.T_OAKD], F[Furniture.T_OAKD], 0xEBDDB0, M_WOOD, 4f, FU or (Furniture.S_COFFEE shl 8), "Mesinha baixa de sala com prateleira embaixo.")
+        blk("Escrivaninha", C_FURN, F[Furniture.T_OAK], F[Furniture.T_OAKD], F[Furniture.T_OAKD], 0xC8935A, M_WOOD, 4f, FU or (Furniture.S_DESK shl 8), "Escrivaninha com laterais e gaveta. Junte várias para uma bancada comprida.")
+        blk("Estante de Livros", C_FURN, F[Furniture.T_OAK], F[Furniture.T_OAKD], F[Furniture.T_OAKD], 0xB5503C, M_WOOD, 5f, FU or (Furniture.S_SHELF shl 8), "Estante com 3 prateleiras cheias de livros coloridos. Junte lado a lado.")
+        blk("Armário", C_FURN, F[Furniture.T_OAK], F[Furniture.T_OAKD], F[Furniture.T_OAKD], 0xB87D45, M_WOOD, 5f, FU or (Furniture.S_WARD shl 8), "Guarda-roupa com duas portas, painéis e maçanetas douradas.")
+        blk("Cômoda", C_FURN, F[Furniture.T_OAK], F[Furniture.T_OAKD], F[Furniture.T_OAKD], 0xC8935A, M_WOOD, 5f, FU or (Furniture.S_DRESS shl 8), "Cômoda com 3 gavetas e puxadores dourados. Dá pra pôr abajur, TV e plantas em cima.")
+        blk("Geladeira", C_FURN, F[Furniture.T_WHITE], F[Furniture.T_WHITE], F[Furniture.T_BLACK], 0xF6F6F2, M_METAL, 6f, FU or (Furniture.S_FRIDGE shl 8), "Geladeira branca com freezer, puxadores e ímãs.")
+        blk("Computador", C_FURN, F[Furniture.T_BLACK], F[Furniture.T_SCREEN], F[Furniture.T_BLACK], 0x2E5FA8, M_METAL, 3f, FU or (Furniture.S_PC shl 8), "Monitor com tela acesa, teclado, mouse e caixinhas de som. Fica certinho em cima de mesas.")
+        blk("Televisão", C_FURN, F[Furniture.T_BLACK], F[Furniture.T_TVSCR], F[Furniture.T_BLACK], 0x2A2C30, M_METAL, 3f, FU or (Furniture.S_TV shl 8), "TV de tela plana passando uma paisagem. Fica certinha em cima de cômodas e mesas.")
+        blk("Abajur", C_FURN, F[Furniture.T_SHADE], F[Furniture.T_SHADE], F[Furniture.T_GOLD], 0xFFE9B0, M_SOFT, 2f, FU or F_LIGHT or (Furniture.S_LAMP shl 8), "Abajur dourado que ilumina com luz quentinha.")
+        blk("Vaso de Planta", C_FURN, F[Furniture.T_LEAFA], F[Furniture.T_POT], F[Furniture.T_POT], 0x4F9F3C, M_SOFT, 2f, FU or (Furniture.S_PLANT shl 8), "Vasinho de barro com uma plantinha de folhas grandes.")
+        blk("Tapete Vermelho", C_FURN, F[Furniture.T_RUGR], F[Furniture.T_RUGR], F[Furniture.T_RUGR], 0xC8444E, M_SOFT, 2f, FU or (Furniture.S_RUGR shl 8), "Tapete macio com borda e losango.")
+        blk("Tapete Azul", C_FURN, F[Furniture.T_RUGB], F[Furniture.T_RUGB], F[Furniture.T_RUGB], 0x4C74C4, M_SOFT, 2f, FU or (Furniture.S_RUGB shl 8), "Tapete macio com borda e losango.")
     }
 }

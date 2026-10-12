@@ -103,7 +103,7 @@ class Game(val world: World) {
     private var hitT = -1f; private var hitItem = 0; private var hitStab = false
     private var pendingT = -1f; private var pendingPower = 0f
     val leafFall = ArrayList<LeafP>(); private var leafT = 0f; var comboT = 0f
-    val drops = ArrayList<Drop>(); val ripples = ArrayList<Ripple>(); val prints = ArrayList<Foot>(); val picked = IntArray(256)
+    val drops = ArrayList<Drop>(); val ripples = ArrayList<Ripple>(); val prints = ArrayList<Foot>(); val picked = IntArray(16384)   // contagem por id de bloco (ids passam de 255: com 256 o jogo caía ao pegar o item de cama/verruga)
     @Volatile var pickMsg = ""; @Volatile var pickT = 0f; @Volatile var swimAmt = 0f; @Volatile var wetT = 0f; private var inWaterT = 0f   // wetT: efeito de "molhado" na tela ao sair da água (3s)
     // água: direção desejada (pro degrau), escorrer ao quebrar bloco, controle do efeito de tela molhada
     private var wishX = 0f; private var wishZ = 0f
@@ -350,12 +350,11 @@ class Game(val world: World) {
     private var seatX = 0; private var seatY = 0; private var seatZ = 0; private var seatDir = 0; private var seatT = 0f
     /** cadeira livre mais perto do jogador (até ~1,7 bloco), preferindo a que está na mira */
     private fun nearestChair(): IntArray? {
-        val cid = B.byName["Cadeira"] ?: return null
         val p = player; var best: IntArray? = null; var bd = 1.7f
         val fx = sin(yaw); val fz = cos(yaw)
         for (dy in -1..1) for (dz in -2..2) for (dx in -2..2) {
             val x = floor(p.x).toInt() + dx; val y = floor(p.y + 0.1f).toInt() + dy; val z = floor(p.z).toInt() + dz
-            if (world.get(x, y, z) != cid) continue
+            if (!Furniture.sittable(world.get(x, y, z))) continue
             val ex = x + 0.5f - p.x; val ez = z + 0.5f - p.z
             val d = hypot(ex, ez) - 0.25f * ((ex * fx + ez * fz) / max(0.001f, hypot(ex, ez)))   // pequeno bônus pra cadeira à frente
             if (d < bd) { bd = d; best = intArrayOf(x, y, z) }
@@ -363,13 +362,14 @@ class Game(val world: World) {
         return best
     }
     fun sitOnChair(x: Int, y: Int, z: Int) {
-        val cid = B.byName["Cadeira"] ?: return
-        if (world.get(x, y, z) != cid || flying || player.inWater) return
-        val dir = Shapes.chairDir(world, x, y, z)
+        val bid = world.get(x, y, z)
+        if (!Furniture.sittable(bid) || flying || player.inWater) return
+        val sb = Furniture.sub(bid)
+        val dir = Furniture.facing(world, x, y, z, sb)
         seatX = x; seatY = y; seatZ = z; seatDir = dir; seated = true; seatT = 0.5f
         posture = 2; player.h = postH[2]; sprint = false; jumpHeld = false
         val bx = floatArrayOf(0f, 0f, 1f, -1f)[dir]; val bz = floatArrayOf(1f, -1f, 0f, 0f)[dir]
-        player.x = x + 0.5f - bx * 0.06f; player.z = z + 0.5f - bz * 0.06f; player.y = y + 0.58f
+        player.x = x + 0.5f - bx * 0.06f; player.z = z + 0.5f - bz * 0.06f; player.y = y + Furniture.seatH(sb)
         player.vx = 0f; player.vy = 0f; player.vz = 0f; player.onGround = true
         val a = floatArrayOf(0f, 3.1416f, 1.5708f, -1.5708f)[dir]
         bodyYaw = a; yaw = a
@@ -1046,7 +1046,7 @@ class Game(val world: World) {
         if (flying && p.onGround && downHeld) flying = false
         if (seated) {
             seatT -= dt
-            if (world.get(seatX, seatY, seatZ) != (B.byName["Cadeira"] ?: -1) || flying || p.inWater || posture != 2 ||
+            if (!Furniture.sittable(world.get(seatX, seatY, seatZ)) || flying || p.inWater || posture != 2 ||
                 (seatT <= 0f && (hypot(stickX, stickY) > 0.4f || jumpHeld))) standUp()
         }
         if (flying || player.inWater) { if (posture != 0) { posture = 0; player.h = 1.8f } }
@@ -1430,7 +1430,7 @@ class Game(val world: World) {
             if (d.age > 0.5f && dist2 < 2.8f) {
                 val k = min(1f, 9f * dt); d.x += dx * k; d.y += dy * k; d.z += dz * k   // puxa pro jogador
                 if (dist2 < 0.5f) {
-                    picked[d.id]++; pickMsg = "+1 " + B.names[d.id]; pickT = 1.6f
+                    if (d.id in picked.indices) picked[d.id]++; pickMsg = "+1 " + B.names[d.id]; pickT = 1.6f
                     burst(d.x, d.y, d.z, B.top[d.id], 4, 1.5f); di.remove(); continue
                 }
             }

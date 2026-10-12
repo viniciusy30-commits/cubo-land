@@ -623,6 +623,68 @@ object Atlas {
                 val t = Pix.P[par][py][px] - '0'
                 c = if (t <= 0) c1 else if (t == 1) c2 else if (t == 2) c3 else c4
             }
+            Blk.K_MARBLE -> {
+                val n1 = vn(u, v, 3, 3, s); val n2 = vn(u, v, 6, 6, s + 4)
+                c = lerp(c1, c2, n1 * 0.7f + n2 * 0.3f)
+                val w1 = abs(sin((u * 2f + v * 1f + n1 * 1.6f + n2 * 0.6f) * TAU))
+                c = lerp(c, c3, sm(0.10f, 0f, w1) * 0.85f)
+                val w2 = abs(sin((u * -1f + v * 3f + n2 * 1.3f) * TAU))
+                c = lerp(c, c3, sm(0.05f, 0f, w2) * 0.45f)
+            }
+            Blk.K_SCREEN -> {
+                if (par == 1) {   // televisão: paisagem
+                    c = lerp(0x79C8F5, 0xCFEEFF, 1f - v)
+                    val hill = 0.62f + 0.1f * sin(u * TAU)
+                    if (v > hill) c = lerp(0x58B060, 0x3A8A3F, v)
+                    val dx = u - 0.75f; val dy = v - 0.25f
+                    if (dx * dx + dy * dy < 0.012f) c = 0xFFE680
+                } else {   // computador: área de trabalho com janela
+                    c = lerp(c1, c2, v * 0.8f)
+                    if (u > 0.12f && u < 0.66f && v > 0.14f && v < 0.72f) {
+                        c = 0xF2F6FA
+                        if (v < 0.24f) c = c3
+                        else {
+                            val ln = (v - 0.28f) / 0.075f; val li = floor(ln).toInt(); val fy = fr(ln)
+                            if (fy < 0.5f && li in 0..4 && u < 0.18f + 0.25f + 0.25f * h(li, 1, s)) c = lerp(0xF2F6FA, c2, 0.8f)
+                        }
+                    }
+                    if (u > 0.74f && u < 0.9f && v > 0.14f && v < 0.74f) {
+                        val ic = (v - 0.14f) / 0.2f; val fy = fr(ic)
+                        if (fy < 0.6f) c = lerp(c2, 0xFFFFFF, 0.5f + 0.2f * h(floor(ic).toInt(), 2, s))
+                    }
+                    if (v > 0.9f) c = mul(c1, 0.5f)
+                }
+            }
+            Blk.K_FABRIC -> {
+                val wv = 0.5f + 0.5f * sin(u * TAU * 16f) * sin(v * TAU * 16f)
+                c = mul(lerp(c1, c2, vn(u, v, 4, 4, s) * 0.5f), 0.92f + 0.1f * wv)
+                if (par == 1) {   // capitonê: losangos com botões
+                    val du = fr(u * 2f) - 0.5f; val dv = fr(v * 2f) - 0.5f
+                    val dd = abs(du) + abs(dv)
+                    c = mul(c, 0.82f + 0.3f * sm(0.5f, 0.12f, dd))
+                    if (dd < 0.05f) c = mul(c1, 0.5f)
+                }
+            }
+            Blk.K_WGRAIN -> {
+                val pl = floor(v * 4f).toInt(); val fy = fr(v * 4f)
+                var p = lerp(c1, c2, 0.2f + 0.55f * h(pl, 3, s))
+                p = mul(p, 0.93f + 0.14f * (0.5f + 0.5f * sin((u * 3f + vn(u, v, 3, 12, s + 2) * 1.2f + h(pl, 0, s)) * TAU)))
+                c = lerp(p, c3, max(sm(0.07f, 0f, fy), sm(0.93f, 1f, fy)) * 0.8f)
+            }
+            Blk.K_RUG -> {
+                val e = min(min(u, v), min(1f - u, 1f - v))
+                c = mul(lerp(c1, mul(c1, 0.9f), vn(u, v, 6, 6, s)), 0.94f + 0.08f * (0.5f + 0.5f * sin(u * TAU * 20f) * sin(v * TAU * 20f)))
+                if (e < 0.1f) c = c2
+                if (e < 0.04f || (e > 0.1f && e < 0.15f)) c = c3
+                val dd = abs(u - 0.5f) + abs(v - 0.5f)
+                if (dd < 0.28f && dd > 0.2f) c = c2
+                if (dd < 0.1f) c = c3
+            }
+            Blk.K_GINGHAM -> {
+                val a1 = if (fr(u * 4f) < 0.5f) 1 else 0; val b1 = if (fr(v * 4f) < 0.5f) 1 else 0
+                c = if (a1 + b1 == 2) mul(c1, 0.85f) else if (a1 + b1 == 1) lerp(c1, c2, 0.5f) else c2
+                c = mul(c, 0.96f + 0.06f * vn(u, v, 8, 8, s))
+            }
             else -> c = c1
         }
         if (k == Blk.K_PLANK) {

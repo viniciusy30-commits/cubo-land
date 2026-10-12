@@ -149,17 +149,17 @@ class World {
     fun solid(x: Int, y: Int, z: Int) = B.solid(get(x, y, z))
 
     /** caixa real (coords locais do bloco: x0,y0,z0,x1,y1,z1) dos blocos com formato próprio; null = cubo inteiro */
-    fun boxOf(x: Int, y: Int, z: Int): FloatArray? = Shapes.box(this, get(x, y, z), x, z)
+    fun boxOf(x: Int, y: Int, z: Int): FloatArray? = Shapes.box(this, get(x, y, z), x, z, y)
     /** o bloco (x,y,z) é sólido dentro da caixa de mundo dada? (respeita o formato real) */
     fun solidBox(x: Int, y: Int, z: Int, ax0: Float, ay0: Float, az0: Float, ax1: Float, ay1: Float, az1: Float): Boolean {
         val id = get(x, y, z); if (!B.solid(id)) return false
-        val b = Shapes.box(this, id, x, z) ?: return true
+        val b = Shapes.box(this, id, x, z, y) ?: return true
         return ax1 > x + b[0] && ax0 < x + b[3] && ay1 > y + b[1] && ay0 < y + b[4] && az1 > z + b[2] && az0 < z + b[5]
     }
     /** o ponto de mundo está dentro do bloco real? (mira/raio) */
     fun solidPt(x: Int, y: Int, z: Int, px: Float, py: Float, pz: Float): Boolean {
         val id = get(x, y, z); if (!B.solid(id)) return false
-        val b = Shapes.box(this, id, x, z) ?: return true
+        val b = Shapes.box(this, id, x, z, y) ?: return true
         return px >= x + b[0] && px <= x + b[3] && py >= y + b[1] && py <= y + b[4] && pz >= z + b[2] && pz <= z + b[5]
     }
 
@@ -279,35 +279,51 @@ class World {
         plantTestTrees(top)
     }
 
-    /** vitrine da mobília: mesas de vários tamanhos (as pernas ficam só nas pontas) com cadeiras viradas pra elas */
+    /** vitrine da mobília: conjuntos de mesas, sala, escritório e quartos (ficam trancados, mas dá pra sentar) */
     private fun furnitureShowcase(top: Int) {
-        val mesa = B.byName["Mesa"] ?: return; val cad = B.byName["Cadeira"] ?: return
-        val y = top + 1; val bx = 64
-        fun put(x: Int, z: Int, id: Int) { if (x in 0 until SX && z in 0 until SZ) blocks[(y * SZ + z) * SX + x] = id }
-        fun table(x0: Int, z0: Int, w: Int, d: Int, chairs: Boolean) {
+        val y = top + 1; val bx = 62
+        fun id(n: String) = B.byName[n] ?: 0
+        fun put(x: Int, z: Int, n: String, yy: Int = y) { val b = id(n); if (b != 0 && x in 0 until SX && z in 0 until SZ) blocks[(yy * SZ + z) * SX + x] = b }
+        fun lab(x: Float, z: Float, t: String) { labels.add(Label(x, y + 2.9f, z, t)) }
+        fun grupo(x0: Int, z0: Int, w: Int, d: Int, mesa: String, cad: String) {
             for (i in 0 until w) for (j in 0 until d) put(x0 + i, z0 + j, mesa)
-            if (chairs) {
-                for (i in 0 until w) { put(x0 + i, z0 - 1, cad); put(x0 + i, z0 + d, cad) }
-                for (j in 0 until d) { put(x0 - 1, z0 + j, cad); put(x0 + w, z0 + j, cad) }
-            }
+            for (i in 0 until w) { put(x0 + i, z0 - 1, cad); put(x0 + i, z0 + d, cad) }
+            for (j in 0 until d) { put(x0 - 1, z0 + j, cad); put(x0 + w, z0 + j, cad) }
         }
-        labels.add(Label(bx + 10f, top + 6f, 5.5f, "MOBÍLIA: junte as mesas e elas crescem!", true))
-        labels.add(Label(bx + 1.5f, y + 2.6f, 10.5f, "Mesa 1x1"));  table(bx + 1, 10, 1, 1, true)
-        labels.add(Label(bx + 7.5f, y + 2.6f, 10.5f, "Mesa 2x2"));  table(bx + 6, 10, 2, 2, true)
-        labels.add(Label(bx + 17f, y + 2.6f, 10.5f, "Mesa comprida 5x2")); table(bx + 14, 10, 5, 2, true)
-        labels.add(Label(bx + 6f, y + 2.6f, 22.5f, "Mesa em L")); 
-        for (i in 0 until 4) put(bx + 4 + i, 22, mesa); for (j in 1 until 3) put(bx + 4, 22 + j, mesa)
-        for (i in 0 until 4) put(bx + 4 + i, 21, cad); for (j in 1 until 3) put(bx + 3, 22 + j, cad)
-        put(bx + 8, 22, cad); put(bx + 5, 24, cad); put(bx + 4, 25, cad)
-        labels.add(Label(bx + 17f, y + 2.6f, 22.5f, "Cadeiras soltas"))
-        for (i in 0 until 5) put(bx + 14 + i * 2, 22, cad)
-        val cama = B.byName["Cama"]
-        if (cama != null) {
-            labels.add(Label(bx + 1.5f, y + 2.6f, 29.5f, "Cama 1x1")); put(bx + 1, 30, cama)
-            labels.add(Label(bx + 7.5f, y + 2.6f, 29.5f, "Cama 2 blocos")); put(bx + 7, 30, cama); put(bx + 7, 31, cama)
-            labels.add(Label(bx + 14.5f, y + 2.6f, 29.5f, "Cama 3 blocos")); for (i in 0 until 3) put(bx + 13 + i, 30, cama)
-            labels.add(Label(bx + 21f, y + 2.6f, 29.5f, "Camas lado a lado")); for (j in 0 until 2) { put(bx + 20, 30 + j, cama); put(bx + 22, 30 + j, cama) }
-        }
+        labels.add(Label(bx + 12f, top + 7f, 4f, "MOBÍLIA: mesas crescem, camas e sofás emendam, dá pra sentar!", true))
+        // mesas
+        lab(bx + 2f, 7f, "Mesa de Madeira"); grupo(bx + 1, 9, 2, 2, "Mesa", "Cadeira")
+        lab(bx + 9f, 7f, "Mesa Escura"); grupo(bx + 7, 9, 3, 2, "Mesa Escura", "Cadeira Estofada")
+        lab(bx + 16f, 7f, "Mesa de Mármore"); grupo(bx + 14, 9, 2, 2, "Mesa de Mármore", "Cadeira Estofada")
+        lab(bx + 22f, 7f, "Mesa com Toalha"); grupo(bx + 20, 9, 2, 2, "Mesa com Toalha", "Cadeira")
+        // redondas, banco e centro
+        lab(bx + 2f, 15f, "Mesa Redonda + Bancos"); put(bx + 2, 17, "Mesa Redonda")
+        put(bx + 2, 16, "Banco"); put(bx + 2, 18, "Banco"); put(bx + 1, 17, "Banco"); put(bx + 3, 17, "Banco")
+        lab(bx + 9f, 15f, "Redonda de Mármore"); put(bx + 9, 17, "Mesa Redonda de Mármore")
+        put(bx + 9, 16, "Cadeira"); put(bx + 9, 18, "Cadeira"); put(bx + 8, 17, "Cadeira"); put(bx + 10, 17, "Cadeira")
+        lab(bx + 16f, 15f, "Mesa de Centro"); put(bx + 16, 17, "Mesa de Centro")
+        lab(bx + 22f, 15f, "Tapetes"); for (i in 0 until 3) for (j in 0 until 3) { put(bx + 20 + i, 16 + j, "Tapete Vermelho"); put(bx + 24 + i, 16 + j, "Tapete Azul") }
+        // sala: TV na cômoda, sofá de costas pra parede, poltronas, abajur e planta
+        lab(bx + 3f, 23f, "Sala de estar")
+        put(bx + 1, 25, "Cômoda"); put(bx + 2, 25, "Cômoda"); put(bx + 3, 25, "Cômoda")
+        put(bx + 2, 25, "Televisão", y + 1); put(bx + 1, 25, "Abajur", y + 1); put(bx + 3, 25, "Vaso de Planta", y + 1)
+        for (i in 0 until 5) for (k in 0..2) { val wb = id("Concreto Branco"); if (wb != 0) blocks[((y + k) * SZ + 32) * SX + bx + i] = wb }
+        for (i in 1..3) put(bx + i, 31, "Sofá")
+        put(bx + 2, 28, "Mesa de Centro"); put(bx + 0, 28, "Poltrona"); put(bx + 4, 28, "Poltrona")
+        // escritório
+        lab(bx + 12f, 23f, "Escritório")
+        for (i in 0 until 3) put(bx + 10 + i, 25, "Escrivaninha")
+        put(bx + 11, 25, "Computador", y + 1); put(bx + 12, 25, "Abajur", y + 1); put(bx + 11, 26, "Cadeira de Escritório")
+        for (i in 0 until 3) put(bx + 15 + i, 25, "Estante de Livros")
+        put(bx + 16, 25, "Vaso de Planta", y + 1); put(bx + 18, 25, "Armário"); put(bx + 19, 25, "Geladeira")
+        // quartos: camas de 1, 2 e 3 blocos
+        lab(bx + 3f, 36f, "Camas"); put(bx + 1, 38, "Cama")
+        put(bx + 4, 38, "Cama"); put(bx + 4, 39, "Cama")
+        for (i in 0 until 3) put(bx + 7 + i, 38, "Cama")
+        put(bx + 13, 38, "Cama"); put(bx + 13, 39, "Cama"); put(bx + 15, 38, "Cama"); put(bx + 15, 39, "Cama")
+        put(bx + 12, 38, "Cômoda"); put(bx + 14, 38, "Abajur"); 
+        lab(bx + 22f, 36f, "Cadeiras e poltronas")
+        for ((i, n) in listOf("Cadeira", "Cadeira Estofada", "Banco", "Poltrona", "Cadeira de Escritório", "Sofá").withIndex()) put(bx + 19 + i * 2, 38, n)
     }
 
     /** galeria de árvores: bem afastada dos blocos (x >= 90), uma fileira por espécie com 2 árvores, sobre um gramado */

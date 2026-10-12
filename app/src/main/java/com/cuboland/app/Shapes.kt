@@ -13,11 +13,11 @@ object Shapes {
     }
 
     fun emit(o: MeshBuf, w: World, x: Int, y: Int, z: Int, id: Int, kind: Int, vr: Float) {
-        when (kind) { 1 -> cactus(o, w, x, y, z, id, vr); 4 -> chair(o, w, x, y, z, id, vr); 5 -> table(o, w, x, y, z, id, vr); 6 -> bed(o, w, x, y, z, id, vr); else -> fruit(o, x, y, z, id, kind == 3, vr) }
+        when (kind) { 1 -> cactus(o, w, x, y, z, id, vr); 4, 5, 6, 7 -> Furniture.emit(o, w, x, y, z, id, vr); else -> fruit(o, x, y, z, id, kind == 3, vr) }
     }
 
     /** caixa de colisão/seleção (x0,y0,z0,x1,y1,z1 locais) do bloco com formato; null = cubo inteiro */
-    fun box(w: World, id: Int, x: Int, z: Int): FloatArray? {
+    fun box(w: World, id: Int, x: Int, z: Int, y: Int = -1): FloatArray? {
         if (B.thin(id)) {
             val cx = 0.5f + (w.hash(x, z, 31) - 0.5f) * 0.4f; val cz = 0.5f + (w.hash(x, z, 32) - 0.5f) * 0.4f
             val r = 0.105f + 0.03f * w.hash(x, z, 33) + 0.035f
@@ -27,9 +27,7 @@ object Shapes {
             1 -> { val cx = 0.5f + (h(x, z, 1) - 0.5f) * 0.08f; val cz = 0.5f + (h(x, z, 2) - 0.5f) * 0.08f; floatArrayOf(cx - 0.3f, 0f, cz - 0.3f, cx + 0.3f, 1f, cz + 0.3f) }
             2 -> floatArrayOf(0.08f, 0f, 0.08f, 0.92f, 0.81f, 0.92f)
             3 -> floatArrayOf(0.04f, 0f, 0.04f, 0.96f, 0.73f, 0.96f)
-            4 -> floatArrayOf(0.12f, 0f, 0.12f, 0.88f, 1f, 0.88f)
-            5 -> floatArrayOf(0f, 0f, 0f, 1f, 0.94f, 1f)
-            6 -> floatArrayOf(0f, 0f, 0f, 1f, 0.65f, 1f)
+            4, 5, 6, 7 -> Furniture.box(w, id, x, y, z)
             else -> null
         }
     }

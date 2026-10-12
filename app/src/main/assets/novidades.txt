@@ -1,12 +1,15 @@
 #id 2026-10-11-zzzzzzzzzzzzzzz
-#titulo Mobília: cadeira (dá pra sentar), mesa que cresce e cama!
-- Nova aba "Mobília" na mochila (e fileira MOBÍLIA no mundo de testes)
-- Cadeira detalhada: pernas com travessas, assento de madeira, almofada vermelha e encosto com ripas; vira sozinha para a mesa que estiver ao lado
-- Mesa detalhada: tampo de madeira, saia por baixo e pezinhos nas pernas
-- Junte mesas e o tampo cresce, sem emendas: as pernas ficam só nas quatro pontas (e nos cantos internos de uma mesa em L)
-- Dá pra sentar na cadeira: chegue perto e dê toque duplo no botão de agachar (ou o botão de postura); o boneco senta olhando pra frente da cadeira. Pra levantar: mexa o direcional, pule ou toque no botão de novo
-- Cama nova na aba Mobília: estrado de madeira, colchão, coberta azul que cai pelos lados, travesseiro e cabeceira alta; junte camas em fila e ela fica mais comprida (travesseiro só na ponta de trás)
-- Mundo de testes ganhou uma vitrine com mesa 1x1, 2x2, comprida 5x2, em L e cadeiras soltas
+#titulo Mobília completa: mesas, cadeiras, sofá, estante, computador e mais!
+- Mobília redesenhada com muito mais detalhe (madeira com veios, mármore, tecidos, ferragens douradas) e sombreamento suave
+- Mesas: de madeira, escura (pernas torneadas), de mármore (pés dourados), com toalha xadrez, redonda, redonda de mármore, de centro e escrivaninha. Mesas quadradas juntas crescem e as pernas ficam só nas pontas
+- Assentos (dá pra sentar em todos!): cadeira, cadeira estofada, banco, poltrona, cadeira de escritório com rodinhas e sofá que emenda em fila
+- Estante de livros cheia de livros coloridos, armário, cômoda com gavetas, geladeira com ímãs
+- Computador (tela acesa, teclado, mouse, caixinhas), televisão, abajur que ilumina e vaso de planta: ficam certinhos em cima de mesas e cômodas
+- Tapetes vermelho e azul, e camas mais bonitas (cabeceira alta, travesseiro fofo, coberta com dobra)
+- Móveis viram sozinhos: cadeiras olham pra mesa, sofás e estantes encostam as costas na parede
+- Corrigido o jogo fechar ao quebrar a cama, a verruga carmesim e outros blocos novos
+- Mundo de testes ganhou uma vitrine enorme: mesas com cadeiras, sala de estar, escritório e quartos
+
 
 #id 2026-10-11-zzzzzzzzzzzzzz
 #titulo Tronco do carvalho, bambu verde, abóbora e melancia caprichadas!
