@@ -1,3 +1,11 @@
+#id 2026-10-12-f
+#titulo TV de verdade
+- Olhe pra uma TV e toque em USAR TV: liga a TV com navegador (YouTube, Google ou qualquer site)
+- A TV vira uma janelinha por cima do jogo: arraste pela barra de cima e continue andando enquanto assiste
+- Botão de tela cheia na barra (o jogo pausa); no vídeo também vale o botão de tela cheia do próprio site
+- TAMANHO: a TV cresce em 4 tamanhos, até 3x, e a janela acompanha (o tamanho fica salvo no mundo)
+- Voltar do celular ou o X desliga a TV
+
 #id 2026-10-12-e
 #titulo Construção de verdade
 - Vidros e janelas agora são finos como vidro de verdade: o vidro se liga nos vizinhos e a janela acompanha a parede

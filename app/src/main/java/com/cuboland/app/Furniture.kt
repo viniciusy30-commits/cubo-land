@@ -24,6 +24,9 @@ object Furniture {
         7 -> (B.flags[id and 16383] shr 8) and 255
         else -> 0
     }
+    fun isTv(id: Int): Boolean = sub(id) == S_TV
+    /** escala da TV por nível de tamanho (0 = normal) */
+    val TV_SCALE = floatArrayOf(1f, 1.5f, 2f, 3f)
     fun sittable(id: Int): Boolean { val s = sub(id); return s == S_CHAIR || s == S_CHAIR2 || s == S_STOOL || s == S_ARM || s == S_OFFICE || s == S_SOFA }
     fun isTable(id: Int): Boolean { val s = sub(id); return s == S_TABLE || (s in 20..26) }
     fun seatH(s: Int): Float = when (s) { S_STOOL -> 0.56f; S_ARM -> 0.5f; S_OFFICE -> 0.62f; S_SOFA -> 0.5f; S_CHAIR2 -> 0.6f; else -> 0.58f }
@@ -85,10 +88,12 @@ object Furniture {
     // ---------- pincel: caixas e cilindros com UV pela posição (a textura não "amassa" nas peças pequenas) ----------
     private class C(val o: MeshBuf, val x: Int, val y: Int, val z: Int, val vr: Float) {
         var rot = 0; var oy = 0f; var lit = false
+        var sc = 1f   // escala do móvel (TV grande): cresce a partir do centro da base, pode passar da célula
         private fun rx(a: Float, c: Float) = when (rot) { 0 -> a; 1 -> 1f - a; 2 -> c; else -> 1f - c }
         private fun rz(a: Float, c: Float) = when (rot) { 0 -> c; 1 -> 1f - c; 2 -> 1f - a; else -> a }
         private fun v(t: Int, px: Float, py: Float, pz: Float, u: Float, vv: Float, s: Float) =
-            o.vert(x + px, y + py, z + pz, s, s, s, Atlas.u(t, u.coerceIn(0f, 1f)), Atlas.v(t, vv.coerceIn(0f, 1f)))
+            if (sc == 1f) o.vert(x + px, y + py, z + pz, s, s, s, Atlas.u(t, u.coerceIn(0f, 1f)), Atlas.v(t, vv.coerceIn(0f, 1f)))
+            else o.vert(x + 0.5f + (px - 0.5f) * sc, y + oy + (py - oy) * sc, z + 0.5f + (pz - 0.5f) * sc, s, s, s, Atlas.u(t, u.coerceIn(0f, 1f)), Atlas.v(t, vv.coerceIn(0f, 1f)))
         private fun fin() { o.tri(0, 1, 2); o.tri(0, 2, 3); o.tri(0, 2, 1); o.tri(0, 3, 2); o.vc += 4 }
 
         fun box(top: Int, side: Int, bot: Int, x0: Float, y0: Float, z0: Float, x1: Float, y1: Float, z1: Float, glow: Boolean = false) {
@@ -167,7 +172,7 @@ object Furniture {
             S_DRESS -> { c.rot = facing(w, x, y, z, s); dresser(c, T) }
             S_FRIDGE -> { c.rot = facing(w, x, y, z, s); fridge(c, T) }
             S_PC -> { c.rot = facing(w, x, y, z, s); computer(c, T) }
-            S_TV -> { c.rot = facing(w, x, y, z, s); tv(c, T) }
+            S_TV -> { c.rot = facing(w, x, y, z, s); c.sc = TV_SCALE[w.tvLevel(x, y, z).coerceIn(0, TV_SCALE.size - 1)]; tv(c, T) }
             S_LAMP -> lamp(c, T)
             S_PLANT -> plant(c, T, x, z)
             S_RUGR -> c.box(T[T_RUGR], T[T_RUGR], T[T_RUGR], 0f, 0f, 0f, 1f, 0.04f, 1f)

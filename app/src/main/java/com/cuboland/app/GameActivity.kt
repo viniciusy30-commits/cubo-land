@@ -4,6 +4,7 @@ import android.opengl.GLSurfaceView
 import android.os.Bundle
 import android.view.WindowManager
 import android.widget.FrameLayout
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -19,6 +20,7 @@ class GameActivity : AppCompatActivity() {
     private var test = false   // galeria de blocos
     private lateinit var saveFile: File
     private var hud: HudView? = null
+    private var tv: TvOverlay? = null   // janela da TV (navegador) enquanto estiver ligada
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,7 +41,7 @@ class GameActivity : AppCompatActivity() {
         root.addView(loading)
         setContentView(root)
         onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() { if (hud != null) hud?.togglePause() }
+            override fun handleOnBackPressed() { val t = tv; if (t != null) t.onBack() else if (hud != null) hud?.togglePause() }
         })
         val t0 = System.currentTimeMillis()
         Thread {
@@ -82,13 +84,34 @@ class GameActivity : AppCompatActivity() {
         }
         val h = HudView(this, game, info.name, { cr -> info.creative = cr; Worlds.update(this, info) }) { finish() }
         hud = h
+        h.onUseTv = { x, y, z -> openTv(root, x, y, z) }
+        h.onTvOff = { tv?.close() }
+        h.onTvSized = { tv?.relayout() }
         root.addView(h, 1)
         loading.setProgress(1f)
         loading.postDelayed({ loading.animate().alpha(0f).setDuration(450).withEndAction { root.removeView(loading) }.start() }, 500)
     }
 
+    /** liga a TV: abre o navegador numa janela por cima do jogo */
+    private fun openTv(root: FrameLayout, x: Int, y: Int, z: Int) {
+        if (tv != null || !::game.isInitialized) return
+        try {
+            hud?.tvOn = true
+            tv = TvOverlay(this, root, game, x, y, z) { tv = null; hud?.tvOn = false }
+        } catch (e: Exception) {   // aparelho sem WebView instalado/atualizado
+            tv = null; hud?.tvOn = false
+            Toast.makeText(this, "Navegador indisponível neste aparelho (instale/atualize o Android System WebView)", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    override fun onDestroy() {
+        tv?.close()
+        super.onDestroy()
+    }
+
     override fun onPause() {
         super.onPause()
+        tv?.onPause()
         if (!::gl.isInitialized) return
         gl.onPause()
         if (!test) world.save(saveFile)
@@ -97,6 +120,7 @@ class GameActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        tv?.onResume()
         if (::gl.isInitialized) gl.onResume()
     }
 }

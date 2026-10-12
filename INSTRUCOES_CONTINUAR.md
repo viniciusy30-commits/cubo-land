@@ -31,3 +31,13 @@ AVISO: nada disso foi compilado (sem Android SDK/Maven no ambiente). Só checei 
 
 ## Como entregar
 Este zip tem os arquivos na raiz (sem pasta-embrulho). Suba em `_incoming/` no GitHub.
+
+## TV COM NAVEGADOR (terceira rodada, também NÃO compilado)
+- **TvOverlay.kt (novo)**: janela da TV = `WebView` (motor do Chrome) numa moldura, por cima do jogo. Barra: arrastar, voltar, recarregar, início, endereço/pesquisa, tela cheia, fechar. Página inicial própria com atalhos (YouTube, Google, Twitch, Wikipédia). Vídeo em tela cheia do próprio site via `onShowCustomView`. Tela cheia e vídeo em tela cheia pausam o jogo (`holdPause`/`releasePause`).
+- **Game.kt**: `scanTv` (a cada 0,12s acha a TV olhada: cone ~37°, até 6,5 blocos, com linha de visão livre) -> `tvAim`; `cycleTvSize`.
+- **HudView.kt**: botões USAR TV / DESLIGAR e TAMANHO n/4 aparecem quando `game.tvAim != null` (toque tratado antes da mira, não coloca bloco).
+- **Furniture.kt**: `TV_SCALE = 1, 1.5, 2, 3`; o pincel `C` ganhou `sc` (escala a partir do centro da base; a TV pode passar da célula pros lados). Colisão/mira continuam do tamanho de 1 bloco.
+- **World.kt**: `tvSize` (por bloco), salvo num trailer opcional depois dos blocos (saves antigos abrem normal); trocar/quebrar o bloco zera o tamanho.
+- **GameActivity.kt**: cria/fecha a `TvOverlay`; botão voltar fecha o vídeo em tela cheia -> tela cheia -> TV.
+- Limites conhecidos: a imagem do navegador NÃO é pintada na tela 3D da TV (vídeo do WebView não dá pra capturar pra textura); login do Google costuma ser bloqueado em WebView; precisa do Android System WebView no aparelho.
+- Ideias depois: janela seguir a TV em perspectiva, fechar sozinha ao se afastar muito, favoritos.

@@ -95,6 +95,7 @@ class World {
         val CZ: Int get() = SZ / CH
         const val WATER_Y = 9
         const val SAVE_MAGIC = 0x434C3402
+        const val TV_MAGIC = 0x54563031   // trailer opcional depois dos blocos: tamanho de cada TV
         /** deve ser chamado ANTES de criar World/Game/GameRenderer: o mapa plano é bem maior que a ilha */
         fun configure(flat: Boolean) { SX = if (flat) 256 else 96; SZ = SX }
         val CU = intArrayOf(0, 1); val CV = intArrayOf(0, 1)
@@ -171,8 +172,18 @@ class World {
         return l.get((y * SZ + z) * SX + x)
     }
 
+    /** tamanho de cada TV (nível 1..3 = maior; sem entrada = normal). Chave = índice do bloco */
+    val tvSize = java.util.concurrent.ConcurrentHashMap<Int, Int>()
+    fun tvLevel(x: Int, y: Int, z: Int): Int = tvSize[(y * SZ + z) * SX + x] ?: 0
+    fun setTvLevel(x: Int, y: Int, z: Int, lv: Int) {
+        val k = (y * SZ + z) * SX + x
+        if (lv <= 0) tvSize.remove(k) else tvSize[k] = lv
+        markDirty(x, z)
+    }
+
     fun set(x: Int, y: Int, z: Int, id: Int) {
         if (x < 0 || x >= SX || z < 0 || z >= SZ || y < 0 || y >= SY) return
+        if (!tvSize.isEmpty()) tvSize.remove((y * SZ + z) * SX + x)   // trocou/quebrou o bloco: a TV nova começa no tamanho normal
         blocks[(y * SZ + z) * SX + x] = id
         for (dx in -1..1) for (dz in -1..1) {
             val cx = (x + dx).coerceIn(0, SX - 1) / CH; val cz = (z + dz).coerceIn(0, SZ - 1) / CH
@@ -796,8 +807,15 @@ class World {
     /** arquivo novo: cabeçalho + 4 bytes por bloco; arquivo antigo (1 byte por bloco) ainda abre e é convertido */
     fun save(f: File) {
         try {
-            val bb = java.nio.ByteBuffer.allocate(4 + blocks.size * 4)
+            val tvs = HashMap(tvSize)
+            val extra = if (tvs.isEmpty()) 0 else 8 + tvs.size * 8
+            val bb = java.nio.ByteBuffer.allocate(4 + blocks.size * 4 + extra)
             bb.putInt(SAVE_MAGIC); bb.asIntBuffer().put(blocks)
+            if (extra > 0) {
+                bb.position(4 + blocks.size * 4)
+                bb.putInt(TV_MAGIC); bb.putInt(tvs.size)
+                for ((k, v) in tvs) { bb.putInt(k); bb.putInt(v) }
+            }
             GZIPOutputStream(f.outputStream()).use { it.write(bb.array()) }
         } catch (_: Exception) {}
     }
@@ -808,10 +826,19 @@ class World {
             val data = GZIPInputStream(f.inputStream()).use { it.readBytes() }
             if (data.size == blocks.size) {
                 for (i in data.indices) blocks[i] = data[i].toInt() and 0xFF
-            } else if (data.size == 4 + blocks.size * 4) {
+            } else if (data.size >= 4 + blocks.size * 4) {
                 val bb = java.nio.ByteBuffer.wrap(data)
                 if (bb.getInt() != SAVE_MAGIC) return false
                 bb.asIntBuffer().get(blocks)
+                tvSize.clear()
+                val tp = 4 + blocks.size * 4
+                if (data.size >= tp + 8) {   // trailer opcional: tamanhos das TVs (saves antigos não têm)
+                    bb.position(tp)
+                    if (bb.getInt() == TV_MAGIC) {
+                        val n = bb.getInt(); var i = 0
+                        while (i < n && bb.remaining() >= 8) { val k = bb.getInt(); val lv = bb.getInt(); if (lv in 1..3) tvSize[k] = lv; i++ }
+                    }
+                }
             } else return false
             val al = Blk.alias
             for (i in blocks.indices) { val b = blocks[i]; if (b in 14..16383 && al[b] != 0) blocks[i] = al[b] }

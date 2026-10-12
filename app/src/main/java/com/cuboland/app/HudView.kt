@@ -11,6 +11,38 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
     private val aimTouch = prefs.getBoolean("aimTouch", false)   // mira no ponto do toque (círculo no dedo)
     private val bs = prefs.getFloat("btn", 1f).coerceIn(0.8f, 1.25f)
     private var paused = false
+    // ----- TV: botões que aparecem quando você está olhando pra uma TV -----
+    var onUseTv: ((Int, Int, Int) -> Unit)? = null
+    var onTvOff: (() -> Unit)? = null
+    var onTvSized: (() -> Unit)? = null
+    @Volatile var tvOn = false
+    private fun tvPromptOn() = !paused && !invOpen && game.tvAim != null
+    private fun tvBtn(k: Int): RectF {
+        val bw = 124 * d; val bh = 38 * d; val gp = 10 * d
+        val l = width / 2f - (bw * 2 + gp) / 2f + k * (bw + gp)
+        val t = hbTop() - 108 * d
+        return RectF(l, t, l + bw, t + bh)
+    }
+    private fun tvPromptDown(x: Float, y: Float): Boolean {
+        if (!tvPromptOn()) return false
+        val a = game.tvAim ?: return false
+        if (tvBtn(0).contains(x, y)) { if (tvOn) onTvOff?.invoke() else onUseTv?.invoke(a[0], a[1], a[2]); return true }
+        if (tvBtn(1).contains(x, y)) { game.cycleTvSize(a[0], a[1], a[2]); onTvSized?.invoke(); return true }
+        return false
+    }
+    private fun drawTvPrompt(c: Canvas) {
+        val a = game.tvAim ?: return
+        val sc = tsc(1.3f)
+        val lv = game.tvLevel(a[0], a[1], a[2]) + 1
+        for (k in 0..1) {
+            val r = tvBtn(k)
+            val base = if (k == 0) (if (tvOn) Cz.RED else Cz.GREEN) else Cz.SKY
+            pxPanel(c, r.left, r.top, r.right, r.bottom, base)
+            val label = if (k == 0) (if (tvOn) "DESLIGAR" else "\u25B6 USAR TV") else "TAMANHO $lv/${Furniture.TV_SCALE.size}"
+            pxText(c, label, (r.left + r.right) / 2f, (r.top + r.bottom) / 2f - 3.5f * sc, sc, Color.WHITE, 1)
+        }
+    }
+
     private var lookDownT = 0L; private var lookMoved = 0f; private var lookHold = false; private var lastUpT = 0L
     private fun al(c: Int, a: Int) = Color.argb(a, Color.red(c), Color.green(c), Color.blue(c))
     private val d = resources.displayMetrics.density
@@ -113,6 +145,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         if (paused) { pauseDown(x, y); return }
         if (!invOpen && hypot(x - bx(5), y - byy(5)) < br(5) * 1.2f) { toggleInv(); return }
         if (invOpen) { invDown(id, x, y); return }
+        if (tvPromptDown(x, y)) return
         for (i in intArrayOf(1, 3, 4, 6, 7, 8)) if ((i != 6 || wet()) && (i != 8 || !wet()) && hypot(x - bx(i), y - byy(i)) < br(i) * 1.15f) {
             btnId[id] = i
             when (i) {
@@ -706,6 +739,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
             if (half && !full) pxHeart(c, cx, hy + bob, 2.4f * d * beat, Color.rgb(228, 36, 48), true, false)
         }
         if (game.deadTimer > 0f) pxText(c, "Você desmaiou! Renascendo...", w / 2, h / 2 - 40 * d, tsc(2.6f), Color.WHITE, 1)
+        if (tvPromptOn()) drawTvPrompt(c)
         if (invOpen) drawInventory(c)
         if (paused) drawPause(c)
         postInvalidateOnAnimation()

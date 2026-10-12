@@ -386,6 +386,55 @@ class Game(val world: World) {
         player.x = nx; player.y = ny; player.z = nz; player.vx = 0f; player.vy = 0f; player.vz = 0f
     }
 
+    // ---------- televisão ----------
+    /** TV (x,y,z) que o jogador está olhando de perto, ou null; o HUD mostra "Usar TV" e "Tamanho" quando existe */
+    @Volatile var tvAim: IntArray? = null
+    private var tvScanT = 0f
+    fun tvLevel(x: Int, y: Int, z: Int) = world.tvLevel(x, y, z)
+    /** passa pro próximo tamanho (volta ao normal depois do maior); devolve o nível novo */
+    fun cycleTvSize(x: Int, y: Int, z: Int): Int {
+        if (!Furniture.isTv(world.get(x, y, z))) return 0
+        val lv = (world.tvLevel(x, y, z) + 1) % Furniture.TV_SCALE.size
+        world.setTvLevel(x, y, z, lv)
+        return lv
+    }
+    /** a linha do olho até o centro da TV está livre? (respeita o formato real dos blocos) */
+    private fun tvLineClear(ex: Float, ey: Float, ez: Float, tx: Int, ty: Int, tz: Int): Boolean {
+        val dx = tx + 0.5f - ex; val dy = ty + 0.5f - ey; val dz = tz + 0.5f - ez
+        val n = (sqrt(dx * dx + dy * dy + dz * dz) / 0.25f).toInt()
+        for (i in 1 until n) {
+            val t = i / n.toFloat()
+            val qx = ex + dx * t; val qy = ey + dy * t; val qz = ez + dz * t
+            val cx = floor(qx).toInt(); val cy = floor(qy).toInt(); val cz = floor(qz).toInt()
+            if (cx == tx && cy == ty && cz == tz) break
+            if (world.solidPt(cx, cy, cz, qx, qy, qz)) return false
+        }
+        return true
+    }
+    private fun scanTv(dt: Float) {
+        tvScanT -= dt; if (tvScanT > 0f) return
+        tvScanT = 0.12f
+        val p = player
+        val ex = p.x; val ey = p.y + eyeH(); val ez = p.z
+        val fx = fwdX(); val fy = fwdY(); val fz = fwdZ()
+        val bx = floor(p.x).toInt(); val by = floor(p.y).toInt(); val bz = floor(p.z).toInt()
+        var best: IntArray? = null; var bs = -9f
+        for (dy in -3..4) for (dz in -6..6) for (dx in -6..6) {
+            val x = bx + dx; val y = by + dy; val z = bz + dz
+            if (!Furniture.isTv(world.get(x, y, z))) continue
+            val vx = x + 0.5f - ex; val vy = y + 0.5f - ey; val vz = z + 0.5f - ez
+            val dist = sqrt(vx * vx + vy * vy + vz * vz)
+            if (dist > 6.5f || dist < 0.05f) continue
+            val dot = (vx * fx + vy * fy + vz * fz) / dist
+            if (dot < 0.8f) continue                       // só se estiver olhando (cone de ~37°)
+            val sc = dot - dist * 0.03f
+            if (sc <= bs) continue
+            if (!tvLineClear(ex, ey, ez, x, y, z)) continue // sem parede no meio
+            bs = sc; best = intArrayOf(x, y, z)
+        }
+        tvAim = best
+    }
+
     fun eyeH() = 1.6f - 0.35f * crouchA - 0.65f * sitA - 1.15f * lieA
     private fun aimVec(): FloatArray {
         val fx = fwdX(); val fy = fwdY(); val fz = fwdZ()
@@ -1043,6 +1092,7 @@ class Game(val world: World) {
 
         waterStep(dt)
         val p = player
+        scanTv(dt)
         if (!creative) flying = false
         if (flying && p.onGround && downHeld) flying = false
         if (seated) {
