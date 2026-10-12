@@ -1,3 +1,11 @@
+#id 2026-10-12-d
+#titulo Construção mais bonita
+- Tijolos, pedras, tábuas, telhados, azulejos e metais redesenhados pixel a pixel
+- Vidros lisos, finos e grossos, sem moldura: blocos vizinhos se emendam sem marca; janelas com 4 vidraças
+- 16 janelas novas: sem moldura, de correr, colonial, persiana, escotilha, gradeada e vitrais
+- Novos blocos: Vidro Fino (claro, escuro e 16 cores)
+- Pedregulho e tijolos musgosos, rachados e cobre oxidado com cara de verdade
+
 #id 2026-10-12-c
 #titulo GitHub com o login certo
 - Cada favorito escolhe como abrir: conta da aba, sessão compartilhada ou Chrome

@@ -603,6 +603,10 @@ object Atlas {
                 val ch = art.rows[py][px]
                 if (ch == '.') a = 0 else { val p = art.pal[Character.digit(ch, 16)]; c = p and 0xFFFFFF; a = p ushr 24 }
             }
+            Blk.K_BUILD -> {
+                val p = BuildArt.pixel(c1, c2, c3, c4, floor(u * 16f).toInt().coerceIn(0, 15), floor(v * 16f).toInt().coerceIn(0, 15))
+                if ((p ushr 24) == 0) a = 0 else { c = p and 0xFFFFFF; a = p ushr 24 }
+            }
             Blk.K_PALV -> {
                 val p = NatVar.pixel(c1, c2, floor(u * 16f).toInt().coerceIn(0, 15), floor(v * 16f).toInt().coerceIn(0, 15))
                 if ((p ushr 24) == 0) a = 0 else { c = p and 0xFFFFFF; a = p ushr 24 }
@@ -882,6 +886,14 @@ object Atlas {
                 for (y in 0 until 4) for (x in 0 until 4) out[(qy * 4 + y) * w + t * T + qx * 4 + x] = pc
             }
         }
+        // pedra (4), tábua (9) e tijolo (11) do terreno básico: mesmos padrões da Construção
+        for (t in intArrayOf(4, 9, 11)) {
+            val bt = BuildArt.baseTile(t) ?: continue
+            for (qy in 0 until 16) for (qx in 0 until 16) {
+                val pc = BuildArt.pixel(bt[0], bt[1], bt[2], 0, qx, qy) or (255 shl 24)
+                for (y in 0 until 4) for (x in 0 until 4) out[(qy * 4 + y) * w + t * T + qx * 4 + x] = pc
+            }
+        }
         for (t in 0 until 24) bleed(out, w, t * T, 0)
         // blocos novos (receitas em Blk): 1 amostra por pixel, as formas já são suaves
         val nDefs = Blk.defs.size
@@ -891,7 +903,7 @@ object Atlas {
             for (y in 0 until T) for (x in 0 until T) {
                 val qx = x / 4; val qy = y / 4   // grade de 16x16 pixels grandes (pixel art)
                 val g0 = genNew(sp, (qx + 0.5f) / 16f, (qy + 0.5f) / 16f)
-                val c = if (sp[0] == Blk.K_PIX || sp[0] == Blk.K_LEAF || sp[0] == Blk.K_PAL || sp[0] == Blk.K_PLEAF || sp[0] == Blk.K_SPRITE || sp[0] == Blk.K_PALV) g0 else pixelArt(g0, qx, qy, sp[5])
+                val c = if (sp[0] == Blk.K_PIX || sp[0] == Blk.K_LEAF || sp[0] == Blk.K_PAL || sp[0] == Blk.K_PLEAF || sp[0] == Blk.K_SPRITE || sp[0] == Blk.K_PALV || sp[0] == Blk.K_BUILD) g0 else pixelArt(g0, qx, qy, sp[5])
                 out[(y0 + y) * w + x0 + x] = if ((c ushr 24) == 0) CLEAR else c
             }
             bleed(out, w, x0, y0)
