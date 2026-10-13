@@ -25,7 +25,8 @@ object BuildArt {
     const val GEM = 47; const val CORRUG = 48; const val PEBBLE = 49; const val SHAKE = 50; const val GL_FACET = 51; const val GL_BUBBLE = 52; const val GL_FROST = 53; const val GL_STAR = 54
     const val GL_GRID = 55; const val GL_DROPS = 56; const val GL_RAINBOW = 57; const val JAN_ARCH = 58; const val JAN_HEART = 59; const val JAN_STAR = 60; const val DIAMOND = 61; const val STEPPING = 62
     const val STRIPES = 63; const val QUILT = 64; const val SCALES = 65; const val GL_ICE = 66
-    const val COUNT = 67
+    const val BASALT = 67; const val TUFF = 68; const val NETHER = 69; const val ENDSTONE = 70; const val PRISM = 71; const val POLISHED = 72; const val QUARTZ = 73; const val LONGBRICK = 74
+    const val COUNT = 75
 
     /** lado do tile gerado (igual a Atlas.T) */
     const val N = 64

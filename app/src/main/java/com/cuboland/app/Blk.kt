@@ -231,9 +231,12 @@ object Blk {
         strip("Cerejeira Descascada", 0xDDA5A0)
 
         // ================= PEDRAS E MINERAIS =================
-        fun rough(n: String, c: Int, grout: Int) { uni(n, C_BUILD, bt(BuildArt.ROUGH0 + n.length % 3, c), c, M_STONE, 10f) }
-        fun smooth(n: String, c: Int) { uni(n, C_BUILD, bt(BuildArt.SMOOTH, c), c, M_STONE, 10f) }
-        fun bricks(n: String, c: Int, grout: Int, fl: Int = 0) { uni(n, C_BUILD, bt(if (n.contains("Nether")) BuildArt.BRICK else if ((fl and 1) != 0) BuildArt.SBRICK_CRACK else if ((fl and 2) != 0) BuildArt.SBRICK_MOSS else BuildArt.SBRICK, c), c, M_STONE, 10f) }
+        fun rough(n: String, c: Int, grout: Int) {
+            val p = when (n) { "Andesito" -> BuildArt.ROUGH2; "Ardósia" -> BuildArt.BASALT; "Tufo" -> BuildArt.TUFF; "Netherrack" -> BuildArt.NETHER; "Pedra do Fim" -> BuildArt.ENDSTONE; "Prismarinho" -> BuildArt.ROUGH1; else -> BuildArt.ROUGH0 }
+            uni(n, C_BUILD, bt(p, c), c, M_STONE, 10f)
+        }
+        fun smooth(n: String, c: Int) { uni(n, C_BUILD, bt(if (n.startsWith("Quartzo")) BuildArt.QUARTZ else if (n.contains("Polid")) BuildArt.POLISHED else BuildArt.SMOOTH, c), c, M_STONE, 10f) }
+        fun bricks(n: String, c: Int, grout: Int, fl: Int = 0) { uni(n, C_BUILD, bt(if (n.contains("Nether")) BuildArt.BRICK else if ((fl and 1) != 0) BuildArt.SBRICK_CRACK else if ((fl and 2) != 0) BuildArt.SBRICK_MOSS else if (n.contains("Ardósia") || n.contains("Quartzo")) BuildArt.LONGBRICK else if (n.contains("Prismarinho")) BuildArt.PRISM else BuildArt.SBRICK, c), c, M_STONE, 10f) }
         val cobC = intArrayOf(0x9AA0AA, 0xB6BCC6, 0x666C78)
         uni("Pedregulho", C_BUILD, bt(BuildArt.COBBLE, 0x9AA0AA), 0x9AA0AA, M_STONE, 10f)
         uni("Pedregulho Musgoso", C_BUILD, bt(BuildArt.COBBLE_MOSS, 0x9AA0AA), 0x8CA07A, M_STONE, 10f)
@@ -269,7 +272,7 @@ object Blk {
         rough("Prismarinho", 0x6BB6A0, 0x4A8F7D)
         bricks("Tijolos de Prismarinho", 0x6FBBA6, 0x4A8F7D)
         smooth("Quartzo", 0xF0ECE4)
-        blk("Pilar de Quartzo", C_BUILD, bt(BuildArt.SMOOTH, 0xF0ECE4), bt(BuildArt.PILLAR, 0xF0ECE4), bt(BuildArt.SMOOTH, 0xF0ECE4), 0xF0ECE4, M_STONE, 9f)
+        blk("Pilar de Quartzo", C_BUILD, bt(BuildArt.QUARTZ, 0xF0ECE4), bt(BuildArt.PILLAR, 0xF0ECE4), bt(BuildArt.QUARTZ, 0xF0ECE4), 0xF0ECE4, M_STONE, 9f)
         bricks("Tijolos de Quartzo", 0xF2EEE6, 0xD2CCC0)
         uni("Obsidiana", C_BUILD, bt(BuildArt.OBSIDIAN, 0x1C1030), 0x2E1B50, M_STONE, 24f)
 
@@ -550,7 +553,7 @@ object Blk {
         for (i in 0 until 16) { val c = pc(i); uni("Tijolo Fofo " + DM[i], C_BUILD, bt(BuildArt.BRICK, c), c, M_STONE, 8f, 0, "Tijolinhos gordinhos e coloridos.") }
         for (i in 0 until 16) { val c = pc(i); uni("Tábua Pintada " + DF[i], C_BUILD, bt(BuildArt.PAINTED, c), c, M_WOOD, 6f, 0, "Madeira pintada com tinta lisinha.") }
         for (i in 0 until 16) { val c = pc(i); uni("Ladrilho Fofo " + DM[i], C_BUILD, bt(BuildArt.SUBWAY, c), c, M_STONE, 6f, 0, "Azulejinho de metrô brilhante.") }
-        for (i in 0 until 16) { val c = pc(i); uni("Pedra Fofa " + DF[i], C_BUILD, bt(BuildArt.SBRICK, c), c, M_STONE, 9f, 0, "Tijolos de pedra em tom pastel.") }
+        for (i in 0 until 16) { val c = pc(i); uni("Pedra Fofa " + DF[i], C_BUILD, bt(BuildArt.LONGBRICK, c), c, M_STONE, 9f, 0, "Tijolos de pedra em tom pastel.") }
         for (i in 0 until 16) { val c = pc(i); uni("Gema " + DF[i], C_BUILD, bt(BuildArt.GEM, c), c, M_STONE, 12f, 0, "Gema lapidada e brilhante.") }
         for (i in 0 until 16) { val c = pc(i); uni("Acolchoado " + DM[i], C_BUILD, bt(BuildArt.QUILT, c), c, M_SOFT, 3f, 0, "Almofadinhas macias.") }
         for (i in 0 until 16) { val c = pc(i); uni("Reboco " + DM[i], C_BUILD, btv(BuildArt.PLASTER, c), c, M_STONE, 6f) }

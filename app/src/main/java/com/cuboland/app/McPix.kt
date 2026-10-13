@@ -31,7 +31,8 @@ object McPix {
             BuildArt.CHISEL, BuildArt.PILLAR, BuildArt.SANDSIDE, BuildArt.OBSIDIAN, BuildArt.PLANK, BuildArt.MOSAIC,
             BuildArt.STRIP, BuildArt.RINGS, BuildArt.SHINGLE, BuildArt.METAL, BuildArt.METAL_P1, BuildArt.METAL_P2,
             BuildArt.GLASS, BuildArt.GLASS_THIN, BuildArt.AZ_PLAIN, BuildArt.AZ_DECOR, BuildArt.LOGWALL,
-            BuildArt.CHECKER, BuildArt.STRIPES, BuildArt.CORRUG, BuildArt.PEBBLE, BuildArt.SHAKE
+            BuildArt.CHECKER, BuildArt.STRIPES, BuildArt.CORRUG, BuildArt.PEBBLE, BuildArt.SHAKE, BuildArt.PAINTED,
+            BuildArt.BASALT, BuildArt.TUFF, BuildArt.NETHER, BuildArt.ENDSTONE, BuildArt.PRISM, BuildArt.POLISHED, BuildArt.QUARTZ, BuildArt.LONGBRICK
         )) arr[p] = true
     }
 
@@ -161,15 +162,14 @@ object McPix {
                     else -> { c.h = 0; c.t = -0.3f + dith(x, y, 143, 0.2f) }
                 }
             }
-            BuildArt.PILLAR -> {
-                if (y <= 1 || y >= 14) { c.h = 1; c.t = if (y == 0 || y == 15) 0.3f else 0f }
-                else if (y == 2 || y == 13) { c.h = -1; c.t = -0.7f }
-                else when (x % 4) {
+            BuildArt.PILLAR -> {   // coluna canelada sem capitel nem base: os blocos empilhados viram uma coluna só
+                when (x % 4) {
                     0 -> { c.h = -1; c.t = -0.7f }
                     1 -> { c.h = 1; c.t = 0.4f }
                     2 -> { c.h = 1; c.t = 0.1f }
                     else -> { c.h = 0; c.t = -0.2f }
                 }
+                c.t += dith(x, y, 151, 0.08f)
             }
             BuildArt.SANDSIDE -> {
                 val g1 = 3 + (x / 4) % 2; val g2 = 11 + (x / 4) % 2
@@ -183,7 +183,7 @@ object McPix {
                 if ((x == 2 && y == 2) || (x == 3 && y == 2) || (x == 11 && y == 9)) c.sp = 0.18f
             }
             // ---- madeiras
-            BuildArt.PLANK -> {
+            BuildArt.PLANK, BuildArt.PAINTED -> {
                 val r = y / 4; val yy = y % 4
                 val j1 = (r * 5 + 3) % 16; val j2 = (j1 + 8) % 16
                 if (yy == 3) { c.g = 1f; c.h = -1; c.t = dith(x, y, 186, 0.15f) }
@@ -204,10 +204,10 @@ object McPix {
                     c.t = (hh(bx * 2 + by, if (horiz) y / 4 else x / 4, 204) - 0.5f) * 0.6f + dith(x, y, 206, 0.22f)
                 }
             }
-            BuildArt.STRIP -> {
-                val ct = (hh(x, 3, 221) - 0.5f) * 0.8f
-                c.t = ct + (if (hh(x, y / 3, 222) < 0.2f) -0.3f else 0f)
-                c.h = if (ct < -0.22f) -1 else if (ct > 0.25f) 1 else 0
+            BuildArt.STRIP -> {   // madeira lisa de fibras verticais: 3 tons por coluna, trechinhos escuros e poucas fibras fundas
+                val ct = Math.round((hh(x, 3, 221) - 0.5f) * 3f) * 0.18f
+                c.t = ct + (if (hh(x, y / 4, 222) < 0.22f) -0.3f else 0f) + dith(x, y, 223, 0.08f)
+                if (x % 8 == 3 && hh(x, y / 3, 224) < 0.5f) { c.t -= 0.35f; c.h = -1 }
             }
             BuildArt.RINGS -> {
                 val rr = max(abs(x - 7.5f), abs(y - 7.5f)).toInt()
@@ -298,6 +298,48 @@ object McPix {
                 }
                 c.t += dith(x, y, 321, 0.1f)
             }
+            BuildArt.BASALT -> {
+                val ct = (hh(x, 2, 401) - 0.5f) * 0.7f
+                c.t = ct + (if (hh(x, y / 4, 402) < 0.25f) -0.35f else 0f) + dith(x, y, 403, 0.12f)
+                c.h = if (ct > 0.1f) 1 else 0
+                if (x % 5 == 4) { c.h = -1; c.t -= 0.4f }
+            }
+            BuildArt.TUFF -> {
+                vor(x, y, 3, 0.9f, 411 + v, c)
+                c.t = (hh(c.id, 4, 412) - 0.5f) * 1.0f + dith(x, y, 413, 0.3f)
+                c.h = if (hh(c.id, 6, 414) > 0.5f) 1 else 0
+                if (c.d < 0.6f) c.t -= 0.4f
+                if (hh(x, y, 415) < 0.07f) { c.t = -0.9f; c.h = -1 }
+            }
+            BuildArt.NETHER -> {
+                val b = blob(x, y, 421)
+                c.t = (b - 0.5f) * 1.4f + dith(x, y, 423, 0.3f)
+                c.h = if (b > 0.7f) 2 else if (b > 0.52f) 1 else if (b < 0.25f) -1 else 0
+            }
+            BuildArt.ENDSTONE -> {
+                vor(x, y, 5, 0.9f, 431, c)
+                c.h = if (c.d < 0.5f) 0 else 1
+                c.t = (hh(c.id, 2, 432) - 0.5f) * 0.6f + dith(x, y, 433, 0.2f)
+                if (c.d < 0.5f) c.t = -0.5f
+                if (hh(x, y, 434) < 0.06f) { c.h = -1; c.t = -0.7f }
+            }
+            BuildArt.PRISM -> {
+                val dx = abs((x % 8) - 3.5f); val dy = abs((y % 8) - 3.5f); val d = dx + dy
+                if (d >= 4.5f) { c.g = 1f; c.h = -1 }
+                else { c.h = if (d < 2.2f) 2 else 1; c.t = (hh(x / 8 + (y / 8) * 2, 5, 441) - 0.5f) * 0.5f + dith(x, y, 442, 0.15f) }
+            }
+            BuildArt.POLISHED -> {
+                val r = min(min(x, 15 - x), min(y, 15 - y))
+                if (r == 0) c.t = -0.5f
+                else if (r == 1) c.t = if (x == 1 || y == 1) 0.4f else if (x == 14 || y == 14) -0.3f else 0f
+                else { c.h = 1; c.t = dith(x, y, 451, 0.15f) }
+            }
+            BuildArt.QUARTZ -> {
+                c.t = dith(x, y, 461, 0.1f)
+                if ((x - y + 32) % 16 == 5) c.t -= 0.3f
+                if ((x - y + 32) % 16 == 6) c.sp = 0.2f
+            }
+            BuildArt.LONGBRICK -> brickLike(c, x, y, 4, 16, 471, 0.22f, false)
             BuildArt.PEBBLE -> {
                 vor(x, y, 5, 0.85f, 271, c)
                 if (c.d < 0.65f) { c.g = 1f; c.h = -1 }

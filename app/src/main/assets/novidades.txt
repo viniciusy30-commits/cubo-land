@@ -1,3 +1,11 @@
+#id 2026-10-13-b
+#titulo Galeria organizada e mais texturas
+- Galeria de blocos separada em seções com título e faixa no chão: concreto, terracota, pedras, tijolos, tábuas, madeira, telhados, vidros, janelas, metais, escadas e mais (e também natureza, decoração e mobília)
+- Pilares de quartzo agora se unem formando uma coluna só, sem divisões entre os blocos
+- Madeira descascada refeita, lisa com fibras verticais
+- Todas as tábuas (inclusive as pintadas) usam a textura da tábua de carvalho
+- Pedras com texturas próprias: andesito, ardósia, tufo, netherrack, pedra do fim, prismarinho, pedras polidas, quartzo e tijolos compridos
+
 #id 2026-10-13-a
 #titulo Construção estilo Minecraft
 - Os blocos da categoria Construção agora têm texturas no estilo Minecraft: pixels bem marcados, cores chapadas e variação de tom pixel a pixel
