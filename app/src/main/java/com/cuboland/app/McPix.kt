@@ -32,7 +32,9 @@ object McPix {
             BuildArt.STRIP, BuildArt.RINGS, BuildArt.SHINGLE, BuildArt.METAL, BuildArt.METAL_P1, BuildArt.METAL_P2,
             BuildArt.GLASS, BuildArt.GLASS_THIN, BuildArt.AZ_PLAIN, BuildArt.AZ_DECOR, BuildArt.LOGWALL,
             BuildArt.CHECKER, BuildArt.STRIPES, BuildArt.CORRUG, BuildArt.PEBBLE, BuildArt.SHAKE, BuildArt.PAINTED,
-            BuildArt.BASALT, BuildArt.TUFF, BuildArt.NETHER, BuildArt.ENDSTONE, BuildArt.PRISM, BuildArt.POLISHED, BuildArt.QUARTZ, BuildArt.LONGBRICK
+            BuildArt.BASALT, BuildArt.TUFF, BuildArt.NETHER, BuildArt.ENDSTONE, BuildArt.PRISM, BuildArt.POLISHED, BuildArt.QUARTZ, BuildArt.LONGBRICK,
+            BuildArt.TIJOLO, BuildArt.W_ABETO, BuildArt.W_BETULA, BuildArt.W_SELVA, BuildArt.W_ACACIA, BuildArt.W_CARVALHO,
+            BuildArt.W_MANGUE, BuildArt.W_CEREJEIRA, BuildArt.W_BAMBU, BuildArt.W_CARMESIM, BuildArt.W_DISTORCIDO
         )) arr[p] = true
     }
 
@@ -90,6 +92,229 @@ object McPix {
         }
     }
 
+    // ================================================================ Construção v4: cada padrão com desenho próprio
+    /** fresta/rejunte afundado */
+    private fun sulco(c: C, x: Int, y: Int, seed: Int, amp: Float) { c.g = 1f; c.h = -1; c.t = dith(x, y, seed, amp) }
+
+    /** tijolo em aparelho flamengo: em cada fileira um tijolo comprido e dois curtos, a fileira de cima anda 4 px */
+    private fun tijolo(c: C, x: Int, y: Int) {
+        val r = y / 4; val yy = y % 4
+        val xs = (x + (r and 1) * 4) % 16
+        val st: Int; val ln: Int; val pid: Int
+        if (xs < 8) { st = 0; ln = 8; pid = 0 } else if (xs < 12) { st = 8; ln = 4; pid = 1 } else { st = 12; ln = 4; pid = 2 }
+        val xx = xs - st
+        if (yy == 3 || xx == ln - 1) { sulco(c, x, y, 615, 0.12f); return }
+        c.h = 1
+        val bid = r * 3 + pid
+        c.t = (hh(bid, r + 3, 611) - 0.5f) * 0.8f + dith(x, y, 613, 0.30f)
+        if (hh(bid, 9, 617) > 0.86f) c.t -= 0.35f
+        if (yy == 0) c.t += 0.22f
+        if (xx == 0) c.t += 0.10f
+        if (xx == ln - 2 && yy == 2) c.t -= 0.15f
+    }
+
+    private val ALV_Y = intArrayOf(0, 5, 8, 13)
+    private val ALV_H = intArrayOf(5, 3, 5, 3)
+    private val ALV_BR = arrayOf(intArrayOf(5, 15), intArrayOf(9, 15), intArrayOf(3, 10, 15), intArrayOf(6, 15))
+
+    /** alvenaria: pedras retangulares de tamanhos diferentes em fileiras altas e baixas, com quina chanfrada */
+    private fun alvenaria(c: C, x: Int, y: Int) {
+        for (ri in 0 until 4) {
+            val y0 = ALV_Y[ri]; val hg = ALV_H[ri]
+            if (y < y0 || y >= y0 + hg) continue
+            val yy = y - y0
+            if (yy == hg - 1) { sulco(c, x, y, 625, 0.10f); return }
+            var x0 = 0
+            val br = ALV_BR[ri]
+            for (bi in br.indices) {
+                val bx = br[bi]
+                if (x <= bx) {
+                    if (x == bx) { sulco(c, x, y, 625, 0.10f); return }
+                    val xx = x - x0; val ln = bx - x0
+                    c.h = 1
+                    c.t = (hh(ri * 4 + bi, 3, 621) - 0.5f) * 0.9f + dith(x, y, 623, 0.28f)
+                    if (yy == 0) c.t += 0.28f else if (xx == 0) c.t += 0.14f
+                    if (yy == hg - 2) c.t -= 0.18f
+                    if (xx == ln - 1) c.t -= 0.14f
+                    return
+                }
+                x0 = bx + 1
+            }
+            return
+        }
+    }
+
+    /** azulejo metrô: peças retangulares lisas assentadas em grade, com brilho no canto */
+    private fun metro(c: C, x: Int, y: Int) {
+        val yy = y % 4; val xx = x % 8
+        if (yy == 3 || xx == 7) { c.g = 1f; c.h = -1; return }
+        c.h = 0
+        c.t = (hh(x / 8, y / 4, 631) - 0.5f) * 0.10f
+        if (yy == 0) c.t += 0.30f
+        if (xx == 0) c.t += 0.12f
+        if (yy == 2) c.t -= 0.14f
+        if (xx == 6) c.t -= 0.10f
+        if (xx == 1 && yy == 1) c.sp = 0.40f
+        if (xx == 2 && yy == 1) c.sp = 0.18f
+    }
+
+    /** tábua pintada: tábuas verticais de tinta lisa com as juntas cobertas por sarrafos pregados */
+    private fun pintada(c: C, x: Int, y: Int) {
+        val xm = x % 8
+        if (xm == 0) { c.h = 1; c.t = 0.28f; return }
+        if (xm == 2) { c.h = 0; c.t = -0.55f; return }
+        if (xm == 1) { c.h = 1; c.t = -0.10f }
+        else {
+            c.h = 0
+            c.t = (hh(x / 8, 0, 641) - 0.5f) * 0.1f + (if (hh(x, y shr 2, 643) < 0.22f) -0.14f else 0f)
+            if (xm == 3) c.t += 0.10f
+        }
+        if (xm == 1 && (y == 2 || y == 10)) { c.t = -0.70f; c.h = 0 }
+        if (xm == 7) c.t -= 0.05f
+    }
+
+    private val CORR_T = floatArrayOf(-0.9f, -0.5f, 0.0f, 0.6f, 1.0f, 0.7f, 0.15f, -0.5f)
+
+    /** chapa ondulada: onda de 8 px com crista brilhante, parafusos nas cristas e emenda entre chapas */
+    private fun ondulada(c: C, x: Int, y: Int) {
+        val i = x % 8
+        c.t = CORR_T[i] + dith(x, y, 321, 0.06f)
+        c.h = if (i == 3 || i == 4 || i == 5) 1 else 0
+        if (i == 4 && y % 8 != 7) c.sp = 0.30f
+        if (i == 3 && y % 8 != 7) c.sp = 0.12f
+        if (i == 4 && (y == 3 || y == 11)) { c.t = -1.2f; c.sp = 0f; c.h = 1 }
+        if (i == 3 && (y == 3 || y == 11)) c.t = 0.2f
+        if (y == 0) c.t -= 0.35f
+        if (y == 15) c.t += 0.15f
+    }
+
+    /** abeto: tábuas estreitas em fileiras de 4 px com emendas escalonadas e pingos de resina */
+    private fun abeto(c: C, x: Int, y: Int) {
+        val r = y / 4; val yy = y % 4
+        val j1 = (r * 5 + 3) % 16; val j2 = (j1 + 8) % 16
+        if (yy == 3) { sulco(c, x, y, 501, 0.12f); return }
+        if (x == j1 || x == j2) { c.g = 1f; c.h = -1; return }
+        val seg = if (x > min(j1, j2) && x < max(j1, j2)) 1 else 0
+        c.t = (hh(r * 2 + seg, 5, 503) - 0.5f) * 0.6f + (if (hh(x / 3, y, 505) < 0.25f) -0.30f else 0f) + dith(x, y, 507, 0.10f)
+        c.h = if (yy == 0) 1 else 0
+        if (yy == 0) c.t += 0.18f
+        if (x == (j1 + 4) % 16 && yy == 2 && r % 2 == 0) c.t = -0.7f
+    }
+
+    /** bétula: duas tábuas largas, claras, com os risquinhos escuros típicos da casca */
+    private fun betula(c: C, x: Int, y: Int) {
+        val r = y / 8; val yy = y % 8
+        val j = (r * 9 + 4) % 16
+        if (yy == 7) { sulco(c, x, y, 511, 0.10f); return }
+        if (x == j) { c.g = 1f; c.h = -1; return }
+        c.h = 0
+        c.t = (hh(r, if (x > j) 1 else 0, 513) - 0.5f) * 0.25f + dith(x, y, 515, 0.12f)
+        if (yy == 0) { c.t += 0.20f; c.h = 1 }
+        val dsh = hh(x shr 2, y, 517)
+        if (yy in 2..5) { if (dsh < 0.10f) c.t = -0.85f else if (dsh < 0.16f) c.t = -0.35f }
+    }
+
+    private val SEL_Y = intArrayOf(0, 6, 11)
+    private val SEL_H = intArrayOf(6, 5, 5)
+
+    /** selva: três fileiras de alturas diferentes, madeira manchada */
+    private fun selva(c: C, x: Int, y: Int) {
+        for (ri in 0 until 3) {
+            val y0 = SEL_Y[ri]; val hg = SEL_H[ri]
+            if (y < y0 || y >= y0 + hg) continue
+            val yy = y - y0
+            val j = (ri * 7 + 3) % 16
+            if (yy == hg - 1 || x == j) { c.g = 1f; c.h = -1; return }
+            val b = blob(x, y, 521)
+            c.t = (b - 0.5f) * 1.0f + dith(x, y, 523, 0.2f)
+            c.h = if (b > 0.55f) 1 else 0
+            return
+        }
+    }
+
+    /** acácia: tábuas na diagonal */
+    private fun acacia(c: C, x: Int, y: Int) {
+        val d = (x + y) % 8; val k = (x + y) / 8
+        if (d == 7) { sulco(c, x, y, 531, 0.10f); return }
+        c.h = if (d < 2) 1 else 0
+        c.t = (hh(k % 4, 2, 533) - 0.5f) * 0.55f + (if (hh(x, y, 535) < 0.14f) -0.28f else 0f)
+        if (d == 0) c.t += 0.22f
+        if (x == (k * 5 + 3) % 16 && (d == 3 || d == 4)) c.t = -0.5f
+    }
+
+    /** carvalho escuro: tábuas largas na vertical com nós */
+    private fun carvalho(c: C, x: Int, y: Int) {
+        val xm = x % 8; val col = x / 8
+        if (xm == 7) { sulco(c, x, y, 541, 0.10f); return }
+        val jy = (col * 9 + 5) % 16
+        if (y == jy) { c.g = 1f; c.h = -1; return }
+        c.h = 0
+        c.t = (hh(col, if (y < jy) 0 else 1, 543) - 0.5f) * 0.4f + (if (hh(x, y shr 1, 545) < 0.18f) -0.30f else 0f) + dith(x, y, 547, 0.08f)
+        if (xm == 0) { c.t += 0.18f; c.h = 1 }
+        val kn = intArrayOf(3, 4, 11, 11)
+        for (q in 0 until 2) {
+            val dx = abs(x - kn[q * 2]); val dy = abs(y - kn[q * 2 + 1])
+            if (dx == 0 && dy == 0) { c.t = -0.95f; c.h = -1 }
+            else if (dx <= 1 && dy <= 1 && !(dx == 1 && dy == 1)) c.t = -0.5f
+            else if ((dx <= 2 && dy == 0) || (dy <= 2 && dx == 0)) c.t = -0.2f
+        }
+    }
+
+    /** mangue: tábuas estreitas na vertical com friso no meio */
+    private fun mangue(c: C, x: Int, y: Int) {
+        val xm = x % 4; val col = x / 4
+        if (xm == 3) { sulco(c, x, y, 551, 0.10f); return }
+        val jy = (col * 5 + 2) % 16
+        if (y == jy) { c.g = 1f; c.h = -1; return }
+        c.h = if (xm == 0) 1 else 0
+        c.t = (hh(col, if (y < jy) 0 else 1, 553) - 0.5f) * 0.5f + (if (hh(x, y shr 2, 555) < 0.2f) -0.25f else 0f)
+        if (xm == 0) c.t += 0.2f
+        if (xm == 1) c.t -= 0.15f
+    }
+
+    /** cerejeira: tábuas em V (espinha de peixe) lisas */
+    private fun cerejeira(c: C, x: Int, y: Int) {
+        val s = y + abs(x - 8)
+        val q = s % 4; val k = s / 4
+        if (q == 3) { sulco(c, x, y, 561, 0.08f); return }
+        c.h = if (q == 0) 1 else 0
+        c.t = (hh(k % 8, if (x >= 8) 1 else 0, 563) - 0.5f) * 0.35f + dith(x, y, 565, 0.10f)
+        if (q == 0) c.t += 0.22f
+    }
+
+    /** bambu: colmos verticais com nós */
+    private fun bambu(c: C, x: Int, y: Int) {
+        val xm = x % 4; val col = x / 4
+        if (xm == 3) { sulco(c, x, y, 571, 0.10f); return }
+        val ny = (col * 5 + 3) % 8; val ym = y % 8
+        c.h = 1
+        c.t = (hh(col, 0, 573) - 0.5f) * 0.35f + (if (xm == 0) 0.24f else if (xm == 2) -0.2f else 0f)
+        if (ym == ny) { c.t = -0.8f; c.h = 0 }
+        else if (ym == (ny + 1) % 8) c.t += 0.35f
+        else if (hh(x, y, 575) < 0.10f) c.t -= 0.28f
+    }
+
+    /** carmesim: madeira fibrosa com caroços claros */
+    private fun carmesim(c: C, x: Int, y: Int) {
+        val r = y / 4; val yy = y % 4
+        val j1 = (r * 7 + 2) % 16; val j2 = (j1 + 8) % 16
+        if (yy == 3 || x == j1 || x == j2) { c.g = 1f; c.h = -1; return }
+        c.h = 0
+        c.t = (hh(x, r, 581) - 0.5f) * 0.5f + dith(x, y, 583, 0.15f)
+        val w = blob(x, y, 585)
+        if (w > 0.80f) { c.h = 2; c.t = 0.65f } else if (w > 0.66f) { c.h = 1; c.t = 0.2f }
+    }
+
+    /** distorcido: fileiras onduladas */
+    private fun distorcido(c: C, x: Int, y: Int) {
+        val off = Math.round(2.2f * sin(x * 0.3926991f))
+        val q = (y + off + 32) % 8; val k = (y + off + 32) / 8
+        if (q == 7) { sulco(c, x, y, 591, 0.10f); return }
+        c.h = if (q == 0) 1 else 0
+        c.t = (hh(k % 4, 3, 593) - 0.5f) * 0.5f + (if (hh(x / 2, y, 595) < 0.16f) -0.28f else 0f) + dith(x, y, 597, 0.08f)
+        if (q == 0) c.t += 0.25f
+    }
+
     // ---------------------------------------------------------------- um pixel de um padrão (x, y = 0..15)
     fun cell(p: Int, v: Int, x: Int, y: Int, c: C) {
         c.reset()
@@ -106,10 +331,8 @@ object McPix {
             }
             // ---- tijolos
             BuildArt.BRICK -> brickLike(c, x, y, 4, 8, 11, 0.28f, false)
-            BuildArt.SUBWAY -> {
-                brickLike(c, x, y, 4, 8, 15, 0.10f, false)
-                if (c.g == 0f && y % 4 == 0 && x % 8 < 4) c.sp = 0.35f
-            }
+            BuildArt.SUBWAY -> metro(c, x, y)
+            BuildArt.TIJOLO -> tijolo(c, x, y)
             BuildArt.SBRICK, BuildArt.SBRICK_CRACK, BuildArt.SBRICK_MOSS -> stoneBrick(c, x, y, p, v)
             // ---- pedregulho: pedras arredondadas (centro mais alto) separadas por frestas escuras
             BuildArt.COBBLE, BuildArt.COBBLE_MOSS -> {
@@ -183,7 +406,8 @@ object McPix {
                 if ((x == 2 && y == 2) || (x == 3 && y == 2) || (x == 11 && y == 9)) c.sp = 0.18f
             }
             // ---- madeiras
-            BuildArt.PLANK, BuildArt.PAINTED -> {
+            BuildArt.PAINTED -> pintada(c, x, y)
+            BuildArt.PLANK -> {
                 val r = y / 4; val yy = y % 4
                 val j1 = (r * 5 + 3) % 16; val j2 = (j1 + 8) % 16
                 if (yy == 3) { c.g = 1f; c.h = -1; c.t = dith(x, y, 186, 0.15f) }
@@ -289,15 +513,7 @@ object McPix {
                 if ((x / 4) % 2 == 0) { c.m = 1f; c.h = 1 }
                 c.t = dith(x, y, 311, 0.15f)
             }
-            BuildArt.CORRUG -> {
-                when (x % 4) {
-                    0 -> { c.h = 0; c.t = -0.35f }
-                    1 -> { c.h = 1; c.t = 0.1f }
-                    2 -> { c.h = 2; c.t = 0.45f }
-                    else -> { c.h = 1; c.t = 0.1f }
-                }
-                c.t += dith(x, y, 321, 0.1f)
-            }
+            BuildArt.CORRUG -> ondulada(c, x, y)
             BuildArt.BASALT -> {
                 val ct = (hh(x, 2, 401) - 0.5f) * 0.7f
                 c.t = ct + (if (hh(x, y / 4, 402) < 0.25f) -0.35f else 0f) + dith(x, y, 403, 0.12f)
@@ -339,7 +555,17 @@ object McPix {
                 if ((x - y + 32) % 16 == 5) c.t -= 0.3f
                 if ((x - y + 32) % 16 == 6) c.sp = 0.2f
             }
-            BuildArt.LONGBRICK -> brickLike(c, x, y, 4, 16, 471, 0.22f, false)
+            BuildArt.LONGBRICK -> alvenaria(c, x, y)
+            BuildArt.W_ABETO -> abeto(c, x, y)
+            BuildArt.W_BETULA -> betula(c, x, y)
+            BuildArt.W_SELVA -> selva(c, x, y)
+            BuildArt.W_ACACIA -> acacia(c, x, y)
+            BuildArt.W_CARVALHO -> carvalho(c, x, y)
+            BuildArt.W_MANGUE -> mangue(c, x, y)
+            BuildArt.W_CEREJEIRA -> cerejeira(c, x, y)
+            BuildArt.W_BAMBU -> bambu(c, x, y)
+            BuildArt.W_CARMESIM -> carmesim(c, x, y)
+            BuildArt.W_DISTORCIDO -> distorcido(c, x, y)
             BuildArt.PEBBLE -> {
                 vor(x, y, 5, 0.85f, 271, c)
                 if (c.d < 0.65f) { c.g = 1f; c.h = -1 }

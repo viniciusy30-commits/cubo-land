@@ -97,7 +97,7 @@ class World {
         const val SAVE_MAGIC = 0x434C3402
         const val TV_MAGIC = 0x54563031   // trailer opcional depois dos blocos: tamanho de cada TV
         /** deve ser chamado ANTES de criar World/Game/GameRenderer: o mapa plano é bem maior que a ilha */
-        fun configure(flat: Boolean) { SX = if (flat) 256 else 96; SZ = SX }
+        fun configure(flat: Boolean, tall: Boolean = false) { SX = if (flat) 256 else 96; SZ = if (tall) 384 else SX }   // tall: a galeria de blocos precisa de mais fundo
         val CU = intArrayOf(0, 1); val CV = intArrayOf(0, 1)
         val QU = intArrayOf(0, 1, 1, 0); val QV = intArrayOf(0, 0, 1, 1)
         val AOB = floatArrayOf(0.86f, 0.91f, 0.96f, 1f)
@@ -106,7 +106,7 @@ class World {
     /** 4 bytes por bloco (Int): praticamente sem limite de tipos de bloco */
     val blocks = IntArray(SX * SY * SZ)
     /** plaquinhas flutuantes (galeria de blocos) */
-    class Label(val x: Float, val y: Float, val z: Float, val text: String, val big: Boolean = false)
+    class Label(val x: Float, val y: Float, val z: Float, val text: String, val big: Boolean = false, val col: Int = 0)
     val labels = ArrayList<Label>()
     var spawnX = -1; var spawnZ = -1
     val dirty = BooleanArray(CX * CZ) { true }
@@ -249,13 +249,16 @@ class World {
 
 
     /** Mapa plano: planície de grama (y=10), camadas de terra/pedra embaixo, um rio enorme serpenteando e árvores bem espaçadas. */
-    /** galeria de blocos: chão liso e fileiras por categoria, com todos os blocos do jogo e uma plaquinha com o nome de cada um */
+    /** galeria de blocos: cada tipo de bloco numa seção com faixa colorida e título (as pequenas dividem a mesma faixa), cada bloco numa célula de piso
+     *  xadrez com uma plaquinha só com o que o diferencia (cor, madeira...), na cor do bloco. A organização está em Gallery. */
     fun generateTest() {
         locked = null
         java.util.Arrays.fill(blocks, 0); labels.clear()
         val floor = B.byName["Concreto Cinza-claro"] ?: B.STONE
+        val plate = B.byName["Concreto Branco"] ?: floor
         val top = 10
         for (z in 0 until SZ) for (x in 0 until SX) for (y in 0..top) blocks[(y * SZ + z) * SX + x] = floor
+        fun setTop(x: Int, z: Int, b: Int) { if (x in 0 until SX && z in 0 until SZ) blocks[(top * SZ + z) * SX + x] = b }
         val cats = ArrayList<Triple<String, Int, List<Int>>>()
         // os blocos básicos (ids 1..13) não têm categoria própria: entram no começo de cada categoria, a mesma da mochila (Items.cat)
         val basic = ArrayList<Int>(); for (id in 1..13) if (id != B.WATER && B.defined[id]) basic.add(id)
@@ -266,102 +269,52 @@ class World {
         cats.add(Triple("MOBÍLIA", 5, Blk.defs.filter { it.cat == Blk.C_FURN }.map { it.id }))
         val other = Blk.defs.filter { it.cat != Blk.C_NAT && it.cat != Blk.C_BUILD && it.cat != Blk.C_DEC && it.cat != Blk.C_FURN }.map { it.id }
         if (other.isNotEmpty()) cats.add(Triple("OUTROS", 0, other))
-        val matById = HashMap<Int, Int>(); for (d in Blk.defs) matById[d.id] = d.mat
+        val matById = HashMap<Int, Int>(); val colById = HashMap<Int, Int>()
+        for (d in Blk.defs) { matById[d.id] = d.mat; colById[d.id] = d.color }
         fun blockNamed(n: String) = B.byName[n] ?: floor
-        val perRow = 27; val x0 = 8; var zc = 8
+        val cols = 27; val x0 = 8; var zc = 8
         spawnX = x0 + 2; spawnZ = 4
+        var secN = 0
         for ((name, ci, ids) in cats) {
-            // faixa colorida da categoria no chão + título grande
+            // faixa grande da categoria no chão + título
             val stripe = blockNamed(when (ci) { 2 -> "Concreto Verde"; 3 -> "Concreto Vermelho"; 4 -> "Concreto Rosa"; 5 -> "Concreto Azul"; else -> "Concreto Preto" })
-            if (zc + 2 < SZ - 2) for (z in zc until zc + 2) for (x in x0 - 2..x0 + perRow * 3) if (x in 0 until SX) blocks[(top * SZ + z) * SX + x] = stripe
-            labels.add(Label(x0 + perRow * 3 / 2f, top + 7f, zc + 0.5f, "$name (${ids.size})", true))
+            for (z in zc until zc + 2) for (x in x0 - 2..x0 + cols * 3) setTop(x, z, stripe)
+            labels.add(Label(x0 + cols * 3 / 2f, top + 8f, zc + 0.5f, "$name (${ids.size})", true))
             zc += 4
-            // separa em seções (madeira, pedra, vidro...) na ordem certinha
-            val groups = LinkedHashMap<String, ArrayList<Int>>()
-            for (g in galOrder(ci)) groups[g] = ArrayList()
-            for (id in ids) groups.getOrPut(galGroup(ci, B.names[id], matById[id] ?: 0)) { ArrayList() }.add(id)
-            val line = blockNamed("Concreto Cinza")
-            for ((g, gl) in groups) {
+            val secs = Gallery.sections(ci)
+            val buckets = Array(secs.size) { ArrayList<Int>() }
+            for (id in ids) buckets[Gallery.classify(ci, B.names[id], matById[id] ?: 0)].add(id)
+            var open = false; var cur = 0   // faixa aberta: seções pequenas dividem a mesma faixa, uma ao lado da outra
+            fun closeBand(rows: Int) { zc += 1 + rows * 3 + 1; open = false; cur = 0 }
+            for ((si, sec) in secs.withIndex()) {
+                val gl = buckets[si]
                 if (gl.isEmpty()) continue
-                if (zc + 1 < SZ - 2) for (x in x0 - 1..x0 + perRow * 3 - 2) if (x in 0 until SX) blocks[(top * SZ + zc) * SX + x] = line
-                labels.add(Label(x0 + 4f, top + 4.5f, zc + 0.5f, "$g (${gl.size})", true))
-                zc += 2
-                var i = 0
-                while (i < gl.size) {
-                    for (k in 0 until perRow) {
-                        if (i >= gl.size) break
-                        val id = gl[i]; val x = x0 + k * 3
-                        if (zc + 1 < SZ - 2) {
-                            blocks[((top + 1) * SZ + zc) * SX + x] = id
-                            labels.add(Label(x + 0.5f, top + 2.9f, zc + 0.5f, B.names[id]))
-                        }
-                        i++
-                    }
-                    zc += 3
+                val n = gl.size
+                val rows = (n + cols - 1) / cols
+                if (open && (rows > 1 || cur + n > cols)) closeBand(1)
+                val start: Int
+                if (rows == 1) { start = cur; cur += n + 1; open = true } else start = 0
+                val w = if (rows > 1) cols else n
+                // faixa colorida da seção + título
+                val accent = blockNamed(Gallery.accentName(secN++))
+                for (x in x0 + start * 3 until x0 + (start + w) * 3) setTop(x, zc, accent)
+                labels.add(Label(x0 + (start + w / 2f) * 3f, top + 6.2f, zc + 0.5f, "${sec.title} (${n})", true))
+                for ((j, id) in gl.withIndex()) {
+                    val row = j / cols; val col = start + j % cols
+                    val cx = x0 + col * 3 + 1; val cz = zc + 1 + row * 3 + 1
+                    if (cz + 1 >= SZ - 2) continue
+                    if ((row + col) % 2 == 0) for (dz in -1..1) for (dx in -1..1) setTop(cx + dx, cz + dz, plate)
+                    blocks[((top + 1) * SZ + cz) * SX + cx] = id
+                    labels.add(Label(cx + 0.5f, top + (if (col % 2 == 0) 2.7f else 3.9f), cz + 0.5f, Gallery.shortName(sec, B.names[id]), false, colById[id] ?: 0))
                 }
-                zc += 2
+                if (rows > 1) closeBand(rows)
             }
+            if (open) closeBand(1)
             zc += 2
         }
         furnitureShowcase(top)
         modernHouse(top)
         plantTestTrees(top)
-    }
-
-    /** ordem das seções de cada categoria na galeria */
-    private fun galOrder(cat: Int): List<String> = when (cat) {
-        3 -> listOf("CONCRETO", "TERRACOTA", "REBOCO E GESSO", "PEDRAS", "TIJOLOS", "AZULEJOS E LADRILHOS", "TÁBUAS", "TRONCOS DESCASCADOS", "PISOS E PAINÉIS DE MADEIRA", "MADEIRA", "TELHADOS", "VIDROS", "JANELAS E VITRAIS", "METAIS", "TECIDOS E ACOLCHOADOS", "ESCADAS E LAJES", "OUTROS")
-        2 -> listOf("TERRENO", "TRONCOS", "FOLHAS", "PLANTAS E OUTROS")
-        4 -> listOf("LÃS", "TERRACOTA VITRIFICADA", "LÂMPADAS", "CRISTAIS E GELATINAS", "DOCES E CÉU", "DIVERSOS")
-        5 -> listOf("MESAS E ASSENTOS", "QUARTO E ARMAZENAMENTO", "TAPETES", "ELETRÔNICOS E DECORAÇÃO")
-        else -> listOf("OUTROS")
-    }
-
-    private fun galGroup(cat: Int, n: String, mat: Int): String {
-        fun has(vararg k: String) = k.any { n.contains(it) }
-        fun st(vararg k: String) = k.any { n.startsWith(it) }
-        return when (cat) {
-            3 -> when {
-                st("Escada", "Laje", "Degrau") -> "ESCADAS E LAJES"
-                has("Telhado", "Cumeeira") -> "TELHADOS"
-                st("Concreto") -> "CONCRETO"
-                st("Terracota") -> "TERRACOTA"
-                st("Reboco", "Gesso") -> "REBOCO E GESSO"
-                st("Tábua") -> "TÁBUAS"
-                has("Descascad") -> "TRONCOS DESCASCADOS"
-                st("Piso", "Lambri", "Enxaimel", "Bambu", "Bloco de Bambu") -> "PISOS E PAINÉIS DE MADEIRA"
-                has("Tijolo") -> "TIJOLOS"
-                st("Azulejo", "Ladrilho", "Caminho") -> "AZULEJOS E LADRILHOS"
-                st("Vidro", "Bloco de Vidro") -> "VIDROS"
-                has("Janela", "Vitral", "Persiana", "Escotilha") -> "JANELAS E VITRAIS"
-                mat == Blk.M_METAL -> "METAIS"
-                mat == Blk.M_WOOD -> "MADEIRA"
-                mat == Blk.M_SOFT -> "TECIDOS E ACOLCHOADOS"
-                mat == Blk.M_STONE -> "PEDRAS"
-                else -> "OUTROS"
-            }
-            2 -> when {
-                st("Tronco", "Caule", "Colmo", "Bloco de Bambu") -> "TRONCOS"
-                has("Folha", "Verruga") -> "FOLHAS"
-                has("Grama", "Terra", "Areia", "Pedra", "Neve", "Gelo", "Argila", "Cascalho", "Lama") -> "TERRENO"
-                else -> "PLANTAS E OUTROS"
-            }
-            4 -> when {
-                has("Lã") -> "LÃS"
-                st("Terracota Vitrificada") -> "TERRACOTA VITRIFICADA"
-                st("Lâmpada") -> "LÂMPADAS"
-                has("Cristal", "Gelatina") -> "CRISTAIS E GELATINAS"
-                has("Nuvem", "Algodão", "Bengala", "Pirulito", "Chocolate", "Biscoito", "Pôr do Sol", "Céu", "Oceano") -> "DOCES E CÉU"
-                else -> "DIVERSOS"
-            }
-            5 -> when {
-                has("Mesa", "Cadeira", "Banco", "Poltrona", "Sofá", "Escrivaninha") -> "MESAS E ASSENTOS"
-                has("Cama", "Cômoda", "Armário", "Estante") -> "QUARTO E ARMAZENAMENTO"
-                has("Tapete") -> "TAPETES"
-                else -> "ELETRÔNICOS E DECORAÇÃO"
-            }
-            else -> "OUTROS"
-        }
     }
 
     /** vitrine da mobília: conjuntos de mesas, sala, escritório e quartos (ficam trancados, mas dá pra sentar) */

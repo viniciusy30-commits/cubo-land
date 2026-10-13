@@ -26,7 +26,11 @@ object BuildArt {
     const val GL_GRID = 55; const val GL_DROPS = 56; const val GL_RAINBOW = 57; const val JAN_ARCH = 58; const val JAN_HEART = 59; const val JAN_STAR = 60; const val DIAMOND = 61; const val STEPPING = 62
     const val STRIPES = 63; const val QUILT = 64; const val SCALES = 65; const val GL_ICE = 66
     const val BASALT = 67; const val TUFF = 68; const val NETHER = 69; const val ENDSTONE = 70; const val PRISM = 71; const val POLISHED = 72; const val QUARTZ = 73; const val LONGBRICK = 74
-    const val COUNT = 75
+    // ---- padrões da v4: tijolo flamengo e as 10 madeiras (uma textura própria pra cada tábua de árvore) ----
+    const val TIJOLO = 75
+    const val W_ABETO = 76; const val W_BETULA = 77; const val W_SELVA = 78; const val W_ACACIA = 79; const val W_CARVALHO = 80
+    const val W_MANGUE = 81; const val W_CEREJEIRA = 82; const val W_BAMBU = 83; const val W_CARMESIM = 84; const val W_DISTORCIDO = 85
+    const val COUNT = 86
 
     /** lado do tile gerado (igual a Atlas.T) */
     const val N = 64
@@ -153,6 +157,8 @@ object BuildArt {
     private fun mcGrout(p: Int, mode: Int, b: Int): Int = when {
         p == BRICK -> mixc(0xB9B2AA, b, 0.14f)
         p == SUBWAY -> 0xCFCBC4
+        p == TIJOLO -> mixc(0xB9B2AA, b, 0.14f)
+        p == LONGBRICK -> mixc(b, 0x5A5560, 0.45f)
         mode == GP -> mixc(b, 0xFFFFFF, 0.55f)
         mode == GD -> mixc(b, 0x1E1822, 0.50f)
         mode == GL -> 0x3A3040

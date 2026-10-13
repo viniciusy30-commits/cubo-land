@@ -45,7 +45,7 @@ class GameActivity : AppCompatActivity() {
         })
         val t0 = System.currentTimeMillis()
         Thread {
-            World.configure(flat)
+            World.configure(flat, test)
             val w = World()
             if (test) { w.generateTest() }   // sempre gerada de novo: mostra os blocos que existem agora
             else if (!w.load(saveFile)) { if (flat) w.generateFlat(info.seed) else w.generate(info.seed) }

@@ -1,3 +1,21 @@
+#id 2026-10-13-d
+#titulo Galeria de blocos reorganizada
+- Cada tipo de bloco tem a sua seção, com faixa colorida no chão e título: concreto, terracota, pedras, tijolos, alvenaria, azulejos, tábuas de árvores, tábuas pintadas, toras, pisos, lambris, telhados (ripas, cerâmicos, clássicos), vidros (lisos, coloridos, decorativos, finos), janelas (colonial, arco, coração, estrela, de correr), vitrais, chapas, gemas, lajes, escadas e mais
+- Seções pequenas dividem a mesma faixa, lado a lado, pra galeria não ficar enorme
+- Cada bloco fica numa célula de piso xadrez, com uma plaquinha só com o que o diferencia (a cor, a madeira...), com um quadradinho da cor do bloco. O título da seção já diz a família, então acabou a repetição
+- Nomes alternam em duas alturas e quebram em duas linhas quando são compridos, e aparecem de mais longe: dá pra ler vários de uma vez
+- A galeria ganhou mais espaço pra caber tudo
+
+#id 2026-10-13-c
+#titulo Blocos de construção refeitos
+- Tijolo (16 cores): aparelho flamengo, com tijolos compridos e curtos se alternando e cada peça num tom diferente
+- Alvenaria (16 cores, antes "Pedra Fofa"): pedras retangulares de tamanhos diferentes com quina chanfrada
+- Azulejo Metrô (16 cores, antes "Ladrilho Fofo"): peças lisas e brilhantes assentadas em grade
+- Tábua Pintada (16 cores): tábuas verticais de tinta lisa com sarrafos pregados cobrindo as juntas
+- Chapa Ondulada: onda larga com crista brilhante, parafusos e emenda entre chapas, sem as colunas altas de antes
+- Cada tábua de árvore tem textura própria: abeto, bétula, selva, acácia, carvalho escuro, mangue, cerejeira, bambu, carmesim e distorcido
+- Telhados coloridos renomeados: Telhado de Ripas e Telhado Cerâmico. Nomes "fofos" removidos
+
 #id 2026-10-13-b
 #titulo Galeria organizada e mais texturas
 - Galeria de blocos separada em seções com título e faixa no chão: concreto, terracota, pedras, tijolos, tábuas, madeira, telhados, vidros, janelas, metais, escadas e mais (e também natureza, decoração e mobília)

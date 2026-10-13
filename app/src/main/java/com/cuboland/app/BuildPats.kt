@@ -390,6 +390,9 @@ object BuildPats {
 
     /** retângulo de vidro com moldura: usa window() com 1x1 */
     private fun registerMore() = with(BuildKit) {
+        // padrões v4 desenhados direto em McPix (a função aqui nunca é chamada, só registra o tipo de rejunte)
+        define(BuildArt.TIJOLO, BuildArt.GC, 0f, 0f, false) { _, _, _ -> }
+        for (wp in BuildArt.W_ABETO..BuildArt.W_DISTORCIDO) define(wp, BuildArt.GWOOD, 0f, 0f, false) { _, _, _ -> }
         // tábuas pintadas: tinta lisa, quinas gastas claras, pregos
         define(BuildArt.PAINTED, BuildArt.GWOOD, 0f, 0.025f, false) { x, y, s ->
             masonry(x, y, intArrayOf(0, 16, 32, 48, 64), arrayOf(intArrayOf(40), intArrayOf(8), intArrayOf(52), intArrayOf(24)), 3f, 3.2f, s)
