@@ -85,22 +85,23 @@ object BuildShapes {
     }
 
     /** placa fina: faces grandes com a textura inteira, bordas pegam a moldura da textura */
-    private fun plate(q: Q, t: Int, x0: Float, y0: Float, z0: Float, x1: Float, y1: Float, z1: Float, alongX: Boolean, vr: Float) {
+    /** skip: 1 = sem face de cima, 2 = sem a de baixo, 4/8 = sem a ponta do começo/fim (vidros iguais emendados não mostram divisa) */
+    private fun plate(q: Q, t: Int, x0: Float, y0: Float, z0: Float, x1: Float, y1: Float, z1: Float, alongX: Boolean, vr: Float, skip: Int = 0) {
         val sf = 0.92f * vr; val sb = 0.80f * vr; val se = 0.86f * vr
         if (alongX) {
             q.v(t, x0, y0, z0, x0, 1f - y0, sf); q.v(t, x1, y0, z0, x1, 1f - y0, sf); q.v(t, x1, y1, z0, x1, 1f - y1, sf); q.v(t, x0, y1, z0, x0, 1f - y1, sf); q.fin()
             q.v(t, x0, y0, z1, x0, 1f - y0, sb); q.v(t, x1, y0, z1, x1, 1f - y0, sb); q.v(t, x1, y1, z1, x1, 1f - y1, sb); q.v(t, x0, y1, z1, x0, 1f - y1, sb); q.fin()
-            q.v(t, x0, y1, z0, x0, 0.02f, vr); q.v(t, x1, y1, z0, x1, 0.02f, vr); q.v(t, x1, y1, z1, x1, 0.02f, vr); q.v(t, x0, y1, z1, x0, 0.02f, vr); q.fin()
-            q.v(t, x0, y0, z0, x0, 0.98f, 0.6f * vr); q.v(t, x1, y0, z0, x1, 0.98f, 0.6f * vr); q.v(t, x1, y0, z1, x1, 0.98f, 0.6f * vr); q.v(t, x0, y0, z1, x0, 0.98f, 0.6f * vr); q.fin()
-            q.v(t, x0, y0, z0, 0.02f, 1f - y0, se); q.v(t, x0, y0, z1, 0.02f, 1f - y0, se); q.v(t, x0, y1, z1, 0.02f, 1f - y1, se); q.v(t, x0, y1, z0, 0.02f, 1f - y1, se); q.fin()
-            q.v(t, x1, y0, z0, 0.98f, 1f - y0, se); q.v(t, x1, y0, z1, 0.98f, 1f - y0, se); q.v(t, x1, y1, z1, 0.98f, 1f - y1, se); q.v(t, x1, y1, z0, 0.98f, 1f - y1, se); q.fin()
+            if ((skip and 1) == 0) { q.v(t, x0, y1, z0, x0, 0.02f, vr); q.v(t, x1, y1, z0, x1, 0.02f, vr); q.v(t, x1, y1, z1, x1, 0.02f, vr); q.v(t, x0, y1, z1, x0, 0.02f, vr); q.fin() }
+            if ((skip and 2) == 0) { q.v(t, x0, y0, z0, x0, 0.98f, 0.6f * vr); q.v(t, x1, y0, z0, x1, 0.98f, 0.6f * vr); q.v(t, x1, y0, z1, x1, 0.98f, 0.6f * vr); q.v(t, x0, y0, z1, x0, 0.98f, 0.6f * vr); q.fin() }
+            if ((skip and 4) == 0) { q.v(t, x0, y0, z0, 0.02f, 1f - y0, se); q.v(t, x0, y0, z1, 0.02f, 1f - y0, se); q.v(t, x0, y1, z1, 0.02f, 1f - y1, se); q.v(t, x0, y1, z0, 0.02f, 1f - y1, se); q.fin() }
+            if ((skip and 8) == 0) { q.v(t, x1, y0, z0, 0.98f, 1f - y0, se); q.v(t, x1, y0, z1, 0.98f, 1f - y0, se); q.v(t, x1, y1, z1, 0.98f, 1f - y1, se); q.v(t, x1, y1, z0, 0.98f, 1f - y1, se); q.fin() }
         } else {
             q.v(t, x0, y0, z0, z0, 1f - y0, sf); q.v(t, x0, y0, z1, z1, 1f - y0, sf); q.v(t, x0, y1, z1, z1, 1f - y1, sf); q.v(t, x0, y1, z0, z0, 1f - y1, sf); q.fin()
             q.v(t, x1, y0, z0, z0, 1f - y0, sb); q.v(t, x1, y0, z1, z1, 1f - y0, sb); q.v(t, x1, y1, z1, z1, 1f - y1, sb); q.v(t, x1, y1, z0, z0, 1f - y1, sb); q.fin()
-            q.v(t, x0, y1, z0, z0, 0.02f, vr); q.v(t, x0, y1, z1, z1, 0.02f, vr); q.v(t, x1, y1, z1, z1, 0.02f, vr); q.v(t, x1, y1, z0, z0, 0.02f, vr); q.fin()
-            q.v(t, x0, y0, z0, z0, 0.98f, 0.6f * vr); q.v(t, x0, y0, z1, z1, 0.98f, 0.6f * vr); q.v(t, x1, y0, z1, z1, 0.98f, 0.6f * vr); q.v(t, x1, y0, z0, z0, 0.98f, 0.6f * vr); q.fin()
-            q.v(t, x0, y0, z0, 0.02f, 1f - y0, se); q.v(t, x1, y0, z0, 0.02f, 1f - y0, se); q.v(t, x1, y1, z0, 0.02f, 1f - y1, se); q.v(t, x0, y1, z0, 0.02f, 1f - y1, se); q.fin()
-            q.v(t, x0, y0, z1, 0.98f, 1f - y0, se); q.v(t, x1, y0, z1, 0.98f, 1f - y0, se); q.v(t, x1, y1, z1, 0.98f, 1f - y1, se); q.v(t, x0, y1, z1, 0.98f, 1f - y1, se); q.fin()
+            if ((skip and 1) == 0) { q.v(t, x0, y1, z0, z0, 0.02f, vr); q.v(t, x0, y1, z1, z1, 0.02f, vr); q.v(t, x1, y1, z1, z1, 0.02f, vr); q.v(t, x1, y1, z0, z0, 0.02f, vr); q.fin() }
+            if ((skip and 2) == 0) { q.v(t, x0, y0, z0, z0, 0.98f, 0.6f * vr); q.v(t, x0, y0, z1, z1, 0.98f, 0.6f * vr); q.v(t, x1, y0, z1, z1, 0.98f, 0.6f * vr); q.v(t, x1, y0, z0, z0, 0.98f, 0.6f * vr); q.fin() }
+            if ((skip and 4) == 0) { q.v(t, x0, y0, z0, 0.02f, 1f - y0, se); q.v(t, x1, y0, z0, 0.02f, 1f - y0, se); q.v(t, x1, y1, z0, 0.02f, 1f - y1, se); q.v(t, x0, y1, z0, 0.02f, 1f - y1, se); q.fin() }
+            if ((skip and 8) == 0) { q.v(t, x0, y0, z1, 0.98f, 1f - y0, se); q.v(t, x1, y0, z1, 0.98f, 1f - y0, se); q.v(t, x1, y1, z1, 0.98f, 1f - y1, se); q.v(t, x0, y1, z1, 0.98f, 1f - y1, se); q.fin() }
         }
     }
 
@@ -186,8 +187,15 @@ object BuildShapes {
         when {
             s == S_PANE -> {
                 val a = paneArms(w, x, y, z)
-                if (a[0] > 0f) plate(q, sd, a[1], 0f, T0, a[2], 1f, T1, true, vr)
-                if (a[3] > 0f) plate(q, sd, T0, 0f, a[4], T1, 1f, a[5], false, vr)
+                val vt = (if (w.get(x, y + 1, z) == id) 1 else 0) or (if (w.get(x, y - 1, z) == id) 2 else 0)   // vidro igual em cima/embaixo: sem divisa
+                if (a[0] > 0f) {
+                    val e = (if (a[1] == 0f && w.get(x - 1, y, z) == id) 4 else 0) or (if (a[2] == 1f && w.get(x + 1, y, z) == id) 8 else 0)
+                    plate(q, sd, a[1], 0f, T0, a[2], 1f, T1, true, vr, vt or e)
+                }
+                if (a[3] > 0f) {
+                    val e = (if (a[4] == 0f && w.get(x, y, z - 1) == id) 4 else 0) or (if (a[5] == 1f && w.get(x, y, z + 1) == id) 8 else 0)
+                    plate(q, sd, T0, 0f, a[4], T1, 1f, a[5], false, vr, vt or e)
+                }
             }
             s == S_PLATE -> {
                 if (spanX(w, x, y, z)) plate(q, sd, 0f, 0f, 0.43f, 1f, 1f, 0.57f, true, vr)

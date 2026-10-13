@@ -1,3 +1,27 @@
+#id 2026-10-13-g
+#titulo Vidro liso e emendado
+- Vidros lisos (grosso, fino, coloridos e janelas) ficaram com cor uniforme: sem listras de reflexo, sem estrelinha e sem brilho nas bordas
+- O brilho que passeava pelo vidro foi tirado
+- Vidros iguais lado a lado, em cima ou embaixo se emendam sem divisa: as faces de dentro (pontas, topo e fundo) não são mais desenhadas
+
+#id 2026-10-13-f
+#titulo Casa moderna maior, com piscina e muro
+- Casa bem maior (36x23 blocos), com 2 andares, sala de pé-direito duplo com fachada toda de vidro, escada de concreto solta na sala e telhado plano com beiral
+- Térreo: sala de estar, jantar, cozinha com ilha e bancos, cinema, quarto de hóspedes e adega
+- Andar de cima: loft de TV aberto pra sala, suíte master com sacada, outra suíte, quarto extra e escritório no mezanino
+- Lote murado com portão, caminho, cerca-viva, jardim e árvores
+- Piscina com praia rasa, borda branca e deque com espreguiçadeiras; terraço dos fundos com mesa de jantar ao ar livre
+- Muito mais mobília e luminárias em todos os cômodos
+
+#id 2026-10-13-e
+#titulo Galeria de blocos com painel de categorias
+- Ao entrar na galeria abre um painel: escolha NATUREZA, CONSTRUÇÃO, DECORAÇÃO, MOBÍLIA ou OUTROS e o mapa carrega só os blocos daquela categoria
+- Dentro da categoria dá pra carregar tudo ou só uma seção (ex.: só Telhados, só Vidros, só Troncos)
+- Vitrines à parte: mobília montada, casa moderna e galeria de árvores
+- O botão CATEGORIAS, no alto da tela, abre o painel de novo a qualquer hora
+- Plaquinhas sem bagunça: os títulos têm prioridade e uma plaquinha nunca fica por cima de outra; só aparecem as mais próximas
+- Blocos mais espaçados (células de 4x4) pra não ficar um colado no outro
+
 #id 2026-10-13-d
 #titulo Galeria de blocos reorganizada
 - Cada tipo de bloco tem a sua seção, com faixa colorida no chão e título: concreto, terracota, pedras, tijolos, alvenaria, azulejos, tábuas de árvores, tábuas pintadas, toras, pisos, lambris, telhados (ripas, cerâmicos, clássicos), vidros (lisos, coloridos, decorativos, finos), janelas (colonial, arco, coração, estrela, de correr), vitrais, chapas, gemas, lajes, escadas e mais

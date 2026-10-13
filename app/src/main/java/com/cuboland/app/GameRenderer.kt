@@ -94,13 +94,9 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             vec3 light = mix(vec3(0.80, 0.84, 1.0), vec3(1.05, 1.02, 0.95), l);
             vec3 c = t.rgb * vCol * uTint * light * 0.9;
             float alpha = uAlpha * t.a;
-            if (isGlass) {   // vidro: reflexo de céu + brilho que passeia pelas listras
+            if (isGlass) {   // vidro liso
                 float sheen = clamp((t.a - 0.16) * 3.0, 0.0, 1.0);
-                float ph = fract(dot(vWP, vec3(0.62, 0.9, 0.62)) * 0.11 - uTime * 0.06);
-                float band = exp(-pow((ph - 0.5) * 7.0, 2.0));
-                c = t.rgb * (0.92 + 0.12 * l) + vec3(0.07, 0.10, 0.14) * sheen;
-                c += vec3(1.0, 0.97, 0.88) * band * sheen * 0.55;
-                alpha = clamp(alpha + band * sheen * 0.25, 0.0, 1.0);
+                c = t.rgb * (0.92 + 0.12 * l) + vec3(0.07, 0.10, 0.14) * sheen;   // vidro liso: cor uniforme, sem faixa de reflexo
             }
             if (isLeaf) { float shl = sin(vWP.x * 0.9 + vWP.z * 0.8 + uTime * 1.1) * sin(vWP.y * 1.3 + vWP.x * 0.4 - uTime * 0.8); c *= 1.18 + 0.09 * shl; c += vec3(0.03, 0.05, 0.0) * max(shl, 0.0); }
             if (isWater) {

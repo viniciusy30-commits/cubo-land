@@ -103,6 +103,9 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         game.stickX = 0f; game.stickY = 0f; game.jumpHeld = false; game.downHeld = false; game.attackHeld = false; game.aimOn = false; btnId.clear()
     }
 
+    /** solta joystick/botões (usado quando o painel da galeria abre por cima) */
+    fun releaseInput() = clearInput()
+
     fun togglePause() {
         paused = !paused
         game.paused = paused
@@ -595,17 +598,24 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         }
     }
 
-    /** plaquinhas da galeria de blocos: texto flutuando em cima de cada bloco, projetado na tela */
+    /** plaquinhas da galeria de blocos: texto flutuando em cima de cada bloco, projetado na tela.
+     *  Anti-bagunça: títulos têm prioridade, depois as plaquinhas mais próximas; a que cairia por cima de outra já desenhada some. */
     private val lbV = FloatArray(4); private val lbO = FloatArray(4)
+    private var lbRect = FloatArray(0); private var lbKeys = LongArray(0); private var lbAcc = FloatArray(0)
     private fun drawLabels(c: Canvas, w: Float, h: Float) {
         val m = game.vpm ?: return
         val labs = game.world.labels
         if (labs.isEmpty()) return
+        val arr = labs.toTypedArray()
+        val n = minOf(arr.size, 65535)
+        if (lbRect.size < n * 4) { lbRect = FloatArray(n * 4); lbKeys = LongArray(n) }
         val px = game.player.x; val pz = game.player.z
-        for (lb in labs) {
+        var cnt = 0
+        for (i in 0 until n) {
+            val lb = arr[i]
             val dx = lb.x - px; val dz = lb.z - pz
             val d2 = dx * dx + dz * dz
-            val maxD = if (lb.big) 90f else 26f
+            val maxD = if (lb.big) 60f else 20f
             if (d2 > maxD * maxD) continue
             lbV[0] = lb.x; lbV[1] = lb.y; lbV[2] = lb.z; lbV[3] = 1f
             android.opengl.Matrix.multiplyMV(lbO, 0, m, 0, lbV, 0)
@@ -614,27 +624,55 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
             if (nx < -1.3f || nx > 1.3f || ny < -1.3f || ny > 1.3f) continue
             val sx = (nx * 0.5f + 0.5f) * w; val sy = (1f - (ny * 0.5f + 0.5f)) * h
             val dist = sqrt(d2)
-            val sc = if (lb.big) tsc(1.8f) else if (dist < 9f) tsc(1.2f) else tsc(0.8f)
-            // plaquinha: quadradinho na cor do bloco + nome (até 2 linhas)
-            val lines = lb.text.split('\n')
+            val sc = labelScale(lb, dist)
             val th = 9f * sc; val pad = 2f * sc; val gap = 2f * sc
             var tw = 0f
-            for (ln in lines) tw = max(tw, PixFont.width(ln, sc).toFloat())
-            val totH = th * lines.size + gap * (lines.size - 1)
+            for (ln in lb.lines) tw = max(tw, PixFont.width(ln, sc).toFloat())
+            val totH = th * lb.lines.size + gap * (lb.lines.size - 1)
             val sq = if (!lb.big && lb.col != 0) totH else 0f
-            val sqGap = if (sq > 0f) pad else 0f
-            val totW = tw + sq + sqGap
-            val l = sx - totW / 2f - pad; val r = sx + totW / 2f + pad; val t = sy - totH / 2f - pad; val bt = sy + totH / 2f + pad
-            rc(c, l - sc, t - sc, r + sc, bt + sc, Color.argb(235, 40, 28, 60))
-            rc(c, l, t, r, bt, if (lb.big) Color.argb(245, 255, 214, 120) else Color.argb(245, 255, 246, 222))
-            if (sq > 0f) {
-                val qx = l + pad
-                rc(c, qx - sc, sy - sq / 2f - sc, qx + sq + sc, sy + sq / 2f + sc, Color.argb(255, 40, 28, 60))
-                rc(c, qx, sy - sq / 2f, qx + sq, sy + sq / 2f, Color.argb(255, (lb.col shr 16) and 255, (lb.col shr 8) and 255, lb.col and 255))
-            }
-            val tx = l + pad + sq + sqGap + tw / 2f
-            for (i in lines.indices) pxText(c, lines[i], tx, t + pad + i * (th + gap) + sc * 1.5f, sc, Color.rgb(48, 34, 70), 1, false)
+            val totW = tw + sq + (if (sq > 0f) pad else 0f)
+            lbRect[i * 4] = sx - totW / 2f - pad - sc; lbRect[i * 4 + 1] = sy - totH / 2f - pad - sc
+            lbRect[i * 4 + 2] = sx + totW / 2f + pad + sc; lbRect[i * 4 + 3] = sy + totH / 2f + pad + sc
+            lbKeys[cnt++] = ((if (lb.big) 0L else 1L) shl 56) or ((dist * 100f).toLong() shl 16) or i.toLong()
         }
+        if (cnt == 0) return
+        java.util.Arrays.sort(lbKeys, 0, cnt)
+        if (lbAcc.size < cnt * 4) lbAcc = FloatArray(cnt * 4)
+        var na = 0
+        for (k in 0 until cnt) {
+            val i = (lbKeys[k] and 0xFFFF).toInt()
+            val l = lbRect[i * 4]; val t = lbRect[i * 4 + 1]; val r = lbRect[i * 4 + 2]; val bt = lbRect[i * 4 + 3]
+            var hit = false
+            for (j in 0 until na) {
+                if (l < lbAcc[j * 4 + 2] && r > lbAcc[j * 4] && t < lbAcc[j * 4 + 3] && bt > lbAcc[j * 4 + 1]) { hit = true; break }
+            }
+            if (hit) continue
+            lbAcc[na * 4] = l; lbAcc[na * 4 + 1] = t; lbAcc[na * 4 + 2] = r; lbAcc[na * 4 + 3] = bt; na++
+            drawLabel(c, arr[i], (l + r) / 2f, (t + bt) / 2f, labelScale(arr[i], sqrt((arr[i].x - px) * (arr[i].x - px) + (arr[i].z - pz) * (arr[i].z - pz))))
+        }
+    }
+
+    private fun labelScale(lb: World.Label, dist: Float): Int = if (lb.big) tsc(1.8f) else if (dist < 9f) tsc(1.2f) else tsc(0.8f)
+
+    /** plaquinha: quadradinho na cor do bloco + nome (até 2 linhas), centrada em (sx, sy) */
+    private fun drawLabel(c: Canvas, lb: World.Label, sx: Float, sy: Float, sc: Int) {
+        val th = 9f * sc; val pad = 2f * sc; val gap = 2f * sc
+        var tw = 0f
+        for (ln in lb.lines) tw = max(tw, PixFont.width(ln, sc).toFloat())
+        val totH = th * lb.lines.size + gap * (lb.lines.size - 1)
+        val sq = if (!lb.big && lb.col != 0) totH else 0f
+        val sqGap = if (sq > 0f) pad else 0f
+        val totW = tw + sq + sqGap
+        val l = sx - totW / 2f - pad; val r = sx + totW / 2f + pad; val t = sy - totH / 2f - pad; val bt = sy + totH / 2f + pad
+        rc(c, l - sc, t - sc, r + sc, bt + sc, Color.argb(235, 40, 28, 60))
+        rc(c, l, t, r, bt, if (lb.big) Color.argb(245, 255, 214, 120) else Color.argb(245, 255, 246, 222))
+        if (sq > 0f) {
+            val qx = l + pad
+            rc(c, qx - sc, sy - sq / 2f - sc, qx + sq + sc, sy + sq / 2f + sc, Color.argb(255, 40, 28, 60))
+            rc(c, qx, sy - sq / 2f, qx + sq, sy + sq / 2f, Color.argb(255, (lb.col shr 16) and 255, (lb.col shr 8) and 255, lb.col and 255))
+        }
+        val tx = l + pad + sq + sqGap + tw / 2f
+        for (i in lb.lines.indices) pxText(c, lb.lines[i], tx, t + pad + i * (th + gap) + sc * 1.5f, sc, Color.rgb(48, 34, 70), 1, false)
     }
 
     override fun onDraw(c: Canvas) {

@@ -115,7 +115,7 @@ class WorldsActivity : CozyActivity() {
                 p.addView(cTxt("Tipo de mapa", 12f, Cz.SOFT, false).apply { setPadding(0, dp(12), 0, dp(4)) })
                 val tr = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
                 val boxes = ArrayList<LinearLayout>()
-                val infos = arrayOf("Ilha" to "Mundo médio com colinas, lagos e florestas", "Planície e rio" to "Gigante e plano, com um rio enorme", "Galeria de blocos" to "Plano sem monstros, com todos os blocos em fileiras e plaquinhas")
+                val infos = arrayOf("Ilha" to "Mundo médio com colinas, lagos e florestas", "Planície e rio" to "Gigante e plano, com um rio enorme", "Galeria de blocos" to "Plano sem monstros: escolha a categoria num painel e os blocos carregam em fileiras com plaquinhas")
                 fun paint() { for ((k, b) in boxes.withIndex()) b.background = CozyBox(this, if (k == type) Cz.PANEL2 else Cz.PANEL3, 14f, false, if (k == type) Cz.GOLD else Cz.INK) }
                 for (k in 0..2) {
                     val b = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(8), dp(8), dp(8), dp(8)); isClickable = true }

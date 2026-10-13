@@ -683,22 +683,9 @@ object BuildPats {
         }
     }
 
-    /** vidro liso: película quase transparente, brilho na borda (só no cubo), listras diagonais que continuam de bloco em bloco e uma estrelinha */
+    /** vidro liso: película uniforme e transparente, sem listras, sem estrelinha e sem brilho na borda, pra emendar sem marca de bloco pra bloco */
     private fun glassFilm(x: Float, y: Float, s: S, rim: Boolean, base: Float) = with(BuildKit) {
-        var a = base
-        val d1 = diag(x, y, 40f, 6f); val d2 = diag(x, y, 54f, 1.8f); val d3 = diag(x, y, 26f, 1.4f)
-        a += 0.24f * d1 + 0.17f * d2 + 0.10f * d3
-        var sp = 0.55f * d1 + 0.40f * d2 + 0.25f * d3
-        if (rim) {
-            val ed = edgeDist(x, y)
-            val glow = 1f - sm(0f, 9f, ed); val line = 1f - sm(0f, 1.9f, ed)
-            a += 0.14f * glow + 0.22f * line
-            sp += 0.20f * glow + 0.50f * line
-        }
-        val st = star(x, y, 15f, 15f, 6.5f)
-        a = max(a, 0.95f * st)
-        sp = max(sp, st)
-        s.a = a.coerceIn(0f, 0.97f); s.sp = sp.coerceIn(0f, 1f)
+        s.a = (base + 0.03f).coerceIn(0f, 0.97f); s.sp = 0f
     }
 
     /** janela com moldura gordinha: cols x rows vidraças, borda de espessura bw, travessas de espessura mw, cantos r */

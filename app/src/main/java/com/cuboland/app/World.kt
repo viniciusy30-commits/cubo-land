@@ -94,6 +94,8 @@ class World {
         val CX: Int get() = SX / CH
         val CZ: Int get() = SZ / CH
         const val WATER_Y = 9
+        /** modos extras da galeria de blocos (além das categorias de blocos) */
+        const val GAL_FURN = 1; const val GAL_HOUSE = 2; const val GAL_TREES = 3
         const val SAVE_MAGIC = 0x434C3402
         const val TV_MAGIC = 0x54563031   // trailer opcional depois dos blocos: tamanho de cada TV
         /** deve ser chamado ANTES de criar World/Game/GameRenderer: o mapa plano é bem maior que a ilha */
@@ -106,8 +108,9 @@ class World {
     /** 4 bytes por bloco (Int): praticamente sem limite de tipos de bloco */
     val blocks = IntArray(SX * SY * SZ)
     /** plaquinhas flutuantes (galeria de blocos) */
-    class Label(val x: Float, val y: Float, val z: Float, val text: String, val big: Boolean = false, val col: Int = 0)
-    val labels = ArrayList<Label>()
+    class Label(val x: Float, val y: Float, val z: Float, val text: String, val big: Boolean = false, val col: Int = 0) { val lines: List<String> = text.split('\n') }
+    /** CopyOnWrite: a galeria é regerada em outra thread enquanto o HUD desenha as plaquinhas */
+    val labels = java.util.concurrent.CopyOnWriteArrayList<Label>()
     var spawnX = -1; var spawnZ = -1
     val dirty = BooleanArray(CX * CZ) { true }
     /** blocos desenhados à parte (esculpidos pelos golpes): o mesher do chunk pula eles */
@@ -249,72 +252,111 @@ class World {
 
 
     /** Mapa plano: planície de grama (y=10), camadas de terra/pedra embaixo, um rio enorme serpenteando e árvores bem espaçadas. */
-    /** galeria de blocos: cada tipo de bloco numa seção com faixa colorida e título (as pequenas dividem a mesma faixa), cada bloco numa célula de piso
-     *  xadrez com uma plaquinha só com o que o diferencia (cor, madeira...), na cor do bloco. A organização está em Gallery. */
-    fun generateTest() {
+    class GalCat(val name: String, val ci: Int, val ids: List<Int>)
+    class GalSec(val idx: Int, val title: String, val count: Int)
+
+    /** categorias da galeria (mesma divisão da mochila) */
+    private fun galleryCats(): List<GalCat> {
+        // os blocos básicos (ids 1..13) não têm categoria própria: entram no começo de cada categoria, a mesma da mochila (Items.cat)
+        val basic = ArrayList<Int>(); for (id in 1..13) if (id != B.WATER && B.defined[id]) basic.add(id)
+        fun basicsOf(c: Int) = basic.filter { Items.cat(it) == c }
+        val cats = ArrayList<GalCat>()
+        cats.add(GalCat("NATUREZA", 2, basicsOf(2) + Blk.defs.filter { it.cat == Blk.C_NAT && it.id !in Blk.hidden }.map { it.id }))
+        cats.add(GalCat("CONSTRUÇÃO", 3, basicsOf(3) + Blk.defs.filter { it.cat == Blk.C_BUILD && it.id !in Blk.hidden }.map { it.id }))
+        cats.add(GalCat("DECORAÇÃO", 4, basicsOf(4) + Blk.defs.filter { it.cat == Blk.C_DEC }.map { it.id }))
+        cats.add(GalCat("MOBÍLIA", 5, Blk.defs.filter { it.cat == Blk.C_FURN }.map { it.id }))
+        val other = Blk.defs.filter { it.cat != Blk.C_NAT && it.cat != Blk.C_BUILD && it.cat != Blk.C_DEC && it.cat != Blk.C_FURN }.map { it.id }
+        if (other.isNotEmpty()) cats.add(GalCat("OUTROS", 0, other))
+        return cats
+    }
+
+    /** blocos de cada seção da categoria (mesmo índice de Gallery.sections) */
+    private fun galleryBuckets(cat: GalCat): Array<ArrayList<Int>> {
+        val matById = HashMap<Int, Int>(); for (d in Blk.defs) matById[d.id] = d.mat
+        val secs = Gallery.sections(cat.ci)
+        val buckets = Array(secs.size) { ArrayList<Int>() }
+        for (id in cat.ids) buckets[Gallery.classify(cat.ci, B.names[id], matById[id] ?: 0)].add(id)
+        return buckets
+    }
+
+    /** menu do painel de escolha: cada categoria com as suas seções que têm blocos */
+    fun galleryMenu(): List<Pair<GalCat, List<GalSec>>> = galleryCats().map { c ->
+        val secs = Gallery.sections(c.ci); val bk = galleryBuckets(c)
+        c to secs.indices.filter { bk[it].isNotEmpty() }.map { GalSec(it, secs[it].title, bk[it].size) }
+    }
+
+    private fun setTopB(x: Int, z: Int, b: Int, top: Int) { if (x in 0 until SX && z in 0 until SZ) blocks[(top * SZ + z) * SX + x] = b }
+
+    /** galeria de blocos. Ao entrar vem só o saguão (chão vazio); o painel de categorias chama de novo com o que o jogador escolheu:
+     *  catIdx = categoria (índice de galleryMenu) e secFilter = seção dela (-1 = todas), ou extra = GAL_FURN / GAL_HOUSE / GAL_TREES.
+     *  Cada tipo de bloco fica numa seção com faixa colorida e título, cada bloco numa célula de piso xadrez com plaquinha. A organização está em Gallery. */
+    fun generateTest(catIdx: Int = -1, secFilter: Int = -1, extra: Int = 0) {
         locked = null
-        java.util.Arrays.fill(blocks, 0); labels.clear()
+        java.util.Arrays.fill(blocks, 0); labels.clear(); tvSize.clear()
         val floor = B.byName["Concreto Cinza-claro"] ?: B.STONE
         val plate = B.byName["Concreto Branco"] ?: floor
         val top = 10
         for (z in 0 until SZ) for (x in 0 until SX) for (y in 0..top) blocks[(y * SZ + z) * SX + x] = floor
-        fun setTop(x: Int, z: Int, b: Int) { if (x in 0 until SX && z in 0 until SZ) blocks[(top * SZ + z) * SX + x] = b }
-        val cats = ArrayList<Triple<String, Int, List<Int>>>()
-        // os blocos básicos (ids 1..13) não têm categoria própria: entram no começo de cada categoria, a mesma da mochila (Items.cat)
-        val basic = ArrayList<Int>(); for (id in 1..13) if (id != B.WATER && B.defined[id]) basic.add(id)
-        fun basicsOf(c: Int) = basic.filter { Items.cat(it) == c }
-        cats.add(Triple("NATUREZA", 2, basicsOf(2) + Blk.defs.filter { it.cat == Blk.C_NAT && it.id !in Blk.hidden }.map { it.id }))
-        cats.add(Triple("CONSTRUÇÃO", 3, basicsOf(3) + Blk.defs.filter { it.cat == Blk.C_BUILD && it.id !in Blk.hidden }.map { it.id }))
-        cats.add(Triple("DECORAÇÃO", 4, basicsOf(4) + Blk.defs.filter { it.cat == Blk.C_DEC }.map { it.id }))
-        cats.add(Triple("MOBÍLIA", 5, Blk.defs.filter { it.cat == Blk.C_FURN }.map { it.id }))
-        val other = Blk.defs.filter { it.cat != Blk.C_NAT && it.cat != Blk.C_BUILD && it.cat != Blk.C_DEC && it.cat != Blk.C_FURN }.map { it.id }
-        if (other.isNotEmpty()) cats.add(Triple("OUTROS", 0, other))
-        val matById = HashMap<Int, Int>(); val colById = HashMap<Int, Int>()
-        for (d in Blk.defs) { matById[d.id] = d.mat; colById[d.id] = d.color }
-        fun blockNamed(n: String) = B.byName[n] ?: floor
-        val cols = 27; val x0 = 8; var zc = 8
-        spawnX = x0 + 2; spawnZ = 4
-        var secN = 0
-        for ((name, ci, ids) in cats) {
-            // faixa grande da categoria no chão + título
-            val stripe = blockNamed(when (ci) { 2 -> "Concreto Verde"; 3 -> "Concreto Vermelho"; 4 -> "Concreto Rosa"; 5 -> "Concreto Azul"; else -> "Concreto Preto" })
-            for (z in zc until zc + 2) for (x in x0 - 2..x0 + cols * 3) setTop(x, z, stripe)
-            labels.add(Label(x0 + cols * 3 / 2f, top + 8f, zc + 0.5f, "$name (${ids.size})", true))
-            zc += 4
-            val secs = Gallery.sections(ci)
-            val buckets = Array(secs.size) { ArrayList<Int>() }
-            for (id in ids) buckets[Gallery.classify(ci, B.names[id], matById[id] ?: 0)].add(id)
-            var open = false; var cur = 0   // faixa aberta: seções pequenas dividem a mesma faixa, uma ao lado da outra
-            fun closeBand(rows: Int) { zc += 1 + rows * 3 + 1; open = false; cur = 0 }
-            for ((si, sec) in secs.withIndex()) {
-                val gl = buckets[si]
-                if (gl.isEmpty()) continue
-                val n = gl.size
-                val rows = (n + cols - 1) / cols
-                if (open && (rows > 1 || cur + n > cols)) closeBand(1)
-                val start: Int
-                if (rows == 1) { start = cur; cur += n + 1; open = true } else start = 0
-                val w = if (rows > 1) cols else n
-                // faixa colorida da seção + título
-                val accent = blockNamed(Gallery.accentName(secN++))
-                for (x in x0 + start * 3 until x0 + (start + w) * 3) setTop(x, zc, accent)
-                labels.add(Label(x0 + (start + w / 2f) * 3f, top + 6.2f, zc + 0.5f, "${sec.title} (${n})", true))
-                for ((j, id) in gl.withIndex()) {
-                    val row = j / cols; val col = start + j % cols
-                    val cx = x0 + col * 3 + 1; val cz = zc + 1 + row * 3 + 1
-                    if (cz + 1 >= SZ - 2) continue
-                    if ((row + col) % 2 == 0) for (dz in -1..1) for (dx in -1..1) setTop(cx + dx, cz + dz, plate)
-                    blocks[((top + 1) * SZ + cz) * SX + cx] = id
-                    labels.add(Label(cx + 0.5f, top + (if (col % 2 == 0) 2.7f else 3.9f), cz + 0.5f, Gallery.shortName(sec, B.names[id]), false, colById[id] ?: 0))
-                }
-                if (rows > 1) closeBand(rows)
+        spawnX = 10; spawnZ = 4
+        val cats = if (catIdx >= 0) galleryCats() else emptyList()
+        when {
+            extra == GAL_FURN -> { furnitureShowcase(top); spawnX = 188; spawnZ = 1 }
+            extra == GAL_HOUSE -> { modernHouse(top); spawnX = 195; spawnZ = 37 }
+            extra == GAL_TREES -> { plantTestTrees(top); spawnX = 94; spawnZ = 2 }
+            catIdx in cats.indices -> layoutCategory(cats[catIdx], secFilter, top, floor, plate)
+            else -> {
+                labels.add(Label(spawnX + 0.5f, top + 5f, spawnZ + 7f, "GALERIA DE BLOCOS", true))
+                labels.add(Label(spawnX + 0.5f, top + 3.4f, spawnZ + 7f, "Toque em CATEGORIAS no alto da tela", false))
             }
-            if (open) closeBand(1)
-            zc += 2
         }
-        furnitureShowcase(top)
-        modernHouse(top)
-        plantTestTrees(top)
+        val lk = java.util.BitSet(blocks.size)
+        for (i in blocks.indices) if (blocks[i] != B.AIR) lk.set(i)
+        locked = lk
+        java.util.Arrays.fill(dirty, true)
+    }
+
+    /** uma categoria (ou uma seção dela) em faixas: células de 4x4 blocos, 30 por fileira */
+    private fun layoutCategory(cat: GalCat, secFilter: Int, top: Int, floor: Int, plate: Int) {
+        val colById = HashMap<Int, Int>(); for (d in Blk.defs) colById[d.id] = d.color
+        fun blockNamed(n: String) = B.byName[n] ?: floor
+        val cell = 4; val cols = 30; val x0 = 8; var zc = 8
+        val secs = Gallery.sections(cat.ci)
+        val buckets = galleryBuckets(cat)
+        val total = if (secFilter in secs.indices) buckets[secFilter].size else cat.ids.size
+        // faixa grande da categoria no chão + título
+        val stripe = blockNamed(when (cat.ci) { 2 -> "Concreto Verde"; 3 -> "Concreto Vermelho"; 4 -> "Concreto Rosa"; 5 -> "Concreto Azul"; else -> "Concreto Preto" })
+        for (z in zc until zc + 2) for (x in x0 - 2..x0 + cols * cell) setTopB(x, z, stripe, top)
+        val head = if (secFilter in secs.indices) "${cat.name} - ${secs[secFilter].title}" else cat.name
+        labels.add(Label(x0 + cols * cell / 2f, top + 8f, zc + 0.5f, "$head ($total)", true))
+        zc += 4
+        var secN = 0
+        var open = false; var cur = 0   // faixa aberta: seções pequenas dividem a mesma faixa, uma ao lado da outra
+        fun closeBand(rows: Int) { zc += 1 + rows * cell + 1; open = false; cur = 0 }
+        for ((si, sec) in secs.withIndex()) {
+            val gl = buckets[si]
+            if (gl.isEmpty()) continue
+            if (secFilter in secs.indices && si != secFilter) { secN++; continue }
+            val n = gl.size
+            val rows = (n + cols - 1) / cols
+            if (open && (rows > 1 || cur + n > cols)) closeBand(1)
+            val start: Int
+            if (rows == 1) { start = cur; cur += n + 1; open = true } else start = 0
+            val w = if (rows > 1) cols else n
+            // faixa colorida da seção + título
+            val accent = blockNamed(Gallery.accentName(secN++))
+            for (x in x0 + start * cell until x0 + (start + w) * cell) setTopB(x, zc, accent, top)
+            labels.add(Label(x0 + (start + w / 2f) * cell, top + 6.2f, zc + 0.5f, "${sec.title} (${n})", true))
+            for ((j, id) in gl.withIndex()) {
+                val row = j / cols; val col = start + j % cols
+                val cx = x0 + col * cell + 1; val cz = zc + 1 + row * cell + 1
+                if (cz + 1 >= SZ - 2) continue
+                if ((row + col) % 2 == 0) for (dz in -1..1) for (dx in -1..1) setTopB(cx + dx, cz + dz, plate, top)
+                blocks[((top + 1) * SZ + cz) * SX + cx] = id
+                labels.add(Label(cx + 0.5f, top + (if (col % 2 == 0) 2.7f else 3.9f), cz + 0.5f, Gallery.shortName(sec, B.names[id]), false, colById[id] ?: 0))
+            }
+            if (rows > 1) closeBand(rows)
+        }
+        if (open) closeBand(1)
     }
 
     /** vitrine da mobília: conjuntos de mesas, sala, escritório e quartos (ficam trancados, mas dá pra sentar) */
@@ -364,68 +406,190 @@ class World {
         for ((i, n) in listOf("Cadeira", "Cadeira Estofada", "Banco", "Poltrona", "Cadeira de Escritório", "Sofá").withIndex()) put(bx + 19 + i * 2, 38, n)
     }
 
-    /** casa moderna de vitrine (trancada, dá pra entrar e subir a escada): concreto, vidro fino, janelas de correr, lajes, escada e mobília */
+    /** casa moderna de vitrine (trancada, dá pra entrar e subir a escada): lote murado com jardim e piscina; sala de pé-direito duplo,
+     *  jantar, cozinha, cinema, adega, loft, 3 suítes e escritório no mezanino; sacada, varanda de piscina e terraço dos fundos.
+     *  Coordenadas relativas: x 0..35 e z 0..22 é a casa, y 0 é o piso do térreo, y -1 o chão. */
     private fun modernHouse(top: Int) {
         val x0 = 178; val z0 = 52; val y0 = top + 1
         fun id(n: String) = B.byName[n] ?: 0
+        fun any(vararg n: String): String { for (s in n) if (B.byName[s] != null) return s; return n[0] }
         fun setB(x: Int, y: Int, z: Int, b: Int) { if (x in 0 until SX && z in 0 until SZ && y in 0 until SY) blocks[(y * SZ + z) * SX + x] = b }
-        fun put(rx: Int, ry: Int, rz: Int, n: String) { val b = id(n); if (b != 0) setB(x0 + rx, y0 + ry, z0 + rz, b) }
-        fun fill(ax: Int, ay: Int, az: Int, bx: Int, by: Int, bz: Int, n: String) {
-            val b = id(n); if (b == 0) return
-            for (y in ay..by) for (z in az..bz) for (x in ax..bx) setB(x0 + x, y0 + y, z0 + z, b)
+        fun putB(rx: Int, ry: Int, rz: Int, b: Int) = setB(x0 + rx, y0 + ry, z0 + rz, b)
+        fun put(rx: Int, ry: Int, rz: Int, n: String) { val b = id(n); if (b != 0) putB(rx, ry, rz, b) }
+        fun fillB(ax: Int, ay: Int, az: Int, bx: Int, by: Int, bz: Int, b: Int) {
+            for (y in minOf(ay, by)..maxOf(ay, by)) for (z in minOf(az, bz)..maxOf(az, bz)) for (x in minOf(ax, bx)..maxOf(ax, bx)) putB(x, y, z, b)
         }
-        fun hole(ax: Int, ay: Int, az: Int, bx: Int, by: Int, bz: Int) {
-            for (y in ay..by) for (z in az..bz) for (x in ax..bx) setB(x0 + x, y0 + y, z0 + z, 0)
+        fun fill(ax: Int, ay: Int, az: Int, bx: Int, by: Int, bz: Int, n: String) { val b = id(n); if (b != 0) fillB(ax, ay, az, bx, by, bz, b) }
+        fun hole(ax: Int, ay: Int, az: Int, bx: Int, by: Int, bz: Int) = fillB(ax, ay, az, bx, by, bz, 0)
+        val W = "Concreto Branco"; val G = "Concreto Cinza"; val K = "Concreto Preto"; val P = "Janela de Correr Preta"
+        val GL = "Vidro"; val GF = "Vidro Fino"; val LJ = "Laje de Concreto Branco"
+        val WOOD = "Piso de Madeira"; val SLATE = "Ladrilhos de Ardósia"
+        val TILE = any("Azulejo Metrô Azul-claro", "Azulejo Metrô Ciano", "Azulejo Metrô Azul", "Concreto Azul-claro")
+        val LAMP = "Lâmpada Branca"
+        labels.add(Label(x0 + 17.5f, y0 + 14f, z0 - 17f, "CASA MODERNA", true))
+
+        // ---------- lote: gramado, muro com portão, caminho, cerca-viva ----------
+        fillB(-23, -1, -11, 40, -1, 29, B.GRASS)
+        fill(-24, 0, -12, 41, 2, -12, W); fill(-24, 0, 30, 41, 2, 30, W); fill(-24, 0, -12, -24, 2, 30, W); fill(41, 0, -12, 41, 2, 30, W)
+        for (x in -24..41 step 8) { fill(x, 0, -12, x, 3, -12, K); fill(x, 0, 30, x, 3, 30, K); put(x, 4, -12, LAMP); put(x, 4, 30, LAMP) }
+        for (z in -12..30 step 6) { fill(-24, 0, z, -24, 3, z, K); fill(41, 0, z, 41, 3, z, K) }
+        fill(-24, 3, -12, 41, 3, -12, LJ); fill(-24, 3, 30, 41, 3, 30, LJ); fill(-24, 3, -12, -24, 3, 30, LJ); fill(41, 3, -12, 41, 3, 30, LJ)
+        hole(16, 0, -12, 19, 2, -12); fill(15, 0, -12, 15, 4, -12, K); fill(20, 0, -12, 20, 4, -12, K); fill(16, 3, -12, 19, 3, -12, K)
+        put(15, 5, -12, LAMP); put(20, 5, -12, LAMP)
+        fill(16, -1, -11, 19, -1, -1, SLATE)
+        for (x in -22..39) { if (x in 14..21) continue; fillB(x, 0, -10, x, 1, -10, B.LEAVES) }
+
+        // ---------- piscina com praia rasa, borda branca e deque ----------
+        fill(-22, -1, -3, -1, -1, 0, WOOD); fill(-22, -1, 18, -1, -1, 21, WOOD); fill(-11, -1, 1, -1, -1, 17, WOOD)
+        fill(-21, -4, 1, -12, -2, 17, TILE)
+        fill(-21, -1, 1, -12, -1, 17, W)
+        fillB(-20, -3, 2, -13, -1, 16, B.WATER)
+        fill(-20, -3, 2, -13, -2, 5, TILE)   // parte rasa: só 1 bloco de água
+        for (cx in intArrayOf(-21, -12)) for (cz in intArrayOf(1, 17)) put(cx, 0, cz, LAMP)
+        put(-9, 0, 3, "Poltrona"); put(-9, 0, 5, "Poltrona"); put(-9, 0, 4, "Mesa de Centro")
+        put(-9, 0, 13, "Poltrona"); put(-9, 0, 15, "Poltrona"); put(-9, 0, 14, "Mesa de Centro")
+        put(-5, 0, 9, "Mesa Redonda"); put(-6, 0, 9, "Banco"); put(-4, 0, 9, "Banco"); put(-5, 0, 8, "Banco"); put(-5, 0, 10, "Banco")
+        put(-22, 0, 20, "Vaso de Planta"); put(-22, 0, -2, "Vaso de Planta"); put(-2, 0, -2, "Vaso de Planta"); put(-2, 0, 20, "Vaso de Planta")
+
+        // ---------- casa: pisos, casca e lajes ----------
+        fill(0, -1, 0, 35, -1, 22, WOOD)
+        fill(24, -1, 1, 34, -1, 10, SLATE); fill(16, -1, 0, 19, -1, 3, SLATE)
+        fill(0, 0, 0, 35, 8, 0, W); fill(0, 0, 22, 35, 8, 22, W); fill(0, 0, 0, 0, 8, 22, W); fill(35, 0, 0, 35, 8, 22, W)
+        fill(13, 4, 0, 35, 4, 22, G); fill(0, 4, 15, 12, 4, 22, G)             // laje do segundo andar (a sala fica vazada: pé-direito duplo)
+        fill(14, 4, 1, 34, 4, 21, WOOD); fill(1, 4, 16, 11, 4, 21, WOOD)       // piso de madeira lá em cima
+        fill(-2, 9, -5, 37, 9, 24, W)                                           // telhado plano com beiral
+        fill(-2, 10, -5, 37, 10, -5, LJ); fill(-2, 10, 24, 37, 10, 24, LJ); fill(-2, 10, -5, -2, 10, 24, LJ); fill(37, 10, -5, 37, 10, 24, LJ)
+
+        // fachada da frente: vidro de piso a teto entre colunas pretas, portão de entrada e porta da sacada
+        val cols = intArrayOf(0, 6, 12, 16, 19, 24, 30, 35)
+        for (x in 0..35) for (y in 0..8) {
+            val b = when {
+                x in cols -> id(K)
+                x in 17..18 && y <= 2 -> 0
+                y == 4 && x >= 13 -> id(G)
+                else -> id(GL)
+            }
+            putB(x, y, 0, b)
         }
-        val W = "Concreto Branco"; val G = "Concreto Cinza"; val K = "Concreto Preto"; val P = "Janela de Correr Preta"; val V = "Vidro"
-        labels.add(Label(x0 + 10f, y0 + 10f, z0 - 7f, "CASA MODERNA", true))
-        // pátio, jardim e piso
-        fill(-2, -1, -6, 21, -1, -1, G)
-        for (z in 14..19) for (x in -2..21) setB(x0 + x, y0 - 1, z0 + z, B.GRASS)
-        fill(0, -1, 0, 19, -1, 13, "Piso de Madeira")
-        fill(7, -1, 10, 13, -1, 12, "Ladrilhos de Ardósia")
-        // paredes do térreo
-        fill(0, 0, 13, 19, 2, 13, W); fill(0, 0, 0, 0, 2, 13, W); fill(19, 0, 0, 19, 2, 13, W)
-        fill(0, 0, 3, 0, 2, 10, V); fill(19, 0, 3, 19, 2, 10, V)
-        fill(3, 1, 13, 5, 2, 13, P); fill(14, 1, 13, 16, 2, 13, P)
-        // frente: colunas pretas, vidro de piso a teto e entrada
-        for (cx in intArrayOf(0, 5, 12, 19)) fill(cx, 0, 0, cx, 2, 0, K)
-        fill(1, 0, 0, 1, 2, 0, V); fill(4, 0, 0, 4, 2, 0, V); fill(6, 0, 0, 11, 2, 0, V); fill(13, 0, 0, 18, 2, 0, V)
-        fill(2, 2, 0, 3, 2, 0, K)
-        // laje do segundo andar, com a pontinha em balanço na frente e o buraco da escada
-        fill(0, 3, 0, 19, 3, 13, G); fill(6, 3, -3, 19, 3, -1, G)
-        hole(16, 3, 1, 17, 3, 4)
-        for (sx in 16..17) for (s in 0..3) {
-            for (k in 0 until s) put(sx, k, 2 + s, W)
-            val st = Blk.rotIds[id("Escada de Concreto Branco")]?.get(0) ?: 0
-            if (st != 0) setB(x0 + sx, y0 + s, z0 + 2 + s, st)
+        hole(27, 5, 0, 28, 6, 0)
+        // lateral oeste da sala: vidro com porta de correr pro deque da piscina
+        for (z in 1..13) for (y in 0..8) putB(0, y, z, if (z == 7) id(K) else if (z in 5..6 && y <= 2) 0 else id(GL))
+        fill(0, 0, 14, 0, 8, 14, K)
+        // janelas nas paredes fechadas
+        for (y0w in intArrayOf(1, 6)) {
+            fill(0, y0w, 17, 0, y0w + 1, 20, P)
+            fill(35, y0w, 3, 35, y0w + 1, 8, P); fill(35, y0w, 16, 35, y0w + 1, 19, P)
+            fill(15, y0w, 22, 21, y0w + 1, 22, P); fill(26, y0w, 22, 32, y0w + 1, 22, P)
         }
+        fill(3, 1, 22, 9, 2, 22, P); fill(2, 6, 22, 10, 7, 22, P)
+
+        // paredes internas do térreo (portas = vãos)
+        fill(13, 0, 11, 35, 3, 11, W); hole(17, 0, 11, 19, 2, 11); hole(29, 0, 11, 30, 2, 11)
+        fill(13, 0, 12, 13, 3, 21, W)
+        fill(24, 0, 12, 24, 3, 21, W); hole(24, 0, 16, 24, 2, 17)
+        fill(0, 0, 15, 12, 3, 15, W); hole(4, 0, 15, 8, 2, 15)
         // andar de cima
-        fill(6, 4, -2, 6, 6, 10, W); fill(6, 4, 10, 19, 6, 10, W)
-        fill(6, 4, -3, 6, 6, -3, K); fill(19, 4, -3, 19, 6, -3, K)
-        fill(7, 4, -3, 18, 6, -3, V); fill(19, 4, -2, 19, 6, 9, V)
-        fill(6, 5, 0, 6, 6, 2, P); fill(6, 5, 6, 6, 6, 8, P)
-        fill(6, 7, -3, 19, 7, 10, W)
-        val lj = "Laje de Concreto Branco"
-        for (x in 5..20) { put(x, 7, -4, lj); put(x, 7, 11, lj) }
-        for (z in -4..11) { put(5, 7, z, lj); put(20, 7, z, lj) }
-        put(2, 4, 2, "Vaso de Planta"); put(3, 4, 2, "Vaso de Planta")
-        // térreo: sala
-        for (x in 2..4) { put(x, 0, 12, "Sofá"); put(x, 0, 5, "Cômoda") }
-        put(3, 1, 5, "Televisão"); put(2, 1, 5, "Abajur"); put(4, 1, 5, "Vaso de Planta")
-        put(3, 0, 9, "Mesa de Centro"); put(1, 0, 9, "Poltrona"); put(5, 0, 11, "Vaso de Planta")
-        // térreo: cozinha e jantar
-        put(8, 0, 12, "Armário"); for (x in 9..11) { put(x, 0, 12, "Mesa de Mármore"); put(x, 0, 10, "Mesa de Mármore"); put(x, 0, 9, "Banco") }
-        put(12, 0, 12, "Geladeira")
-        for (x in 13..14) { put(x, 0, 6, "Mesa Escura"); put(x, 0, 7, "Mesa Escura"); put(x, 0, 5, "Cadeira Estofada"); put(x, 0, 8, "Cadeira Estofada") }
-        put(3, 2, 8, "Lâmpada Branca"); put(10, 2, 8, "Lâmpada Branca"); put(13, 2, 9, "Lâmpada Branca")
-        // andar de cima: quarto e escritório
-        for (x in 7..9) put(x, 4, 8, "Cama")
-        put(7, 4, 7, "Cômoda"); put(7, 5, 7, "Abajur"); put(7, 4, 9, "Armário")
-        for (x in 12..14) put(x, 4, 9, "Escrivaninha")
-        put(13, 5, 9, "Computador"); put(13, 4, 8, "Cadeira de Escritório"); put(18, 4, 9, "Vaso de Planta")
-        for (x in 11..13) for (z in 2..4) put(x, 4, z, "Tapete Azul")
-        put(10, 4, 2, "Vaso de Planta"); put(10, 6, 5, "Lâmpada Branca"); put(14, 6, 5, "Lâmpada Branca")
+        fill(24, 5, 1, 24, 8, 21, W); hole(24, 5, 3, 24, 6, 4); hole(24, 5, 17, 24, 6, 18)
+        fill(13, 5, 15, 35, 8, 15, W); hole(17, 5, 15, 18, 6, 15); hole(29, 5, 15, 30, 6, 15)
+        fill(13, 5, 16, 13, 8, 21, W); hole(13, 5, 18, 13, 6, 19)
+        fill(13, 5, 1, 13, 6, 14, GF)         // guarda-corpo de vidro do loft sobre a sala
+        fill(3, 5, 15, 12, 6, 15, GF)         // guarda-corpo do mezanino (vão x1..2 é a chegada da escada)
+        // sacada da suíte
+        fill(24, 4, -4, 35, 4, -1, G)
+        fill(24, 5, -4, 35, 6, -4, GF); fill(24, 5, -4, 24, 6, -1, GF); fill(35, 5, -4, 35, 6, -1, GF)
+        fill(24, 5, -4, 24, 8, -4, K); fill(35, 5, -4, 35, 8, -4, K)
+        fill(13, 0, -5, 13, 8, -5, K); fill(22, 0, -5, 22, 8, -5, K)   // colunas da cobertura da entrada
+
+        // escada de concreto de 5 degraus, solta na sala, até o mezanino
+        val st = Blk.rotIds[id("Escada de Concreto Branco")]?.get(0) ?: 0
+        for (sx in 1..2) for (s in 0..4) {
+            for (k in 0 until s) put(sx, k, 10 + s, K)
+            if (st != 0) putB(sx, s, 10 + s, st)
+        }
+
+        // ---------- mobília: térreo ----------
+        val rug = any("Tapete Cinza", "Tapete Azul")
+        // sala
+        for (x in 5..9) for (z in 4..8) put(x, 0, z, rug)
+        for (x in 5..9) put(x, 0, 10, "Sofá")
+        put(7, 0, 6, "Mesa de Centro"); put(4, 0, 7, "Poltrona"); put(10, 0, 7, "Poltrona")
+        for (x in 6..8) put(x, 0, 2, "Cômoda")
+        put(7, 1, 2, "Televisão"); put(6, 1, 2, "Abajur"); put(8, 1, 2, "Vaso de Planta")
+        for (x in 9..11) put(x, 0, 13, "Estante de Livros")
+        put(1, 0, 1, "Vaso de Planta"); put(11, 0, 1, "Vaso de Planta"); put(1, 0, 13, "Vaso de Planta"); put(3, 0, 13, "Vaso de Planta")
+        for (p in listOf(5 to 5, 8 to 5, 6 to 9)) put(p.first, 8, p.second, LAMP)
+        // jantar
+        for (x in 16..21) { put(x, 0, 5, "Mesa de Mármore"); put(x, 0, 6, "Mesa de Mármore"); put(x, 0, 4, "Cadeira Estofada"); put(x, 0, 7, "Cadeira Estofada") }
+        put(15, 0, 5, "Cadeira Estofada"); put(22, 0, 6, "Cadeira Estofada")
+        put(17, 3, 5, LAMP); put(20, 3, 6, LAMP); put(14, 0, 1, "Vaso de Planta"); put(14, 0, 10, "Vaso de Planta")
+        // cozinha: armários na parede, geladeira, ilha com bancos
+        for (x in 25..28) put(x, 0, 10, "Armário")
+        put(29, 0, 10, "Geladeira"); put(30, 0, 10, "Geladeira"); for (x in 31..33) put(x, 0, 10, "Armário")
+        for (x in 26..31) { put(x, 0, 5, "Mesa de Mármore"); put(x, 0, 6, "Mesa de Mármore"); put(x, 0, 7, "Banco") }
+        put(27, 3, 5, LAMP); put(30, 3, 6, LAMP); put(34, 0, 2, "Vaso de Planta")
+        // cinema: tapete, TV, sofá e poltronas
+        for (x in 16..20) for (z in 13..17) put(x, 0, z, any("Tapete Vermelho", rug))
+        for (x in 17..19) put(x, 0, 12, "Cômoda")
+        put(18, 1, 12, "Televisão"); put(17, 1, 12, "Abajur"); put(19, 1, 12, "Abajur")
+        for (x in 16..20) put(x, 0, 20, "Sofá")
+        put(15, 0, 17, "Poltrona"); put(21, 0, 17, "Poltrona"); put(18, 0, 15, "Mesa de Centro"); put(18, 3, 17, LAMP)
+        // quarto de hóspedes térreo
+        for (x in 27..29) put(x, 0, 21, "Cama")
+        put(26, 0, 21, "Cômoda"); put(30, 0, 21, "Cômoda"); put(26, 1, 21, "Abajur"); put(30, 1, 21, "Abajur")
+        for (x in 27..29) for (z in 17..19) put(x, 0, z, "Tapete Azul")
+        put(33, 0, 21, "Armário"); put(34, 0, 21, "Armário"); put(33, 0, 13, "Vaso de Planta"); put(28, 3, 18, LAMP)
+        // adega: barris, mesa redonda e estante
+        for (x in 2..8) put(x, 0, 21, "Barril")
+        for (x in 9..11) put(x, 0, 21, "Estante de Livros")
+        put(6, 0, 18, "Mesa Redonda"); put(5, 0, 18, "Banco"); put(7, 0, 18, "Banco"); put(6, 0, 17, "Banco"); put(6, 0, 19, "Banco"); put(6, 3, 18, LAMP)
+
+        // ---------- mobília: andar de cima ----------
+        // loft: sala de TV aberta pra sala de baixo
+        for (x in 15..20) for (z in 6..10) put(x, 5, z, "Tapete Azul")
+        for (x in 17..19) put(x, 5, 14, "Cômoda")
+        put(18, 6, 14, "Televisão"); put(17, 6, 14, "Abajur"); put(19, 6, 14, "Vaso de Planta")
+        for (x in 16..20) put(x, 5, 9, "Sofá")
+        put(18, 5, 11, "Mesa de Centro"); put(15, 5, 12, "Poltrona"); put(21, 5, 12, "Poltrona")
+        for (x in 21..23) put(x, 5, 1, "Estante de Livros"); put(14, 5, 1, "Vaso de Planta"); put(14, 5, 14, "Vaso de Planta")
+        put(18, 8, 8, LAMP)
+        // suíte master: cama grande, cômodas, escrivaninha, poltrona e tapete
+        for (x in 29..31) { put(x, 5, 14, "Cama"); put(x, 5, 13, "Cama") }
+        put(28, 5, 14, "Cômoda"); put(32, 5, 14, "Cômoda"); put(28, 6, 14, "Abajur"); put(32, 6, 14, "Abajur")
+        for (x in 28..32) for (z in 9..12) put(x, 5, z, any("Tapete Vermelho", rug))
+        for (x in 26..28) put(x, 5, 2, "Escrivaninha")
+        put(27, 6, 2, "Computador"); put(27, 5, 3, "Cadeira de Escritório")
+        put(25, 5, 6, "Poltrona"); put(25, 5, 8, "Poltrona"); put(25, 5, 7, "Mesa de Centro")
+        for (z in 8..11) put(34, 5, z, "Armário")
+        put(30, 8, 10, LAMP); put(26, 8, 4, LAMP)
+        put(25, 5, -1, "Vaso de Planta"); put(34, 5, -1, "Vaso de Planta")
+        put(29, 5, -2, "Mesa Redonda"); put(28, 5, -2, "Cadeira"); put(30, 5, -2, "Cadeira")
+        // suíte 2
+        for (x in 27..29) { put(x, 5, 21, "Cama"); put(x, 5, 20, "Cama") }
+        put(26, 5, 21, "Cômoda"); put(30, 5, 21, "Cômoda"); put(26, 6, 21, "Abajur"); put(30, 6, 21, "Abajur")
+        for (x in 32..33) put(x, 5, 21, "Escrivaninha")
+        put(32, 6, 21, "Computador"); put(32, 5, 20, "Cadeira de Escritório"); put(28, 8, 18, LAMP)
+        // quarto 3
+        for (x in 15..17) { put(x, 5, 21, "Cama"); put(x, 5, 20, "Cama") }
+        put(14, 5, 21, "Cômoda"); put(18, 5, 21, "Cômoda"); put(18, 6, 21, "Abajur")
+        for (x in 20..22) put(x, 5, 21, "Armário"); put(20, 5, 17, "Vaso de Planta"); put(17, 8, 18, LAMP)
+        // escritório no mezanino
+        for (x in 3..8) put(x, 5, 21, "Escrivaninha")
+        put(4, 6, 21, "Computador"); put(7, 6, 21, "Computador"); put(4, 5, 20, "Cadeira de Escritório"); put(7, 5, 20, "Cadeira de Escritório")
+        for (x in 9..11) put(x, 5, 21, "Estante de Livros")
+        for (z in 17..19) put(11, 5, z, "Estante de Livros")
+        put(2, 5, 17, "Sofá"); put(2, 5, 18, "Sofá"); put(3, 5, 18, "Mesa de Centro"); put(5, 8, 18, LAMP)
+
+        // ---------- fundos: terraço, mesa de jantar ao ar livre e jardim ----------
+        fill(2, -1, 23, 34, -1, 27, SLATE)
+        for (x in 14..17) { put(x, 0, 25, "Mesa de Madeira"); put(x, 0, 26, "Mesa de Madeira"); put(x, 0, 24, "Cadeira"); put(x, 0, 27, "Cadeira") }
+        put(13, 0, 25, "Cadeira"); put(18, 0, 26, "Cadeira")
+        put(26, 0, 25, "Mesa Redonda"); put(25, 0, 25, "Poltrona"); put(27, 0, 25, "Poltrona")
+        for (x in intArrayOf(3, 10, 22, 33)) put(x, 0, 28, "Vaso de Planta")
+        for (x in intArrayOf(2, 34)) for (zz in intArrayOf(23, 27)) put(x, 0, zz, LAMP)
+        // árvores e arbustos
+        val rnd = Random(99L)
+        for ((tx, tz, tp) in listOf(Triple(-17, -7, 1), Triple(30, -7, 2), Triple(38, 10, 1), Triple(-18, 26, 2), Triple(38, 26, 1), Triple(10, 28, 2), Triple(-6, 25, 1)))
+            plantTree(x0 + tx, top, z0 + tz, tp, rnd)
     }
 
     /** galeria de árvores: bem afastada dos blocos (x >= 90), uma fileira por espécie com 2 árvores, sobre um gramado */
@@ -454,9 +618,6 @@ class World {
             }
         }
         woodId = B.WOOD; leafId = B.LEAVES
-        val lk = java.util.BitSet(blocks.size)
-        for (i in blocks.indices) if (blocks[i] != B.AIR) lk.set(i)
-        locked = lk
     }
 
     fun generateFlat(seed: Int) {

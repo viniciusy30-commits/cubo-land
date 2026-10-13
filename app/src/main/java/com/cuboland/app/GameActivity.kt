@@ -20,6 +20,9 @@ class GameActivity : AppCompatActivity() {
     private var test = false   // galeria de blocos
     private lateinit var saveFile: File
     private var hud: HudView? = null
+    private var galPanel: GalleryPanel? = null   // painel de categorias da galeria de blocos
+    private var galMenu: List<Pair<World.GalCat, List<World.GalSec>>>? = null
+    private var galWasPaused = false
     private var tv: TvOverlay? = null   // janela da TV (navegador) enquanto estiver ligada
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -41,13 +44,13 @@ class GameActivity : AppCompatActivity() {
         root.addView(loading)
         setContentView(root)
         onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() { val t = tv; if (t != null) t.onBack() else if (hud != null) hud?.togglePause() }
+            override fun handleOnBackPressed() { val t = tv; if (t != null) t.onBack() else if (galPanel?.isOpen == true) galPanel?.onBack() else if (hud != null) hud?.togglePause() }
         })
         val t0 = System.currentTimeMillis()
         Thread {
             World.configure(flat, test)
             val w = World()
-            if (test) { w.generateTest() }   // sempre gerada de novo: mostra os blocos que existem agora
+            if (test) { w.generateTest(); galMenu = w.galleryMenu() }   // sempre gerada de novo (só o saguão: os blocos vêm pelo painel de categorias)
             else if (!w.load(saveFile)) { if (flat) w.generateFlat(info.seed) else w.generate(info.seed) }
             else if (!flat && info.file == "mundo.bin") {
                 val mark = File(filesDir, "arvores_v3")
@@ -88,8 +91,33 @@ class GameActivity : AppCompatActivity() {
         h.onTvOff = { tv?.close() }
         h.onTvSized = { tv?.relayout() }
         root.addView(h, 1)
+        if (test) setupGalleryPanel(root, h)
         loading.setProgress(1f)
         loading.postDelayed({ loading.animate().alpha(0f).setDuration(450).withEndAction { root.removeView(loading) }.start() }, 500)
+    }
+
+    /** painel de categorias da galeria: abre ao entrar; escolher regera o mapa só com a categoria/seção pedida */
+    private fun setupGalleryPanel(root: FrameLayout, h: HudView) {
+        val menu = galMenu ?: return
+        val panel = GalleryPanel(this, menu,
+            onOpen = { galWasPaused = game.paused; game.paused = true; h.releaseInput() },
+            onClose = { game.paused = galWasPaused },
+            onPick = { cat, sec, extra ->
+                val w = world
+                Thread {
+                    w.generateTest(cat, sec, extra)
+                    runOnUiThread {
+                        if (isFinishing || isDestroyed) return@runOnUiThread
+                        game.respawn()
+                        galPanel?.view?.postDelayed({ galPanel?.close() }, 1400)   // dá tempo do mapa novo aparecer por baixo
+                    }
+                }.start()
+            })
+        galPanel = panel
+        val at = root.childCount - 1   // abaixo da telinha de carregamento, que é a última
+        root.addView(panel.fab, at, panel.fabParams())
+        root.addView(panel.view, at + 1, FrameLayout.LayoutParams(-1, -1))
+        panel.open()
     }
 
     /** liga a TV: abre o navegador numa janela por cima do jogo */
