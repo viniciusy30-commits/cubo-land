@@ -922,7 +922,7 @@ class World {
             o.vc += 4
         }
         val inv = 1f / G
-        val step = Relief.STEP
+        val step = Relief.step(tile)
         fun lvOf(iu: Int, iv: Int): Int = if (iu < 0 || iv < 0 || iu >= G || iv >= G) 0 else lv[iv * G + iu]
         // topos: retângulos de peças com o mesmo nível
         val used = BooleanArray(G * G)

@@ -9,6 +9,11 @@ object Relief {
     /** grade do relevo automático (por brilho): peças de 2x2 pixels */
     const val G = 8
     const val STEP = 0.045f
+    /** degrau de relevo por tile: a Construção (estilo Minecraft) tem relevo mais fundo, pra os detalhes 3D aparecerem bem */
+    fun step(tile: Int): Float {
+        val sp = Blk.specs.getOrNull(tile)
+        return if (BuildArt.baseTile(tile) != null || (sp != null && sp[0] == Blk.K_BUILD)) 0.058f else STEP
+    }
     /** g = peças por lado (8 no automático, 16 nos mapas escritos à mão da NatRelief); lv = nível -2..+2 de cada peça */
     class Map(val g: Int, val lv: ByteArray)
     private val cache = arrayOfNulls<Map>(Atlas.NT * Atlas.ROWS)

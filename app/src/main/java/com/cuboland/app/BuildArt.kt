@@ -3,6 +3,8 @@ package com.cuboland.app
 import com.cuboland.app.BuildKit.edgeDist
 import com.cuboland.app.BuildKit.lerp
 import com.cuboland.app.BuildKit.sm
+import kotlin.math.abs
+import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sqrt
 
@@ -80,38 +82,51 @@ object BuildArt {
 
     fun tex(pat: Int, variant: Int = 0): Tex {
         val p = pat.coerceIn(0, COUNT - 1)
-        val ck = p * 5 + variant.coerceIn(0, 4)
+        val v = variant.coerceIn(0, 4)
+        val ck = p * 5 + v
         texCache[ck]?.let { return it }
         init()
         val df = defs[p] ?: defs[CONCRETE]!!
         val tx = Tex(); val s = BuildKit.S()
-        for (y in 0 until N) for (x in 0 until N) {
-            s.reset(); s.v = variant; df.fn(x + 0.5f, y + 0.5f, s)
-            val i = y * N + x
-            tx.L[i] = s.h; tx.m[i] = s.m; tx.g[i] = s.g; tx.t[i] = s.t; tx.a[i] = s.a; tx.sp[i] = s.sp; tx.k[i] = s.k
+        // estilo Minecraft: grade de 16x16 pixels duros (cada um vira um bloco de 4x4 no tile de 64) com um nível de relevo por pixel
+        val cells = Array(256) { McPix.C() }
+        val nat = McPix.has(p)
+        for (cy in 0 until 16) for (cx in 0 until 16) {
+            val c = cells[cy * 16 + cx]
+            if (nat) McPix.cell(p, v, cx, cy, c) else fromOld(df, s, v, cx, cy, c)
         }
-        // luz: normal pela inclinação do relevo, luz de cima à esquerda; cavidades escurecem um pouco
-        val lx = -0.505f; val ly = -0.606f; val lz = 0.626f
-        val blur = FloatArray(N * N)
-        for (y in 0 until N) for (x in 0 until N) {
-            var sum = 0f
-            for (dy in -3..3 step 3) for (dx in -3..3 step 3) sum += tx.L[((y + dy + N) % N) * N + (x + dx + N) % N]
-            blur[y * N + x] = sum / 9f
-        }
-        for (y in 0 until N) for (x in 0 until N) {
-            val i = y * N + x
-            val dx = (tx.L[y * N + (x + 1) % N] - tx.L[y * N + (x + N - 1) % N]) * 0.5f
-            val dy = (tx.L[((y + 1) % N) * N + x] - tx.L[((y + N - 1) % N) * N + x]) * 0.5f
-            val nx = -dx * 1.15f; val ny = -dy * 1.15f
-            val diff = (nx * lx + ny * ly + lz) / sqrt(nx * nx + ny * ny + 1f)
-            var sh = 1f + (diff - lz) * 0.95f + (tx.L[i] - blur[i]) * 0.05f
-            val ed = edgeDist(x + 0.5f, y + 0.5f)
-            if (df.edge > 0f) sh *= 1f - df.edge * (1f - sm(0f, 5f, ed))
-            if (false) sh *= 1f + df.grad * (0.5f - (x + y) / 128f) * 2f
-            tx.sh[i] = sh
+        for (cy in 0 until 16) for (cx in 0 until 16) {
+            val c = cells[cy * 16 + cx]
+            val hl = cells[cy * 16 + (cx + 15) % 16].h; val hr = cells[cy * 16 + (cx + 1) % 16].h
+            val hu = cells[((cy + 15) % 16) * 16 + cx].h; val hd = cells[((cy + 1) % 16) * 16 + cx].h
+            // luz de cima à esquerda: quina virada pra luz clareia, quina na sombra de um vizinho mais alto escurece
+            val sh = 1f + 0.08f * (max(0, c.h - hl) + max(0, c.h - hu)) - 0.08f * (max(0, hr - c.h) + max(0, hd - c.h))
+            for (y in 0 until 4) for (x in 0 until 4) {
+                val i = (cy * 4 + y) * N + cx * 4 + x
+                tx.L[i] = c.h.toFloat(); tx.sh[i] = sh; tx.m[i] = c.m; tx.g[i] = c.g; tx.t[i] = c.t; tx.a[i] = c.a; tx.sp[i] = c.sp; tx.k[i] = c.k
+            }
         }
         texCache[ck] = tx
         return tx
+    }
+
+    /** padrões sem versão própria em McPix: o desenho antigo é amostrado em 4 pontos por pixel (pega o mais forte, pra linhas finas não sumirem) e endurecido */
+    private fun fromOld(df: Def, s: BuildKit.S, v: Int, cx: Int, cy: Int, c: McPix.C) {
+        var hb = 0f; var tt = 0f; var g = 0f; var m = 0f; var a = 0f; var sp = 0f; var k = 0f
+        for (j in 0..1) for (i in 0..1) {
+            s.reset(); s.v = v
+            df.fn(cx * 4 + 1f + i * 2f, cy * 4 + 1f + j * 2f, s)
+            if (abs(s.h) > abs(hb)) hb = s.h
+            tt += s.t * 0.25f
+            g = max(g, s.g); m = max(m, s.m); a = max(a, s.a); sp = max(sp, s.sp); k = max(k, s.k)
+        }
+        c.h = Math.round(hb).coerceIn(-2, 2)
+        c.t = Math.round(tt / 0.15f) * 0.15f
+        c.g = if (g > 0.5f) 1f else 0f
+        c.m = if (m > 0.5f) 1f else 0f
+        c.a = a
+        c.sp = if (sp > 0.2f) 0.45f else 0f
+        c.k = if (k > 0.35f) 0.8f else 0f
     }
 
     private val palCache = HashMap<Long, IntArray>()
@@ -133,16 +148,30 @@ object BuildArt {
         else -> 0x86C25E
     }
 
+    /** cor do rejunte / fresta no estilo Minecraft */
+    private fun mcGrout(p: Int, mode: Int, b: Int): Int = when {
+        p == BRICK -> mixc(0xB9B2AA, b, 0.14f)
+        p == SUBWAY -> 0xCFCBC4
+        mode == GP -> mixc(b, 0xFFFFFF, 0.55f)
+        mode == GD -> mixc(b, 0x1E1822, 0.50f)
+        mode == GL -> 0x3A3040
+        mode == GW -> 0xD9D6CE
+        mode == GWOOD -> mixc(b, 0x2E1A0E, 0.50f)
+        else -> mixc(b, 0x1C1C24, 0.40f)
+    }
+    private fun mcTone(c: Int, t: Float): Int = if (t >= 0f) mixc(c, 0xFFFFFF, (t * 0.22f).coerceAtMost(0.5f)) else mixc(c, 0x101018, (-t * 0.24f).coerceAtMost(0.6f))
+    private fun mcShade(c: Int, s: Float): Int = if (s >= 1f) mixc(c, 0xFFFFFF, ((s - 1f) * 1.6f).coerceAtMost(0.35f)) else mixc(c, 0x0C0C14, ((1f - s) * 1.7f).coerceAtMost(0.5f))
+
     /** pixel ARGB do padrão: x, y = 0..63. scale = % de opacidade do miolo dos vidros (0 = 100) */
     fun sample(pat: Int, base: Int, acc: Int, scale: Int, x: Int, y: Int, variant: Int = 0): Int {
         val p = pat.coerceIn(0, COUNT - 1)
         val tx = tex(p, variant); val df = defs[p] ?: defs[CONCRETE]!!
         val i = ((y and 63) shl 6) + (x and 63)
-        val b = lift(base and 0xFFFFFF)
+        val b = base and 0xFFFFFF
         val ac = if (acc < 0) defAccent(p) else (acc and 0xFFFFFF)
-        var c = toneC(b, tx.t[i])
-        c = mixc(c, groutColor(df.grout, b), tx.g[i])
+        var c = mixc(b, mcGrout(p, df.grout, b), tx.g[i])
         c = mixc(c, ac, tx.m[i])
+        c = mcTone(c, tx.t[i])
         var al = tx.a[i]
         var sh = tx.sh[i]
         if (df.glass) {
@@ -151,7 +180,7 @@ object BuildArt {
             val sc = if (scale <= 0) 100 else scale
             if (al < 0.9f) al = min(1f, al * sc / 100f)
         }
-        c = shadeC(c, sh)
+        c = mcShade(c, sh)
         if (tx.sp[i] > 0f) c = mixc(c, 0xFFFFFF, tx.sp[i].coerceIn(0f, 1f))
         if (tx.k[i] > 0f) c = mixc(c, 0x30243C, (tx.k[i] * 0.78f).coerceIn(0f, 1f))
         return ((al * 255f + 0.5f).toInt().coerceIn(0, 255) shl 24) or c

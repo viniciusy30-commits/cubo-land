@@ -1,3 +1,10 @@
+#id 2026-10-13-a
+#titulo Construção estilo Minecraft
+- Os blocos da categoria Construção agora têm texturas no estilo Minecraft: pixels bem marcados, cores chapadas e variação de tom pixel a pixel
+- Relevo 3D de verdade em cada bloco, mais fundo e condizente: tijolos e pedras altos com frestas escuras, pedregulho de pedras arredondadas, tábuas com sulcos, telhas sobrepostas, metais com placa e rebites, pilar de quartzo canelado, troncos descascados com anéis
+- Pedras, granito, diorito, arenito, obsidiana, concreto e terracota seguem o jeito clássico do Minecraft, só que mais bonitos
+- Janelas, vitrais e vidros decorativos ganharam o visual de pixel, mantendo a transparência
+
 #id 2026-10-12-g
 #titulo Construção fofinha
 - Todas as texturas da Construção foram refeitas no estilo fofinho (Hytale/KoGaMa): cores clarinhas, quinas arredondadas, luz suave e relevo 3D almofadado (tijolos gordinhos, seixos redondos, tábuas com pregos, telhas de escama)
