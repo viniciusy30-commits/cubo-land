@@ -14,7 +14,7 @@ object BuildKit {
     class S {
         @JvmField var h = 0f; @JvmField var m = 0f; @JvmField var g = 0f; @JvmField var t = 0f; @JvmField var a = 1f; @JvmField var sp = 0f; @JvmField var k = 0f
         // rascunho das peças (alvenaria, voronoi)
-        @JvmField var d = 0f; @JvmField var id = 0; @JvmField var lx = 0f; @JvmField var ly = 0f; @JvmField var ew = 0f; @JvmField var eh = 0f
+        @JvmField var v = 0; @JvmField var d = 0f; @JvmField var id = 0; @JvmField var lx = 0f; @JvmField var ly = 0f; @JvmField var ew = 0f; @JvmField var eh = 0f
         fun reset() { h = 0f; m = 0f; g = 0f; t = 0f; a = 1f; sp = 0f; k = 0f }
     }
 

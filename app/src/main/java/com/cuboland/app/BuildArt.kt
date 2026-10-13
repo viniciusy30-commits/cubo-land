@@ -74,18 +74,19 @@ object BuildArt {
         val L = FloatArray(N * N); val sh = FloatArray(N * N); val m = FloatArray(N * N); val g = FloatArray(N * N); val t = FloatArray(N * N)
         val a = FloatArray(N * N); val sp = FloatArray(N * N); val k = FloatArray(N * N)
     }
-    private val texCache = arrayOfNulls<Tex>(COUNT)
+    private val texCache = arrayOfNulls<Tex>(COUNT * 5)
     private var inited = false
     private fun init() { if (!inited) { inited = true; BuildPats.register() } }
 
-    fun tex(pat: Int): Tex {
+    fun tex(pat: Int, variant: Int = 0): Tex {
         val p = pat.coerceIn(0, COUNT - 1)
-        texCache[p]?.let { return it }
+        val ck = p * 5 + variant.coerceIn(0, 4)
+        texCache[ck]?.let { return it }
         init()
         val df = defs[p] ?: defs[CONCRETE]!!
         val tx = Tex(); val s = BuildKit.S()
         for (y in 0 until N) for (x in 0 until N) {
-            s.reset(); df.fn(x + 0.5f, y + 0.5f, s)
+            s.reset(); s.v = variant; df.fn(x + 0.5f, y + 0.5f, s)
             val i = y * N + x
             tx.L[i] = s.h; tx.m[i] = s.m; tx.g[i] = s.g; tx.t[i] = s.t; tx.a[i] = s.a; tx.sp[i] = s.sp; tx.k[i] = s.k
         }
@@ -106,10 +107,10 @@ object BuildArt {
             var sh = 1f + (diff - lz) * 0.95f + (tx.L[i] - blur[i]) * 0.05f
             val ed = edgeDist(x + 0.5f, y + 0.5f)
             if (df.edge > 0f) sh *= 1f - df.edge * (1f - sm(0f, 5f, ed))
-            sh *= 1f + df.grad * (0.5f - (x + y) / 128f) * 2f
+            if (false) sh *= 1f + df.grad * (0.5f - (x + y) / 128f) * 2f
             tx.sh[i] = sh
         }
-        texCache[p] = tx
+        texCache[ck] = tx
         return tx
     }
 
@@ -133,9 +134,9 @@ object BuildArt {
     }
 
     /** pixel ARGB do padrão: x, y = 0..63. scale = % de opacidade do miolo dos vidros (0 = 100) */
-    fun sample(pat: Int, base: Int, acc: Int, scale: Int, x: Int, y: Int): Int {
+    fun sample(pat: Int, base: Int, acc: Int, scale: Int, x: Int, y: Int, variant: Int = 0): Int {
         val p = pat.coerceIn(0, COUNT - 1)
-        val tx = tex(p); val df = defs[p] ?: defs[CONCRETE]!!
+        val tx = tex(p, variant); val df = defs[p] ?: defs[CONCRETE]!!
         val i = ((y and 63) shl 6) + (x and 63)
         val b = lift(base and 0xFFFFFF)
         val ac = if (acc < 0) defAccent(p) else (acc and 0xFFFFFF)
@@ -159,12 +160,13 @@ object BuildArt {
     /** compat: pixel do padrão em grade 16x16 */
     fun pixel(pat: Int, base: Int, acc: Int, scale: Int, px: Int, py: Int): Int = sample(pat, base, acc, scale, px * 4 + 2, py * 4 + 2)
 
-    private val reliefCache = arrayOfNulls<Relief.Map>(COUNT)
+    private val reliefCache = arrayOfNulls<Relief.Map>(COUNT * 5)
     /** relevo 3D: grade 16x16 (cada peça = 4x4 px), nível -2..+2 = média da altura da peça */
-    fun relief(pat: Int): Relief.Map {
+    fun relief(pat: Int, variant: Int = 0): Relief.Map {
         val p = pat.coerceIn(0, COUNT - 1)
-        reliefCache[p]?.let { return it }
-        val tx = tex(p)
+        val ck = p * 5 + variant.coerceIn(0, 4)
+        reliefCache[ck]?.let { return it }
+        val tx = tex(p, variant)
         val out = ByteArray(256)
         for (cy in 0 until 16) for (cx in 0 until 16) {
             var sum = 0f
@@ -172,7 +174,7 @@ object BuildArt {
             out[cy * 16 + cx] = Math.round(sum / 16f).coerceIn(-2, 2).toByte()
         }
         val r = Relief.Map(16, out)
-        reliefCache[p] = r
+        reliefCache[ck] = r
         return r
     }
 

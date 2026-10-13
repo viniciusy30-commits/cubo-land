@@ -114,7 +114,21 @@ object Blk {
     /** tile base -> primeiro tile das NatVar.V variantes (0 = sem variantes) */
     val varBase = IntArray(MAXT)
     /** tile do topo com variantes de grãos: cada bloco do mundo sorteia uma (h = número 0..1 por posição) */
-    fun pickTile(tile: Int, h: Float): Int { val b = varBase[tile and (MAXT - 1)]; return if (b == 0) tile else b + (h * NatVar.V).toInt().coerceAtMost(NatVar.V - 1) }
+    /** quantas variantes tem o tile (0 = padrão da NatVar) */
+    val varN = IntArray(MAXT)
+    fun pickTile(tile: Int, h: Float): Int {
+        val b = varBase[tile and (MAXT - 1)]; if (b == 0) return tile
+        val n = varN[tile and (MAXT - 1)].let { if (it > 0) it else NatVar.V }
+        return b + (h * n).toInt().coerceAtMost(n - 1)
+    }
+    /** tile liso da Construção com 4 variantes (detalhes em lugares diferentes, sorteadas por posição) pra não repetir quando se põem vários */
+    private fun btv(pat: Int, base: Int, acc: Int = -1, scale: Int = 0): Int {
+        val t = bt(pat, base, acc, scale)
+        var first = 0
+        for (v in 1..4) { val vt = tl(K_BUILD, pat, base, acc, scale, 0, v); if (v == 1) first = vt }
+        if (t >= 24 && first >= 24) { varBase[t] = first; varN[t] = 4 }
+        return t
+    }
     private fun ptv(art: Int): Int {
         val t = pt(art)
         var first = 0
@@ -168,10 +182,10 @@ object Blk {
         for (i in 0 until 16) { val c = DYE[i]
             uni("Lã " + DF[i], C_DEC, tl(K_WOOL, c, dk(c, 0.14f)), c, M_SOFT, 2f) }
         for (i in 0 until 16) { val c = DYE[i]
-            uni("Concreto " + DM[i], C_BUILD, bt(BuildArt.CONCRETE, c), c, M_STONE, 9f) }
-        uni("Terracota", C_BUILD, bt(BuildArt.CLAY, 0xA8643F), 0xA8643F, M_STONE, 8f)
+            uni("Concreto " + DM[i], C_BUILD, btv(BuildArt.CONCRETE, c), c, M_STONE, 9f) }
+        uni("Terracota", C_BUILD, btv(BuildArt.CLAY, 0xA8643F), 0xA8643F, M_STONE, 8f)
         for (i in 0 until 16) { val c = mixc(DYE[i], 0x8C6A52, 0.42f)
-            uni("Terracota " + DF[i], C_BUILD, bt(BuildArt.CLAY, c), c, M_STONE, 8f) }
+            uni("Terracota " + DF[i], C_BUILD, btv(BuildArt.CLAY, c), c, M_STONE, 8f) }
         for (i in 0 until 16) { val c = DYE[i]
             uni("Terracota Vitrificada " + DF[i], C_DEC, tl(K_GLAZE, dk(c, 0.2f), lt(c, 0.4f), lt(c, 0.8f), 0, 0, i and 3, 4), c, M_STONE, 8f) }
         uni("Vidro", C_BUILD, bt(BuildArt.GLASS, 0xD8F2FF), 0xCDEAF5, M_GLASS, 2f, PANE, "Vidro grosso e liso: transparente, emenda com os vizinhos sem marca.")
@@ -282,10 +296,10 @@ object Blk {
         uni("Telhado Azul", C_BUILD, bt(BuildArt.SHINGLE, 0x5A86D8), 0x5A86D8, M_STONE, 8f, shp(BuildShapes.S_ROOF), ROOF_DESC)
         uni("Telhado Verde", C_BUILD, bt(BuildArt.SHINGLE, 0x5FAE6A), 0x5FAE6A, M_STONE, 8f, shp(BuildShapes.S_ROOF), ROOF_DESC)
         uni("Palha", C_BUILD, pt(NatArt.PALHA), 0xE6C65A, M_SOFT, 3f)
-        uni("Gesso Branco", C_BUILD, bt(BuildArt.PLASTER, 0xFAF6EE), 0xFAF6EE, M_STONE, 6f)
-        uni("Gesso Rosa", C_BUILD, bt(BuildArt.PLASTER, 0xFFD6E4), 0xFFD6E4, M_STONE, 6f)
-        uni("Gesso Amarelo", C_BUILD, bt(BuildArt.PLASTER, 0xFFEFB0), 0xFFEFB0, M_STONE, 6f)
-        uni("Gesso Azul", C_BUILD, bt(BuildArt.PLASTER, 0xCFE4FA), 0xCFE4FA, M_STONE, 6f)
+        uni("Gesso Branco", C_BUILD, btv(BuildArt.PLASTER, 0xFAF6EE), 0xFAF6EE, M_STONE, 6f)
+        uni("Gesso Rosa", C_BUILD, btv(BuildArt.PLASTER, 0xFFD6E4), 0xFFD6E4, M_STONE, 6f)
+        uni("Gesso Amarelo", C_BUILD, btv(BuildArt.PLASTER, 0xFFEFB0), 0xFFEFB0, M_STONE, 6f)
+        uni("Gesso Azul", C_BUILD, btv(BuildArt.PLASTER, 0xCFE4FA), 0xCFE4FA, M_STONE, 6f)
         uni("Piso de Madeira", C_BUILD, bt(BuildArt.MOSAIC, 0xC9935A), 0xC9935A, M_WOOD, 5f)
         uni("Azulejo Branco", C_BUILD, bt(BuildArt.AZ_PLAIN, 0xF4F4F0), 0xF4F4F0, M_STONE, 6f)
         uni("Azulejo Azul", C_BUILD, bt(BuildArt.AZ_DECOR, 0x2F63B5, 0xF6F6F0), 0x6FA8E8, M_STONE, 6f)
@@ -539,7 +553,7 @@ object Blk {
         for (i in 0 until 16) { val c = pc(i); uni("Pedra Fofa " + DF[i], C_BUILD, bt(BuildArt.SBRICK, c), c, M_STONE, 9f, 0, "Tijolos de pedra em tom pastel.") }
         for (i in 0 until 16) { val c = pc(i); uni("Gema " + DF[i], C_BUILD, bt(BuildArt.GEM, c), c, M_STONE, 12f, 0, "Gema lapidada e brilhante.") }
         for (i in 0 until 16) { val c = pc(i); uni("Acolchoado " + DM[i], C_BUILD, bt(BuildArt.QUILT, c), c, M_SOFT, 3f, 0, "Almofadinhas macias.") }
-        for (i in 0 until 16) { val c = pc(i); uni("Reboco " + DM[i], C_BUILD, bt(BuildArt.PLASTER, c), c, M_STONE, 6f) }
+        for (i in 0 until 16) { val c = pc(i); uni("Reboco " + DM[i], C_BUILD, btv(BuildArt.PLASTER, c), c, M_STONE, 6f) }
         for (i in 0 until 16) { val c = pc(i); uni("Lambri " + DM[i], C_BUILD, bt(BuildArt.PANEL, c), c, M_WOOD, 5f, 0, "Painéis embutidos para paredes.") }
         for (i in 0 until 8) { val c = pc(i); uni("Telhado Fofo " + DM[i], C_BUILD, bt(BuildArt.SHAKE, c), c, M_WOOD, 6f, shp(BuildShapes.S_ROOF), ROOF_DESC); roofs.add(last()); rot4(last(), BuildShapes.S_ROOF) }
         for (i in 8 until 16) { val c = pc(i); uni("Telhado Fofo " + DM[i], C_BUILD, bt(BuildArt.SHINGLE, c), c, M_STONE, 6f, shp(BuildShapes.S_ROOF), ROOF_DESC); rot4(last(), BuildShapes.S_ROOF) }

@@ -6,6 +6,9 @@
 - Novas janelas: 8 cores gordinhas, colonial, em arco, de coração e de estrela, mais 4 vitrais
 - Novos blocos nas 16 cores: Tijolo Fofo, Tábua Pintada, Ladrilho Fofo, Pedra Fofa, Gema, Acolchoado, Reboco, Lambri e Telhado Fofo
 - Pisos xadrez, espinha de peixe, hexagonais, caminho de pedras, seixos, enxaimel, toras, chapas onduladas, losangos, listrados e azulejos novos, com lajes e escadas
+- Emendas: concreto, argila, reboco, pedras polidas, chapas de metal e vidros agora se encaixam lisinhos, sem divisão de bloco; blocos de desenho próprio (moldura, pilar, gema, madeira) têm uma divisão bem mais suave
+- Menos repetição: concreto, argila, reboco e pedras têm variações que se misturam ao colocar vários blocos
+- Mais relevo 3D em concreto, gesso, pedras, granito, troncos, gemas e obsidiana
 
 #id 2026-10-12-f
 #titulo TV de verdade

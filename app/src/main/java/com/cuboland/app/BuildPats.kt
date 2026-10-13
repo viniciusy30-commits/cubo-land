@@ -14,31 +14,49 @@ import kotlin.math.sqrt
 object BuildPats {
     private const val TAU = 6.2831853f
 
+
+    /** Marcas internas que mudam por variante (longe da borda => encaixe liso entre variantes). h<0 = furinho, h>0 = calombo. */
+    private fun scatter(x: Float, y: Float, s: S, seed: Int, n: Int, rmin: Float, rmax: Float, hAmp: Float, tAmp: Float) = with(BuildKit) {
+        for (i in 0 until n) {
+            val px = 10f + hash(i, s.v, seed) * 44f; val py = 10f + hash(i, s.v, seed + 1) * 44f
+            val r = rmin + hash(i, s.v, seed + 2) * (rmax - rmin)
+            val sg = if (hash(i, s.v, seed + 3) < 0.5f) -1f else 1f
+            val c = cov(sdCirc(x, y, px, py, r))
+            s.h += hAmp * sg * c * dome(sdCirc(x, y, px, py, r), r * 0.9f)
+            s.t += tAmp * sg * c
+            s.sp += 0.10f * c * (if (sg > 0) 1f else 0f)
+        }
+    }
+
     fun register() { registerCore(); registerMore() }
 
     private fun registerCore() = with(BuildKit) {
         // ================================================================= concreto / argila / gesso: lisos, macios, só um bisel gordinho
-        define(BuildArt.CONCRETE, BuildArt.GC, 0.045f, 0.035f, false) { x, y, s ->
+        define(BuildArt.CONCRETE, BuildArt.GC, 0f, 0.035f, false) { x, y, s ->
             val ed = edgeDist(x, y)
-            s.h = 0.42f * dome(-ed, 5f)
+            s.h = 0f
             s.t = (vn(x, y, 3, 11) - 0.5f) * 0.30f
-            for (c in 0 until 4) {   // quatro covinhas redondas (parafusos de painel)
-                val cx = if (c and 1 == 0) 10f else 54f; val cy = if (c < 2) 10f else 54f
+            if (s.v == 0) for (c in 0 until 4) {   // quatro covinhas redondas (parafusos de painel)
+                val cx = if (c and 1 == 0) 16f else 48f; val cy = if (c < 2) 16f else 48f
                 val d = sdCirc(x, y, cx, cy, 2.6f)
-                s.h -= 0.38f * (1f - sm(-1f, 2.4f, d))
+                s.h -= 1.1f * (1f - sm(-1f, 2.4f, d))
                 s.sp += 0.10f * gauss((x - cx + 1.2f) * (x - cx + 1.2f) + (y - cy + 1.2f) * (y - cy + 1.2f), 1.4f)
             }
-            s.sp += 0.10f * diag(x, y, 34f, 9f)
+            if (s.v > 0) scatter(x, y, s, 201, 5, 1.6f, 3.4f, 1.1f, 0.10f)
+            s.h += 0.9f * (vn(x, y, 5, 14) - 0.5f)
+            s.sp += 0.10f * diag(x, y, 34f + s.v * 7f, 9f)
         }
-        define(BuildArt.CLAY, BuildArt.GC, 0.04f, 0.035f, false) { x, y, s ->
+        define(BuildArt.CLAY, BuildArt.GC, 0f, 0.035f, false) { x, y, s ->
             val ed = edgeDist(x, y)
-            s.h = 0.40f * dome(-ed, 5f) + 0.30f * sin(y / 64f * TAU * 4f + 0.9f * sin(x / 64f * TAU))
+            s.h = 0.9f * sin(y / 64f * TAU * 4f + 0.9f * sin(x / 64f * TAU))
+            scatter(x, y, s, 211, 3, 1.8f, 3.2f, 0.9f, 0.08f)
             s.t = (vn(x, y, 4, 21) - 0.5f) * 0.28f + 0.10f * sin(y / 64f * TAU * 4f + 0.9f * sin(x / 64f * TAU))
             s.sp = 0.07f * diag(x, y, 36f, 12f)
         }
-        define(BuildArt.PLASTER, BuildArt.GC, 0.04f, 0.03f, false) { x, y, s ->
+        define(BuildArt.PLASTER, BuildArt.GC, 0f, 0.03f, false) { x, y, s ->
             val ed = edgeDist(x, y)
-            s.h = 0.38f * dome(-ed, 4f)
+            s.h = 0.8f * (vn(x, y, 4, 33) - 0.5f)
+            scatter(x, y, s, 221, 4, 2f, 4f, 0.9f, 0.08f)
             // pinceladas de desempenadeira: arcos bem suaves
             val a1 = abs(sqrt((wd(x, 16f)) * (wd(x, 16f)) + (wd(y, 50f)) * (wd(y, 50f))) - 22f)
             val a2 = abs(sqrt((wd(x, 52f)) * (wd(x, 52f)) + (wd(y, 14f)) * (wd(y, 14f))) - 18f)
@@ -61,20 +79,20 @@ object BuildPats {
         cobble(BuildArt.COBBLE, false)
         cobble(BuildArt.COBBLE_MOSS, true)
         // ================================================================= pedras macias (sem aspereza)
-        define(BuildArt.ROUGH0, BuildArt.GC, 0.03f, 0.03f, false) { x, y, s ->   // pedregulhos fofos grandes
+        define(BuildArt.ROUGH0, BuildArt.GC, 0f, 0.03f, false) { x, y, s ->   // pedregulhos fofos grandes
             voronoi(x, y, 3, 0.55f, 5, s)
-            s.h = 0.55f * dome(-s.d, 8f) - 0.15f
+            s.h = 1.6f * dome(-s.d, 8f) - 0.4f
             s.g = 0.30f * (1f - sm(0f, 2.2f, s.d))
             s.t = (hash(s.id, 5, 12) - 0.5f) * 0.45f + (vn(x, y, 4, 41) - 0.5f) * 0.18f
             s.sp = 0.20f * star(x, y, 20f, 40f, 3.4f) + 0.16f * star(x, y, 52f, 14f, 3f)
         }
-        define(BuildArt.ROUGH1, BuildArt.GC, 0.03f, 0.03f, false) { x, y, s ->   // camadas onduladas
+        define(BuildArt.ROUGH1, BuildArt.GC, 0f, 0.03f, false) { x, y, s ->   // camadas onduladas
             val w = sin(y / 64f * TAU * 4f + 0.55f * sin(x / 64f * TAU * 2f))
-            s.h = 0.38f * w
+            s.h = 1.1f * w
             s.t = 0.22f * w + (vn(x, y, 4, 42) - 0.5f) * 0.14f
             s.sp = 0.12f * star(x, y, 40f, 24f, 3.4f) + 0.10f * star(x, y, 12f, 52f, 3f)
         }
-        define(BuildArt.ROUGH2, BuildArt.GC, 0.03f, 0.03f, false) { x, y, s ->   // pintinhas macias
+        define(BuildArt.ROUGH2, BuildArt.GC, 0f, 0.03f, false) { x, y, s ->   // pintinhas macias
             s.t = (vn(x, y, 3, 43) - 0.5f) * 0.20f
             val cs = 8f
             val ci = floor(x / cs).toInt(); val cj = floor(y / cs).toInt()
@@ -85,18 +103,19 @@ object BuildPats {
                 val r = 1.1f + hash(i, j, 80) * 1.7f
                 val c = cov(sdCirc(x, y, px, py, r))
                 s.t += c * (if (hash(i, j, 81) < 0.5f) 0.75f else -0.8f)
-                s.h += 0.25f * c
+                s.h += 0.9f * c
             }
         }
-        define(BuildArt.SMOOTH, BuildArt.GC, 0.04f, 0.035f, false) { x, y, s ->   // polida: nuvens de mármore e reflexo
+        define(BuildArt.SMOOTH, BuildArt.GC, 0f, 0.035f, false) { x, y, s ->   // polida: nuvens de mármore e reflexo
             val ed = edgeDist(x, y)
-            s.h = 0.40f * dome(-ed, 5f)
+            s.h = 0.6f * (vn(x, y, 5, 53) - 0.5f)
+            scatter(x, y, s, 231, 2, 3f, 6f, 0.6f, 0.07f)
             s.t = (vn(x, y, 3, 51) - 0.5f) * 0.34f + (vn(x, y, 6, 52) - 0.5f) * 0.18f
             s.sp = 0.16f * diag(x, y, 36f, 7f) + 0.08f * diag(x, y, 50f, 2f) + 0.2f * star(x, y, 14f, 14f, 4.5f)
         }
-        define(BuildArt.SPECK, BuildArt.GC, 0.04f, 0.035f, false) { x, y, s ->   // granito confete
+        define(BuildArt.SPECK, BuildArt.GC, 0f, 0.035f, false) { x, y, s ->   // granito confete
             val ed = edgeDist(x, y)
-            s.h = 0.40f * dome(-ed, 5f)
+            s.h = 0f
             s.t = (vn(x, y, 3, 61) - 0.5f) * 0.26f
             val cs = 10.6667f
             val ci = floor(x / cs).toInt(); val cj = floor(y / cs).toInt()
@@ -108,7 +127,7 @@ object BuildPats {
                 val d = sdCirc(x, y, px, py, r)
                 val c = cov(d)
                 s.m = max(s.m, c * (0.55f + 0.45f * hash(i, j, 95)))
-                s.h += 0.35f * c * dome(d, 2f)
+                s.h += 1.0f * c * dome(d, 2f)
                 s.sp += 0.22f * c * gauss((x - px + r * 0.4f) * (x - px + r * 0.4f) + (y - py + r * 0.4f) * (y - py + r * 0.4f), r * 0.35f)
             }
         }
@@ -120,7 +139,7 @@ object BuildPats {
             val u = s.lx + s.ly
             s.sp = cov(s.d) * (0.34f * (1f - sm(0f, 1.6f, abs(u - 15f))) * (1f - sm(14f, 22f, s.lx)) * (1f - sm(14f, 22f, s.ly)) + 0.20f * (1f - sm(0f, 1.0f, abs(u - 20f))) * (1f - sm(18f, 26f, s.lx)) * (1f - sm(18f, 26f, s.ly)))
         }
-        define(BuildArt.CHISEL, BuildArt.GC, 0.04f, 0.02f, false) { x, y, s ->   // moldura entalhada com losango no meio
+        define(BuildArt.CHISEL, BuildArt.GC, 0.035f, 0.02f, false) { x, y, s ->   // moldura entalhada com losango no meio
             val ed = edgeDist(x, y)
             val pr = sdBox(x, y, 32f, 32f, 23f, 23f, 6f)
             val dx = abs(x - 32f); val dy = abs(y - 32f)
@@ -130,7 +149,7 @@ object BuildPats {
             s.t = (vn(x, y, 3, 71) - 0.5f) * 0.22f - 0.12f * panel
             s.sp = 0.2f * star(x, y, 28f, 28f, 3f) * panel
         }
-        define(BuildArt.PILLAR, BuildArt.GC, 0.03f, 0.02f, false) { x, y, s ->   // coluna canelada com capitel e base
+        define(BuildArt.PILLAR, BuildArt.GC, 0.035f, 0.02f, false) { x, y, s ->   // coluna canelada com capitel e base
             val fx = (wr(x, 16f) - 8f) / 8f
             val flute = 0.85f * sqrt(max(0f, 1f - fx * fx)) - 0.55f
             val capY = min(y, 64f - y)
@@ -141,7 +160,7 @@ object BuildPats {
             s.t = (vn(x, y, 3, 72) - 0.5f) * 0.18f
             s.sp = 0.10f * diag(x, y, 36f, 6f)
         }
-        define(BuildArt.SANDSIDE, BuildArt.GC, 0.03f, 0.03f, false) { x, y, s ->   // arenito: faixas de camada
+        define(BuildArt.SANDSIDE, BuildArt.GC, 0f, 0.03f, false) { x, y, s ->   // arenito: faixas de camada
             val capY = min(y, 64f - y)
             val band = 1f - sm(6.5f, 8.5f, capY)
             val g1 = gauss((y - 24f) * (y - 24f), 1.3f); val g2 = gauss((y - 40f) * (y - 40f), 1.3f)
@@ -149,18 +168,19 @@ object BuildPats {
             s.t = (vn(x, y, 4, 73) - 0.5f) * 0.22f + 0.20f * sin(y / 64f * TAU * 2f + 0.5f * sin(x / 64f * TAU))
             s.sp = 0.10f * diag(x, y, 36f, 7f)
         }
-        define(BuildArt.OBSIDIAN, BuildArt.GC, 0.03f, 0.02f, false) { x, y, s ->   // pedra-gema facetada
+        define(BuildArt.OBSIDIAN, BuildArt.GC, 0.035f, 0.02f, false) { x, y, s ->   // pedra-gema facetada
             val dx = x - 32f; val dy = y - 32f
             val cheb = max(abs(dx), abs(dy)) / 32f
             val top = if (abs(dy) >= abs(dx) && dy < 0) 1 else 0
             val left = if (abs(dx) > abs(dy) && dx < 0) 1 else 0
             val right = if (abs(dx) > abs(dy) && dx > 0) 1 else 0
+            s.h = 2.4f * (1f - cheb) - 1.2f
             s.t = 0.50f * top + 0.30f * left - 0.30f * right - 0.55f * (if (abs(dy) >= abs(dx) && dy > 0) 1 else 0)
             s.m = 0.40f * (1f - cheb) + 0.15f * (vn(x, y, 3, 74))
             val diagLine = min(abs(abs(dx) - abs(dy)), 99f)
             s.sp = 0.38f * gauss(diagLine * diagLine, 0.9f) * (1f - sm(0.7f, 1f, cheb)) + 0.9f * star(x, y, 20f, 20f, 6f) + 0.7f * star(x, y, 46f, 42f, 4.5f) + 0.5f * star(x, y, 50f, 14f, 3.2f)
             s.sp = s.sp.coerceAtMost(1f)
-            s.h = 0.4f * dome(-edgeDist(x, y), 3f)
+            s.h = 0f
         }
         // ================================================================= madeiras
         define(BuildArt.PLANK, BuildArt.GWOOD, 0f, 0.025f, false) { x, y, s ->
@@ -197,13 +217,13 @@ object BuildPats {
             s.t = (hash(id, 7, 16) - 0.5f) * 0.6f + 0.12f * sin(TAU * (along * 0.06f + hash(id, 8, 17) * 5f))
             s.sp = c * 0.16f * gauss((across - slat * 4f - 1.2f) * (across - slat * 4f - 1.2f), 0.9f) * (if (hor) 1f else 0.7f)
         }
-        define(BuildArt.STRIP, BuildArt.GWOOD, 0.03f, 0.03f, false) { x, y, s ->   // tronco descascado (lado): fibras lisinhas + nó
+        define(BuildArt.STRIP, BuildArt.GWOOD, 0.035f, 0.03f, false) { x, y, s ->   // tronco descascado (lado): fibras lisinhas + nó
             val w = sin(TAU * (x / 64f * 4f + 0.10f * sin(y / 64f * TAU * 1f)))
-            s.h = 0.30f * w
+            s.h = 0.9f * w
             s.t = 0.30f * w + (vn(x, y, 4, 82) - 0.5f) * 0.2f
             val kd = sqrt(((x - 40f) * 0.8f) * ((x - 40f) * 0.8f) + ((y - 22f) * 1.5f) * ((y - 22f) * 1.5f))
             s.t += 0.5f * gauss((kd - 5f) * (kd - 5f), 1.2f) - 0.5f * gauss(kd * kd, 2.4f)
-            s.h += 0.35f * gauss(kd * kd, 5f) * 0f
+            s.h += 1.3f * gauss(kd * kd, 5f) - 0.9f * gauss(kd * kd, 1.8f)
             s.sp = 0.12f * diag(x, y, 36f, 8f)
         }
         define(BuildArt.RINGS, BuildArt.GWOOD, 0f, 0.025f, false) { x, y, s ->   // topo do tronco: anéis de crescimento redondinhos e casca
@@ -390,7 +410,7 @@ object BuildPats {
             s.t = (hash(s.id, 3, 43) - 0.5f) * 0.3f
             s.sp = cov(dd) * 0.3f * gauss((s.lx + 4f) * (s.lx + 4f) + (s.ly + 4.5f) * (s.ly + 4.5f), 2.6f)
         }
-        define(BuildArt.CHECKER, BuildArt.GW, 0.02f, 0.02f, false) { x, y, s ->
+        define(BuildArt.CHECKER, BuildArt.GW, 0.035f, 0.02f, false) { x, y, s ->
             val sx = floor(x / 16f).toInt(); val sy = floor(y / 16f).toInt()
             val d = sdBox(wr(x, 16f), wr(y, 16f), 8f, 8f, 7.2f, 7.2f, 2.6f)
             s.m = if (((sx + sy) and 1) == 0) 0f else 1f
@@ -408,14 +428,14 @@ object BuildPats {
             s.t = (hash(id, 9, 44) - 0.5f) * 0.55f + 0.1f * sin(lv * 0.5f + id)
             s.sp = cov(d) * 0.14f * gauss((lu + 1.6f) * (lu + 1.6f), 0.9f)
         }
-        define(BuildArt.PANEL, BuildArt.GC, 0.03f, 0.02f, false) { x, y, s ->   // lambri: painéis embutidos
+        define(BuildArt.PANEL, BuildArt.GC, 0.035f, 0.02f, false) { x, y, s ->   // lambri: painéis embutidos
             val d = sdBox(wr(x, 32f), wr(y, 32f), 16f, 16f, 11f, 11f, 4f)
             val inn = cov(d)
-            s.h = 0.5f * dome(-edgeDist(x, y), 3f) - 0.9f * inn + 0.8f * dome(d + 4f, 3f) * inn
+            s.h = - 0.9f * inn + 0.8f * dome(d + 4f, 3f) * inn
             s.t = (vn(x, y, 3, 45) - 0.5f) * 0.14f; s.sp = 0.10f * diag(x, y, 36f, 7f)
             s.g = 0.25f * (1f - sm(0f, 1.5f, abs(d)))
         }
-        define(BuildArt.TIMBER, BuildArt.GWOOD, 0.03f, 0.02f, false) { x, y, s ->   // enxaimel: gesso com vigas de madeira (m = madeira)
+        define(BuildArt.TIMBER, BuildArt.GWOOD, 0.035f, 0.02f, false) { x, y, s ->   // enxaimel: gesso com vigas de madeira (m = madeira)
             val ed = edgeDist(x, y)
             val beam = max(1f - sm(4.5f, 6.5f, ed), 1f - sm(1.6f, 3.2f, min(abs(x - y), abs(x + y - 64f)) * 0.7071f))
             s.m = beam; s.h = 0.4f * beam - 0.05f
@@ -431,19 +451,19 @@ object BuildPats {
             s.t = (hash(id, 1, 47) - 0.5f) * 0.4f + 0.18f * sin(TAU * (x / 64f * 3f + hash(id, 2, 47) * 4f) + t * 2f)
             s.sp = 0.22f * gauss((t + 0.5f) * (t + 0.5f), 0.14f) * (1f - sm(0.9f, 1f, abs(t)))
         }
-        define(BuildArt.GEM, BuildArt.GC, 0.03f, 0.02f, false) { x, y, s ->   // gema lapidada
+        define(BuildArt.GEM, BuildArt.GC, 0.035f, 0.02f, false) { x, y, s ->   // gema lapidada
             val dx = x - 32f; val dy = y - 32f
             val oct = max(max(abs(dx), abs(dy)), (abs(dx) + abs(dy)) * 0.7071f) / 32f
             val ang = Math.atan2(dy.toDouble(), dx.toDouble()).toFloat()
             val facet = floor((ang + 3.14159f) / 0.7854f).toInt()
             s.t = 0.55f * cos(ang + 2.4f).toFloat() * (if (oct > 0.45f) 1f else 0.4f) + (hash(facet, 5, 48) - 0.5f) * 0.25f
-            s.h = 0.3f * dome(-edgeDist(x, y), 3f)
+            s.h = 2.6f * (1f - oct) - 1.3f
             val line = min(abs(oct - 0.45f), abs(oct - 0.9f)) * 32f
             s.sp = 0.5f * gauss(line * line, 0.8f) + 0.95f * star(x, y, 22f, 20f, 7f) + 0.7f * star(x, y, 46f, 44f, 4f)
             s.sp = s.sp.coerceAtMost(1f)
             s.m = 0.5f * (1f - oct).coerceIn(0f, 1f)
         }
-        define(BuildArt.CORRUG, BuildArt.GD, 0.03f, 0.02f, false) { x, y, s ->   // chapa ondulada
+        define(BuildArt.CORRUG, BuildArt.GD, 0f, 0.02f, false) { x, y, s ->   // chapa ondulada
             val w = sin(TAU * x / 16f)
             s.h = 0.7f * w; s.t = 0.2f * w
             s.sp = 0.2f * gauss((wr(x, 16f) - 6f) * (wr(x, 16f) - 6f), 1.2f)
@@ -515,7 +535,7 @@ object BuildPats {
             val rad = 14f + 9f * (0.5f + 0.5f * cos(5f * (a + 1.5708f)).toFloat()).let { it * it }
             shapeWindow(x, y, s, r - rad, false)
         }
-        define(BuildArt.DIAMOND, BuildArt.GC, 0.03f, 0.02f, false) { x, y, s ->   // losangos almofadados
+        define(BuildArt.DIAMOND, BuildArt.GC, 0.035f, 0.02f, false) { x, y, s ->   // losangos almofadados
             val u = wr(x + y, 32f) - 16f; val v = wr(x - y, 32f) - 16f
             val d = sdBox(u, v, 0f, 0f, 12.5f, 12.5f, 3f) * 0.7071f * 1.4142f * 0.7071f
             s.g = 1f - cov(d); s.h = -0.8f + 1.8f * dome(d, 4f); s.t = (hash(floor((x + y) / 32f).toInt(), floor((x - y) / 32f).toInt(), 61) - 0.5f) * 0.3f
@@ -528,12 +548,12 @@ object BuildPats {
             s.g = 1f - cov(best); s.h = -1f + 2f * dome(best, 6f); s.t = (hash(id, 7, 62) - 0.5f) * 0.5f
             s.sp = cov(best) * 0.2f * gauss((x - cs[id * 3] + 5f) * (x - cs[id * 3] + 5f) + (y - cs[id * 3 + 1] + 5f) * (y - cs[id * 3 + 1] + 5f), 3f)
         }
-        define(BuildArt.STRIPES, BuildArt.GC, 0.03f, 0.02f, false) { x, y, s ->   // listras macias
+        define(BuildArt.STRIPES, BuildArt.GC, 0.035f, 0.02f, false) { x, y, s ->   // listras macias
             val d = sdBox(wr(x, 16f), 32f, 8f, 32f, 5.5f, 40f, 2.5f)
             s.m = cov(d); s.h = 0.5f * dome(d, 3f) * cov(d); s.t = (vn(x, y, 3, 63) - 0.5f) * 0.14f
             s.sp = 0.2f * cov(d) * gauss((wr(x, 16f) - 6f) * (wr(x, 16f) - 6f), 1.1f)
         }
-        define(BuildArt.QUILT, BuildArt.GC, 0.03f, 0.02f, false) { x, y, s ->   // acolchoado de almofadinhas
+        define(BuildArt.QUILT, BuildArt.GC, 0.035f, 0.02f, false) { x, y, s ->   // acolchoado de almofadinhas
             val d = sdBox(wr(x, 16f), wr(y, 16f), 8f, 8f, 7f, 7f, 5f)
             s.g = 0.35f * (1f - cov(d)); s.h = -0.3f + 1f * dome(d, 6f)
             s.m = 0.0f; s.t = (hash(floor(x / 16f).toInt(), floor(y / 16f).toInt(), 64) - 0.5f) * 0.14f
@@ -622,23 +642,23 @@ object BuildPats {
     }
 
     private fun metalPlate(id: Int, patina: Int) = with(BuildKit) {
-        define(id, BuildArt.GD, 0.03f, 0.02f, false) { x, y, s ->
-            val ed = edgeDist(x, y)
-            val pr = sdBox(x, y, 32f, 32f, 24.5f, 24.5f, 5f)
-            val inner = cov(pr)
-            s.h = lerp(0.75f, -0.15f, inner) * (0.55f + 0.45f * dome(-ed, 3.2f)) + 0.0f
-            s.h += 0.5f * dome(pr + 3.6f, 3f) * 0f
-            s.t = (vn(x, y, 3, 101) - 0.5f) * 0.18f
-            s.sp = inner * (0.30f * diag(x, y, 42f, 5.5f) + 0.16f * diag(x, y, 54f, 1.8f)) + 0.12f * (1f - inner) * diag(x, y, 36f, 8f)
-            for (c in 0 until 4) {   // rebites redondinhos
-                val cx = if (c and 1 == 0) 7.5f else 56.5f; val cy = if (c < 2) 7.5f else 56.5f
-                val d = sdCirc(x, y, cx, cy, 2.6f)
+        define(id, BuildArt.GD, 0f, 0f, false) { x, y, s ->
+            // chapas de meio bloco: a emenda entre blocos vira só mais uma junta da grade, então a divisão dos blocos some
+            masonry(x, y, intArrayOf(0, 32, 64), arrayOf(intArrayOf(28, 60), intArrayOf(28, 60)), 4f, 4.5f, s)
+            val c = cov(s.d)
+            s.g = (1f - c) * 0.5f
+            s.h = -1f + 1.7f * dome(s.d, 4.5f)
+            s.t = (hash(s.id, 5, 101) - 0.5f) * 0.10f + (vn(x, y, 4, 101) - 0.5f) * 0.08f
+            s.sp = c * (0.16f * gauss((s.ly - 3f) * (s.ly - 3f), 1.3f) * sm(3f, 9f, s.lx) * (1f - sm(s.ew - 9f, s.ew - 3f, s.lx)))
+            for (cx in floatArrayOf(5.5f, s.ew - 5.5f)) for (cy in floatArrayOf(5.5f, s.eh - 5.5f)) {   // rebites redondos em relevo
+                val d = sdCirc(s.lx, s.ly, cx, cy, 2.6f)
                 val n = cov(d)
-                s.h += 1.0f * dome(d, 2.4f) * n
-                s.sp += 0.55f * n * gauss((x - cx + 0.9f) * (x - cx + 0.9f) + (y - cy + 0.9f) * (y - cy + 0.9f), 0.9f)
+                s.h += 1.4f * dome(d, 2.6f) * n
+                s.sp += 0.5f * n * gauss((s.lx - cx + 0.9f) * (s.lx - cx + 0.9f) + (s.ly - cy + 0.9f) * (s.ly - cy + 0.9f), 0.9f)
+                s.k = max(s.k, 0.12f * cov(sdCirc(s.lx, s.ly, cx, cy, 3.6f)) * (1f - n))
             }
             if (patina > 0) {
-                val bl = if (patina == 1) floatArrayOf(4f, 6f, 8f, 60f, 22f, 6f, 18f, 60f, 7f, 44f, 4f, 5f) else floatArrayOf(4f, 6f, 10f, 60f, 22f, 8f, 18f, 60f, 9f, 44f, 4f, 7f, 30f, 36f, 6f, 8f, 52f, 6f, 58f, 56f, 8f)
+                val bl = if (patina == 1) floatArrayOf(4f, 6f, 6f, 60f, 40f, 5f) else floatArrayOf(4f, 6f, 10f, 60f, 22f, 8f, 18f, 60f, 9f, 44f, 4f, 7f, 30f, 36f, 6f, 8f, 52f, 6f, 58f, 56f, 8f)
                 var best = 1e9f
                 for (i in 0 until bl.size / 3) {
                     val ang = Math.atan2((wd(y, bl[i * 3 + 1])).toDouble(), (wd(x, bl[i * 3])).toDouble()).toFloat()

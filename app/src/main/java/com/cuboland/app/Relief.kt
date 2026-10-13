@@ -25,7 +25,7 @@ object Relief {
         }
         BuildArt.baseTile(tile)?.let { return BuildArt.relief(it[0]) }
         val sp = Blk.specs.getOrNull(tile) ?: return null
-        if (sp[0] == Blk.K_BUILD) return BuildArt.relief(sp[1])
+        if (sp[0] == Blk.K_BUILD) return BuildArt.relief(sp[1], sp[6] and 255)
         if (sp[0] == Blk.K_PALV) return NatVar.relief(sp[1], sp[2])
         val rows: Array<String>? = when (sp[0]) {
             Blk.K_PAL -> NatRelief.art.getOrNull(sp[1])

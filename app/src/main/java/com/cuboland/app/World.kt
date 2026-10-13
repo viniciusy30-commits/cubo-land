@@ -57,7 +57,7 @@ object B {
             defined[id] = true; if (id + 1 > used) used = id + 1
             byName[d.name] = id
             if (d.name.startsWith("Tronco ") || d.name.startsWith("Caule ")) isLog[id] = true
-            relief[id] = (d.flags and (Blk.F_GLASS or Blk.F_LIGHT or Blk.F_LEAF)) == 0 && !d.name.startsWith("Lã ") && !d.name.startsWith("Concreto") && !d.name.startsWith("Gesso")
+            relief[id] = (d.flags and (Blk.F_GLASS or Blk.F_LIGHT or Blk.F_LEAF)) == 0 && !d.name.startsWith("Lã ")
         }
     }
     fun solid(id: Int) = id != AIR && id != WATER
@@ -994,7 +994,7 @@ class World {
             val isW = id == B.WATER
             val isG = !isW && B.glass(id)
             val lowered = isW && get(x, y + 1, z) == B.AIR
-            val vr = 0.94f + 0.06f * hash(x, z, y)
+            val vr = if (B.cat[id and 16383] == Blk.C_BUILD) 1f else 0.94f + 0.06f * hash(x, z, y)   // Construção: tom igual em todos os blocos, pra não aparecer a divisão
             c[0] = x; c[1] = y; c[2] = z
             if (B.thin(id)) { stalk(o, x, y, z, id, vr); continue }
             val shp = B.shape(id); if (shp != 0) { Shapes.emit(if (isG) w else o, this, x, y, z, id, shp, vr); continue }
@@ -1050,7 +1050,7 @@ class World {
                 val shade = when { B.light(id) -> 1f; id == B.LEAVES -> (if (a == 1) (if (s > 0) 1f else 0.8f) else if (a == 0) 0.92f else 0.86f); a == 1 -> if (s > 0) 1f else 0.55f; a == 0 -> 0.82f; else -> 0.7f }
                 val buf = if (isW || isG) w else o
                 if (!isW && !isG && B.relief[id and 16383]) {
-                    val rt = if (a == 1) (if (s > 0) Blk.pickTile(B.tTop[id], hash(x, z, y * 7 + 11)) else B.tBot[id]) else B.tSide[id]
+                    val rt = if (a == 1) (if (s > 0) Blk.pickTile(B.tTop[id], hash(x, z, y * 7 + 11)) else B.tBot[id]) else Blk.pickTile(B.tSide[id], hash(x + a * 5, z + s, y * 7 + 13))
                     for (q in 0 until 4) ao[q] = cornerAo(c, a, s, u, v, QU[q], QV[q])
                     reliefFace(o, c, a, s, rt, shade * vr, ao)
                     continue
@@ -1073,7 +1073,7 @@ class World {
                         val lvl = if (a1 == 1 && a2 == 1) 0 else 3 - (a1 + a2 + a3)
                         ao[q] = AOB[lvl]; aob = ao[q]
                     } else ao[q] = 1f
-                    val tile = if (a == 1) (if (s > 0) Blk.pickTile(B.tTop[id], hash(x, z, y * 7 + 11)) else B.tBot[id]) else B.tSide[id]
+                    val tile = if (a == 1) (if (s > 0) Blk.pickTile(B.tTop[id], hash(x, z, y * 7 + 11)) else B.tBot[id]) else Blk.pickTile(B.tSide[id], hash(x + a * 5, z + s, y * 7 + 13))
                     var tu = cu.toFloat(); var tv = cv.toFloat()
                     if (a == 0) { tu = cv.toFloat(); tv = 1f - cu } else if (a == 2) { tv = 1f - cv }
                     val gr = shade * vr * aob
