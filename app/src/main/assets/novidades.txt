@@ -1,8 +1,8 @@
 #id 2026-10-14-g
-#titulo Elevador
-- Novo bloco "Elevador" (Mobília): coloque uma parada em cada andar, uma em cima da outra, e entre na cabine
-- Na galeria "MOBÍLIA montada" tem uma torre de teste com 3 andares
-- Aparecem os botões SUBIR e DESCER; a cabine sobe e desce com animação suave, levando você junto, e para em cada andar
+#titulo Elevador de vidro 4x4
+- Novo bloco "Elevador" (Mobília): poço de vidro 4x4 com pisos de mármore, cabine com luz, corrimão e portas que abrem e fecham; ponha um bloco por andar, na mesma coluna (o bloco é o canto de trás-esquerda, a porta fica virada pra frente)
+- Mire nos botões (painel da cabine ou ao lado da porta) pra escolher o andar direto; a cabine sobe e desce suave levando você junto e dá pra andar dentro dela
+- Na galeria "MOBÍLIA montada" tem uma torre de teste com 10 andares (3 no subsolo)
 
 #id 2026-10-14-f
 #titulo Relevo 3D sutil também na Construção

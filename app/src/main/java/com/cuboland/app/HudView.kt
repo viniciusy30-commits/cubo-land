@@ -43,31 +43,32 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         }
     }
 
-    // ----- Elevador: botões SUBIR / DESCER quando o jogador está dentro da parada -----
-    private fun elevOn() = !paused && !invOpen && game.elevAim != null
-    private fun elevBtn(k: Int): RectF {
-        val bw = 124 * d; val bh = 38 * d; val gp = 10 * d
-        val l = width / 2f - (bw * 2 + gp) / 2f + k * (bw + gp)
+    // ----- Elevador: só aparece quando a mira está nos botões (painel da cabine ou de chamada); escolhe o andar direto -----
+    private fun elevOn() = !paused && !invOpen && game.elevSel != null
+    private fun elevRect(i: Int, n: Int): RectF {
+        val gp = 8 * d; val bh = 44 * d; val bw = min(52 * d, (width * 0.6f - (n - 1) * gp) / n)
+        val l = width / 2f - (n * bw + (n - 1) * gp) / 2f + i * (bw + gp)
         val t = hbTop() - 108 * d - (if (tvPromptOn()) 92 * d else 0f)
         return RectF(l, t, l + bw, t + bh)
     }
     private fun elevDown(x: Float, y: Float): Boolean {
-        if (!elevOn() || game.elevRide != null) return elevOn() && (elevBtn(0).contains(x, y) || elevBtn(1).contains(x, y))
-        if (elevBtn(0).contains(x, y)) { if (game.elevUp) game.elevReq = 1; return true }
-        if (elevBtn(1).contains(x, y)) { if (game.elevDown) game.elevReq = -1; return true }
+        val s = game.elevSel ?: return false
+        if (!elevOn()) return false
+        val n = s.ys.size
+        for (i in 0 until n) if (elevRect(i, n).contains(x, y)) { if (!s.moving) game.elevReq = i + 1; return true }
         return false
     }
     private fun drawElev(c: Canvas) {
-        val sc = tsc(1.3f)
-        val busy = game.elevRide != null
-        val r0 = elevBtn(0); val r1 = elevBtn(1)
-        pxText(c, "ELEVADOR  ANDAR ${game.elevFloor}/${game.elevCount}", width / 2f, r0.top - 16 * d, tsc(1.1f), Color.WHITE, 1)
-        for (k in 0..1) {
-            val r = elevBtn(k)
-            val on = !busy && (if (k == 0) game.elevUp else game.elevDown)
-            val base = if (!on) Cz.STONE else if (k == 0) Cz.GREEN else Cz.ORANGE
+        val s = game.elevSel ?: return
+        val n = s.ys.size; val cur = s.idxNear(); val sc = tsc(1.4f)
+        val r0 = elevRect(0, n)
+        val title = if (s.moving) "ELEVADOR  INDO PRO ANDAR ${s.target + 1}" else "ELEVADOR  ANDAR ${cur + 1}  -  ESCOLHA O ANDAR"
+        pxText(c, title, width / 2f, r0.top - 16 * d, tsc(1.1f), Color.WHITE, 1)
+        for (i in 0 until n) {
+            val r = elevRect(i, n)
+            val base = if (s.moving) (if (i == s.target) Cz.ORANGE else Cz.STONE) else if (i == cur) Cz.GREEN else Cz.SKY
             pxPanel(c, r.left, r.top, r.right, r.bottom, base)
-            pxText(c, if (k == 0) "\u25B2 SUBIR" else "\u25BC DESCER", (r.left + r.right) / 2f, (r.top + r.bottom) / 2f - 3.5f * sc, sc, Color.WHITE, 1)
+            pxText(c, "${i + 1}", (r.left + r.right) / 2f, (r.top + r.bottom) / 2f - 3.5f * sc, sc, Color.WHITE, 1)
         }
     }
 

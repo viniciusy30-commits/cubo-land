@@ -146,7 +146,6 @@ class GalleryPanel(
         ex.add(big("MOBÍLIA\nnova", Color.rgb(232, 120, 170)) { pick(-1, -1, World.GAL_FURN2, "Vitrine de mobília nova") })
         ex.add(big("CASA\nMODERNA", Color.rgb(150, 150, 160)) { pick(-1, -1, World.GAL_HOUSE, "Casa moderna") })
         ex.add(big("ÁRVORES", Color.rgb(90, 200, 90)) { pick(-1, -1, World.GAL_TREES, "Galeria de árvores") })
-        ex.add(big("MANSÃO\ncom piscina", Color.rgb(212, 175, 55)) { pick(-1, -1, World.GAL_MANSION, "Mansão") })
         addRow(ex, 3)
     }
 

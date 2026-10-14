@@ -98,7 +98,7 @@ class World {
         val CZ: Int get() = SZ / CH
         const val WATER_Y = 9
         /** modos extras da galeria de blocos (além das categorias de blocos) */
-        const val GAL_FURN = 1; const val GAL_HOUSE = 2; const val GAL_TREES = 3; const val GAL_FURN2 = 4; const val GAL_MANSION = 5
+        const val GAL_FURN = 1; const val GAL_HOUSE = 2; const val GAL_TREES = 3; const val GAL_FURN2 = 4
         const val SAVE_MAGIC = 0x434C3402
         const val TV_MAGIC = 0x54563031   // trailer opcional depois dos blocos: tamanho de cada TV
         /** deve ser chamado ANTES de criar World/Game/GameRenderer: o mapa plano é bem maior que a ilha */
@@ -187,8 +187,16 @@ class World {
         markDirty(x, z)
     }
 
+    /** âncoras de elevador (índice do bloco) e versão, pro Game remontar os poços só quando algo muda */
+    val elevAnchors: MutableSet<Int> = java.util.concurrent.ConcurrentHashMap.newKeySet<Int>()
+    @Volatile var elevVer = 0
+    fun scanElevAnchors() { elevAnchors.clear(); for (k in blocks.indices) if (blocks[k] != 0 && Furniture.isElev(blocks[k])) elevAnchors.add(k); elevVer++ }
+
     fun set(x: Int, y: Int, z: Int, id: Int) {
         if (x < 0 || x >= SX || z < 0 || z >= SZ || y < 0 || y >= SY) return
+        run { val k = (y * SZ + z) * SX + x; val old = blocks[k]
+            if (old != 0 && Furniture.isElev(old)) { elevAnchors.remove(k); elevVer++ }
+            if (id != 0 && Furniture.isElev(id)) { elevAnchors.add(k); elevVer++ } }
         if (!tvSize.isEmpty()) tvSize.remove((y * SZ + z) * SX + x)   // trocou/quebrou o bloco: a TV nova começa no tamanho normal
         blocks[(y * SZ + z) * SX + x] = id
         for (dx in -1..1) for (dz in -1..1) {
@@ -307,7 +315,6 @@ class World {
             extra == GAL_FURN2 -> { furnitureShowcase2(top); spawnX = 8; spawnZ = 24 }
             extra == GAL_HOUSE -> { modernHouse(top); spawnX = 195; spawnZ = 37 }
             extra == GAL_TREES -> { plantTestTrees(top); spawnX = 94; spawnZ = 2 }
-            extra == GAL_MANSION -> { buildMansion(top); spawnX = 90; spawnZ = 30 }
             catIdx in cats.indices -> layoutCategory(cats[catIdx], secFilter, top, floor, plate)
             else -> {
                 labels.add(Label(spawnX + 0.5f, top + 5f, spawnZ + 7f, "GALERIA DE BLOCOS", true))
@@ -409,14 +416,21 @@ class World {
         put(bx + 12, 38, "Cômoda"); put(bx + 14, 38, "Abajur"); 
         lab(bx + 22f, 36f, "Cadeiras e poltronas")
         for ((i, n) in listOf("Cadeira", "Cadeira Estofada", "Banco", "Poltrona", "Cadeira de Escritório", "Sofá").withIndex()) put(bx + 19 + i * 2, 38, n)
-        // elevador: 3 paradas (térreo, 5 e 10 blocos acima) com plataforma em volta; entre e use SUBIR/DESCER
+        // elevador 4x4 com 10 andares (3 em baixo da terra, térreo e 6 acima), de 3 em 3 blocos; a altura do mundo é 32
         val ex = bx + 24; val ez = 24
-        lab(ex + 0.5f, ez - 2f, "Elevador: entre e aperte SUBIR / DESCER")
-        for (k in 0..2) {
-            val ey = y + k * 5
+        val fill = id("Concreto Branco")
+        lab(ex + 2f, ez - 2f, "Elevador 10 andares: mire nos botoes")
+        for (yy in 1 until y) for (x in ex - 1..ex + 4) for (z in ez - 1..ez + 7)
+            if (blocks[(yy * SZ + z) * SX + x] == 0) blocks[(yy * SZ + z) * SX + x] = fill
+        for (yy in y - 9 until y) for (x in ex..ex + 3) for (z in ez..ez + 3) blocks[(yy * SZ + z) * SX + x] = 0   // poço escavado
+        for (k in 0..9) {
+            val ey = y - 9 + 3 * k
+            if (ey < y) { for (yy in ey..ey + 1) for (x in ex..ex + 3) for (z in ez + 4..ez + 6) blocks[(yy * SZ + z) * SX + x] = 0 }   // corredor do subsolo
+            else if (ey > y) for (x in ex - 1..ex + 4) for (z in ez + 4..ez + 7) put(x, z, "Concreto Branco", ey - 1)               // sacada
             put(ex, ez, "Elevador", ey)
-            if (k > 0) for (i in -2..2) for (j in -2..2) if (!(i == 0 && j == 0)) put(ex + i, ez + j, "Concreto Branco", ey - 1)
         }
+    }
+    }
     }
 
     /** vitrine da mobília nova: 6 ambientes encostados numa parede (sala, jantar e cozinha, quarto, banheiro, luzes, plantas e quadros) */
@@ -705,40 +719,6 @@ class World {
         val rnd = Random(99L)
         for ((tx, tz, tp) in listOf(Triple(-17, -7, 1), Triple(30, -7, 2), Triple(38, 10, 1), Triple(-18, 26, 2), Triple(38, 26, 1), Triple(10, 28, 2), Triple(-6, 25, 1)))
             plantTree(x0 + tx, top, z0 + tz, tp, rnd)
-    }
-
-    /** vitrine MANSÃO: lote murado com portão, rotatória com chafariz, casa de 2 andares totalmente mobiliada, piscina grande com spa, deque, cabana, gazebo, jardins e iluminação.
-     *  Os comandos ficam em MansionData (gerados por tools/mansao_gen.py). Coordenadas relativas ao lote: y 0 = piso do térreo, y -1 = chão. */
-    private fun buildMansion(top: Int) {
-        val x0 = 60; val z0 = 60; val y0 = top + 1
-        val rnd = Random(77L)
-        val cache = HashMap<String, Int>()
-        fun id(n: String): Int = cache.getOrPut(n) { if (n == "-") 0 else (B.byName[n] ?: -1) }
-        fun setB(x: Int, y: Int, z: Int, b: Int) { if (b >= 0 && x in 0 until SX && z in 0 until SZ && y in 0 until SY) blocks[(y * SZ + z) * SX + x] = b }
-        for (line in MansionData.lines()) {
-            val p = line.split('|')
-            when (p[0]) {
-                "F" -> {
-                    val b = id(p[1])
-                    val ax = p[2].toInt(); val ay = p[3].toInt(); val az = p[4].toInt(); val bx = p[5].toInt(); val by = p[6].toInt(); val bz = p[7].toInt()
-                    for (y in minOf(ay, by)..maxOf(ay, by)) for (z in minOf(az, bz)..maxOf(az, bz)) for (x in minOf(ax, bx)..maxOf(ax, bx)) setB(x0 + x, y0 + y, z0 + z, b)
-                }
-                "P" -> setB(x0 + p[2].toInt(), y0 + p[3].toInt(), z0 + p[4].toInt(), id(p[1]))
-                "R" -> {
-                    val b = id(p[1])
-                    val r = if (b > 0) (Blk.rotIds[b]?.get(p[2].toInt().coerceIn(0, 3)) ?: b) else b
-                    setB(x0 + p[3].toInt(), y0 + p[4].toInt(), z0 + p[5].toInt(), r)
-                }
-                "T" -> {
-                    woodId = if (p.size > 4 && p[4].isNotEmpty()) (B.byName[p[4]] ?: B.WOOD) else B.WOOD
-                    leafId = if (p.size > 5 && p[5].isNotEmpty()) (B.byName[p[5]] ?: B.LEAVES) else B.LEAVES
-                    val tp = p[3].toInt()
-                    plantTree(x0 + p[1].toInt(), top, z0 + p[2].toInt(), tp, rnd)
-                }
-                "L" -> labels.add(Label(x0 + p[1].toInt() + 0.5f, y0 + p[2].toFloat(), z0 + p[3].toInt() + 0.5f, p[5], p[4] == "1"))
-            }
-        }
-        woodId = B.WOOD; leafId = B.LEAVES
     }
 
     /** galeria de árvores: bem afastada dos blocos (x >= 90), uma fileira por espécie com 2 árvores, sobre um gramado */

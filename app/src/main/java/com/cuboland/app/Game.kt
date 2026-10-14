@@ -75,7 +75,13 @@ class Foot(val x: Float, val y: Float, val z: Float, val ang: Float, val id: Int
 
 class Bolt(var x: Float, var y: Float, var z: Float, val vx: Float, val vy: Float, val vz: Float, var life: Float)
 
-class ElevCar(val x: Int, val z: Int, var rot: Int) { @Volatile var y = 0f; var fromY = 0f; var toY = 0f; var t = 0f; var dur = 1f; @Volatile var moving = false; @Volatile var dir = 0 }
+class ElevShaft(val ax: Int, val az: Int) {
+    @Volatile var ys = IntArray(0)
+    @Volatile var boxes: Array<FloatArray> = emptyArray()
+    @Volatile var carY = 0f; var fromY = 0f; var toY = 0f; var t = 0f; var dur = 1f
+    @Volatile var moving = false; @Volatile var dir = 0; @Volatile var door = 1f; @Volatile var target = -1
+    fun idxNear(): Int { var b = 0; for (i in ys.indices) if (abs(ys[i] - carY) < abs(ys[b] - carY)) b = i; return b }
+}
 
 class Game(val world: World) {
     val slashes = java.util.concurrent.CopyOnWriteArrayList<Slash>()
@@ -126,7 +132,7 @@ class Game(val world: World) {
     var camX = 0f; var camY = 0f; var camZ = 0f; var camDist = 0f
     var hasHit = false; var hx = 0; var hy = 0; var hz = 0; var px = 0; var py = 0; var pz = 0
 
-    init { respawn() }
+    init { world.scanElevAnchors(); respawn() }
 
     fun respawn() {
         val x = if (world.spawnX >= 0) world.spawnX else World.SX / 2; val z = if (world.spawnZ >= 0) world.spawnZ else World.SZ / 2
@@ -138,6 +144,7 @@ class Game(val world: World) {
     @Synchronized fun addLook(dx: Float, dy: Float) { lookDx += dx; lookDy += dy }
 
     private fun collides(x: Float, y: Float, z: Float, hw: Float, h: Float): Boolean {
+        if (elevShafts.isNotEmpty() && elevHit(x - hw, y, z - hw, x + hw, y + h, z + hw)) return true
         for (bx in floor(x - hw).toInt()..floor(x + hw).toInt())
             for (bz in floor(z - hw).toInt()..floor(z + hw).toInt())
                 for (by in floor(y).toInt()..floor(y + h).toInt())
@@ -158,6 +165,7 @@ class Game(val world: World) {
                     val lo = o + (b?.get(axis) ?: 0f); val hi = o + (b?.get(axis + 3) ?: 1f)
                     best = if (dir > 0) min(best, lo) else max(best, hi)
                 }
+        if (elevShafts.isNotEmpty()) best = elevEdge(e, axis, dir, best)
         return best
     }
 
@@ -388,61 +396,112 @@ class Game(val world: World) {
         player.x = nx; player.y = ny; player.z = nz; player.vx = 0f; player.vy = 0f; player.vz = 0f
     }
 
-    // ---------- elevador ----------
-    val elevCars = java.util.concurrent.ConcurrentHashMap<Long, ElevCar>()
-    @Volatile var elevAim: IntArray? = null      // parada (x,y,z) em que o jogador está
-    @Volatile var elevFloor = 0; @Volatile var elevCount = 0; @Volatile var elevUp = false; @Volatile var elevDown = false
-    @Volatile var elevReq = 0                    // 1 = subir, -1 = descer (a UI pede, o update executa)
-    @Volatile var elevRide: ElevCar? = null
-    fun elevStops(x: Int, z: Int): List<Int> {
-        val l = ArrayList<Int>()
-        for (y in 0 until World.SY) if (Furniture.isElev(world.get(x, y, z))) l.add(y)
-        return l
+    // ---------- elevador 4x4 ----------
+    val elevShafts = java.util.concurrent.ConcurrentHashMap<Long, ElevShaft>()
+    private var elevSeenVer = -1
+    @Volatile var elevSel: ElevShaft? = null     // poço cujos botões estão na mira
+    @Volatile var elevReq = 0                    // andar pedido (índice+1); a UI pede, o update executa
+    @Volatile var elevRide: ElevShaft? = null
+
+    private fun rebuildElev() {
+        elevSeenVer = world.elevVer
+        val cols = HashMap<Long, ArrayList<Int>>()
+        for (k in world.elevAnchors) {
+            val x = k % World.SX; val z = (k / World.SX) % World.SZ; val y = k / (World.SX * World.SZ)
+            if (x + 4 > World.SX || z + 4 > World.SZ) continue
+            cols.getOrPut((z.toLong() shl 32) or x.toLong()) { ArrayList() }.add(y)
+        }
+        for (key in elevShafts.keys) if (!cols.containsKey(key)) { if (elevRide === elevShafts[key]) elevRide = null; elevShafts.remove(key) }
+        for ((key, l) in cols) {
+            l.sort()
+            val x = (key and 0xffffffffL).toInt(); val z = (key shr 32).toInt()
+            val s = elevShafts.getOrPut(key) { ElevShaft(x, z).also { it.carY = l[0].toFloat() } }
+            s.ys = l.toIntArray()
+            if (!s.moving) { var b = l[0]; for (y in l) if (abs(y - s.carY) < abs(b - s.carY)) b = y; s.carY = b.toFloat() }
+            val ax = x.toFloat(); val az = z.toFloat(); val y0 = l[0].toFloat(); val yt = l.last().toFloat(); val top = yt + 3.4f
+            val bx = ArrayList<FloatArray>()
+            for (y in l) bx.add(floatArrayOf(ax, y.toFloat(), az, ax + 4f, y + 0.06f, az + 4f))
+            for (cx in floatArrayOf(0f, 3.7f)) for (cz in floatArrayOf(0f, 3.7f)) bx.add(floatArrayOf(ax + cx, y0, az + cz, ax + cx + 0.3f, top, az + cz + 0.3f))
+            bx.add(floatArrayOf(ax, y0, az, ax + 4f, top, az + 0.12f))
+            bx.add(floatArrayOf(ax, y0, az, ax + 0.12f, top, az + 4f))
+            bx.add(floatArrayOf(ax + 3.88f, y0, az, ax + 4f, top, az + 4f))
+            for (i in 0 until l.size - 1) if (l[i + 1] > l[i] + 3) bx.add(floatArrayOf(ax, l[i] + 3f, az + 3.88f, ax + 4f, l[i + 1].toFloat(), az + 4f))
+            bx.add(floatArrayOf(ax, yt + 3f, az + 3.88f, ax + 4f, top, az + 4f))
+            bx.add(floatArrayOf(ax, yt + 3.2f, az, ax + 4f, top, az + 4f))
+            s.boxes = bx.toTypedArray()
+        }
+    }
+    private fun elevHit(x0: Float, y0: Float, z0: Float, x1: Float, y1: Float, z1: Float): Boolean {
+        for (s in elevShafts.values) {
+            if (x1 < s.ax - 0.5f || x0 > s.ax + 4.5f || z1 < s.az - 0.5f || z0 > s.az + 4.5f) continue
+            for (b in s.boxes) if (x1 > b[0] && x0 < b[3] && y1 > b[1] && y0 < b[4] && z1 > b[2] && z0 < b[5]) return true
+        }
+        return false
+    }
+    private fun elevEdge(e: Ent, axis: Int, dir: Float, cur: Float): Float {
+        var best = cur
+        val x0 = e.x - e.hw; val x1 = e.x + e.hw; val z0 = e.z - e.hw; val z1 = e.z + e.hw; val y0 = e.y; val y1 = e.y + e.h
+        for (s in elevShafts.values) {
+            if (x1 < s.ax - 0.5f || x0 > s.ax + 4.5f || z1 < s.az - 0.5f || z0 > s.az + 4.5f) continue
+            for (b in s.boxes) if (x1 > b[0] && x0 < b[3] && y1 > b[1] && y0 < b[4] && z1 > b[2] && z0 < b[5])
+                best = if (dir > 0) min(best, b[axis]) else max(best, b[axis + 3])
+        }
+        return best
     }
     private fun scanElev() {
-        if (elevRide != null) return
+        if (elevShafts.isEmpty() || seated || deadTimer > 0f) { elevSel = null; return }
         val p = player
-        var found: IntArray? = null
-        if (!seated && !flying && p.onGround && deadTimer <= 0f) {
-            val fx = floor(p.x).toInt(); val fz = floor(p.z).toInt()
-            for (y in intArrayOf(floor(p.y).toInt(), floor(p.y - 0.1f).toInt()))
-                if (Furniture.isElev(world.get(fx, y, fz))) { found = intArrayOf(fx, y, fz); break }
+        val dx = fwdX(); val dy = fwdY(); val dz = fwdZ()
+        var best: ElevShaft? = null; var bestDot = 0.975f
+        fun test(s: ElevShaft, px: Float, py: Float, pz: Float) {
+            val vx = px - camX; val vy = py - camY; val vz = pz - camZ
+            val d = sqrt(vx * vx + vy * vy + vz * vz); if (d > 5.5f || d < 0.2f) return
+            val dot = (vx * dx + vy * dy + vz * dz) / d
+            if (dot > bestDot) { bestDot = dot; best = s }
         }
-        elevAim = found
-        if (found != null) {
-            val st = elevStops(found[0], found[2])
-            elevCount = st.size; elevFloor = st.indexOf(found[1]) + 1
-            elevUp = st.any { it > found[1] }; elevDown = st.any { it < found[1] }
+        for (s in elevShafts.values) {
+            if (abs(s.ax + 2f - p.x) > 9f || abs(s.az + 2f - p.z) > 9f) continue
+            val inside = p.x > s.ax && p.x < s.ax + 4f && p.z > s.az && p.z < s.az + 4f && abs(p.y - s.carY) < 1.5f
+            if (inside) test(s, s.ax + 3.55f, s.carY + 1.45f, s.az + 3.0f)
+            for (y in s.ys) if (abs(p.y - y) < 2.5f) test(s, s.ax + 3.85f, y + 1.35f, s.az + 4.0f)
         }
-    }
-    private fun elevGo(dir: Int) {
-        val a = elevAim ?: return
-        if (elevRide != null) return
-        val st = elevStops(a[0], a[2])
-        val to = (if (dir > 0) st.firstOrNull { it > a[1] } else st.lastOrNull { it < a[1] }) ?: return
-        val key = (a[2].toLong() shl 32) or a[0].toLong()
-        val car = elevCars.getOrPut(key) { ElevCar(a[0], a[2], 0) }
-        car.rot = Furniture.facing(world, a[0], a[1], a[2], Furniture.S_ELEV)
-        car.y = a[1].toFloat(); car.fromY = car.y; car.toY = to.toFloat(); car.t = 0f
-        car.dur = max(1.6f, abs(to - a[1]) / 3f); car.dir = dir; car.moving = true
-        elevRide = car; flying = false; posture = 0; player.h = 1.8f
+        elevSel = best
     }
     private fun updateElev(dt: Float) {
-        val rq = elevReq; if (rq != 0) { elevReq = 0; elevGo(rq) }
-        val car = elevRide
-        if (car != null) {
-            val p = player
-            car.t += dt
-            val k = (car.t / car.dur).coerceIn(0f, 1f); val e = k * k * (3f - 2f * k)
-            car.y = car.fromY + (car.toY - car.fromY) * e
-            val m = min(1f, 8f * dt)
-            p.x += (car.x + 0.5f - p.x) * m; p.z += (car.z + 0.5f - p.z) * m
-            p.y = car.y + 0.062f; p.vx = 0f; p.vy = 0f; p.vz = 0f; p.onGround = true
-            stickX = 0f; stickY = 0f
-            if (k >= 1f) { car.y = car.toY; car.moving = false; p.y = car.toY + 0.062f; elevRide = null }
+        if (elevSeenVer != world.elevVer) rebuildElev()
+        val rq = elevReq
+        if (rq != 0) {
+            elevReq = 0
+            val s = elevSel; val p = player
+            if (s != null && !s.moving) {
+                val ti = rq - 1
+                if (ti in s.ys.indices && abs(s.carY - s.ys[ti]) > 0.01f) {
+                    s.fromY = s.carY; s.toY = s.ys[ti].toFloat(); s.target = ti; s.t = 0f
+                    s.dur = max(2f, abs(s.toY - s.fromY) / 3f); s.dir = if (s.toY > s.fromY) 1 else -1; s.moving = true
+                    val inside = p.x > s.ax && p.x < s.ax + 4f && p.z > s.az && p.z < s.az + 4f && abs(p.y - s.carY) < 0.7f
+                    if (inside) { elevRide = s; flying = false; posture = 0; p.h = 1.8f }
+                }
+            }
         }
-        if (elevCars.isNotEmpty()) for ((key, c) in elevCars) {
-            if (!c.moving && !Furniture.isElev(world.get(c.x, Math.round(c.y), c.z))) elevCars.remove(key)
+        for (s in elevShafts.values) {
+            if (s.moving) {
+                if (s.door > 0f) s.door = max(0f, s.door - dt * 2.2f)
+                else {
+                    s.t += dt
+                    val k = (s.t / s.dur).coerceIn(0f, 1f); val e = k * k * (3f - 2f * k)
+                    s.carY = s.fromY + (s.toY - s.fromY) * e
+                    if (k >= 1f) { s.carY = s.toY; s.moving = false; s.dir = 0 }
+                }
+            } else if (s.door < 1f) s.door = min(1f, s.door + dt * 2f)
+        }
+        val r = elevRide
+        if (r != null) {
+            val p = player; val m = min(1f, 10f * dt)
+            var nx = p.x + p.vx * dt; var nz = p.z + p.vz * dt
+            nx += (nx.coerceIn(r.ax + 0.7f, r.ax + 3.3f) - nx) * m
+            nz += (nz.coerceIn(r.az + 0.7f, r.az + 3.3f) - nz) * m
+            p.x = nx; p.z = nz; p.y = r.carY + 0.08f; p.vy = 0f; p.onGround = true
+            if (!r.moving && r.door > 0.9f) elevRide = null
         }
     }
 

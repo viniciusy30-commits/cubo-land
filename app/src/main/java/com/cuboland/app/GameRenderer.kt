@@ -1034,27 +1034,70 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         G.glDepthMask(true)
     }
 
-    /** cabines dos elevadores (parada fica no chunk; a cabine anda por fora) */
+    /** elevadores 4x4: poço de vidro, pisos de mármore, cabine com portas e botões (tudo desenhado aqui; o bloco é só a âncora) */
     private fun drawElevators() {
-        for (car in game.elevCars.values) {
-            if (!seen(car.x + 0.5f, car.y, car.z + 0.5f)) continue
-            val yaw = when (car.rot) { 0 -> 0f; 1 -> 180f; 2 -> 90f; else -> 270f }
-            setBase(car.x + 0.5f, car.y, car.z + 0.5f, yaw)
-            fun cb(cx: Float, cy: Float, cz: Float, sx: Float, sy: Float, sz: Float, col: Int, mul: Float = 1f) =
-                box(base, cx, cy + sy / 2f, cz, 0f, 0f, sx, sy, sz, 0f, col, 1f, mul)
-            cb(0f, 0f, 0f, 0.9f, 0.08f, 0.9f, 0x8C939C)
-            cb(0f, 0.081f, 0f, 0.7f, 0.01f, 0.7f, 0x3A3F48)
-            cb(0f, 0.06f, -0.41f, 0.82f, 2.1f, 0.05f, 0xC9CED6)
-            cb(-0.41f, 0.06f, 0f, 0.05f, 2.1f, 0.82f, 0xB9BFC8)
-            cb(0.41f, 0.06f, 0f, 0.05f, 2.1f, 0.82f, 0xB9BFC8)
-            cb(0f, 2.16f, 0f, 0.9f, 0.06f, 0.9f, 0x6C727C)
-            cb(0f, 2.15f, 0f, 0.5f, 0.02f, 0.5f, 0xFFF1B8, 1.3f)
-            cb(0f, 1.95f, 0.43f, 0.82f, 0.2f, 0.05f, 0x6C727C)
-            cb(0f, 0.95f, -0.37f, 0.7f, 0.04f, 0.04f, 0xD4AF37)
-            cb(0.375f, 0.8f, 0.2f, 0.03f, 0.42f, 0.18f, 0x2A2C30)
-            val up = car.moving && car.dir > 0; val dn = car.moving && car.dir < 0
-            cb(0.36f, 1.04f, 0.2f, 0.03f, 0.08f, 0.08f, if (up) 0x66FF88 else 0x3FA85A, if (up) 1.5f else 1f)
-            cb(0.36f, 0.88f, 0.2f, 0.03f, 0.08f, 0.08f, if (dn) 0xFF7070 else 0xB84444, if (dn) 1.5f else 1f)
+        if (game.elevShafts.isEmpty()) return
+        for (sh in game.elevShafts.values) if (seen(sh.ax + 2f, (sh.ys.first() + sh.ys.last()) / 2f + 1.5f, sh.az + 2f, 70f)) drawShaft(sh, false)
+        G.glDepthMask(false)
+        for (sh in game.elevShafts.values) if (seen(sh.ax + 2f, (sh.ys.first() + sh.ys.last()) / 2f + 1.5f, sh.az + 2f, 70f)) drawShaft(sh, true)
+        G.glDepthMask(true)
+    }
+
+    private fun drawShaft(s: ElevShaft, glass: Boolean) {
+        setBase(s.ax.toFloat(), 0f, s.az.toFloat(), 0f)
+        fun cb(x0: Float, y0: Float, z0: Float, x1: Float, y1: Float, z1: Float, col: Int, a: Float = 1f, mul: Float = 1f) =
+            box(base, (x0 + x1) / 2f, (y0 + y1) / 2f, (z0 + z1) / 2f, 0f, 0f, x1 - x0, y1 - y0, z1 - z0, 0f, col, a, mul)
+        val ys = s.ys; val n = ys.size
+        val y0 = ys.first().toFloat(); val yt = ys.last().toFloat(); val top = yt + 3.4f
+        val cy = s.carY; val cur = s.idxNear()
+        val STEEL = 0x7B8591; val DARK = 0x363C44; val TRIM = 0xD4AF37; val GLASS = 0xA9D6F2
+        if (glass) {
+            cb(0.3f, y0, 0.06f, 3.7f, top, 0.12f, GLASS, 0.30f)
+            cb(0.06f, y0, 0.3f, 0.12f, top, 3.7f, GLASS, 0.30f)
+            cb(3.88f, y0, 0.3f, 3.94f, top, 3.7f, GLASS, 0.30f)
+            val w = 0.02f + 1.62f * (1f - s.door)
+            cb(0.36f, cy + 0.08f, 3.62f, 0.36f + w, cy + 2.95f, 3.68f, 0xBFD9EA, 0.55f)
+            cb(3.64f - w, cy + 0.08f, 3.62f, 3.64f, cy + 2.95f, 3.68f, 0xBFD9EA, 0.55f)
+            return
+        }
+        // colunas + frisos dourados em cada andar
+        for (cx in floatArrayOf(0f, 3.7f)) for (cz in floatArrayOf(0f, 3.7f)) {
+            cb(cx, y0, cz, cx + 0.3f, top, cz + 0.3f, STEEL)
+            for (y in ys) cb(cx - 0.02f, y + 0.06f, cz - 0.02f, cx + 0.32f, y + 0.16f, cz + 0.32f, TRIM)
+        }
+        for (i in 0 until n) {
+            val y = ys[i].toFloat()
+            // piso de mármore
+            for (a in 0..3) for (b in 0..3) cb(a.toFloat(), y, b.toFloat(), a + 1f, y + 0.06f, b + 1f, if ((a + b) % 2 == 0) 0xEFE9DC else 0xB5AE9F)
+            // verga da porta + indicador de andar (pontinhos, o aceso é onde a cabine está)
+            cb(0.3f, y + 2.78f, 3.9f, 3.7f, y + 3.0f, 4.02f, DARK)
+            val x00 = 2f - (n - 1) * 0.11f
+            for (j in 0 until n) { val lit = j == cur; cb(x00 + j * 0.22f - 0.06f, y + 2.84f, 4.02f, x00 + j * 0.22f + 0.06f, y + 2.96f, 4.04f, if (lit) 0xFFC24A else 0x4A3A22, 1f, if (lit) 1.7f else 1f) }
+            // painel de chamada (pilar direito): seta pra cima / pra baixo
+            cb(3.72f, y + 1.05f, 4.0f, 3.98f, y + 1.7f, 4.05f, DARK)
+            cb(3.78f, y + 1.45f, 4.05f, 3.92f, y + 1.57f, 4.07f, if (i < n - 1) 0x4CE07A else 0x2A4A33, 1f, if (i < n - 1) 1.5f else 1f)
+            cb(3.78f, y + 1.2f, 4.05f, 3.92f, y + 1.32f, 4.07f, if (i > 0) 0xFF6A5A else 0x4A2A28, 1f, if (i > 0) 1.5f else 1f)
+        }
+        for (i in 0 until n - 1) if (ys[i + 1] > ys[i] + 3) cb(0.3f, ys[i] + 3f, 3.88f, 3.7f, ys[i + 1].toFloat(), 4.0f, STEEL)
+        cb(0.3f, yt + 3f, 3.88f, 3.7f, top, 4.0f, STEEL)
+        cb(0f, yt + 3.2f, 0f, 4f, top, 4f, STEEL)
+        // cabine
+        cb(0.3f, cy + 0.06f, 0.3f, 3.7f, cy + 0.075f, 3.7f, DARK)
+        cb(0.6f, cy + 0.075f, 0.6f, 3.4f, cy + 0.08f, 3.4f, 0xCDBFA3)
+        cb(0.3f, cy + 0.075f, 0.3f, 3.7f, cy + 3f, 0.36f, 0xB9C0C9)
+        cb(0.3f, cy + 0.075f, 0.3f, 0.36f, cy + 3f, 3.7f, 0xA9B0B9)
+        cb(3.64f, cy + 0.075f, 0.3f, 3.7f, cy + 3f, 3.7f, 0xA9B0B9)
+        cb(0.3f, cy + 3f, 0.3f, 3.7f, cy + 3.08f, 3.7f, DARK)
+        cb(0.9f, cy + 2.98f, 0.9f, 3.1f, cy + 3f, 3.1f, 0xFFF1C2, 1f, 1.6f)
+        cb(0.5f, cy + 1f, 0.36f, 3.5f, cy + 1.06f, 0.42f, TRIM)
+        cb(0.36f, cy + 1f, 0.5f, 0.42f, cy + 1.06f, 3.5f, TRIM)
+        cb(3.58f, cy + 1f, 0.5f, 3.64f, cy + 1.06f, 2.5f, TRIM)
+        // painel de andares da cabine (parede direita, perto da porta): 1 botão por andar, de baixo pra cima
+        cb(3.52f, cy + 0.9f, 2.7f, 3.64f, cy + 1.15f + 0.28f * n, 3.3f, DARK)
+        for (j in 0 until n) {
+            val col = if (j == cur && !s.moving) 0xFFC24A else if (s.moving && j == s.target) 0x66FF99 else 0xC8C8C8
+            val hot = (j == cur && !s.moving) || (s.moving && j == s.target)
+            cb(3.49f, cy + 1.0f + 0.28f * j, 2.91f, 3.52f, cy + 1.18f + 0.28f * j, 3.09f, col, 1f, if (hot) 1.7f else 1f)
         }
     }
 
