@@ -1,0 +1,73 @@
+package com.cuboland.app
+
+import android.util.Base64
+import java.util.zip.Inflater
+
+/**
+ * Texturas da Construção copiadas do pack Actions & Stuff (iguais às do Minecraft): grade 16x16 de pixels duros, sem relevo 3D.
+ * Os dados ficam em McTexData (nome : RGBA deflate/base64). Cada pixel vira um bloco de 4x4 no tile de 64 do atlas.
+ * tint >= 0 recolore a textura com aquela cor (mantém a luz e a sombra dos pixels) pras famílias de cores que não existem no Minecraft.
+ */
+object McTex {
+    private val names = HashMap<String, Int>().also { m ->
+        for ((i, e) in McTexData.D.withIndex()) m[e.substring(0, e.indexOf(':'))] = i
+    }
+    private val cache = arrayOfNulls<IntArray>(McTexData.D.size)
+    private val tinted = HashMap<Long, IntArray>()
+
+    /** índice da textura pelo nome do arquivo (0 se não existir) */
+    fun id(name: String): Int = names[name] ?: 0
+
+    /** 256 pixels ARGB (linha por linha) da textura original */
+    fun pix(i: Int): IntArray {
+        val k = if (i in cache.indices) i else 0
+        cache[k]?.let { return it }
+        val e = McTexData.D[k]
+        val z = Base64.decode(e.substring(e.indexOf(':') + 1), Base64.DEFAULT)
+        val inf = Inflater()
+        inf.setInput(z)
+        val raw = ByteArray(16 * 16 * 4)
+        var n = 0
+        while (n < raw.size && !inf.finished()) { val r = inf.inflate(raw, n, raw.size - n); if (r <= 0) break; n += r }
+        inf.end()
+        val out = IntArray(256)
+        for (p in 0 until 256) {
+            val r = raw[p * 4].toInt() and 255; val g = raw[p * 4 + 1].toInt() and 255; val b = raw[p * 4 + 2].toInt() and 255; val a = raw[p * 4 + 3].toInt() and 255
+            out[p] = (a shl 24) or (r shl 16) or (g shl 8) or b
+        }
+        cache[k] = out
+        return out
+    }
+
+    private fun lum(c: Int): Float = (((c shr 16) and 255) * 0.299f + ((c shr 8) and 255) * 0.587f + (c and 255) * 0.114f)
+
+    /** a textura recolorida: a luz de cada pixel (relativa à média) multiplica a cor pedida */
+    private fun tint(i: Int, col: Int): IntArray {
+        val key = (i.toLong() shl 32) or (col.toLong() and 0xFFFFFFL)
+        tinted[key]?.let { return it }
+        val src = pix(i)
+        var sum = 0f; var n = 0
+        for (c in src) if ((c ushr 24) > 0) { sum += lum(c); n++ }
+        val avg = if (n > 0 && sum > 0f) sum / n else 128f
+        val tr = (col shr 16) and 255; val tg = (col shr 8) and 255; val tb = col and 255
+        val out = IntArray(256)
+        for (p in 0 until 256) {
+            val c = src[p]; val a = c ushr 24
+            if (a == 0) { out[p] = c; continue }
+            val k = (lum(c) / avg).coerceIn(0.35f, 1.7f)
+            var r = tr * k; var g = tg * k; var b = tb * k
+            // passou de 255: o excesso clareia em direção ao branco em vez de cortar a cor
+            val over = maxOf(r, g, b) - 255f
+            if (over > 0f) { val t = (over / 255f).coerceAtMost(0.6f); r = r + (255f - r) * t; g = g + (255f - g) * t; b = b + (255f - b) * t }
+            out[p] = (a shl 24) or (r.toInt().coerceIn(0, 255) shl 16) or (g.toInt().coerceIn(0, 255) shl 8) or b.toInt().coerceIn(0, 255)
+        }
+        tinted[key] = out
+        return out
+    }
+
+    /** pixel (x, y em 0..15) da textura i, recolorida se tint >= 0 */
+    fun sample(i: Int, tint: Int, x: Int, y: Int): Int {
+        val a = if (tint >= 0) tint(i, tint and 0xFFFFFF) else pix(i)
+        return a[((y and 15) shl 4) + (x and 15)]
+    }
+}

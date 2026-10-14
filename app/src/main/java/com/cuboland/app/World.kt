@@ -37,6 +37,7 @@ object B {
         val oldNames = arrayOf("", "Grama", "Terra", "Pedra", "Areia", "Madeira", "Folhas", "Tábua", "Água",
             "Tijolo", "Rosa", "Azul", "Amarelo", "Lanterna")
         for (i in oldNames.indices) names[i] = oldNames[i]
+        for (i in 1 until oldNames.size) byName.putIfAbsent(oldNames[i], i)
         s(GRASS, 0x66C84C, 0x8C6039, 0x8C6039); s(DIRT, 0x8C6039, 0x8C6039, 0x8C6039)
         s(STONE, 0x9AA0A8, 0x9AA0A8, 0x9AA0A8); s(SAND, 0xF0DE9A, 0xF0DE9A, 0xF0DE9A)
         s(WOOD, 0xB98A55, 0x7A5230, 0xB98A55); s(LEAVES, 0x3FA23B, 0x3FA23B, 0x3FA23B)
@@ -57,7 +58,7 @@ object B {
             defined[id] = true; if (id + 1 > used) used = id + 1
             byName[d.name] = id
             if (d.name.startsWith("Tronco ") || d.name.startsWith("Caule ")) isLog[id] = true
-            relief[id] = (d.flags and (Blk.F_GLASS or Blk.F_LIGHT or Blk.F_LEAF)) == 0 && !d.name.startsWith("Lã ")
+            relief[id] = (d.flags and (Blk.F_GLASS or Blk.F_LIGHT or Blk.F_LEAF)) == 0 && !d.name.startsWith("Lã ") && d.cat != Blk.C_BUILD   // Construção: textura lisa estilo Minecraft, sem relevo 3D
         }
     }
     fun solid(id: Int) = id != AIR && id != WATER
@@ -413,7 +414,7 @@ class World {
         fun id(n: String) = B.byName[n] ?: 0
         fun put(x: Int, z: Int, n: String, yy: Int = y) { val b = id(n); if (b != 0 && x in 0 until SX && z in 0 until SZ && yy in 0 until SY) blocks[(yy * SZ + z) * SX + x] = b }
         fun lab(x: Float, t: String) { labels.add(Label(x, top + 7.4f, 12.5f, t, true)) }
-        val wall = id("Concreto Branco"); val wood = id("Piso de Madeira"); val glass = id("Vidro")
+        val wall = id("Concreto Branco"); val wood = id("Tábua"); val glass = id("Vidro")
         for (x in 2..75) for (k in 0..4) if (wall != 0) blocks[((y + k) * SZ + 12) * SX + x] = wall
         if (wood != 0) for (x in 2..75) for (z in 13..30) setTopB(x, z, wood, top)
         fun window(x0: Int, x1: Int) { if (glass != 0) for (x in x0..x1) for (k in 1..2) blocks[((y + k) * SZ + 12) * SX + x] = glass }
@@ -496,9 +497,9 @@ class World {
         fun fill(ax: Int, ay: Int, az: Int, bx: Int, by: Int, bz: Int, n: String) { val b = id(n); if (b != 0) fillB(ax, ay, az, bx, by, bz, b) }
         fun hole(ax: Int, ay: Int, az: Int, bx: Int, by: Int, bz: Int) = fillB(ax, ay, az, bx, by, bz, 0)
         val W = "Concreto Branco"; val G = "Concreto Cinza"; val K = "Concreto Preto"; val P = "Janela de Correr Preta"
-        val GL = "Vidro"; val GF = "Vidro Fino"; val LJ = "Laje de Concreto Branco"
-        val WOOD = "Piso de Madeira"; val SLATE = "Ladrilhos de Ardósia"
-        val TILE = any("Azulejo Metrô Azul-claro", "Azulejo Metrô Ciano", "Azulejo Metrô Azul", "Concreto Azul-claro")
+        val GL = "Vidro"; val GF = "Vidro"; val LJ = "Laje de Concreto Branco"
+        val WOOD = "Tábua"; val SLATE = "Ladrilhos de Ardósia"
+        val TILE = any("Concreto Azul-claro")
         val LAMP = "Bloco Luminoso Branco"
         labels.add(Label(x0 + 17.5f, y0 + 14f, z0 - 17f, "CASA MODERNA", true))
 

@@ -888,8 +888,8 @@ object Atlas {
         }
         // pedra (4), tábua (9) e tijolo (11) do terreno básico: mesmos padrões da Construção
         for (t in intArrayOf(4, 9, 11)) {
-            val bt = BuildArt.baseTile(t) ?: continue
-            for (py in 0 until T) for (px in 0 until T) out[py * w + t * T + px] = BuildArt.sample(bt[0], bt[1], bt[2], 0, px * 64 / T, py * 64 / T) or (255 shl 24)
+            val mt = McTex.id(when (t) { 4 -> "stone"; 9 -> "planks_oak"; else -> "brick" })
+            for (py in 0 until T) for (px in 0 until T) out[py * w + t * T + px] = McTex.sample(mt, -1, px / 4, py / 4) or (255 shl 24)
         }
         for (t in 0 until 24) bleed(out, w, t * T, 0)
         // blocos novos (receitas em Blk): 1 amostra por pixel, as formas já são suaves
@@ -899,8 +899,8 @@ object Atlas {
             val x0 = (t % NT) * T; val y0 = (t / NT) * T
             for (y in 0 until T) for (x in 0 until T) {
                 val qx = x / 4; val qy = y / 4   // grade de 16x16 pixels grandes (pixel art)
-                val g0 = if (sp[0] == Blk.K_BUILD) BuildArt.sample(sp[1], sp[2], sp[3], sp[4], x * 64 / T, y * 64 / T, sp[6] and 255) else genNew(sp, (qx + 0.5f) / 16f, (qy + 0.5f) / 16f)
-                val c = if (sp[0] == Blk.K_PIX || sp[0] == Blk.K_LEAF || sp[0] == Blk.K_PAL || sp[0] == Blk.K_PLEAF || sp[0] == Blk.K_SPRITE || sp[0] == Blk.K_PALV || sp[0] == Blk.K_BUILD) g0 else pixelArt(g0, qx, qy, sp[5])
+                val g0 = if (sp[0] == Blk.K_MC) McTex.sample(sp[1], sp[2], qx, qy) else if (sp[0] == Blk.K_BUILD) BuildArt.sample(sp[1], sp[2], sp[3], sp[4], x * 64 / T, y * 64 / T, sp[6] and 255) else genNew(sp, (qx + 0.5f) / 16f, (qy + 0.5f) / 16f)
+                val c = if (sp[0] == Blk.K_PIX || sp[0] == Blk.K_LEAF || sp[0] == Blk.K_PAL || sp[0] == Blk.K_PLEAF || sp[0] == Blk.K_SPRITE || sp[0] == Blk.K_PALV || sp[0] == Blk.K_MC || sp[0] == Blk.K_BUILD) g0 else pixelArt(g0, qx, qy, sp[5])
                 out[(y0 + y) * w + x0 + x] = if ((c ushr 24) == 0) CLEAR else c
             }
             bleed(out, w, x0, y0)

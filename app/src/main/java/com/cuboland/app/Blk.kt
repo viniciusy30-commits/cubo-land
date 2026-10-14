@@ -26,6 +26,7 @@ object Blk {
     const val K_PALV = 39   // variante do topo com grãos em posição/quantidade diferentes (NatVar): c1 = índice da NatArt, c2 = variante
     const val K_SPRITE = 38   // folha desenhada por espécie (Leaf3D): c1 = estilo, c2 = índice da NatArt (paleta; -1 = carvalho)
     const val K_MARBLE = 40; const val K_SCREEN = 41; const val K_FABRIC = 42; const val K_WGRAIN = 43; const val K_RUG = 44; const val K_GINGHAM = 45
+    const val K_MC = 47      // textura do Minecraft (McTex, pack Actions & Stuff): c1 = índice, c2 = cor pra recolorir (-1 = original), c4 = 1 se for vidro
     const val K_BUILD = 46   // textura da Construção (BuildArt): c1 = padrão, c2 = cor base, c3 = acento (-1 = padrão), c4 = opacidade do miolo do vidro (%)
     const val K_PAL = 36; const val K_PLEAF = 37   // pixel art com paleta própria (NatArt); K_PLEAF = folhagem com buracos transparentes
 
@@ -64,7 +65,15 @@ object Blk {
     /** blocos que só existem pra mundos antigos abrirem: não aparecem na mochila e viram o bloco equivalente ao carregar */
     val hidden = HashSet<Int>()
     private val aliasName = HashMap<Int, String>()
-    val alias: IntArray by lazy { defs; val a = IntArray(16384); for ((id, n) in aliasName) { val t = list.firstOrNull { it.name == n }; if (t != null) a[id] = t.id }; a }
+    private val BASE_NAMES = arrayOf("", "Grama", "Terra", "Pedra", "Areia", "Madeira", "Folhas", "Tábua", "Água", "Tijolo", "Rosa", "Azul", "Amarelo", "Lanterna")
+    val alias: IntArray by lazy {
+        defs
+        val idx = HashMap<String, Def>(); for (d in list) idx.putIfAbsent(d.name, d)
+        val a = IntArray(16384)
+        for ((id, n) in aliasName) { val t = idx[n]; if (t != null) a[id] = t.id else { val b = BASE_NAMES.indexOf(n); if (b > 0) a[id] = b } }
+        for (id in 14 until 16384) { var k = 0; while (a[id] >= 14 && a[a[id]] != 0 && k < 6) { a[id] = a[a[id]]; k++ } }   // alias de alias: segue até o bloco que ficou
+        a
+    }
     private val list = ArrayList<Def>()
     val defs: List<Def> by lazy { build(); list }
     /** trechos de tiles seguidos de folhagem (K_LEAF): o shader usa pra balançar no vento e iluminar como folha */
@@ -83,7 +92,7 @@ object Blk {
         defs; val out = ArrayList<IntArray>(); var s = -1
         for (i in 24..nextTile) {
             val sp = if (i < nextTile) specs[i] else null
-            val on = sp != null && sp[0] == K_BUILD && BuildArt.isGlass(sp[1])
+            val on = sp != null && ((sp[0] == K_BUILD && BuildArt.isGlass(sp[1])) || (sp[0] == K_MC && sp[4] == 1))
             if (on && s < 0) s = i
             if (!on && s >= 0) { out.add(intArrayOf(s, i - 1)); s = -1 }
         }
@@ -91,6 +100,7 @@ object Blk {
     }
 
     private fun tl(kind: Int, c1: Int, c2: Int = c1, c3: Int = c1, c4: Int = 0, seed: Int = 0, par: Int = 0, fl: Int = 0, glow: Boolean = false): Int {
+        if (dead) return 1   // bloco removido (só existe pra mundos antigos): não gasta tile
         val i = nextTile; nextTile++   // brilhantes e normais na mesma fila: sem região reservada
         if (i >= MAXT) return 1
         val sd = if (seed != 0) seed else i * 13 + 5
@@ -100,6 +110,59 @@ object Blk {
 
     /** tile da Construção (BuildArt): padrão 16x16 + cor base (+ acento opcional) */
     private fun bt(pat: Int, base: Int, acc: Int = -1, scale: Int = 0): Int = tl(K_BUILD, pat, base, acc, scale)
+
+    // ---- Construção estilo Minecraft: texturas 16x16 do pack Actions & Stuff (McTex), sem relevo 3D ----
+    private val mcCache = HashMap<String, Int>()
+    /** tile com a textura do Minecraft pelo nome do arquivo; tint = cor pra recolorir (-1 = original); glass = vidro (entra no brilho/luz do vidro) */
+    private fun mc(name: String, tint: Int = -1, glass: Boolean = false): Int {
+        if (dead) return 1
+        val key = "$name|$tint|$glass"
+        mcCache[key]?.let { return it }
+        val t = tl(K_MC, McTex.id(name), tint, 0, if (glass) 1 else 0)
+        mcCache[key] = t
+        return t
+    }
+    private val CK = arrayOf("white", "orange", "magenta", "light_blue", "yellow", "lime", "pink", "gray", "silver", "cyan", "purple", "blue", "brown", "green", "red", "black")
+    private val WT = arrayOf("planks_spruce", "planks_birch", "planks_jungle", "planks_acacia", "planks_big_oak", "mangrove_planks", "cherry_planks", "bamboo_planks", "crimson_planks", "warped_planks")
+    private fun stoneTex(n: String): String = when (n) {
+        "Pedra Lisa" -> "stone_slab_top"
+        "Tijolos de Pedra" -> "stonebrick"; "Tijolos de Pedra Musgosos" -> "stonebrick_mossy"; "Tijolos de Pedra Rachados" -> "stonebrick_cracked"
+        "Granito Polido" -> "stone_granite_smooth"; "Diorito Polido" -> "stone_diorite_smooth"
+        "Andesito" -> "stone_andesite"; "Andesito Polido" -> "stone_andesite_smooth"
+        "Ardósia" -> "deepslate"; "Ardósia Polida" -> "polished_deepslate"; "Tijolos de Ardósia" -> "deepslate_bricks"
+        "Tufo" -> "tuff"
+        "Pedra Negra" -> "blackstone"; "Pedra Negra Polida" -> "polished_blackstone"; "Tijolos de Pedra Negra" -> "polished_blackstone_bricks"
+        "Tijolos do Nether" -> "nether_brick"; "Tijolos Vermelhos do Nether" -> "red_nether_brick"
+        "Netherrack" -> "netherrack"; "Pedra do Fim" -> "end_stone"
+        "Prismarinho" -> "prismarine_rough"; "Tijolos de Prismarinho" -> "prismarine_bricks"
+        "Quartzo" -> "quartz_block_side"; "Tijolos de Quartzo" -> "quartz_bricks"
+        else -> "stone"
+    }
+
+    // ---- blocos removidos por serem repetidos: continuam existindo escondidos só pra mundos antigos abrirem (viram o bloco equivalente ao carregar) ----
+    private var dead = false
+    /** nome removido -> [bloco equivalente, base pras lajes/escadas dele] */
+    private val retired = LinkedHashMap<String, Array<String>>()
+    /** cria o bloco de f() sem gastar tile, esconde e manda virar `canon` ao carregar (dcanon = equivalente das lajes e escadas dele) */
+    private fun gone(canon: String, dcanon: String = canon, f: () -> Unit) {
+        dead = true
+        try { f() } finally { dead = false }
+        val d = list[list.size - 1]
+        hidden.add(d.id); aliasName[d.id] = canon; retired[d.name] = arrayOf(canon, if (dcanon.isEmpty()) canon else dcanon)
+    }
+    /** esconde o último bloco criado e manda virar `canon` ao carregar (mantém o tile, que lajes e escadas ainda usam) */
+    private fun alias(canon: String) { val d = list[list.size - 1]; hidden.add(d.id); aliasName[d.id] = canon }
+    /** lajes, escadas e telhados girados dos blocos removidos também somem e viram os do bloco equivalente */
+    private fun retireDerived() {
+        val idx = HashMap<String, Def>(); for (d in list) idx.putIfAbsent(d.name, d)
+        for ((name, v) in retired) for (pre in arrayOf("", "Laje de ", "Escada de ")) for (suf in arrayOf("", " (cima)", " 2", " 3", " 4")) {
+            if (pre.isEmpty() && suf.isEmpty()) continue
+            val d = idx[pre + name + suf] ?: continue
+            hidden.add(d.id)
+            val t = idx[pre + v[1] + suf]
+            aliasName[d.id] = if (t != null && t.id != d.id) t.name else v[0]
+        }
+    }
 
     /** tile pixel art da NatArt (paleta própria, alpha por cor) */
     private fun pt(art: Int, leaf: Boolean = false, glow: Boolean = false): Int = tl(if (leaf) K_PLEAF else K_PAL, art, glow = glow)
@@ -182,16 +245,17 @@ object Blk {
         for (i in 0 until 16) { val c = DYE[i]
             uni("Lã " + DF[i], C_DEC, tl(K_WOOL, c, dk(c, 0.14f)), c, M_SOFT, 2f) }
         for (i in 0 until 16) { val c = DYE[i]
-            uni("Concreto " + DM[i], C_BUILD, btv(BuildArt.CONCRETE, c), c, M_STONE, 9f) }
-        uni("Terracota", C_BUILD, btv(BuildArt.CLAY, 0xA8643F), 0xA8643F, M_STONE, 8f)
+            uni("Concreto " + DM[i], C_BUILD, mc("concrete_" + CK[i]), c, M_STONE, 9f) }
+        uni("Terracota", C_BUILD, mc("hardened_clay"), 0xA8643F, M_STONE, 8f)
         for (i in 0 until 16) { val c = mixc(DYE[i], 0x8C6A52, 0.42f)
-            uni("Terracota " + DF[i], C_BUILD, btv(BuildArt.CLAY, c), c, M_STONE, 8f) }
+            uni("Terracota " + DF[i], C_BUILD, mc("hardened_clay_stained_" + CK[i]), c, M_STONE, 8f) }
         for (i in 0 until 16) { val c = DYE[i]
             uni("Terracota Vitrificada " + DF[i], C_DEC, tl(K_GLAZE, dk(c, 0.2f), lt(c, 0.4f), lt(c, 0.8f), 0, 0, i and 3, 4), c, M_STONE, 8f) }
-        uni("Vidro", C_BUILD, bt(BuildArt.GLASS, 0xD8F2FF), 0xCDEAF5, M_GLASS, 2f, PANE, "Vidro grosso e liso: transparente, emenda com os vizinhos sem marca.")
-        uni("Vidro Escuro", C_BUILD, bt(BuildArt.GLASS, 0x4A4256, -1, 210), 0x4A4256, M_GLASS, 2f, PANE, "Vidro grosso fumê, liso, para janelas misteriosas.")
+        val glassT = mc("glass", glass = true)
+        uni("Vidro", C_BUILD, glassT, 0xCDEAF5, M_GLASS, 2f, PANE, "Vidro liso: transparente, emenda com os vizinhos sem marca.")
+        uni("Vidro Escuro", C_BUILD, mc("tinted_glass", glass = true), 0x4A4256, M_GLASS, 2f, PANE, "Vidro fumê, liso, para janelas misteriosas.")
         for (i in 0 until 16) { val c = DYE[i]
-            uni("Vidro " + DM[i], C_BUILD, bt(BuildArt.GLASS, c, -1, 290), c, M_GLASS, 2f, PANE, "Vidro grosso colorido, liso e translúcido.") }
+            uni("Vidro " + DM[i], C_BUILD, mc("glass_" + CK[i], glass = true), c, M_GLASS, 2f, PANE, "Vidro colorido, liso e translúcido.") }
         val lampIdx = intArrayOf(0, 1, 6, 3, 4, 5, 10, 14)
         for (k in lampIdx.indices) { val i = lampIdx[k]; val c = DYE[i]
             uni("Bloco Luminoso " + DM[i], C_DEC, tl(K_LAMP, c, dk(c, 0.45f), lt(c, 0.85f), 0, 0, 0, 0, true), c, 0, 3f, F_LIGHT, "Brilha com uma luz colorida.") }
@@ -200,7 +264,7 @@ object Blk {
         val WN = arrayOf("Abeto", "Bétula", "Selva", "Acácia", "Carvalho Escuro", "Mangue", "Cerejeira", "Bambu", "Carmesim", "Distorcido")
         val WP = intArrayOf(0x7B5B3A, 0xE6D79B, 0xB98563, 0xC4693B, 0x4B3321, 0x8E3F3B, 0xE9B8B2, 0xE1C75B, 0x8B3B5E, 0x2F7F7A)
         for (i in 0 until 10) { val c = WP[i]
-            uni("Tábua de " + WN[i], C_BUILD, bt(BuildArt.W_ABETO + i, c), c, M_WOOD, 6f) }
+            uni("Tábua de " + WN[i], C_BUILD, mc(WT[i]), c, M_WOOD, 6f) }
         fun log(n: String, s1: Int, s2: Int, kn: Int, t1: Int, t2: Int) {
             val tp = tl(K_PIX, s2, t2, t1, lt(t1, 0.15f), 0, Pix.LOGTOP)
             blk(n, C_NAT, tp, tl(K_PIX, kn, s2, s1, lt(s1, 0.12f), 0, Pix.BARK), tp, s2, M_WOOD, 8f)
@@ -214,67 +278,69 @@ object Blk {
         log("Tronco de Cerejeira", 0x4A3445, 0x382633, 0x261923, 0xE9B8B2, 0xD9A8A2)
         log("Caule Carmesim", 0x7A2A52, 0x5E1F3E, 0x4A1530, 0x8B3B5E, 0x7A3252)
         log("Caule Distorcido", 0x2A7E7A, 0x1F615E, 0x174A47, 0x2F7F7A, 0x286E6A)
-        blk("Bloco de Bambu", C_BUILD, tl(K_PIX, 0x8DB03E, 0xD0B54A, 0xE1C75B, 0xF0DA80, 0, Pix.LOGTOP), tl(K_PIX, 0x6E9430, 0x8DB03E, 0xA5C94E, 0xC4E070, 0, Pix.BAMBOO), tl(K_PIX, 0x8DB03E, 0xD0B54A, 0xE1C75B, 0xF0DA80, 0, Pix.LOGTOP), 0xA5C94E, M_WOOD, 6f)
-        val bamD = list[list.size - 1]   // o colmo reaproveita as texturas do Bloco de Bambu (não gasta tiles novos: o limite é 448)
-        blk("Colmo de Bambu", C_NAT, bamD.top, bamD.side, bamD.bot, 0xA5C94E, M_WOOD, 2f, F_THIN, "Haste fina de bambu, com nós e folhinhas.")
-        uni("Bambu Trançado", C_BUILD, bt(BuildArt.MOSAIC, 0xE1C75B), 0xE1C75B, M_WOOD, 5f)
-        fun strip(n: String, c: Int) {
-            val tp = bt(BuildArt.RINGS, c)
-            blk(n, C_BUILD, tp, bt(BuildArt.STRIP, c), tp, c, M_WOOD, 7f)
+        // tiles antigos (pixel art) só pro colmo fino de bambu, que é da Natureza e continua igual
+        val bamTop = tl(K_PIX, 0x8DB03E, 0xD0B54A, 0xE1C75B, 0xF0DA80, 0, Pix.LOGTOP); val bamSide = tl(K_PIX, 0x6E9430, 0x8DB03E, 0xA5C94E, 0xC4E070, 0, Pix.BAMBOO)
+        blk("Bloco de Bambu", C_BUILD, mc("bamboo_block_top"), mc("bamboo_block"), mc("bamboo_block_top"), 0xA5C94E, M_WOOD, 6f)
+        // (o colmo usa bamTop / bamSide)
+        blk("Colmo de Bambu", C_NAT, bamTop, bamSide, bamTop, 0xA5C94E, M_WOOD, 2f, F_THIN, "Haste fina de bambu, com nós e folhinhas.")
+        uni("Bambu Trançado", C_BUILD, mc("bamboo_mosaic"), 0xE1C75B, M_WOOD, 5f)
+        fun strip(n: String, c: Int, w: String) {
+            val tp = mc("stripped_${w}_log_top")
+            blk(n, C_BUILD, tp, mc(if (w == "cherry") "stripped_cherry_log_side" else "stripped_${w}_log"), tp, c, M_WOOD, 7f)
         }
-        strip("Carvalho Descascado", 0xC9A06B)
-        strip("Abeto Descascado", 0x8A6A45)
-        strip("Bétula Descascada", 0xDCCB8E)
-        strip("Selva Descascada", 0xB88B62)
-        strip("Acácia Descascada", 0xB8603A)
-        strip("Carvalho Escuro Descascado", 0x5A4128)
-        strip("Cerejeira Descascada", 0xDDA5A0)
+        strip("Carvalho Descascado", 0xC9A06B, "oak")
+        strip("Abeto Descascado", 0x8A6A45, "spruce")
+        strip("Bétula Descascada", 0xDCCB8E, "birch")
+        strip("Selva Descascada", 0xB88B62, "jungle")
+        strip("Acácia Descascada", 0xB8603A, "acacia")
+        strip("Carvalho Escuro Descascado", 0x5A4128, "dark_oak")
+        strip("Cerejeira Descascada", 0xDDA5A0, "cherry")
 
         // ================= PEDRAS E MINERAIS =================
         fun rough(n: String, c: Int, grout: Int) {
-            val p = when (n) { "Andesito" -> BuildArt.ROUGH2; "Ardósia" -> BuildArt.BASALT; "Tufo" -> BuildArt.TUFF; "Netherrack" -> BuildArt.NETHER; "Pedra do Fim" -> BuildArt.ENDSTONE; "Prismarinho" -> BuildArt.ROUGH1; else -> BuildArt.ROUGH0 }
-            uni(n, C_BUILD, bt(p, c), c, M_STONE, 10f)
+            // (textura do Minecraft pelo nome: stoneTex)
+            uni(n, C_BUILD, mc(stoneTex(n)), c, M_STONE, 10f)
         }
-        fun smooth(n: String, c: Int) { uni(n, C_BUILD, bt(if (n.startsWith("Quartzo")) BuildArt.QUARTZ else if (n.contains("Polid")) BuildArt.POLISHED else BuildArt.SMOOTH, c), c, M_STONE, 10f) }
-        fun bricks(n: String, c: Int, grout: Int, fl: Int = 0) { uni(n, C_BUILD, bt(if (n.contains("Nether")) BuildArt.BRICK else if ((fl and 1) != 0) BuildArt.SBRICK_CRACK else if ((fl and 2) != 0) BuildArt.SBRICK_MOSS else if (n.contains("Ardósia") || n.contains("Quartzo")) BuildArt.LONGBRICK else if (n.contains("Prismarinho")) BuildArt.PRISM else BuildArt.SBRICK, c), c, M_STONE, 10f) }
+        fun smooth(n: String, c: Int) { uni(n, C_BUILD, mc(stoneTex(n)), c, M_STONE, 10f) }
+        fun bricks(n: String, c: Int, grout: Int, fl: Int = 0) { uni(n, C_BUILD, mc(stoneTex(n)), c, M_STONE, 10f) }
         val cobC = intArrayOf(0x9AA0AA, 0xB6BCC6, 0x666C78)
-        uni("Pedregulho", C_BUILD, bt(BuildArt.COBBLE, 0x9AA0AA), 0x9AA0AA, M_STONE, 10f)
-        uni("Pedregulho Musgoso", C_BUILD, bt(BuildArt.COBBLE_MOSS, 0x9AA0AA), 0x8CA07A, M_STONE, 10f)
+        uni("Pedregulho", C_BUILD, mc("cobblestone"), 0x9AA0AA, M_STONE, 10f)
+        uni("Pedregulho Musgoso", C_BUILD, mc("cobblestone_mossy"), 0x8CA07A, M_STONE, 10f)
         smooth("Pedra Lisa", 0xC9CED8)
         bricks("Tijolos de Pedra", 0xB4BAC4, 0x7F8590)
         bricks("Tijolos de Pedra Musgosos", 0xB4BAC4, 0x7F8590, 2)
         bricks("Tijolos de Pedra Rachados", 0xB4BAC4, 0x7F8590, 1)
-        uni("Tijolos Cinzelados", C_BUILD, bt(BuildArt.CHISEL, 0xB4BAC4), 0xB4BAC4, M_STONE, 10f)
-        uni("Granito", C_BUILD, bt(BuildArt.SPECK, 0xB8786A, 0xE8A090), 0xB8786A, M_STONE, 10f)
+        uni("Tijolos Cinzelados", C_BUILD, mc("stonebrick_carved"), 0xB4BAC4, M_STONE, 10f)
+        uni("Granito", C_BUILD, mc("stone_granite"), 0xB8786A, M_STONE, 10f)
         smooth("Granito Polido", 0xBE8071)
-        uni("Diorito", C_BUILD, bt(BuildArt.SPECK, 0xDCDCD8, 0x6A6A70), 0xDCDCD8, M_STONE, 10f)
+        uni("Diorito", C_BUILD, mc("stone_diorite"), 0xDCDCD8, M_STONE, 10f)
         smooth("Diorito Polido", 0xE2E2DE)
         rough("Andesito", 0xA2A29E, 0x7A7A76)
         smooth("Andesito Polido", 0xA8A8A4)
         rough("Ardósia", 0x50525A, 0x33343A)
         smooth("Ardósia Polida", 0x565861)
         bricks("Tijolos de Ardósia", 0x50525A, 0x2C2D33)
-        uni("Ladrilhos de Ardósia", C_BUILD, bt(BuildArt.TILES, 0x555760), 0x50525A, M_STONE, 10f)
-        uni("Pedregulho de Ardósia", C_BUILD, bt(BuildArt.COBBLE, 0x50525A), 0x50525A, M_STONE, 10f)
+        uni("Ladrilhos de Ardósia", C_BUILD, mc("deepslate_tiles"), 0x50525A, M_STONE, 10f)
+        uni("Pedregulho de Ardósia", C_BUILD, mc("cobbled_deepslate"), 0x50525A, M_STONE, 10f)
         rough("Tufo", 0x7E8274, 0x5A5E50)
         rough("Pedra Negra", 0x3A3540, 0x221E28)
         smooth("Pedra Negra Polida", 0x413C48)
         bricks("Tijolos de Pedra Negra", 0x3A3540, 0x1E1A24)
-        blk("Arenito", C_BUILD, bt(BuildArt.SMOOTH, 0xF0DFA8), bt(BuildArt.SANDSIDE, 0xF0DFA8), bt(BuildArt.SMOOTH, 0xE9D9A0), 0xF0DFA8, M_STONE, 7f)
-        uni("Arenito Liso", C_BUILD, bt(BuildArt.SMOOTH, 0xF3E6B4), 0xF3E6B4, M_STONE, 7f)
-        uni("Arenito Cinzelado", C_BUILD, bt(BuildArt.CHISEL, 0xF0DFA8), 0xF0DFA8, M_STONE, 7f)
-        blk("Arenito Vermelho", C_BUILD, bt(BuildArt.SMOOTH, 0xD58A48), bt(BuildArt.SANDSIDE, 0xD58A48), bt(BuildArt.SMOOTH, 0xCC8444), 0xD58A48, M_STONE, 7f)
+        blk("Arenito", C_BUILD, mc("sandstone_top"), mc("sandstone_normal"), mc("sandstone_bottom"), 0xF0DFA8, M_STONE, 7f)
+        uni("Arenito Liso", C_BUILD, mc("sandstone_smooth"), 0xF3E6B4, M_STONE, 7f)
+        uni("Arenito Cinzelado", C_BUILD, mc("sandstone_carved"), 0xF0DFA8, M_STONE, 7f)
+        blk("Arenito Vermelho", C_BUILD, mc("red_sandstone_top"), mc("red_sandstone_normal"), mc("red_sandstone_bottom"), 0xD58A48, M_STONE, 7f)
         bricks("Tijolos do Nether", 0x5A2830, 0x2E1216)
         bricks("Tijolos Vermelhos do Nether", 0x8A2A36, 0x3E1218)
         rough("Netherrack", 0x8E3C3C, 0x6A2828)
         rough("Pedra do Fim", 0xE8EAB6, 0xC4C68A)
-        uni("Purpur", C_BUILD, bt(BuildArt.TILES, 0xB58AC0), 0xB58AC0, M_STONE, 9f)
+        uni("Purpur", C_BUILD, mc("purpur_block"), 0xB58AC0, M_STONE, 9f)
         rough("Prismarinho", 0x6BB6A0, 0x4A8F7D)
         bricks("Tijolos de Prismarinho", 0x6FBBA6, 0x4A8F7D)
         smooth("Quartzo", 0xF0ECE4)
-        blk("Pilar de Quartzo", C_BUILD, bt(BuildArt.QUARTZ, 0xF0ECE4), bt(BuildArt.PILLAR, 0xF0ECE4), bt(BuildArt.QUARTZ, 0xF0ECE4), 0xF0ECE4, M_STONE, 9f)
+        blk("Pilar de Quartzo", C_BUILD, mc("quartz_block_lines_top"), mc("quartz_block_lines"), mc("quartz_block_lines_top"), 0xF0ECE4, M_STONE, 9f)
         bricks("Tijolos de Quartzo", 0xF2EEE6, 0xD2CCC0)
-        uni("Obsidiana", C_BUILD, bt(BuildArt.OBSIDIAN, 0x1C1030), 0x2E1B50, M_STONE, 24f)
+        uni("Obsidiana", C_BUILD, mc("obsidian"), 0x2E1B50, M_STONE, 24f)
 
         // ================= BLOCOS NOVOS E DOCES =================
         uni("Nuvem", C_DEC, tl(K_FLAT, 0xFFFFFF, 0xDCEBFA, 0xFFFFFF, 0, 0, 0, 4), 0xF2F8FF, M_SOFT, 2f, 0, "Fofa e branquinha, perfeita pro céu.")
@@ -295,17 +361,18 @@ object Blk {
         blk("Céu", C_DEC, tl(K_FLAT, 0x8CCBFF, 0xA6D8FF), tl(K_GRAD, 0x6DB6F5, 0xD4ECFF, 0), tl(K_FLAT, 0xD4ECFF, 0xE4F4FF), 0x8CCBFF, M_SOFT, 3f)
         blk("Oceano", C_DEC, tl(K_FLAT, 0x5FD0D8, 0x7ADCE0), tl(K_GRAD, 0x5FD0D8, 0x1F5FA8, 0), tl(K_FLAT, 0x1F5FA8, 0x2A6DB8), 0x3A9ACB, M_SOFT, 3f)
         uni("Xadrez", C_DEC, tl(K_CHECK, 0xF2F2EE, 0x2E3138, 0, 0, 0, 4), 0x8A8D90, M_STONE, 8f)
-        uni("Telhado Vermelho", C_BUILD, bt(BuildArt.SHINGLE, 0xD8584A), 0xD8584A, M_STONE, 8f, shp(BuildShapes.S_ROOF), ROOF_DESC)
-        uni("Telhado Azul", C_BUILD, bt(BuildArt.SHINGLE, 0x5A86D8), 0x5A86D8, M_STONE, 8f, shp(BuildShapes.S_ROOF), ROOF_DESC)
-        uni("Telhado Verde", C_BUILD, bt(BuildArt.SHINGLE, 0x5FAE6A), 0x5FAE6A, M_STONE, 8f, shp(BuildShapes.S_ROOF), ROOF_DESC)
-        uni("Palha", C_BUILD, pt(NatArt.PALHA), 0xE6C65A, M_SOFT, 3f)
-        uni("Gesso Branco", C_BUILD, btv(BuildArt.PLASTER, 0xFAF6EE), 0xFAF6EE, M_STONE, 6f)
-        uni("Gesso Rosa", C_BUILD, btv(BuildArt.PLASTER, 0xFFD6E4), 0xFFD6E4, M_STONE, 6f)
-        uni("Gesso Amarelo", C_BUILD, btv(BuildArt.PLASTER, 0xFFEFB0), 0xFFEFB0, M_STONE, 6f)
-        uni("Gesso Azul", C_BUILD, btv(BuildArt.PLASTER, 0xCFE4FA), 0xCFE4FA, M_STONE, 6f)
-        uni("Piso de Madeira", C_BUILD, bt(BuildArt.MOSAIC, 0xC9935A), 0xC9935A, M_WOOD, 5f)
-        uni("Azulejo Branco", C_BUILD, bt(BuildArt.AZ_PLAIN, 0xF4F4F0), 0xF4F4F0, M_STONE, 6f)
-        uni("Azulejo Azul", C_BUILD, bt(BuildArt.AZ_DECOR, 0x2F63B5, 0xF6F6F0), 0x6FA8E8, M_STONE, 6f)
+        uni("Telhado Vermelho", C_BUILD, mc("brick", 0xD8584A), 0xD8584A, M_STONE, 8f, shp(BuildShapes.S_ROOF), ROOF_DESC)
+        uni("Telhado Azul", C_BUILD, mc("brick", 0x5A86D8), 0x5A86D8, M_STONE, 8f, shp(BuildShapes.S_ROOF), ROOF_DESC)
+        uni("Telhado Verde", C_BUILD, mc("brick", 0x5FAE6A), 0x5FAE6A, M_STONE, 8f, shp(BuildShapes.S_ROOF), ROOF_DESC)
+        uni("Palha", C_BUILD, mc("hay_block_side"), 0xE6C65A, M_SOFT, 3f)
+        gone("Concreto Branco") { uni("Gesso Branco", C_BUILD, btv(BuildArt.PLASTER, 0xFAF6EE), 0xFAF6EE, M_STONE, 6f) }
+        gone("Concreto Rosa") { uni("Gesso Rosa", C_BUILD, btv(BuildArt.PLASTER, 0xFFD6E4), 0xFFD6E4, M_STONE, 6f) }
+        gone("Concreto Amarelo") { uni("Gesso Amarelo", C_BUILD, btv(BuildArt.PLASTER, 0xFFEFB0), 0xFFEFB0, M_STONE, 6f) }
+        gone("Concreto Azul-claro") { uni("Gesso Azul", C_BUILD, btv(BuildArt.PLASTER, 0xCFE4FA), 0xCFE4FA, M_STONE, 6f) }
+        uni("Piso de Madeira", C_BUILD, mc("planks_oak"), 0xC9935A, M_WOOD, 5f)
+        alias("Tábua")   // igual à Tábua comum: some da mochila; as lajes e escadas dele viram "de Carvalho"
+        gone("Concreto Branco") { uni("Azulejo Branco", C_BUILD, bt(BuildArt.AZ_PLAIN, 0xF4F4F0), 0xF4F4F0, M_STONE, 6f) }
+        gone("Concreto Azul") { uni("Azulejo Azul", C_BUILD, bt(BuildArt.AZ_DECOR, 0x2F63B5, 0xF6F6F0), 0x6FA8E8, M_STONE, 6f) }
         uni("Janela de Madeira", C_BUILD, bt(BuildArt.WINDOW, 0x8B6B43, 0xBFE6F5), 0xB6A070, M_GLASS, 2f, PLATE, "Janela com moldura de madeira.")
         uni("Janela Branca", C_BUILD, bt(BuildArt.WINDOW, 0xF2F2EE, 0xBFE6F5), 0xDDE8EE, M_GLASS, 2f, PLATE, "Janela com moldura branca.")
         // Moitas eram cópias idênticas das Folhas (outro nome, mesma textura): ficam só pra mundos antigos, escondidas, e viram Folhas ao carregar
@@ -358,17 +425,17 @@ object Blk {
         ore("Minério de Lápis", 0x2E5AC8, NatArt.ORE_LAPIS)
         ore("Minério de Diamante", 0x4FD8D0, NatArt.ORE_DIAMANTE)
         ore("Minério de Esmeralda", 0x2FB85A, NatArt.ORE_ESMERALDA)
-        fun metal(n: String, c: Int, pat: Int = BuildArt.METAL, acc: Int = -1) { uni(n, C_BUILD, bt(pat, c, acc), c, M_METAL, 14f) }
-        metal("Bloco de Ferro", 0xE2E4E8)
-        metal("Bloco de Ouro", 0xF6CF3E)
-        metal("Bloco de Diamante", 0x5FE8DE)
-        metal("Bloco de Esmeralda", 0x3FCF6A)
-        metal("Bloco de Lápis", 0x3A66D2)
-        metal("Bloco de Redstone", 0xD8342C)
-        metal("Bloco de Cobre", 0xD98458)
-        metal("Cobre Exposto", 0xC98A5E, BuildArt.METAL_P1, 0x6FAE8A)
-        metal("Cobre Desgastado", 0xC98A5E, BuildArt.METAL_P2, 0x5FB08A)
-        metal("Cobre Oxidado", 0x4FB59A, BuildArt.METAL_P1, 0x8FE0C4)
+        fun metal(n: String, c: Int, tex: String) { uni(n, C_BUILD, mc(tex), c, M_METAL, 14f) }
+        metal("Bloco de Ferro", 0xE2E4E8, "iron_block")
+        metal("Bloco de Ouro", 0xF6CF3E, "gold_block")
+        metal("Bloco de Diamante", 0x5FE8DE, "diamond_block")
+        metal("Bloco de Esmeralda", 0x3FCF6A, "emerald_block")
+        metal("Bloco de Lápis", 0x3A66D2, "lapis_block")
+        metal("Bloco de Redstone", 0xD8342C, "redstone_block")
+        metal("Bloco de Cobre", 0xD98458, "copper_block")
+        metal("Cobre Exposto", 0xC98A5E, "exposed_copper")
+        metal("Cobre Desgastado", 0xC98A5E, "weathered_copper")
+        metal("Cobre Oxidado", 0x4FB59A, "oxidized_copper")
 
         // ================= FOLHAGEM DE TODAS AS ÁRVORES =================
         run { val sp = tl(K_SPRITE, Leaf3D.OAK, -1); if (sp >= 24) spriteOf[8] = sp; val fr = tl(K_SPRITE, 20 + Leaf3D.OAK, -2); if (fr >= 24) fruitOf[8] = fr }   // carvalho (Folhas): tile 8 do atlas original
@@ -443,30 +510,30 @@ object Blk {
         blk("Tapete Vermelho", C_FURN, F[Furniture.T_RUGR], F[Furniture.T_RUGR], F[Furniture.T_RUGR], 0xC8444E, M_SOFT, 2f, FU or (Furniture.S_RUGR shl 8), "Tapete macio com borda e losango.")
         blk("Tapete Azul", C_FURN, F[Furniture.T_RUGB], F[Furniture.T_RUGB], F[Furniture.T_RUGB], 0x4C74C4, M_SOFT, 2f, FU or (Furniture.S_RUGB shl 8), "Tapete macio com borda e losango.")
         // ---- vidros finos (lisos, sem moldura: blocos vizinhos se unem sem marca) ----
-        uni("Vidro Fino", C_BUILD, bt(BuildArt.GLASS_THIN, 0xD8F2FF), 0xCDEAF5, M_GLASS, 2f, PANE, "Vidro fino e liso: bem transparente, emenda sem marca.")
-        uni("Vidro Fino Escuro", C_BUILD, bt(BuildArt.GLASS_THIN, 0x4A4256, -1, 300), 0x4A4256, M_GLASS, 2f, PANE, "Vidro fino fumê e liso.")
+        gone("Vidro") { uni("Vidro Fino", C_BUILD, bt(BuildArt.GLASS_THIN, 0xD8F2FF), 0xCDEAF5, M_GLASS, 2f, PANE, "Vidro fino e liso: bem transparente, emenda sem marca.") }
+        gone("Vidro Escuro") { uni("Vidro Fino Escuro", C_BUILD, bt(BuildArt.GLASS_THIN, 0x4A4256, -1, 300), 0x4A4256, M_GLASS, 2f, PANE, "Vidro fino fumê e liso.") }
         for (i in 0 until 16) { val c = DYE[i]
-            uni("Vidro Fino " + DM[i], C_BUILD, bt(BuildArt.GLASS_THIN, c, -1, 320), c, M_GLASS, 2f, PANE, "Vidro fino colorido e liso.") }
+            gone("Vidro " + DM[i]) { uni("Vidro Fino " + DM[i], C_BUILD, bt(BuildArt.GLASS_THIN, c, -1, 320), c, M_GLASS, 2f, PANE, "Vidro fino colorido e liso.") } }
         // ---- mais janelas (todas translúcidas; moldura e vidraça lisas) ----
         val GL = 0xBFE6F5
-        uni("Janela Sem Moldura", C_BUILD, bt(BuildArt.JAN_FRAMELESS, 0xB8C0C8, GL), 0xCDEEFF, M_GLASS, 2f, PLATE, "Vidro liso com só quatro presilhas de metal nos cantos.")
+        gone("Vidro") { uni("Janela Sem Moldura", C_BUILD, bt(BuildArt.JAN_FRAMELESS, 0xB8C0C8, GL), 0xCDEEFF, M_GLASS, 2f, PLATE, "Vidro liso com só quatro presilhas de metal nos cantos.") }
         uni("Janela de Correr Alumínio", C_BUILD, bt(BuildArt.JAN_SLIDE, 0xB8C0C8, GL), 0xB8C0C8, M_GLASS, 2f, PLATE, "Duas folhas grandes de vidro que correm, com puxador.")
         uni("Janela de Correr Preta", C_BUILD, bt(BuildArt.JAN_SLIDE, 0x2E3138, GL), 0x2E3138, M_GLASS, 2f, PLATE, "Janela de correr com perfil preto.")
-        uni("Janela de Correr Branca", C_BUILD, bt(BuildArt.JAN_SLIDE, 0xF2F2EE, GL), 0xF2F2EE, M_GLASS, 2f, PLATE, "Janela de correr com perfil branco.")
-        uni("Janela de Correr Madeira", C_BUILD, bt(BuildArt.JAN_SLIDE, 0x8B6B43, GL), 0x8B6B43, M_GLASS, 2f, PLATE, "Janela de correr com perfil de madeira.")
+        gone("Janela de Correr Alumínio") { uni("Janela de Correr Branca", C_BUILD, bt(BuildArt.JAN_SLIDE, 0xF2F2EE, GL), 0xF2F2EE, M_GLASS, 2f, PLATE, "Janela de correr com perfil branco.") }
+        gone("Janela de Madeira") { uni("Janela de Correr Madeira", C_BUILD, bt(BuildArt.JAN_SLIDE, 0x8B6B43, GL), 0x8B6B43, M_GLASS, 2f, PLATE, "Janela de correr com perfil de madeira.") }
         uni("Janela Colonial Branca", C_BUILD, bt(BuildArt.JAN_COLONIAL, 0xF2F2EE, GL), 0xF2F2EE, M_GLASS, 2f, PLATE, "Janela colonial com seis vidraças.")
         uni("Janela Colonial Madeira", C_BUILD, bt(BuildArt.JAN_COLONIAL, 0x8B6B43, GL), 0x8B6B43, M_GLASS, 2f, PLATE, "Janela colonial de madeira com seis vidraças.")
         uni("Persiana de Madeira", C_BUILD, bt(BuildArt.JAN_LOUVER, 0x9A7448, GL), 0x9A7448, M_GLASS, 2f, PLATE, "Persiana de ripas: deixa ver pelas frestas.")
         uni("Persiana Branca", C_BUILD, bt(BuildArt.JAN_LOUVER, 0xEDEBE4, GL), 0xEDEBE4, M_GLASS, 2f, PLATE, "Persiana branca de ripas.")
-        uni("Escotilha de Ferro", C_BUILD, bt(BuildArt.JAN_PORTHOLE, 0xB0B6BE, GL), 0xB0B6BE, M_GLASS, 2f, PLATE, "Janela redonda de navio, com aro de ferro e rebites.")
-        uni("Escotilha de Latão", C_BUILD, bt(BuildArt.JAN_PORTHOLE, 0xC8A040, GL), 0xC8A040, M_GLASS, 2f, PLATE, "Janela redonda de navio, com aro de latão.")
+        gone("Janela Branca") { uni("Escotilha de Ferro", C_BUILD, bt(BuildArt.JAN_PORTHOLE, 0xB0B6BE, GL), 0xB0B6BE, M_GLASS, 2f, PLATE, "Janela redonda de navio, com aro de ferro e rebites.") }
+        gone("Janela Branca") { uni("Escotilha de Latão", C_BUILD, bt(BuildArt.JAN_PORTHOLE, 0xC8A040, GL), 0xC8A040, M_GLASS, 2f, PLATE, "Janela redonda de navio, com aro de latão.") }
         uni("Janela Gradeada", C_BUILD, bt(BuildArt.JAN_BARS, 0x2E3138, GL), 0x2E3138, M_GLASS, 2f, PLATE, "Vidro com grade de ferro.")
-        uni("Vitral Azul e Âmbar", C_BUILD, bt(BuildArt.VITRAL, 0x2F63D0, 0xE0A030), 0x2F63D0, M_GLASS, 2f, PLATE, "Vitral de pedaços coloridos presos por chumbo.")
-        uni("Vitral Rosa e Verde", C_BUILD, bt(BuildArt.VITRAL, 0xE86AA0, 0x4FB070), 0xE86AA0, M_GLASS, 2f, PLATE, "Vitral de pedaços coloridos presos por chumbo.")
-        uni("Vitral Roxo e Ciano", C_BUILD, bt(BuildArt.VITRAL, 0x8A4FD0, 0x4FD0D0), 0x8A4FD0, M_GLASS, 2f, PLATE, "Vitral de pedaços coloridos presos por chumbo.")
-        uni("Vitral Vermelho e Dourado", C_BUILD, bt(BuildArt.VITRAL, 0xD8403A, 0xF2C93A), 0xD8403A, M_GLASS, 2f, PLATE, "Vitral de pedaços coloridos presos por chumbo.")
+        gone("Vidro Azul") { uni("Vitral Azul e Âmbar", C_BUILD, bt(BuildArt.VITRAL, 0x2F63D0, 0xE0A030), 0x2F63D0, M_GLASS, 2f, PLATE, "Vitral de pedaços coloridos presos por chumbo.") }
+        gone("Vidro Rosa") { uni("Vitral Rosa e Verde", C_BUILD, bt(BuildArt.VITRAL, 0xE86AA0, 0x4FB070), 0xE86AA0, M_GLASS, 2f, PLATE, "Vitral de pedaços coloridos presos por chumbo.") }
+        gone("Vidro Roxo") { uni("Vitral Roxo e Ciano", C_BUILD, bt(BuildArt.VITRAL, 0x8A4FD0, 0x4FD0D0), 0x8A4FD0, M_GLASS, 2f, PLATE, "Vitral de pedaços coloridos presos por chumbo.") }
+        gone("Vidro Vermelho") { uni("Vitral Vermelho e Dourado", C_BUILD, bt(BuildArt.VITRAL, 0xD8403A, 0xF2C93A), 0xD8403A, M_GLASS, 2f, PLATE, "Vitral de pedaços coloridos presos por chumbo.") }
         // ---- Construção v2: bloco de vidro, mais telhados, cumeeiras, lajes e escadas (ids novos sempre no fim!) ----
-        uni("Bloco de Vidro", C_BUILD, bt(BuildArt.GLASS, 0xD8F2FF), 0xCDEAF5, M_GLASS, 2f, F_GLASS, "Cubo inteiro de vidro liso, para aquários e vitrines.")
+        uni("Bloco de Vidro", C_BUILD, glassT, 0xCDEAF5, M_GLASS, 2f, F_GLASS, "Cubo inteiro de vidro liso, para aquários e vitrines.")
         fun last(): Def = list[list.size - 1]
         fun rot4(base: Def, sub0: Int) {
             val ids = IntArray(4); ids[0] = base.id
@@ -479,18 +546,18 @@ object Blk {
         val roofs = ArrayList<Def>()
         for (n in arrayOf("Telhado Vermelho", "Telhado Azul", "Telhado Verde")) { val d = list.firstOrNull { it.name == n }; if (d != null) roofs.add(d) }
         fun newRoof(n: String, c: Int, tile: Int = -1) {
-            val t = if (tile >= 0) tile else bt(BuildArt.SHINGLE, c)
+            val t = if (tile >= 0) tile else mc("brick", c)
             blk(n, C_BUILD, t, t, t, c, M_STONE, 8f, shp(BuildShapes.S_ROOF), ROOF_DESC); roofs.add(last())
         }
-        newRoof("Telhado Preto", 0x3A3C44)
-        newRoof("Telhado de Barro", 0xC4683F)
-        newRoof("Telhado de Ardósia", 0x5A5E6A)
+        newRoof("Telhado Preto", 0x3A3C44, mc("polished_blackstone_bricks"))
+        newRoof("Telhado de Barro", 0xC4683F, mc("hardened_clay"))
+        newRoof("Telhado de Ardósia", 0x5A5E6A, mc("deepslate_tiles"))
         newRoof("Telhado Marrom", 0x7A4A32)
         newRoof("Telhado Amarelo", 0xE0B040)
         newRoof("Telhado Branco", 0xE8E8E8)
         newRoof("Telhado Rosa", 0xE88AA8)
-        newRoof("Telhado de Cobre Oxidado", 0x4FB59A)
-        newRoof("Telhado de Palha", 0xE6C65A, pt(NatArt.PALHA))
+        newRoof("Telhado de Cobre Oxidado", 0x4FB59A, mc("oxidized_cut_copper"))
+        newRoof("Telhado de Palha", 0xE6C65A, mc("hay_block_side"))
         for (d in roofs) rot4(d, BuildShapes.S_ROOF)
         for (n in arrayOf("Telhado Vermelho", "Telhado Azul", "Telhado Verde", "Telhado Preto", "Telhado de Barro", "Telhado de Palha")) {
             val d = list.firstOrNull { it.name == n } ?: continue
@@ -504,14 +571,14 @@ object Blk {
             "Ardósia Polida", "Tijolos do Nether", "Gesso Branco", "Concreto Branco", "Terracota", "Piso de Madeira")
         for (mn in mats) {
             val m = list.firstOrNull { it.name == mn } ?: continue
-            val nm = if (mn.startsWith("Tábua de ")) mn.substring(9) else mn
+            val nm = if (mn.startsWith("Tábua de ")) mn.substring(9) else if (mn == "Piso de Madeira") "Carvalho" else mn
             val sl = blk("Laje de " + nm, C_BUILD, m.top, m.side, m.bot, m.color, m.mat, m.hard, shp(BuildShapes.S_SLAB), "Laje de meio bloco. Coloque embaixo de um teto pra ela ficar virada pra cima.")
             val st = blk("Laje de " + nm + " (cima)", C_BUILD, m.top, m.side, m.bot, m.color, m.mat, m.hard, shp(BuildShapes.S_SLABT), "Laje de meio bloco, em cima.")
             hidden.add(st); slabTop[sl] = st
         }
         for (mn in mats) {
             val m = list.firstOrNull { it.name == mn } ?: continue
-            val nm = if (mn.startsWith("Tábua de ")) mn.substring(9) else mn
+            val nm = if (mn.startsWith("Tábua de ")) mn.substring(9) else if (mn == "Piso de Madeira") "Carvalho" else mn
             blk("Escada de " + nm, C_BUILD, m.top, m.side, m.bot, m.color, m.mat, m.hard, shp(BuildShapes.S_STAIR), "Escada de degrau único: o lado alto fica pro lado que você olha.")
             rot4(last(), BuildShapes.S_STAIR)
         }
@@ -521,9 +588,9 @@ object Blk {
         val GL2 = 0xBFE6F5
         // ---- vidros especiais (cubo + fino dividem o tile; tiles de vidro seguidos) ----
         fun gstyle(n: String, pat: Int, c: Int, acc: Int = -1, sc: Int = 0, desc: String) {
-            val t = bt(pat, c, acc, sc)
-            uni("Vidro $n", C_BUILD, t, c, M_GLASS, 2f, F_GLASS, "$desc (cubo inteiro)")
-            uni("Vidro Fino $n", C_BUILD, t, c, M_GLASS, 2f, PANE, "$desc (fino, emenda com os vizinhos)")
+            // (removidos: viram Bloco de Vidro / Vidro)
+            gone("Bloco de Vidro") { uni("Vidro $n", C_BUILD, 1, c, M_GLASS, 2f, F_GLASS, "$desc (cubo inteiro)") }
+            gone("Vidro") { uni("Vidro Fino $n", C_BUILD, 1, c, M_GLASS, 2f, PANE, "$desc (fino, emenda com os vizinhos)") }
         }
         gstyle("Facetado", BuildArt.GL_FACET, 0xD8F2FF, desc = "Vidro lapidado em losangos que brilham")
         gstyle("de Bolhas", BuildArt.GL_BUBBLE, 0xCFF0FF, desc = "Vidro com bolhinhas de sabão")
@@ -540,53 +607,55 @@ object Blk {
         // ---- janelas fofinhas ----
         val pn = arrayOf("Rosa", "Menta", "Lavanda", "Céu", "Amarela", "Preta", "Vermelha", "Coral")
         val pcol = intArrayOf(0xFFB6D0, 0xA8E6C8, 0xCDB8F5, 0x9FD0F5, 0xFFE08A, 0x3A3C44, 0xE5584A, 0xFF9C84)
-        for (i in pn.indices) uni("Janela " + pn[i], C_BUILD, bt(BuildArt.WINDOW, pcol[i], GL2), pcol[i], M_GLASS, 2f, PLATE, "Janela com moldura gordinha e vidraças brilhantes.")
-        for (i in 0 until 5) uni("Janela Colonial " + pn[i], C_BUILD, bt(BuildArt.JAN_COLONIAL, pcol[i], GL2), pcol[i], M_GLASS, 2f, PLATE, "Janela colonial com seis vidraças.")
-        for (i in 0 until 6) uni("Janela em Arco " + pn[i], C_BUILD, bt(BuildArt.JAN_ARCH, pcol[i], GL2), pcol[i], M_GLASS, 2f, PLATE, "Janela com arco no topo.")
-        for (i in 0 until 6) uni("Janela de Coração " + pn[i], C_BUILD, bt(BuildArt.JAN_HEART, pcol[i], GL2), pcol[i], M_GLASS, 2f, PLATE, "Vidraça em forma de coração.")
-        for (i in 0 until 6) uni("Janela de Estrela " + pn[i], C_BUILD, bt(BuildArt.JAN_STAR, pcol[i], GL2), pcol[i], M_GLASS, 2f, PLATE, "Vidraça em forma de estrela.")
-        uni("Vitral Verde e Turquesa", C_BUILD, bt(BuildArt.VITRAL, 0x3FBF6A, 0x3FC8D8), 0x3FBF6A, M_GLASS, 2f, PLATE, "Vitral de pedaços coloridos presos por chumbo.")
-        uni("Vitral Rosa Pastel", C_BUILD, bt(BuildArt.VITRAL, 0xFFA8CC, 0xFFE08A), 0xFFA8CC, M_GLASS, 2f, PLATE, "Vitral doce em tons pastel.")
-        uni("Vitral Azul Céu", C_BUILD, bt(BuildArt.VITRAL, 0x6FB4F5, 0xBFA8FF), 0x6FB4F5, M_GLASS, 2f, PLATE, "Vitral em tons de céu.")
-        uni("Vitral Laranja e Lima", C_BUILD, bt(BuildArt.VITRAL, 0xFF9A3C, 0xA8E05A), 0xFF9A3C, M_GLASS, 2f, PLATE, "Vitral alegre de cítricos.")
+        for (i in pn.indices) gone(if (i == 5) "Janela de Correr Preta" else "Janela Branca") { uni("Janela " + pn[i], C_BUILD, bt(BuildArt.WINDOW, pcol[i], GL2), pcol[i], M_GLASS, 2f, PLATE, "Janela com moldura gordinha e vidraças brilhantes.") }
+        for (i in 0 until 5) gone("Janela Colonial Branca") { uni("Janela Colonial " + pn[i], C_BUILD, bt(BuildArt.JAN_COLONIAL, pcol[i], GL2), pcol[i], M_GLASS, 2f, PLATE, "Janela colonial com seis vidraças.") }
+        for (i in 0 until 6) gone("Janela Branca") { uni("Janela em Arco " + pn[i], C_BUILD, bt(BuildArt.JAN_ARCH, pcol[i], GL2), pcol[i], M_GLASS, 2f, PLATE, "Janela com arco no topo.") }
+        for (i in 0 until 6) gone("Janela Branca") { uni("Janela de Coração " + pn[i], C_BUILD, bt(BuildArt.JAN_HEART, pcol[i], GL2), pcol[i], M_GLASS, 2f, PLATE, "Vidraça em forma de coração.") }
+        for (i in 0 until 6) gone("Janela Branca") { uni("Janela de Estrela " + pn[i], C_BUILD, bt(BuildArt.JAN_STAR, pcol[i], GL2), pcol[i], M_GLASS, 2f, PLATE, "Vidraça em forma de estrela.") }
+        gone("Vidro Verde") { uni("Vitral Verde e Turquesa", C_BUILD, bt(BuildArt.VITRAL, 0x3FBF6A, 0x3FC8D8), 0x3FBF6A, M_GLASS, 2f, PLATE, "Vitral de pedaços coloridos presos por chumbo.") }
+        gone("Vidro Rosa") { uni("Vitral Rosa Pastel", C_BUILD, bt(BuildArt.VITRAL, 0xFFA8CC, 0xFFE08A), 0xFFA8CC, M_GLASS, 2f, PLATE, "Vitral doce em tons pastel.") }
+        gone("Vidro Azul-claro") { uni("Vitral Azul Céu", C_BUILD, bt(BuildArt.VITRAL, 0x6FB4F5, 0xBFA8FF), 0x6FB4F5, M_GLASS, 2f, PLATE, "Vitral em tons de céu.") }
+        gone("Vidro Laranja") { uni("Vitral Laranja e Lima", C_BUILD, bt(BuildArt.VITRAL, 0xFF9A3C, 0xA8E05A), 0xFF9A3C, M_GLASS, 2f, PLATE, "Vitral alegre de cítricos.") }
         // ---- tijolos, tábuas pintadas, azulejos metrô e alvenaria nas 16 cores ----
-        for (i in 0 until 16) { val c = pc(i); uni("Tijolo " + DM[i], C_BUILD, bt(BuildArt.TIJOLO, c), c, M_STONE, 8f, 0, "Tijolos coloridos assentados em aparelho flamengo, alternando peças compridas e curtas.") }
-        for (i in 0 until 16) { val c = pc(i); uni("Tábua Pintada " + DF[i], C_BUILD, bt(BuildArt.PAINTED, c), c, M_WOOD, 6f, 0, "Tábuas verticais pintadas, com as juntas cobertas por sarrafos pregados.") }
-        for (i in 0 until 16) { val c = pc(i); uni("Azulejo Metrô " + DM[i], C_BUILD, bt(BuildArt.SUBWAY, c), c, M_STONE, 6f, 0, "Azulejo retangular liso e brilhante, assentado em grade.") }
-        for (i in 0 until 16) { val c = pc(i); uni("Alvenaria " + DF[i], C_BUILD, bt(BuildArt.LONGBRICK, c), c, M_STONE, 9f, 0, "Pedras retangulares de tamanhos diferentes, assentadas com argamassa.") }
-        for (i in 0 until 16) { val c = pc(i); uni("Gema " + DF[i], C_BUILD, bt(BuildArt.GEM, c), c, M_STONE, 12f, 0, "Gema lapidada e brilhante.") }
-        for (i in 0 until 16) { val c = pc(i); uni("Acolchoado " + DM[i], C_BUILD, bt(BuildArt.QUILT, c), c, M_SOFT, 3f, 0, "Almofadinhas macias.") }
-        for (i in 0 until 16) { val c = pc(i); uni("Reboco " + DM[i], C_BUILD, btv(BuildArt.PLASTER, c), c, M_STONE, 6f) }
-        for (i in 0 until 16) { val c = pc(i); uni("Lambri " + DM[i], C_BUILD, bt(BuildArt.PANEL, c), c, M_WOOD, 5f, 0, "Painéis embutidos para paredes.") }
-        for (i in 0 until 8) { val c = pc(i); uni("Telhado de Ripas " + DM[i], C_BUILD, bt(BuildArt.SHAKE, c), c, M_WOOD, 6f, shp(BuildShapes.S_ROOF), ROOF_DESC); roofs.add(last()); rot4(last(), BuildShapes.S_ROOF) }
-        for (i in 8 until 16) { val c = pc(i); uni("Telhado Cerâmico " + DM[i], C_BUILD, bt(BuildArt.SHINGLE, c), c, M_STONE, 6f, shp(BuildShapes.S_ROOF), ROOF_DESC); rot4(last(), BuildShapes.S_ROOF) }
+        for (i in 0 until 16) { val c = pc(i); val mk = { uni("Tijolo " + DM[i], C_BUILD, mc("brick", DYE[i]), c, M_STONE, 8f, 0, "Tijolos coloridos, a partir do tijolo do Minecraft.") }; if (i == 14) gone("Tijolo") { mk() } else mk() }
+        for (i in 0 until 16) { val c = pc(i); gone("Concreto " + DM[i]) { uni("Tábua Pintada " + DF[i], C_BUILD, bt(BuildArt.PAINTED, c), c, M_WOOD, 6f, 0, "Tábuas verticais pintadas, com as juntas cobertas por sarrafos pregados.") } }
+        for (i in 0 until 16) { val c = pc(i); gone("Concreto " + DM[i]) { uni("Azulejo Metrô " + DM[i], C_BUILD, bt(BuildArt.SUBWAY, c), c, M_STONE, 6f, 0, "Azulejo retangular liso e brilhante, assentado em grade.") } }
+        for (i in 0 until 16) { val c = pc(i); gone(if (i == 7 || i == 8) "Tijolos de Pedra" else if (i == 14) "Tijolo" else "Tijolo " + DM[i]) { uni("Alvenaria " + DF[i], C_BUILD, bt(BuildArt.LONGBRICK, c), c, M_STONE, 9f, 0, "Pedras retangulares de tamanhos diferentes, assentadas com argamassa.") } }
+        for (i in 0 until 16) { val c = pc(i); gone("Concreto " + DM[i]) { uni("Gema " + DF[i], C_BUILD, bt(BuildArt.GEM, c), c, M_STONE, 12f, 0, "Gema lapidada e brilhante.") } }
+        for (i in 0 until 16) { val c = pc(i); gone("Lã " + DF[i]) { uni("Acolchoado " + DM[i], C_BUILD, bt(BuildArt.QUILT, c), c, M_SOFT, 3f, 0, "Almofadinhas macias.") } }
+        for (i in 0 until 16) { val c = pc(i); gone("Concreto " + DM[i]) { uni("Reboco " + DM[i], C_BUILD, btv(BuildArt.PLASTER, c), c, M_STONE, 6f) } }
+        for (i in 0 until 16) { val c = pc(i); gone("Concreto " + DM[i]) { uni("Lambri " + DM[i], C_BUILD, bt(BuildArt.PANEL, c), c, M_WOOD, 5f, 0, "Painéis embutidos para paredes.") } }
+        val rip = arrayOf("Telhado Branco", "Telhado de Barro", "Telhado Rosa", "Telhado Azul", "Telhado Amarelo", "Telhado Verde", "Telhado Rosa", "Telhado de Ardósia")
+        for (i in 0 until 8) { val c = pc(i); gone(rip[i]) { uni("Telhado de Ripas " + DM[i], C_BUILD, 1, c, M_WOOD, 6f, shp(BuildShapes.S_ROOF), ROOF_DESC) }; roofs.add(last()); rot4(last(), BuildShapes.S_ROOF) }
+        val cer = arrayOf("Telhado Branco", "Telhado de Cobre Oxidado", "Telhado Rosa", "Telhado Azul", "Telhado Marrom", "Telhado Verde", "Telhado Vermelho", "Telhado Preto")
+        for (i in 8 until 16) { val c = pc(i); gone(cer[i - 8]) { uni("Telhado Cerâmico " + DM[i], C_BUILD, 1, c, M_STONE, 6f, shp(BuildShapes.S_ROOF), ROOF_DESC) }; rot4(last(), BuildShapes.S_ROOF) }
         // ---- pisos e paredes especiais ----
-        uni("Piso Xadrez Rosa", C_BUILD, bt(BuildArt.CHECKER, 0xFFB6D0, 0xFFF4E4), 0xFFB6D0, M_STONE, 6f)
-        uni("Piso Xadrez Azul", C_BUILD, bt(BuildArt.CHECKER, 0x9FD0F5, 0xFFF4E4), 0x9FD0F5, M_STONE, 6f)
-        uni("Piso Xadrez Menta", C_BUILD, bt(BuildArt.CHECKER, 0xA8E6C8, 0xFFF4E4), 0xA8E6C8, M_STONE, 6f)
-        uni("Piso Xadrez Preto e Branco", C_BUILD, bt(BuildArt.CHECKER, 0x4A4658, 0xFAF8F4), 0x4A4658, M_STONE, 6f)
-        uni("Piso Xadrez Vermelho", C_BUILD, bt(BuildArt.CHECKER, 0xE5584A, 0xFFF4E4), 0xE5584A, M_STONE, 6f)
-        for (n in arrayOf("Carvalho" to 0xDDB57A, "Cerejeira" to 0xE0A0A0, "Escuro" to 0x8A6040, "Bétula" to 0xEFDCA8)) uni("Piso Espinha " + n.first, C_BUILD, bt(BuildArt.HERRING, n.second), n.second, M_WOOD, 5f, 0, "Piso de madeira em espinha de peixe.")
-        for (n in arrayOf("Água" to 0x9CCFE8, "Rosa" to 0xFFB6D0, "Menta" to 0xA8E6C8, "Branco" to 0xF4F4F0, "Lavanda" to 0xCDB8F5)) uni("Ladrilho Hexagonal " + n.first, C_BUILD, bt(BuildArt.HEXTILE, n.second), n.second, M_STONE, 6f)
-        for (n in arrayOf("Cinza" to 0xB9C2D0, "Creme" to 0xF0E4C8, "Rosa" to 0xF4C0CC, "Verde" to 0xBFE0B0)) uni("Caminho de Pedras " + n.first, C_BUILD, bt(BuildArt.STEPPING, n.second), n.second, M_STONE, 8f)
-        for (n in arrayOf("Cinza" to 0xB9C2D0, "Areia" to 0xE8D4A8, "Rosa" to 0xF0B8C0, "Água" to 0xA8D0E0)) uni("Seixos " + n.first, C_BUILD, bt(BuildArt.PEBBLE, n.second), n.second, M_STONE, 8f, 0, "Pedrinhas de rio redondinhas.")
-        for (n in arrayOf("Branco" to 0xFAF6EE, "Rosa" to 0xFFD6E4, "Céu" to 0xCFE4FA, "Menta" to 0xCFF0DC)) uni("Enxaimel " + n.first, C_BUILD, bt(BuildArt.TIMBER, n.second, 0x8A5E3C), n.second, M_WOOD, 6f, 0, "Parede de gesso com vigas de madeira, estilo casinha de conto de fadas.")
+        gone("Concreto Rosa") { uni("Piso Xadrez Rosa", C_BUILD, bt(BuildArt.CHECKER, 0xFFB6D0, 0xFFF4E4), 0xFFB6D0, M_STONE, 6f) }
+        gone("Concreto Azul-claro") { uni("Piso Xadrez Azul", C_BUILD, bt(BuildArt.CHECKER, 0x9FD0F5, 0xFFF4E4), 0x9FD0F5, M_STONE, 6f) }
+        gone("Concreto Lima") { uni("Piso Xadrez Menta", C_BUILD, bt(BuildArt.CHECKER, 0xA8E6C8, 0xFFF4E4), 0xA8E6C8, M_STONE, 6f) }
+        gone("Xadrez") { uni("Piso Xadrez Preto e Branco", C_BUILD, bt(BuildArt.CHECKER, 0x4A4658, 0xFAF8F4), 0x4A4658, M_STONE, 6f) }
+        gone("Concreto Vermelho") { uni("Piso Xadrez Vermelho", C_BUILD, bt(BuildArt.CHECKER, 0xE5584A, 0xFFF4E4), 0xE5584A, M_STONE, 6f) }
+        for (n in arrayOf("Carvalho" to 0xDDB57A, "Cerejeira" to 0xE0A0A0, "Escuro" to 0x8A6040, "Bétula" to 0xEFDCA8)) gone(when (n.first) { "Carvalho" -> "Tábua"; "Cerejeira" -> "Tábua de Cerejeira"; "Escuro" -> "Tábua de Carvalho Escuro"; else -> "Tábua de Bétula" }, if (n.first == "Carvalho") "Carvalho" else "") { uni("Piso Espinha " + n.first, C_BUILD, bt(BuildArt.HERRING, n.second), n.second, M_WOOD, 5f, 0, "Piso de madeira em espinha de peixe.") }
+        for (n in arrayOf("Água" to 0x9CCFE8, "Rosa" to 0xFFB6D0, "Menta" to 0xA8E6C8, "Branco" to 0xF4F4F0, "Lavanda" to 0xCDB8F5)) gone(when (n.first) { "Água" -> "Concreto Azul-claro"; "Rosa" -> "Concreto Rosa"; "Menta" -> "Concreto Lima"; "Branco" -> "Concreto Branco"; else -> "Concreto Roxo" }) { uni("Ladrilho Hexagonal " + n.first, C_BUILD, bt(BuildArt.HEXTILE, n.second), n.second, M_STONE, 6f) }
+        for (n in arrayOf("Cinza" to 0xB9C2D0, "Creme" to 0xF0E4C8, "Rosa" to 0xF4C0CC, "Verde" to 0xBFE0B0)) gone(when (n.first) { "Cinza" -> "Pedregulho"; "Creme" -> "Arenito"; "Rosa" -> "Concreto Rosa"; else -> "Pedregulho Musgoso" }) { uni("Caminho de Pedras " + n.first, C_BUILD, bt(BuildArt.STEPPING, n.second), n.second, M_STONE, 8f) }
+        for (n in arrayOf("Cinza" to 0xB9C2D0, "Areia" to 0xE8D4A8, "Rosa" to 0xF0B8C0, "Água" to 0xA8D0E0)) gone(when (n.first) { "Cinza" -> "Pedregulho"; "Areia" -> "Arenito"; "Rosa" -> "Concreto Rosa"; else -> "Concreto Azul-claro" }) { uni("Seixos " + n.first, C_BUILD, bt(BuildArt.PEBBLE, n.second), n.second, M_STONE, 8f, 0, "Pedrinhas de rio redondinhas.") }
+        for (n in arrayOf("Branco" to 0xFAF6EE, "Rosa" to 0xFFD6E4, "Céu" to 0xCFE4FA, "Menta" to 0xCFF0DC)) gone(when (n.first) { "Branco" -> "Concreto Branco"; "Rosa" -> "Concreto Rosa"; "Céu" -> "Concreto Azul-claro"; else -> "Concreto Lima" }) { uni("Enxaimel " + n.first, C_BUILD, bt(BuildArt.TIMBER, n.second, 0x8A5E3C), n.second, M_WOOD, 6f, 0, "Parede de gesso com vigas de madeira, estilo casinha de conto de fadas.") }
         for (n in arrayOf("Carvalho" to 0xC9A06B, "Abeto" to 0x9A7448, "Bétula" to 0xE8D8A0, "Cerejeira" to 0xDDA5A0, "Escuro" to 0x6A4A32)) {
-            val tp = bt(BuildArt.RINGS, n.second)
-            blk("Toras " + n.first, C_BUILD, tp, bt(BuildArt.LOGWALL, n.second), tp, n.second, M_WOOD, 7f, 0, "Parede de toras empilhadas.")
+            gone(when (n.first) { "Carvalho" -> "Carvalho Descascado"; "Abeto" -> "Abeto Descascado"; "Bétula" -> "Bétula Descascada"; "Cerejeira" -> "Cerejeira Descascada"; else -> "Carvalho Escuro Descascado" }) {
+            blk("Toras " + n.first, C_BUILD, 1, 1, 1, n.second, M_WOOD, 7f, 0, "Parede de toras empilhadas.") }
         }
-        for (n in arrayOf("Ferro" to 0xC8CED8, "Cobre" to 0xE09A70, "Ouro" to 0xF6D860, "Rosa" to 0xF4B0C0, "Azul" to 0x8CB8E8, "Verde" to 0x8CD8A8)) uni("Chapa Ondulada " + n.first, C_BUILD, bt(BuildArt.CORRUG, n.second), n.second, M_METAL, 10f, 0, "Chapa de metal ondulada, parafusada nas cristas.")
-        for (n in arrayOf("Rosa" to 0xF4B8D0, "Azul" to 0x9CCFE8, "Amarelo" to 0xFFE08A, "Menta" to 0xA8E6C8)) uni("Losangos " + n.first, C_BUILD, bt(BuildArt.DIAMOND, n.second), n.second, M_STONE, 8f, 0, "Almofadas em losango.")
-        for (n in arrayOf("Rosa" to 0xFFB6D0, "Azul" to 0x9FD0F5, "Menta" to 0xA8E6C8)) uni("Listrado " + n.first, C_BUILD, bt(BuildArt.STRIPES, n.second, 0xFFF4E4), n.second, M_SOFT, 3f, 0, "Papel de parede listrado.")
-        uni("Azulejo Verde", C_BUILD, bt(BuildArt.AZ_DECOR, 0x3FAF7A, 0xF6F6F0), 0x3FAF7A, M_STONE, 6f)
-        uni("Azulejo Rosa", C_BUILD, bt(BuildArt.AZ_DECOR, 0xE8789F, 0xF6F6F0), 0xE8789F, M_STONE, 6f)
-        uni("Azulejo Amarelo", C_BUILD, bt(BuildArt.AZ_DECOR, 0xE8B030, 0xF6F6F0), 0xE8B030, M_STONE, 6f)
-        uni("Azulejo Roxo", C_BUILD, bt(BuildArt.AZ_DECOR, 0x8A5FD0, 0xF6F6F0), 0x8A5FD0, M_STONE, 6f)
-        uni("Azulejo Rosa Liso", C_BUILD, bt(BuildArt.AZ_PLAIN, 0xFFC4DD), 0xFFC4DD, M_STONE, 6f)
-        uni("Azulejo Céu Liso", C_BUILD, bt(BuildArt.AZ_PLAIN, 0xBFE0FF), 0xBFE0FF, M_STONE, 6f)
-        uni("Azulejo Menta Liso", C_BUILD, bt(BuildArt.AZ_PLAIN, 0xBFEAD4), 0xBFEAD4, M_STONE, 6f)
+        for (n in arrayOf("Ferro" to 0xC8CED8, "Cobre" to 0xE09A70, "Ouro" to 0xF6D860, "Rosa" to 0xF4B0C0, "Azul" to 0x8CB8E8, "Verde" to 0x8CD8A8)) gone(when (n.first) { "Ferro" -> "Bloco de Ferro"; "Cobre" -> "Bloco de Cobre"; "Ouro" -> "Bloco de Ouro"; "Rosa" -> "Concreto Rosa"; "Azul" -> "Concreto Azul-claro"; else -> "Concreto Verde" }) { uni("Chapa Ondulada " + n.first, C_BUILD, bt(BuildArt.CORRUG, n.second), n.second, M_METAL, 10f, 0, "Chapa de metal ondulada, parafusada nas cristas.") }
+        for (n in arrayOf("Rosa" to 0xF4B8D0, "Azul" to 0x9CCFE8, "Amarelo" to 0xFFE08A, "Menta" to 0xA8E6C8)) gone(when (n.first) { "Rosa" -> "Concreto Rosa"; "Azul" -> "Concreto Azul-claro"; "Amarelo" -> "Concreto Amarelo"; else -> "Concreto Lima" }) { uni("Losangos " + n.first, C_BUILD, bt(BuildArt.DIAMOND, n.second), n.second, M_STONE, 8f, 0, "Almofadas em losango.") }
+        for (n in arrayOf("Rosa" to 0xFFB6D0, "Azul" to 0x9FD0F5, "Menta" to 0xA8E6C8)) gone(when (n.first) { "Rosa" -> "Concreto Rosa"; "Azul" -> "Concreto Azul-claro"; else -> "Concreto Lima" }) { uni("Listrado " + n.first, C_BUILD, bt(BuildArt.STRIPES, n.second, 0xFFF4E4), n.second, M_SOFT, 3f, 0, "Papel de parede listrado.") }
+        gone("Concreto Verde") { uni("Azulejo Verde", C_BUILD, bt(BuildArt.AZ_DECOR, 0x3FAF7A, 0xF6F6F0), 0x3FAF7A, M_STONE, 6f) }
+        gone("Concreto Rosa") { uni("Azulejo Rosa", C_BUILD, bt(BuildArt.AZ_DECOR, 0xE8789F, 0xF6F6F0), 0xE8789F, M_STONE, 6f) }
+        gone("Concreto Amarelo") { uni("Azulejo Amarelo", C_BUILD, bt(BuildArt.AZ_DECOR, 0xE8B030, 0xF6F6F0), 0xE8B030, M_STONE, 6f) }
+        gone("Concreto Roxo") { uni("Azulejo Roxo", C_BUILD, bt(BuildArt.AZ_DECOR, 0x8A5FD0, 0xF6F6F0), 0x8A5FD0, M_STONE, 6f) }
+        gone("Concreto Rosa") { uni("Azulejo Rosa Liso", C_BUILD, bt(BuildArt.AZ_PLAIN, 0xFFC4DD), 0xFFC4DD, M_STONE, 6f) }
+        gone("Concreto Azul-claro") { uni("Azulejo Céu Liso", C_BUILD, bt(BuildArt.AZ_PLAIN, 0xBFE0FF), 0xBFE0FF, M_STONE, 6f) }
+        gone("Concreto Lima") { uni("Azulejo Menta Liso", C_BUILD, bt(BuildArt.AZ_PLAIN, 0xBFEAD4), 0xBFEAD4, M_STONE, 6f) }
         // lajes e escadas dos materiais coloridos
-        for (mn in arrayOf("Tijolo Rosa", "Tijolo Azul-claro", "Tábua Pintada Branca", "Tábua Pintada Rosa", "Alvenaria Cinza-clara", "Piso Espinha Carvalho", "Reboco Rosa")) {
+        for (mn in arrayOf("Tijolo Rosa", "Tijolo Azul-claro", "Tábua Pintada Branca", "Tábua Pintada Rosa", "Alvenaria Cinza-clara", "Piso Espinha Carvalho", "Concreto Rosa")) {
             val m = list.firstOrNull { it.name == mn } ?: continue
             val sl = blk("Laje de " + mn, C_BUILD, m.top, m.side, m.bot, m.color, m.mat, m.hard, shp(BuildShapes.S_SLAB), "Laje de meio bloco. Coloque embaixo de um teto pra ela ficar virada pra cima.")
             val st = blk("Laje de " + mn + " (cima)", C_BUILD, m.top, m.side, m.bot, m.color, m.mat, m.hard, shp(BuildShapes.S_SLABT), "Laje de meio bloco, em cima.")
@@ -595,6 +664,7 @@ object Blk {
             rot4(last(), BuildShapes.S_STAIR)
         }
         buildFurn2()
+        retireDerived()
     }
 
     // ================= MOBÍLIA v2 (FurnB): ids novos sempre no fim! =================

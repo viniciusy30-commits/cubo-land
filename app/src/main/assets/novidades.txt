@@ -1,3 +1,9 @@
+#id 2026-10-14-b
+#titulo Construção estilo Minecraft, sem repetidos
+- Texturas da Construção agora são as do Minecraft (pack Actions & Stuff): pedras, tijolos, tábuas, concreto, terracota, vidros, metais e cobre
+- Tiraram o relevo 3D dos blocos de Construção: as faces ficam lisas, como no Minecraft
+- Blocos repetidos saíram da mochila (gesso, reboco, vidro fino, azulejos, lambri, alvenaria, telhados duplicados e janelas decorativas); nos mundos antigos eles viram o bloco equivalente sozinhos
+
 #id 2026-10-14-a
 #titulo Mobília nova: sofás, cortinas, lâmpadas e muito mais
 - Mais de 400 móveis novos na aba Mobília, cada modelo em várias cores e madeiras
