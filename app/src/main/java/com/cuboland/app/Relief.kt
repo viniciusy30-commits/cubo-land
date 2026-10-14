@@ -48,6 +48,12 @@ object Relief {
         val px = McTex.pix(tex)
         val out = ByteArray(256)
         val nm = McTex.nameOf(tex)
+        if (!(nm.contains("_ore") || nm.contains("debris"))) {
+            // fora os minérios: nada de relevo por brilho (dava grãozinhos). Só os vãos de verdade (rejunte, frestas entre tábuas) entram; o resto fica liso.
+            val gm = GapMaps.m[nm] ?: return Map(16, out)
+            for (y in 0 until 16) for (x in 0 until 16) if (gm[y][x] == '#') out[y * 16 + x] = -1
+            return Map(16, out)
+        }
         val lum = FloatArray(256); val ok = BooleanArray(256)
         var sum = 0f; var n = 0
         for (i in 0 until 256) {
