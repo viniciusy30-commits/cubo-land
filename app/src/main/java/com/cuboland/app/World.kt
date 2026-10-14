@@ -430,8 +430,6 @@ class World {
             put(ex, ez, "Elevador", ey)
         }
     }
-    }
-    }
 
     /** vitrine da mobília nova: 6 ambientes encostados numa parede (sala, jantar e cozinha, quarto, banheiro, luzes, plantas e quadros) */
     private fun furnitureShowcase2(top: Int) {
