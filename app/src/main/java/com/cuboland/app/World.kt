@@ -58,7 +58,7 @@ object B {
             defined[id] = true; if (id + 1 > used) used = id + 1
             byName[d.name] = id
             if (d.name.startsWith("Tronco ") || d.name.startsWith("Caule ")) isLog[id] = true
-            relief[id] = (d.flags and (Blk.F_GLASS or Blk.F_LIGHT or Blk.F_LEAF)) == 0 && !d.name.startsWith("Lã ") && d.cat != Blk.C_BUILD   // Construção: textura lisa estilo Minecraft, sem relevo 3D
+            relief[id] = (d.flags and (Blk.F_GLASS or Blk.F_LIGHT or Blk.F_LEAF)) == 0 && !d.name.startsWith("Lã ") && d.cat != Blk.C_BUILD && !Blk.isMc(d.top) && !Blk.isMc(d.side)   // Construção: textura lisa estilo Minecraft, sem relevo 3D
         }
     }
     fun solid(id: Int) = id != AIR && id != WATER

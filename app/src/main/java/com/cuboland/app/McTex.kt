@@ -9,10 +9,31 @@ import java.util.zip.Inflater
  * tint >= 0 recolore a textura com aquela cor (mantém a luz e a sombra dos pixels) pras famílias de cores que não existem no Minecraft.
  */
 object McTex {
+    /** todas as texturas: as da Construção (McTexData) + as do resto do pack (McTexData2..9) */
+    private val ALL: Array<String> = McTexData.D + McTexData2.D + McTexData3.D + McTexData4.D + McTexData5.D + McTexData6.D + McTexData7.D + McTexData8.D + McTexData9.D
     private val names = HashMap<String, Int>().also { m ->
-        for ((i, e) in McTexData.D.withIndex()) m[e.substring(0, e.indexOf(':'))] = i
+        for ((i, e) in ALL.withIndex()) m[e.substring(0, e.indexOf(':'))] = i
     }
-    private val cache = arrayOfNulls<IntArray>(McTexData.D.size)
+    private val cache = arrayOfNulls<IntArray>(ALL.size)
+
+    /** itens 16x16 do pack (ferramentas): ARGB ou null se não existir */
+    fun itemPix(name: String): IntArray? {
+        for (e in McItemData.D) {
+            if (!e.startsWith("$name:")) continue
+            val z = Base64.decode(e.substring(e.indexOf(':') + 1), Base64.DEFAULT)
+            val inf = Inflater(); inf.setInput(z)
+            val raw = ByteArray(16 * 16 * 4); var n = 0
+            while (n < raw.size && !inf.finished()) { val r = inf.inflate(raw, n, raw.size - n); if (r <= 0) break; n += r }
+            inf.end()
+            val out = IntArray(256)
+            for (p in 0 until 256) {
+                val r = raw[p * 4].toInt() and 255; val g = raw[p * 4 + 1].toInt() and 255; val b = raw[p * 4 + 2].toInt() and 255; val a = raw[p * 4 + 3].toInt() and 255
+                out[p] = (a shl 24) or (r shl 16) or (g shl 8) or b
+            }
+            return out
+        }
+        return null
+    }
     private val tinted = HashMap<Long, IntArray>()
 
     /** índice da textura pelo nome do arquivo (0 se não existir) */
@@ -22,7 +43,7 @@ object McTex {
     fun pix(i: Int): IntArray {
         val k = if (i in cache.indices) i else 0
         cache[k]?.let { return it }
-        val e = McTexData.D[k]
+        val e = ALL[k]
         val z = Base64.decode(e.substring(e.indexOf(':') + 1), Base64.DEFAULT)
         val inf = Inflater()
         inf.setInput(z)

@@ -1,3 +1,11 @@
+#id 2026-10-14-d
+#titulo Texturas do Actions & Stuff em todo o jogo
+- Terreno (grama, terra, areia, pedra, tronco), troncos de todas as árvores, minérios, neve, gelo, cacto, abóbora, melancia, feno, mel e magma agora usam as texturas do pack Actions & Stuff
+- Lã, terracota vitrificada, blocos luminosos, cristais, gelatinas, barril, estante, mesa de trabalho, dinamite e a mobília (madeiras, tecidos, metais, vasos) também
+- Espada, machado e picareta na mão e no ícone usam os desenhos do pack
+- Folhas e água continuam do jeito que estavam
+- Mais de 130 blocos novos vindos do pack: minérios da ardósia, cobre cortado/cinzelado/grade, concreto em pó, basalto, calcita, sculk, nylium, tufo, resina, luzes de sapo, fornalhas, corais e muito mais
+
 #id 2026-10-14-c
 #titulo Casa moderna refeita, vidro liso e piscina
 - Vidros (comum, fumê e coloridos) agora são lisos de verdade: sem moldura em cada bloco, paredes e fachadas de vidro emendam sem nenhuma divisa

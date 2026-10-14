@@ -56,7 +56,7 @@ object ToolSprites {
 
     private const val WOOD = 0x9A6A3E; private const val WOOD_D = 0x7A5230; private const val GOLD = 0xFFD060; private const val GOLD_D = 0xD9A93A
 
-    val axe: Sprite by lazy {
+    val axeOld: Sprite by lazy {
         val g = IntArray(N * N)
         line(g, 2, 13, 11, 4, WOOD); line(g, 3, 13, 12, 4, WOOD_D)
         line(g, 5, 11, 6, 10, GOLD)
@@ -69,7 +69,7 @@ object ToolSprites {
         finish(g, 3, 12)
     }
 
-    val sword: Sprite by lazy {
+    val swordOld: Sprite by lazy {
         val g = IntArray(N * N)
         line(g, 5, 9, 13, 1, 0xE8F4FF); line(g, 6, 9, 14, 1, 0x9ADBFF)
         put(g, 14, 0, 0xFFFFFF)
@@ -80,7 +80,7 @@ object ToolSprites {
         finish(g, 3, 11)
     }
 
-    val pick: Sprite by lazy {
+    val pickOld: Sprite by lazy {
         val g = IntArray(N * N)
         line(g, 2, 13, 12, 3, WOOD); line(g, 3, 13, 13, 3, WOOD_D)
         val pts = arrayOf(intArrayOf(2, 6), intArrayOf(3, 4), intArrayOf(5, 2), intArrayOf(8, 1), intArrayOf(11, 2), intArrayOf(13, 4), intArrayOf(14, 7))
@@ -102,6 +102,29 @@ object ToolSprites {
         }
         finish(g, 3, 12)
     }
+
+    /** sprite direto de uma textura 16x16 do pack Actions & Stuff (já vem com contorno próprio, sem contorno extra) */
+    private fun fromPack(name: String, gx: Int, gy: Int): Sprite? {
+        val px = McTex.itemPix(name) ?: return null
+        val o = IntArray(N * N)
+        for (i in 0 until N * N) if ((px[i] ushr 24) >= 128) o[i] = (px[i] and 0xFFFFFF) or FLAG
+        val runs = ArrayList<Run>()
+        for (y in 0 until N) {
+            var x = 0
+            while (x < N) {
+                val c = o[y * N + x]
+                if (c == 0) { x++; continue }
+                var e = x
+                while (e + 1 < N && o[y * N + e + 1] == c) e++
+                runs.add(Run(x, e, y, c))
+                x = e + 1
+            }
+        }
+        return Sprite(runs, gx, gy)
+    }
+    val sword: Sprite by lazy { fromPack("diamond_sword", 3, 11) ?: swordOld }
+    val axe: Sprite by lazy { fromPack("diamond_axe", 3, 12) ?: axeOld }
+    val pick: Sprite by lazy { fromPack("diamond_pickaxe", 3, 12) ?: pickOld }
 
     fun get(id: Int): Sprite? = when (id) {
         Items.AXE -> axe; Items.SWORD -> sword; Items.PICK -> pick; Items.STAFF -> staff; else -> null

@@ -887,9 +887,19 @@ object Atlas {
             }
         }
         // pedra (4), tábua (9) e tijolo (11) do terreno básico: mesmos padrões da Construção
-        for (t in intArrayOf(4, 9, 11)) {
-            val mt = McTex.id(when (t) { 4 -> "stone"; 9 -> "planks_oak"; else -> "brick" })
-            for (py in 0 until T) for (px in 0 until T) out[py * w + t * T + px] = McTex.sample(mt, -1, px / 4, py / 4) or (255 shl 24)
+        // terreno básico e matinhos: texturas do pack Actions & Stuff (grama, terra, areia, tronco, flores, blocos coloridos)
+        val packTiles = arrayOf(intArrayOf(1, 0), intArrayOf(2, 0), intArrayOf(3, 0), intArrayOf(4, 0), intArrayOf(5, 0), intArrayOf(6, 0), intArrayOf(7, 0), intArrayOf(9, 0), intArrayOf(11, 0),
+            intArrayOf(12, 0), intArrayOf(13, 0), intArrayOf(14, 0), intArrayOf(15, 0), intArrayOf(16, 0x6FAE45), intArrayOf(17, 0), intArrayOf(18, 0), intArrayOf(19, 0))
+        val packNames = arrayOf("grass_carried", "grass_side_carried", "dirt", "stone", "sand", "log_oak", "log_oak_top", "planks_oak", "brick",
+            "concrete_pink", "concrete_light_blue", "concrete_yellow", "glowstone", "tallgrass", "flower_tulip_pink", "flower_dandelion", "flower_oxeye_daisy")
+        for (k in packTiles.indices) {
+            val t = packTiles[k][0]; val tint = if (packTiles[k][1] != 0) packTiles[k][1] else -1
+            val mt = McTex.id(packNames[k])
+            val plant = t >= 16
+            for (py in 0 until T) for (px in 0 until T) {
+                val c = McTex.sample(mt, tint, px / 4, py / 4)
+                out[py * w + t * T + px] = if (plant) c else (c or (255 shl 24))
+            }
         }
         for (t in 0 until 24) bleed(out, w, t * T, 0)
         // blocos novos (receitas em Blk): 1 amostra por pixel, as formas já são suaves
