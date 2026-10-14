@@ -75,6 +75,8 @@ class Foot(val x: Float, val y: Float, val z: Float, val ang: Float, val id: Int
 
 class Bolt(var x: Float, var y: Float, var z: Float, val vx: Float, val vy: Float, val vz: Float, var life: Float)
 
+class ElevCar(val x: Int, val z: Int, var rot: Int) { @Volatile var y = 0f; var fromY = 0f; var toY = 0f; var t = 0f; var dur = 1f; @Volatile var moving = false; @Volatile var dir = 0 }
+
 class Game(val world: World) {
     val slashes = java.util.concurrent.CopyOnWriteArrayList<Slash>()
     companion object { const val SLASH_LIFE = 180f; const val LB_SHAKE = 0.12f; const val LB_FLY = 0.30f }
@@ -384,6 +386,64 @@ class Game(val world: World) {
             if (!collides(tx, seatY + 0.01f, tz, player.hw, 1.8f)) { nx = tx; ny = seatY + 0.01f; nz = tz; break }
         }
         player.x = nx; player.y = ny; player.z = nz; player.vx = 0f; player.vy = 0f; player.vz = 0f
+    }
+
+    // ---------- elevador ----------
+    val elevCars = java.util.concurrent.ConcurrentHashMap<Long, ElevCar>()
+    @Volatile var elevAim: IntArray? = null      // parada (x,y,z) em que o jogador está
+    @Volatile var elevFloor = 0; @Volatile var elevCount = 0; @Volatile var elevUp = false; @Volatile var elevDown = false
+    @Volatile var elevReq = 0                    // 1 = subir, -1 = descer (a UI pede, o update executa)
+    @Volatile var elevRide: ElevCar? = null
+    fun elevStops(x: Int, z: Int): List<Int> {
+        val l = ArrayList<Int>()
+        for (y in 0 until World.SY) if (Furniture.isElev(world.get(x, y, z))) l.add(y)
+        return l
+    }
+    private fun scanElev() {
+        if (elevRide != null) return
+        val p = player
+        var found: IntArray? = null
+        if (!seated && !flying && p.onGround && deadTimer <= 0f) {
+            val fx = floor(p.x).toInt(); val fz = floor(p.z).toInt()
+            for (y in intArrayOf(floor(p.y).toInt(), floor(p.y - 0.1f).toInt()))
+                if (Furniture.isElev(world.get(fx, y, fz))) { found = intArrayOf(fx, y, fz); break }
+        }
+        elevAim = found
+        if (found != null) {
+            val st = elevStops(found[0], found[2])
+            elevCount = st.size; elevFloor = st.indexOf(found[1]) + 1
+            elevUp = st.any { it > found[1] }; elevDown = st.any { it < found[1] }
+        }
+    }
+    private fun elevGo(dir: Int) {
+        val a = elevAim ?: return
+        if (elevRide != null) return
+        val st = elevStops(a[0], a[2])
+        val to = (if (dir > 0) st.firstOrNull { it > a[1] } else st.lastOrNull { it < a[1] }) ?: return
+        val key = (a[2].toLong() shl 32) or a[0].toLong()
+        val car = elevCars.getOrPut(key) { ElevCar(a[0], a[2], 0) }
+        car.rot = Furniture.facing(world, a[0], a[1], a[2], Furniture.S_ELEV)
+        car.y = a[1].toFloat(); car.fromY = car.y; car.toY = to.toFloat(); car.t = 0f
+        car.dur = max(1.6f, abs(to - a[1]) / 3f); car.dir = dir; car.moving = true
+        elevRide = car; flying = false; posture = 0; player.h = 1.8f
+    }
+    private fun updateElev(dt: Float) {
+        val rq = elevReq; if (rq != 0) { elevReq = 0; elevGo(rq) }
+        val car = elevRide
+        if (car != null) {
+            val p = player
+            car.t += dt
+            val k = (car.t / car.dur).coerceIn(0f, 1f); val e = k * k * (3f - 2f * k)
+            car.y = car.fromY + (car.toY - car.fromY) * e
+            val m = min(1f, 8f * dt)
+            p.x += (car.x + 0.5f - p.x) * m; p.z += (car.z + 0.5f - p.z) * m
+            p.y = car.y + 0.062f; p.vx = 0f; p.vy = 0f; p.vz = 0f; p.onGround = true
+            stickX = 0f; stickY = 0f
+            if (k >= 1f) { car.y = car.toY; car.moving = false; p.y = car.toY + 0.062f; elevRide = null }
+        }
+        if (elevCars.isNotEmpty()) for ((key, c) in elevCars) {
+            if (!c.moving && !Furniture.isElev(world.get(c.x, Math.round(c.y), c.z))) elevCars.remove(key)
+        }
     }
 
     // ---------- televisão ----------
@@ -1093,6 +1153,7 @@ class Game(val world: World) {
         waterStep(dt)
         val p = player
         scanTv(dt)
+        scanElev()
         if (!creative) flying = false
         if (flying && p.onGround && downHeld) flying = false
         if (seated) {
@@ -1124,7 +1185,8 @@ class Game(val world: World) {
             if (p.inWater) { if (p.onGround) { p.vy = max(p.vy, 5.5f); p.onGround = false } } else if (p.onGround) { p.vy = 8.6f; p.onGround = false }
         }
         val wasW = p.inWater; val vyPre = p.vy
-        if (seated) { p.vx = 0f; p.vy = 0f; p.vz = 0f; p.onGround = true } else {
+        updateElev(dt)
+        if (seated || elevRide != null) { if (elevRide == null) { p.vx = 0f; p.vy = 0f; p.vz = 0f; p.onGround = true } } else {
             for (i in 0 until 2) physics(p, dt / 2f)
             waterAndSteps(dt, wasW, vyPre)
         }

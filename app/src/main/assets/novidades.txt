@@ -1,3 +1,9 @@
+#id 2026-10-14-g
+#titulo Elevador
+- Novo bloco "Elevador" (Mobília): coloque uma parada em cada andar, uma em cima da outra, e entre na cabine
+- Na galeria "MOBÍLIA montada" tem uma torre de teste com 3 andares
+- Aparecem os botões SUBIR e DESCER; a cabine sobe e desce com animação suave, levando você junto, e para em cada andar
+
 #id 2026-10-14-f
 #titulo Relevo 3D sutil também na Construção
 - Pedras, tijolos, tábuas, concreto, terracota, metais e cobre da Construção ganharam o mesmo relevinho 3D sutil da Natureza, tirado dos pixels das texturas do Actions & Stuff (rejunte e veios afundam, tijolos e nós saem um pouco)

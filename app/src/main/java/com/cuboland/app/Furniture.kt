@@ -9,6 +9,7 @@ object Furniture {
     const val S_TDARK = 20; const val S_TMARB = 21; const val S_TCLOTH = 22; const val S_TROUND = 23; const val S_COFFEE = 24; const val S_DESK = 25; const val S_TROUNDM = 26
     const val S_SHELF = 30; const val S_WARD = 31; const val S_DRESS = 32; const val S_FRIDGE = 33
     const val S_PC = 40; const val S_TV = 41; const val S_LAMP = 42
+    const val S_ELEV = 60
     const val S_PLANT = 50; const val S_RUGR = 51; const val S_RUGB = 52
 
     const val T_OAK = 0; const val T_OAKD = 1; const val T_DARK = 2; const val T_DARKD = 3; const val T_BIRCH = 4
@@ -25,6 +26,7 @@ object Furniture {
         else -> 0
     }
     fun isTv(id: Int): Boolean = sub(id) == S_TV
+    fun isElev(id: Int): Boolean = sub(id) == S_ELEV
     /** escala da TV por nível de tamanho (0 = normal) */
     val TV_SCALE = floatArrayOf(1f, 1.5f, 2f, 3f)
     fun sittable(id: Int): Boolean { val s = sub(id); if (s >= 100) return FurnB.sittable(s); return s == S_CHAIR || s == S_CHAIR2 || s == S_STOOL || s == S_ARM || s == S_OFFICE || s == S_SOFA }
@@ -78,6 +80,7 @@ object Furniture {
             S_LAMP -> floatArrayOf(0.18f, 0f, 0.18f, 0.82f, 0.76f, 0.82f)
             S_PLANT -> floatArrayOf(0.18f, 0f, 0.18f, 0.82f, 0.85f, 0.82f)
             S_RUGR, S_RUGB -> floatArrayOf(0f, 0f, 0f, 1f, 0.04f, 1f)
+            S_ELEV -> floatArrayOf(0f, 0f, 0f, 1f, 0.06f, 1f)
             else -> (if (s >= 100) FurnB.box(w, x, y, z, s) else null) ?: return null
         }
         val oy = if (y >= 0) baseOff(w, x, y, z, s) else 0f
@@ -174,11 +177,24 @@ object Furniture {
             S_PC -> { c.rot = facing(w, x, y, z, s); computer(c, T) }
             S_TV -> { c.rot = facing(w, x, y, z, s); c.sc = TV_SCALE[w.tvLevel(x, y, z).coerceIn(0, TV_SCALE.size - 1)]; tv(c, T) }
             S_LAMP -> lamp(c, T)
+            S_ELEV -> { c.rot = facing(w, x, y, z, s); elevStop(c, T) }
             S_PLANT -> plant(c, T, x, z)
             S_RUGR -> c.box(T[T_RUGR], T[T_RUGR], T[T_RUGR], 0f, 0f, 0f, 1f, 0.04f, 1f)
             S_RUGB -> c.box(T[T_RUGB], T[T_RUGB], T[T_RUGB], 0f, 0f, 0f, 1f, 0.04f, 1f)
             else -> if (s >= 100) FurnB.emit(c, w, x, y, z, id, s)
         }
+    }
+
+    // ---------- elevador: parada (piso + moldura); a cabine que sobe/desce é desenhada pelo GameRenderer ----------
+    private fun elevStop(c: C, T: IntArray) {
+        val st = T[T_STEEL]; val gr = T[T_GREY]; val gd = T[T_GOLD]; val sc = T[T_SCREEN]
+        c.box(st, st, st, 0f, 0f, 0f, 1f, 0.06f, 1f)
+        c.box(gr, gr, gr, 0f, 0.06f, 0f, 1f, 1f, 0.05f)
+        c.box(gr, gr, gr, 0f, 0.06f, 0.05f, 0.05f, 1f, 1f)
+        c.box(gr, gr, gr, 0.95f, 0.06f, 0.05f, 1f, 1f, 1f)
+        c.box(gd, gd, gd, 0f, 0.06f, 0.92f, 0.08f, 1f, 1f)
+        c.box(gd, gd, gd, 0.92f, 0.06f, 0.92f, 1f, 1f, 1f)
+        c.box(sc, sc, sc, 0.93f, 0.45f, 0.99f, 0.99f, 0.6f, 1.002f, true)
     }
 
     // ---------- cadeiras ----------

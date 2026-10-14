@@ -43,6 +43,34 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         }
     }
 
+    // ----- Elevador: botões SUBIR / DESCER quando o jogador está dentro da parada -----
+    private fun elevOn() = !paused && !invOpen && game.elevAim != null
+    private fun elevBtn(k: Int): RectF {
+        val bw = 124 * d; val bh = 38 * d; val gp = 10 * d
+        val l = width / 2f - (bw * 2 + gp) / 2f + k * (bw + gp)
+        val t = hbTop() - 108 * d - (if (tvPromptOn()) 92 * d else 0f)
+        return RectF(l, t, l + bw, t + bh)
+    }
+    private fun elevDown(x: Float, y: Float): Boolean {
+        if (!elevOn() || game.elevRide != null) return elevOn() && (elevBtn(0).contains(x, y) || elevBtn(1).contains(x, y))
+        if (elevBtn(0).contains(x, y)) { if (game.elevUp) game.elevReq = 1; return true }
+        if (elevBtn(1).contains(x, y)) { if (game.elevDown) game.elevReq = -1; return true }
+        return false
+    }
+    private fun drawElev(c: Canvas) {
+        val sc = tsc(1.3f)
+        val busy = game.elevRide != null
+        val r0 = elevBtn(0); val r1 = elevBtn(1)
+        pxText(c, "ELEVADOR  ANDAR ${game.elevFloor}/${game.elevCount}", width / 2f, r0.top - 16 * d, tsc(1.1f), Color.WHITE, 1)
+        for (k in 0..1) {
+            val r = elevBtn(k)
+            val on = !busy && (if (k == 0) game.elevUp else game.elevDown)
+            val base = if (!on) Cz.STONE else if (k == 0) Cz.GREEN else Cz.ORANGE
+            pxPanel(c, r.left, r.top, r.right, r.bottom, base)
+            pxText(c, if (k == 0) "\u25B2 SUBIR" else "\u25BC DESCER", (r.left + r.right) / 2f, (r.top + r.bottom) / 2f - 3.5f * sc, sc, Color.WHITE, 1)
+        }
+    }
+
     private var lookDownT = 0L; private var lookMoved = 0f; private var lookHold = false; private var lastUpT = 0L
     private fun al(c: Int, a: Int) = Color.argb(a, Color.red(c), Color.green(c), Color.blue(c))
     private val d = resources.displayMetrics.density
@@ -149,6 +177,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         if (!invOpen && hypot(x - bx(5), y - byy(5)) < br(5) * 1.2f) { toggleInv(); return }
         if (invOpen) { invDown(id, x, y); return }
         if (tvPromptDown(x, y)) return
+        if (elevDown(x, y)) return
         for (i in intArrayOf(1, 3, 4, 6, 7, 8)) if ((i != 6 || wet()) && (i != 8 || !wet()) && hypot(x - bx(i), y - byy(i)) < br(i) * 1.15f) {
             btnId[id] = i
             when (i) {
@@ -793,6 +822,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         }
         if (game.deadTimer > 0f) pxText(c, "Você desmaiou! Renascendo...", w / 2, h / 2 - 40 * d, tsc(2.6f), Color.WHITE, 1)
         if (tvPromptOn()) drawTvPrompt(c)
+        if (elevOn()) drawElev(c)
         if (invOpen) drawInventory(c)
         if (paused) drawPause(c)
         postInvalidateOnAnimation()

@@ -1034,6 +1034,30 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         G.glDepthMask(true)
     }
 
+    /** cabines dos elevadores (parada fica no chunk; a cabine anda por fora) */
+    private fun drawElevators() {
+        for (car in game.elevCars.values) {
+            if (!seen(car.x + 0.5f, car.y, car.z + 0.5f)) continue
+            val yaw = when (car.rot) { 0 -> 0f; 1 -> 180f; 2 -> 90f; else -> 270f }
+            setBase(car.x + 0.5f, car.y, car.z + 0.5f, yaw)
+            fun cb(cx: Float, cy: Float, cz: Float, sx: Float, sy: Float, sz: Float, col: Int, mul: Float = 1f) =
+                box(base, cx, cy + sy / 2f, cz, 0f, 0f, sx, sy, sz, 0f, col, 1f, mul)
+            cb(0f, 0f, 0f, 0.9f, 0.08f, 0.9f, 0x8C939C)
+            cb(0f, 0.081f, 0f, 0.7f, 0.01f, 0.7f, 0x3A3F48)
+            cb(0f, 0.06f, -0.41f, 0.82f, 2.1f, 0.05f, 0xC9CED6)
+            cb(-0.41f, 0.06f, 0f, 0.05f, 2.1f, 0.82f, 0xB9BFC8)
+            cb(0.41f, 0.06f, 0f, 0.05f, 2.1f, 0.82f, 0xB9BFC8)
+            cb(0f, 2.16f, 0f, 0.9f, 0.06f, 0.9f, 0x6C727C)
+            cb(0f, 2.15f, 0f, 0.5f, 0.02f, 0.5f, 0xFFF1B8, 1.3f)
+            cb(0f, 1.95f, 0.43f, 0.82f, 0.2f, 0.05f, 0x6C727C)
+            cb(0f, 0.95f, -0.37f, 0.7f, 0.04f, 0.04f, 0xD4AF37)
+            cb(0.375f, 0.8f, 0.2f, 0.03f, 0.42f, 0.18f, 0x2A2C30)
+            val up = car.moving && car.dir > 0; val dn = car.moving && car.dir < 0
+            cb(0.36f, 1.04f, 0.2f, 0.03f, 0.08f, 0.08f, if (up) 0x66FF88 else 0x3FA85A, if (up) 1.5f else 1f)
+            cb(0.36f, 0.88f, 0.2f, 0.03f, 0.08f, 0.08f, if (dn) 0xFF7070 else 0xB84444, if (dn) 1.5f else 1f)
+        }
+    }
+
     private fun drawSlime(s: Slime) {
         val sq = s.squash + sin(s.t * 4f) * 0.04f
         val sy = 1f + sq; val sxz = 1f - sq * 0.5f
@@ -1571,6 +1595,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         drawPrints()
         G.glDepthMask(true)
         for (s in game.slimes) drawSlime(s)
+        drawElevators()
         drawDebris(); drawTrees(); drawDrops()
         for (q in game.parts) {
             if (!seen(q.x, q.y, q.z, 28f)) continue

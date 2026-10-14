@@ -408,6 +408,14 @@ class World {
         put(bx + 12, 38, "Cômoda"); put(bx + 14, 38, "Abajur"); 
         lab(bx + 22f, 36f, "Cadeiras e poltronas")
         for ((i, n) in listOf("Cadeira", "Cadeira Estofada", "Banco", "Poltrona", "Cadeira de Escritório", "Sofá").withIndex()) put(bx + 19 + i * 2, 38, n)
+        // elevador: 3 paradas (térreo, 5 e 10 blocos acima) com plataforma em volta; entre e use SUBIR/DESCER
+        val ex = bx + 24; val ez = 24
+        lab(ex + 0.5f, ez - 2f, "Elevador: entre e aperte SUBIR / DESCER")
+        for (k in 0..2) {
+            val ey = y + k * 5
+            put(ex, ez, "Elevador", ey)
+            if (k > 0) for (i in -2..2) for (j in -2..2) if (!(i == 0 && j == 0)) put(ex + i, ez + j, "Concreto Branco", ey - 1)
+        }
     }
 
     /** vitrine da mobília nova: 6 ambientes encostados numa parede (sala, jantar e cozinha, quarto, banheiro, luzes, plantas e quadros) */
