@@ -95,7 +95,7 @@ class World {
         val CZ: Int get() = SZ / CH
         const val WATER_Y = 9
         /** modos extras da galeria de blocos (além das categorias de blocos) */
-        const val GAL_FURN = 1; const val GAL_HOUSE = 2; const val GAL_TREES = 3
+        const val GAL_FURN = 1; const val GAL_HOUSE = 2; const val GAL_TREES = 3; const val GAL_FURN2 = 4
         const val SAVE_MAGIC = 0x434C3402
         const val TV_MAGIC = 0x54563031   // trailer opcional depois dos blocos: tamanho de cada TV
         /** deve ser chamado ANTES de criar World/Game/GameRenderer: o mapa plano é bem maior que a ilha */
@@ -301,6 +301,7 @@ class World {
         val cats = if (catIdx >= 0) galleryCats() else emptyList()
         when {
             extra == GAL_FURN -> { furnitureShowcase(top); spawnX = 188; spawnZ = 1 }
+            extra == GAL_FURN2 -> { furnitureShowcase2(top); spawnX = 8; spawnZ = 24 }
             extra == GAL_HOUSE -> { modernHouse(top); spawnX = 195; spawnZ = 37 }
             extra == GAL_TREES -> { plantTestTrees(top); spawnX = 94; spawnZ = 2 }
             catIdx in cats.indices -> layoutCategory(cats[catIdx], secFilter, top, floor, plate)
@@ -406,6 +407,79 @@ class World {
         for ((i, n) in listOf("Cadeira", "Cadeira Estofada", "Banco", "Poltrona", "Cadeira de Escritório", "Sofá").withIndex()) put(bx + 19 + i * 2, 38, n)
     }
 
+    /** vitrine da mobília nova: 6 ambientes encostados numa parede (sala, jantar e cozinha, quarto, banheiro, luzes, plantas e quadros) */
+    private fun furnitureShowcase2(top: Int) {
+        val y = top + 1
+        fun id(n: String) = B.byName[n] ?: 0
+        fun put(x: Int, z: Int, n: String, yy: Int = y) { val b = id(n); if (b != 0 && x in 0 until SX && z in 0 until SZ && yy in 0 until SY) blocks[(yy * SZ + z) * SX + x] = b }
+        fun lab(x: Float, t: String) { labels.add(Label(x, top + 7.4f, 12.5f, t, true)) }
+        val wall = id("Concreto Branco"); val wood = id("Piso de Madeira"); val glass = id("Vidro")
+        for (x in 2..75) for (k in 0..4) if (wall != 0) blocks[((y + k) * SZ + 12) * SX + x] = wall
+        if (wood != 0) for (x in 2..75) for (z in 13..30) setTopB(x, z, wood, top)
+        fun window(x0: Int, x1: Int) { if (glass != 0) for (x in x0..x1) for (k in 1..2) blocks[((y + k) * SZ + 12) * SX + x] = glass }
+        // ---- sala ----
+        lab(9f, "SALA")
+        for (x in 4..6) put(x, 13, "Sofá Chesterfield Azul")
+        put(7, 13, "Mesa Lateral Nogueira"); put(7, 13, "Abajur Branco", y + 1)
+        put(8, 13, "Poltrona Orelhuda Vermelha"); put(9, 13, "Luminária de Chão Cinza"); put(3, 13, "Palmeira em Vaso Barro")
+        put(11, 13, "Lareira de Pedra"); put(11, 13, "Espelho Dourado", y + 1)
+        put(4, 13, "Quadro Mar Calmo Escuro", y + 1); put(6, 13, "Quadro Floresta Dourado", y + 1)
+        put(5, 15, "Puff Rosa"); put(7, 15, "Puff Azul"); put(6, 16, "Mesa Lateral Carvalho"); put(6, 16, "Vaso de Flores Girassóis", y + 1)
+        put(8, 16, "Pendente Branco", y + 3); put(5, 16, "Pendente Rosa", y + 3)
+        window(13, 14); for (k in 1..2) { put(13, 13, "Cortina Aberta Rosa", y + k); put(14, 13, "Cortina Aberta Rosa", y + k) }
+        // ---- jantar e cozinha ----
+        lab(21f, "JANTAR E COZINHA")
+        for (x in 17..19) for (z in 16..17) put(x, z, "Mesa de Jantar Carvalho")
+        for (x in 17..19) { put(x, 15, "Cadeira Moderna Cinza"); put(x, 18, "Cadeira Moderna Cinza") }
+        put(16, 16, "Cadeira Moderna Azul"); put(20, 16, "Cadeira Moderna Azul")
+        put(18, 16, "Fruteira Carvalho", y + 1); put(18, 17, "Vaso de Flores Rosas Vermelhas", y + 1); put(18, 16, "Lustre Dourado", y + 3)
+        put(22, 13, "Geladeira Inox"); put(23, 13, "Balcão de Cozinha Branco"); put(24, 13, "Pia de Cozinha Branco"); put(25, 13, "Fogão Inox"); put(26, 13, "Balcão de Cozinha Branco")
+        put(23, 13, "Micro-ondas Inox", y + 1); put(23, 13, "Armário Suspenso Branco", y + 2); put(25, 13, "Coifa Inox", y + 2); put(26, 13, "Armário Suspenso Branco", y + 2)
+        for (x in 22..24) { put(x, 17, "Balcão de Cozinha Azul"); put(x, 18, "Banqueta de Bar Preta") }
+        window(15, 16); for (k in 1..2) { put(15, 13, "Cortina Transparente Branca", y + k); put(16, 13, "Cortina Transparente Branca", y + k) }
+        // ---- quarto ----
+        lab(33f, "QUARTO")
+        put(31, 13, "Cama Moderna Azul-clara"); put(31, 14, "Cama Moderna Azul-clara")
+        put(30, 13, "Mesa de Cabeceira Carvalho"); put(30, 13, "Abajur Rosa", y + 1)
+        put(32, 13, "Mesa de Cabeceira Carvalho"); put(32, 13, "Luz Noturna Lua Amarela", y + 1)
+        put(31, 13, "Quadro Noite Estrelada Dourado", y + 2)
+        put(35, 13, "Guarda-Roupa Moderno Carvalho"); put(36, 13, "Guarda-Roupa Moderno Carvalho")
+        put(34, 13, "Aparador Carvalho"); put(34, 13, "Espelho Dourado", y + 1)
+        put(38, 13, "Berço Carvalho"); put(33, 16, "Divã Cinza")
+        window(27, 28); for (k in 1..2) { put(27, 13, "Cortina com Babado Rosa", y + k); put(28, 13, "Cortina com Babado Rosa", y + k) }
+        window(37, 38)
+        // ---- banheiro ----
+        lab(45f, "BANHEIRO")
+        put(40, 13, "Vaso Sanitário Branco"); put(42, 13, "Pia de Banheiro Branco"); put(42, 13, "Espelho Preto", y + 1)
+        put(44, 13, "Banheira Branco"); put(45, 13, "Banheira Rosa"); put(46, 13, "Banheira Azul")
+        put(48, 13, "Máquina de Lavar Branca"); put(48, 13, "Armário Suspenso Branco", y + 2); put(49, 13, "Frigobar Rosa")
+        put(40, 13, "Arandela Dourada", y + 2); put(47, 13, "Relógio de Parede Dourado", y + 2)
+        // ---- luzes ----
+        lab(57f, "LÂMPADAS (de verdade!)")
+        val tb = "Mesa Lateral Carvalho"
+        val small = arrayOf("Abajur Azul", "Luminária de Mesa Preta", "Candelabro Dourado", "Luz Noturna Lua Azul", "Lâmpada de Lava Roxa", "Lâmpada de Lava Vermelha")
+        put(51, 13, "Luminária de Chão Amarela"); put(52, 13, "Luminária Arco Branca")
+        for ((i, n) in small.withIndex()) { put(54 + i, 13, tb); put(54 + i, 13, n, y + 1) }
+        val pend = arrayOf("Pendente Branco", "Pendente Rosa", "Pendente Menta", "Pendente Azul", "Pendente Amarelo", "Pendente Vermelho")
+        for ((i, n) in pend.withIndex()) put(52 + i * 2, 16, n, y + 3)
+        val paper = arrayOf("Lanterna de Papel Vermelha", "Lanterna de Papel Laranja", "Lanterna de Papel Amarela", "Lanterna de Papel Rosa", "Lanterna de Papel Azul-clara")
+        for ((i, n) in paper.withIndex()) put(52 + i * 2, 19, n, y + 3)
+        put(54, 22, "Lustre Prateado", y + 3); put(58, 22, "Lustre Preto", y + 3)
+        put(60, 13, "Arandela Dourada", y + 2); put(61, 13, "Arandela Rosa", y + 2); put(62, 13, "Arandela Azul", y + 2)
+        put(51, 20, "Bloco Luminoso Branco"); put(51, 21, "Bloco Luminoso Amarelo")
+        // ---- plantas, quadros e decoração ----
+        lab(69f, "PLANTAS E QUADROS")
+        val pots = arrayOf("Barro", "Branco", "Azul", "Rosa", "Preto", "Amarelo")
+        for ((i, p) in pots.withIndex()) { put(64 + i, 14, "Palmeira em Vaso $p"); put(64 + i, 16, "Samambaia $p"); put(64 + i, 18, "Cacto em Vaso $p") }
+        val arts = arrayOf("Pôr do Sol", "Mar Calmo", "Floresta", "Noite Estrelada", "Xadrez Azul e Amarelo", "Xadrez Vermelho", "Listras Vermelhas", "Listras Azuis", "Redemoinho Rosa", "Anéis Verdes")
+        for ((i, a) in arts.withIndex()) put(64 + i, 13, "Quadro $a Dourado", y + 2)
+        put(64, 13, "Relógio de Pé Carvalho"); put(65, 13, "Relógio de Pé Nogueira")
+        put(66, 13, "Aparador Carvalho"); put(66, 13, "Pilha de Livros 2", y + 1); put(67, 13, "Aparador Ébano"); put(67, 13, "Globo Dourado", y + 1)
+        put(68, 13, "Aparador Carvalho"); put(68, 13, "Bonsai Verde", y + 1); put(69, 13, "Aparador Ébano"); put(69, 13, "Bonsai Cerejeira", y + 1)
+        put(70, 13, "Lareira Branca"); put(71, 13, "Lareira de Tijolos"); put(72, 13, "Lareira de Mármore")
+        put(73, 13, "Espelho Preto", y + 1); put(74, 13, "Relógio de Parede Preto", y + 1)
+    }
+
     /** casa moderna de vitrine (trancada, dá pra entrar e subir a escada): lote murado com jardim e piscina; sala de pé-direito duplo,
      *  jantar, cozinha, cinema, adega, loft, 3 suítes e escritório no mezanino; sacada, varanda de piscina e terraço dos fundos.
      *  Coordenadas relativas: x 0..35 e z 0..22 é a casa, y 0 é o piso do térreo, y -1 o chão. */
@@ -425,7 +499,7 @@ class World {
         val GL = "Vidro"; val GF = "Vidro Fino"; val LJ = "Laje de Concreto Branco"
         val WOOD = "Piso de Madeira"; val SLATE = "Ladrilhos de Ardósia"
         val TILE = any("Azulejo Metrô Azul-claro", "Azulejo Metrô Ciano", "Azulejo Metrô Azul", "Concreto Azul-claro")
-        val LAMP = "Lâmpada Branca"
+        val LAMP = "Bloco Luminoso Branco"
         labels.add(Label(x0 + 17.5f, y0 + 14f, z0 - 17f, "CASA MODERNA", true))
 
         // ---------- lote: gramado, muro com portão, caminho, cerca-viva ----------

@@ -143,6 +143,7 @@ class GalleryPanel(
         body.addView(sp)
         val ex = ArrayList<Button>()
         ex.add(big("MOBÍLIA\nmontada", Color.rgb(84, 144, 232)) { pick(-1, -1, World.GAL_FURN, "Vitrine de mobília") })
+        ex.add(big("MOBÍLIA\nnova", Color.rgb(232, 120, 170)) { pick(-1, -1, World.GAL_FURN2, "Vitrine de mobília nova") })
         ex.add(big("CASA\nMODERNA", Color.rgb(150, 150, 160)) { pick(-1, -1, World.GAL_HOUSE, "Casa moderna") })
         ex.add(big("ÁRVORES", Color.rgb(90, 200, 90)) { pick(-1, -1, World.GAL_TREES, "Galeria de árvores") })
         addRow(ex, 3)

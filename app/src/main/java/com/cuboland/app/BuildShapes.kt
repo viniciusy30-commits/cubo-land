@@ -13,7 +13,7 @@ object BuildShapes {
     private const val T0 = 0.4375f   // espessura fina: 0.4375 .. 0.5625
     private const val T1 = 0.5625f
 
-    fun isBuild(sub: Int) = sub >= 60
+    fun isBuild(sub: Int) = sub in 60..99
 
     fun sub(id: Int): Int = Furniture.sub(id)
 

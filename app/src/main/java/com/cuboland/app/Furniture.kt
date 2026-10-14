@@ -27,12 +27,12 @@ object Furniture {
     fun isTv(id: Int): Boolean = sub(id) == S_TV
     /** escala da TV por nível de tamanho (0 = normal) */
     val TV_SCALE = floatArrayOf(1f, 1.5f, 2f, 3f)
-    fun sittable(id: Int): Boolean { val s = sub(id); return s == S_CHAIR || s == S_CHAIR2 || s == S_STOOL || s == S_ARM || s == S_OFFICE || s == S_SOFA }
-    fun isTable(id: Int): Boolean { val s = sub(id); return s == S_TABLE || (s in 20..26) }
-    fun seatH(s: Int): Float = when (s) { S_STOOL -> 0.56f; S_ARM -> 0.5f; S_OFFICE -> 0.62f; S_SOFA -> 0.5f; S_CHAIR2 -> 0.6f; else -> 0.58f }
+    fun sittable(id: Int): Boolean { val s = sub(id); if (s >= 100) return FurnB.sittable(s); return s == S_CHAIR || s == S_CHAIR2 || s == S_STOOL || s == S_ARM || s == S_OFFICE || s == S_SOFA }
+    fun isTable(id: Int): Boolean { val s = sub(id); if (s >= 100) return FurnB.isTable(s); return s == S_TABLE || (s in 20..26) }
+    fun seatH(s: Int): Float = when (s) { S_STOOL -> 0.56f; S_ARM -> 0.5f; S_OFFICE -> 0.62f; S_SOFA -> 0.5f; S_CHAIR2 -> 0.6f; else -> if (s >= 100) FurnB.seatH(s) else 0.58f }
     fun topH(s: Int): Float = when (s) {
         S_TABLE, S_TDARK, S_TMARB, S_TROUND, S_TROUNDM -> 0.94f; S_TCLOTH -> 0.96f; S_COFFEE -> 0.48f
-        S_DESK -> 0.92f; S_DRESS -> 0.9f; S_SHELF -> 1f; else -> 0f
+        S_DESK -> 0.92f; S_DRESS -> 0.9f; S_SHELF -> 1f; else -> if (s >= 100) FurnB.topH(s) else 0f
     }
     private fun hh(x: Int, z: Int, k: Int): Float {
         var n = x * 374761393 + z * 668265263 + k * 1442695041
@@ -40,7 +40,7 @@ object Furniture {
         return (n and 0xFFFF) / 65535f
     }
     private fun baseOff(w: World, x: Int, y: Int, z: Int, s: Int): Float {
-        if (s != S_PC && s != S_TV && s != S_LAMP && s != S_PLANT) return 0f
+        if (s >= 100) { if (!FurnB.small(s)) return 0f } else if (s != S_PC && s != S_TV && s != S_LAMP && s != S_PLANT) return 0f
         val th = topH(sub(w.get(x, y - 1, z)))
         return if (th > 0f) th - 1f else 0f
     }
@@ -48,10 +48,10 @@ object Furniture {
     /** direção da frente: 0 = +Z, 1 = -Z, 2 = +X, 3 = -X */
     fun facing(w: World, x: Int, y: Int, z: Int, s: Int): Int {
         val dx = intArrayOf(0, 0, 1, -1); val dz = intArrayOf(1, -1, 0, 0)
-        val seat = s == S_CHAIR || s == S_CHAIR2 || s == S_STOOL || s == S_ARM || s == S_OFFICE
+        val seat = s == S_CHAIR || s == S_CHAIR2 || s == S_STOOL || s == S_ARM || s == S_OFFICE || (s >= 100 && FurnB.faceTable(s))
         if (seat) for (d in 0..3) if (isTable(w.get(x + dx[d], y, z + dz[d]))) return d
         for (d in 0..3) { val bk = w.get(x - dx[d], y, z - dz[d]); if (B.solid(bk) && B.shape(bk) == 0) return d }
-        if (s == S_SOFA) {
+        if (s == S_SOFA || (s >= 100 && FurnB.sofaLike(s))) {
             val me = w.get(x, y, z)
             if (w.get(x + 1, y, z) == me || w.get(x - 1, y, z) == me) return 0
             if (w.get(x, y, z + 1) == me || w.get(x, y, z - 1) == me) return 2
@@ -78,7 +78,7 @@ object Furniture {
             S_LAMP -> floatArrayOf(0.18f, 0f, 0.18f, 0.82f, 0.76f, 0.82f)
             S_PLANT -> floatArrayOf(0.18f, 0f, 0.18f, 0.82f, 0.85f, 0.82f)
             S_RUGR, S_RUGB -> floatArrayOf(0f, 0f, 0f, 1f, 0.04f, 1f)
-            else -> return null
+            else -> (if (s >= 100) FurnB.box(w, x, y, z, s) else null) ?: return null
         }
         val oy = if (y >= 0) baseOff(w, x, y, z, s) else 0f
         if (oy != 0f) { b[1] += oy; b[4] += oy }
@@ -86,7 +86,7 @@ object Furniture {
     }
 
     // ---------- pincel: caixas e cilindros com UV pela posição (a textura não "amassa" nas peças pequenas) ----------
-    private class C(val o: MeshBuf, val x: Int, val y: Int, val z: Int, val vr: Float) {
+    internal class C(val o: MeshBuf, val x: Int, val y: Int, val z: Int, val vr: Float) {
         var rot = 0; var oy = 0f; var lit = false
         var sc = 1f   // escala do móvel (TV grande): cresce a partir do centro da base, pode passar da célula
         private fun rx(a: Float, c: Float) = when (rot) { 0 -> a; 1 -> 1f - a; 2 -> c; else -> 1f - c }
@@ -177,6 +177,7 @@ object Furniture {
             S_PLANT -> plant(c, T, x, z)
             S_RUGR -> c.box(T[T_RUGR], T[T_RUGR], T[T_RUGR], 0f, 0f, 0f, 1f, 0.04f, 1f)
             S_RUGB -> c.box(T[T_RUGB], T[T_RUGB], T[T_RUGB], 0f, 0f, 0f, 1f, 0.04f, 1f)
+            else -> if (s >= 100) FurnB.emit(c, w, x, y, z, id, s)
         }
     }
 

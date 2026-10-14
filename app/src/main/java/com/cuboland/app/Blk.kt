@@ -194,7 +194,7 @@ object Blk {
             uni("Vidro " + DM[i], C_BUILD, bt(BuildArt.GLASS, c, -1, 290), c, M_GLASS, 2f, PANE, "Vidro grosso colorido, liso e translúcido.") }
         val lampIdx = intArrayOf(0, 1, 6, 3, 4, 5, 10, 14)
         for (k in lampIdx.indices) { val i = lampIdx[k]; val c = DYE[i]
-            uni("Lâmpada " + DF[i], C_DEC, tl(K_LAMP, c, dk(c, 0.45f), lt(c, 0.85f), 0, 0, 0, 0, true), c, 0, 3f, F_LIGHT, "Brilha com uma luz colorida.") }
+            uni("Bloco Luminoso " + DM[i], C_DEC, tl(K_LAMP, c, dk(c, 0.45f), lt(c, 0.85f), 0, 0, 0, 0, true), c, 0, 3f, F_LIGHT, "Brilha com uma luz colorida.") }
 
         // ================= MADEIRAS =================
         val WN = arrayOf("Abeto", "Bétula", "Selva", "Acácia", "Carvalho Escuro", "Mangue", "Cerejeira", "Bambu", "Carmesim", "Distorcido")
@@ -594,5 +594,178 @@ object Blk {
             blk("Escada de " + mn, C_BUILD, m.top, m.side, m.bot, m.color, m.mat, m.hard, shp(BuildShapes.S_STAIR), "Escada de degrau único: o lado alto fica pro lado que você olha.")
             rot4(last(), BuildShapes.S_STAIR)
         }
+        buildFurn2()
+    }
+
+    // ================= MOBÍLIA v2 (FurnB): ids novos sempre no fim! =================
+    /** paleta de tiles de cada móvel novo: [0] corpo, [1] corpo 2, [2] madeira, [3] madeira escura, [4] metal, [5] detalhe, [6] luz/vidro, [7] extra */
+    val fpal = HashMap<Int, IntArray>()
+    private val noPal = IntArray(8) { 1 }
+    fun fp(id: Int): IntArray { defs; return fpal[id] ?: noPal }
+
+    private fun buildFurn2() {
+        val FUp = F_SHAPE or (7 shl 5)
+        fun P(b: Int, b2: Int, w: Int, wd: Int, mt: Int, ac: Int, lg: Int, ex: Int) = intArrayOf(b, b2, w, wd, mt, ac, lg, ex)
+        fun fb(name: String, sub: Int, p: IntArray, color: Int, mat: Int, hard: Float, desc: String, light: Boolean = false) {
+            val id = blk(name, C_FURN, p[0], p[0], p[2], color, mat, hard, FUp or (if (light) F_LIGHT else 0) or (sub shl 8), desc)
+            if (id != 0) fpal[id] = p
+        }
+        val F = ft
+        val gold = F[Furniture.T_GOLD]; val steel = F[Furniture.T_STEEL]; val blkT = F[Furniture.T_BLACK]; val whiteT = F[Furniture.T_WHITE]
+        val cream = F[Furniture.T_CREAM]; val marb = F[Furniture.T_MARB]; val marbK = F[Furniture.T_MARBK]
+        val copper = tl(K_FLAT, 0xD98458, 0xB8683F); val chrome = tl(K_FLAT, 0xEEF2F6, 0xBCC8D4)
+        // tecidos nas 16 cores (liso e capitonê)
+        val fab = IntArray(16); val tuft = IntArray(16); val shd = IntArray(16)
+        for (i in 0 until 16) {
+            val c = mixc(DYE[i], 0xFFFFFF, 0.1f)
+            fab[i] = tl(K_FABRIC, c, dk(c, 0.2f)); tuft[i] = tl(K_FABRIC, c, dk(c, 0.2f), 0, 0, 0, 1)
+            shd[i] = tl(K_FABRIC, lt(DYE[i], 0.45f), lt(DYE[i], 0.25f))
+        }
+        // madeiras
+        val WN = arrayOf("Carvalho", "Nogueira", "Ébano", "Bétula", "Branca", "Cerejeira", "Cinza", "Mel")
+        val wl = intArrayOf(0xE0B070, 0x8A5A3A, 0x3A2C26, 0xEBDDB0, 0xF2F0EA, 0xC46A5A, 0x9AA0A4, 0xE8B86A)
+        val wt = IntArray(8); val wtd = IntArray(8)
+        for (i in 0 until 8) { wt[i] = tl(K_WGRAIN, wl[i], dk(wl[i], 0.14f), dk(wl[i], 0.42f)); wtd[i] = tl(K_WGRAIN, dk(wl[i], 0.28f), dk(wl[i], 0.4f), dk(wl[i], 0.6f)) }
+        // esmaltes (eletros e louças coloridos)
+        val EN = arrayOf("Branco", "Rosa", "Menta", "Azul", "Amarelo", "Vermelho", "Preto", "Lavanda")
+        val enc = intArrayOf(0xF6F6F2, 0xFFB6D0, 0xA8E6C8, 0x9FD0F5, 0xFFE08A, 0xE5584A, 0x3A3C44, 0xCDB8F5)
+        val en = IntArray(8) { tl(K_FLAT, enc[it], dk(enc[it], 0.1f)) }
+        // cortinas
+        val she = IntArray(8); val str = IntArray(8)
+        val c8 = intArrayOf(0, 6, 3, 11, 13, 14, 4, 7)
+        for (k in 0 until 8) { val i = c8[k]; she[k] = tl(K_FABRIC, lt(DYE[i], 0.72f), lt(DYE[i], 0.88f)); val c = mixc(DYE[i], 0xFFFFFF, 0.1f); str[k] = tl(K_STRIPE, c, 0xF6F2EA, dk(c, 0.25f), 0, 0, 1) }
+        val lace = tl(K_FABRIC, 0xFFFFFF, 0xEFE8DC)
+        // quadros, espelho, relógio, chama, água
+        val artN = arrayOf("Pôr do Sol", "Mar Calmo", "Floresta", "Noite Estrelada", "Xadrez Azul e Amarelo", "Xadrez Vermelho", "Listras Vermelhas", "Listras Azuis", "Redemoinho Rosa", "Anéis Verdes")
+        val art = intArrayOf(tl(K_GRAD, 0xFFC27A, 0xA878D8, 0xFF8FA8), tl(K_GRAD, 0x9FD8F5, 0x2A6DB8, 0), tl(K_GRAD, 0xCFF0A8, 0x3F8A4A, 0), tl(K_GRAD, 0x2A2A5A, 0xF2C94A, 0),
+            tl(K_CHECK, 0xF4C94A, 0x3A66D2, 0, 0, 0, 2), tl(K_CHECK, 0xE5584A, 0xF6F2EA, 0, 0, 0, 3), tl(K_STRIPE, 0xE5584A, 0xF6F2EA, 0xA03A30), tl(K_STRIPE, 0x3A66D2, 0xF4C94A, 0x2A4A9A, 0, 0, 1),
+            tl(K_SWIRL, 0xFF7FB5, 0xFFF0F7), tl(K_RING, 0x8FD0B8, 0xF6F2EA, 0x4A8F7A, 0, 0, 3))
+        val mir = tl(K_GRAD, 0xEAF6FB, 0x9CC4D8, 0); val face = tl(K_RING, 0xFFFDF4, 0xE8E0CC, 0x8A6A3A, 0, 0, 2)
+        val flame = tl(K_GLOW, 0xFFD27A, 0xFF9A3C, 0xE0601E, 0, 0, 0, 0, true)
+        val water = tl(K_FLAT, 0x8ED8F0, 0x6BC4E4); val bubble = tl(K_FLAT, 0xF4FCFF, 0xDDF2FA)
+        val stone = bt(BuildArt.SBRICK, 0xB4BAC4); val redBrick = bt(BuildArt.TIJOLO, 0xD8584A); val whiteBrick = bt(BuildArt.TIJOLO, 0xF4F4F0)
+        // plantas, vasos, flores
+        val gA = tl(K_FLAT, 0x3F9A4A, 0x5FC060); val gB = tl(K_FLAT, 0x5FA84A, 0x86D05A); val gC = tl(K_FLAT, 0x2F7A3A, 0x4FA050); val gD = tl(K_FLAT, 0x6FA84A, 0x8AC864)
+        val gAut = tl(K_FLAT, 0xE07A26, 0xF0A040); val gCh = tl(K_FLAT, 0xF0A0C0, 0xFFC4DD)
+        val potC = intArrayOf(0xC4693B, 0xF2F2EE, 0x4C74C4, 0xE8789F, 0x3A3C44, 0xE0B040)
+        val PN = arrayOf("Barro", "Branco", "Azul", "Rosa", "Preto", "Amarelo")
+        val pot = IntArray(6) { tl(K_FLAT, potC[it], dk(potC[it], 0.12f)) }
+        val flC = intArrayOf(0xE5584A, 0xFFB6D0, 0xF4C94A, 0xFFFFFF, 0xA878D8, 0xFF9A3C)
+        val FN = arrayOf("Rosas Vermelhas", "Rosas Rosa", "Girassóis", "Margaridas", "Lavandas", "Tulipas Laranja")
+        val fl = IntArray(6) { tl(K_FLAT, flC[it], dk(flC[it], 0.12f)) }
+        val globeT = tl(K_GRAD, 0x6DB6F5, 0x2A6DB8, 0)
+        val c12 = intArrayOf(7, 8, 0, 15, 12, 11, 3, 9, 13, 14, 6, 10)
+        val c6 = intArrayOf(0, 6, 3, 13, 4, 14)
+        val warm = shd[4]
+
+        // ---------- assentos ----------
+        for (k in c12.indices) { val i = c12[k]
+            fb("Sofá Moderno " + DM[i], FurnB.S_SOFAM, P(fab[i], tuft[i], wt[0], wtd[0], if (k % 2 == 0) blkT else gold, 0, 0, 0), DYE[i], M_SOFT, 4f, "Sofá baixo e moderno com almofadas e pés de metal. Junte em fila para um sofá comprido. Dá pra sentar!") }
+        for (k in c8.indices) { val i = c8[k]
+            fb("Sofá Chesterfield " + DM[i], FurnB.S_CHEST, P(fab[i], tuft[i], wt[1], wtd[1], gold, 0, 0, 0), DYE[i], M_SOFT, 4f, "Sofá clássico capitonê com braços enrolados e tachinhas douradas. Junte em fila. Dá pra sentar!") }
+        for (k in c8.indices) { val i = c8[k]
+            fb("Poltrona Orelhuda " + DF[i], FurnB.S_WING, P(fab[i], tuft[i], wt[1], wtd[1], gold, 0, 0, 0), DYE[i], M_SOFT, 4f, "Poltrona de encosto alto com abas laterais. Dá pra sentar!") }
+        for (k in c12.indices) { val i = c12[k]
+            fb("Puff " + DM[i], FurnB.S_POUF, P(fab[i], tuft[i], wt[0], wtd[0], gold, 0, 0, 0), DYE[i], M_SOFT, 3f, "Puff redondinho e fofo com botão no meio. Dá pra sentar!") }
+        for (k in c8.indices) { val i = c8[k]
+            fb("Cadeira Moderna " + DF[i], FurnB.S_CHAIRM, P(fab[i], tuft[i], wt[k % 8], wtd[k % 8], if (k % 2 == 0) steel else blkT, 0, 0, 0), DYE[i], M_WOOD, 4f, "Cadeira de design com assento e encosto estofados. Vira sozinha pra mesa. Dá pra sentar!") }
+        for (k in c6.indices) { val i = c6[k]
+            fb("Banqueta de Bar " + DF[i], FurnB.S_BAR, P(fab[i], tuft[i], wt[k % 8], wtd[k % 8], steel, 0, 0, 0), DYE[i], M_METAL, 4f, "Banqueta alta com apoio de pés, perfeita pra balcão e ilha de cozinha. Dá pra sentar!") }
+        for (k in intArrayOf(0, 1, 6)) fb("Banco de Jardim " + WN[k], FurnB.S_BENCH, P(wt[k], wt[k], wt[k], wtd[k], blkT, 0, 0, 0), wl[k], M_WOOD, 4f, "Banco de ripas com laterais de ferro. Junte em fila pra um banco comprido. Dá pra sentar!")
+        for (k in c8.indices) { val i = c8[k]
+            fb("Divã " + DM[i], FurnB.S_CHAISE, P(fab[i], tuft[i], wt[1], wtd[1], gold, 0, 0, 0), DYE[i], M_SOFT, 4f, "Divã comprido com encosto elevado numa ponta. Dá pra deitar... quer dizer, sentar!") }
+
+        // ---------- mesas ----------
+        for (k in 0 until 8) fb("Mesa de Jantar " + WN[k], FurnB.S_DINING, P(wt[k], wt[k], wt[k], wtd[k], if (k % 2 == 0) blkT else steel, 0, 0, 0), wl[k], M_WOOD, 4f, "Mesa de jantar moderna com tampo grosso. Junte várias para uma mesa comprida.")
+        for (k in 0 until 8) fb("Mesa de Cabeceira " + WN[k], FurnB.S_NIGHT, P(wt[k], wt[k], wt[k], wtd[k], gold, 0, 0, 0), wl[k], M_WOOD, 4f, "Criado-mudo com duas gavetas e puxadores dourados. Cabe um abajur em cima.")
+        for (k in 0 until 8) fb("Mesa Lateral " + WN[k], FurnB.S_SIDE, P(wt[k], wt[k], wt[k], wtd[k], gold, 0, 0, 0), wl[k], M_WOOD, 4f, "Mesinha redonda de apoio ao lado do sofá.")
+        for (k in 0 until 8) fb("Balcão de Cozinha " + EN[k], FurnB.S_COUNTER, P(en[k], en[k], en[k], wtd[1], gold, if (k % 2 == 0) marb else marbK, 0, 0), enc[k], M_STONE, 5f, "Balcão com portas, puxadores e tampo de mármore. Junte em fila pra cozinha comprida.")
+        for (k in 0 until 4) fb("Aparador " + WN[k * 2], FurnB.S_BOARD, P(wt[k * 2], wt[k * 2], wt[k * 2], wtd[k * 2], gold, 0, 0, 0), wl[k * 2], M_WOOD, 4f, "Aparador baixo com três portas e pés de palito.")
+
+        // ---------- armazenamento ----------
+        for (k in 0 until 8) fb("Armário Alto " + WN[k], FurnB.S_TALL, P(wt[k], wt[k], wt[k], wtd[k], gold, 0, 0, 0), wl[k], M_WOOD, 5f, "Armário alto de duas portas.")
+        for (k in 0 until 8) fb("Guarda-Roupa Moderno " + WN[k], FurnB.S_WARDM, P(wt[k], wt[k], wt[k], wtd[k], steel, 0, mir, 0), wl[k], M_WOOD, 5f, "Guarda-roupa de portas de correr, uma delas com espelho.")
+        for (k in 0 until 6) fb("Estante Moderna " + WN[k], FurnB.S_SHELFM, P(fab[c12[k]], fab[c12[k]], wt[k], wtd[k], blkT, 0, 0, 0), wl[k], M_WOOD, 5f, "Estante aberta com livros e vasinhos. Junte lado a lado.")
+        for (k in 0 until 4) fb("Cristaleira " + WN[k], FurnB.S_CABINET, P(wt[k], wt[k], wt[k], wtd[k], gold, 0, mir, 0), wl[k], M_WOOD, 5f, "Cristaleira com pratos e taças à mostra.")
+        for (k in 0 until 4) fb("Baú " + WN[k], FurnB.S_TRUNK, P(wt[k], wt[k], wt[k], wtd[k], gold, 0, 0, 0), wl[k], M_WOOD, 5f, "Baú de madeira com cinta de metal e fecho dourado.")
+        for (k in 0 until 8) fb("Armário Suspenso " + EN[k], FurnB.S_WALLCAB, P(en[k], en[k], en[k], wtd[1], gold, 0, 0, 0), enc[k], M_WOOD, 5f, "Armário de parede pra cozinha. Gruda na parede de trás.")
+
+        // ---------- eletrodomésticos ----------
+        fb("Geladeira Inox", FurnB.S_FRIDGE2, P(steel, steel, steel, steel, chrome, 0, 0, 0), 0xC8CED6, M_METAL, 6f, "Geladeira side by side de inox com dispenser de gelo.")
+        fb("Geladeira Preta", FurnB.S_FRIDGE2, P(blkT, blkT, blkT, blkT, chrome, 0, 0, 0), 0x2A2C30, M_METAL, 6f, "Geladeira side by side preta com dispenser de gelo.")
+        fb("Geladeira Branca", FurnB.S_FRIDGE2, P(whiteT, whiteT, whiteT, whiteT, chrome, 0, 0, 0), 0xF6F6F2, M_METAL, 6f, "Geladeira side by side branca com dispenser de gelo.")
+        for (k in 0 until 8) fb("Geladeira Retrô " + EN[k], FurnB.S_FRIDGER, P(en[k], en[k], en[k], en[k], chrome, 0, 0, 0), enc[k], M_METAL, 6f, "Geladeira arredondada estilo anos 50, com puxadores cromados.")
+        for (k in 0 until 8) fb("Frigobar " + EN[k], FurnB.S_MINI, P(en[k], en[k], en[k], en[k], chrome, 0, 0, 0), enc[k], M_METAL, 4f, "Frigobar pequeno. Cabe um micro-ondas em cima.")
+        val st = arrayOf("Inox" to steel, "Branco" to whiteT, "Preto" to blkT, "Retrô Rosa" to en[1], "Retrô Menta" to en[2])
+        for (q in st) fb("Fogão " + q.first, FurnB.S_STOVE, P(q.second, q.second, q.second, q.second, chrome, 0, 0, 0), 0xC8CED6, M_METAL, 5f, "Fogão com quatro bocas, forno com visor e botões.")
+        val mc = arrayOf("Inox" to steel, "Branco" to whiteT, "Preto" to blkT, "Rosa" to en[1])
+        for (q in mc) fb("Micro-ondas " + q.first, FurnB.S_MICRO, P(q.second, q.second, q.second, q.second, chrome, 0, 0, 0), 0xC8CED6, M_METAL, 3f, "Micro-ondas com porta e painel aceso. Fica em cima de balcões.")
+        val wm = arrayOf("Branca" to whiteT, "Inox" to steel, "Preta" to blkT)
+        for (q in wm) fb("Máquina de Lavar " + q.first, FurnB.S_WASHER, P(q.second, q.second, q.second, q.second, chrome, 0, whiteT, 0), 0xE4E6E8, M_METAL, 5f, "Lavadora de carga frontal com visor redondo.")
+        for (k in 0 until 6) fb("Pia de Cozinha " + EN[k], FurnB.S_SINK, P(en[k], en[k], en[k], wtd[1], chrome, if (k % 2 == 0) marb else marbK, 0, 0), enc[k], M_STONE, 5f, "Pia com bacia de inox, torneira e armário embaixo.")
+        fb("Coifa Inox", FurnB.S_HOOD, P(steel, steel, steel, steel, chrome, 0, whiteT, 0), 0xC8CED6, M_METAL, 4f, "Coifa de parede com luz embaixo.")
+        fb("Coifa Preta", FurnB.S_HOOD, P(blkT, blkT, blkT, blkT, gold, 0, whiteT, 0), 0x2A2C30, M_METAL, 4f, "Coifa de parede preta com luz embaixo.")
+        fb("Coifa de Cobre", FurnB.S_HOOD, P(copper, copper, copper, copper, gold, 0, whiteT, 0), 0xD98458, M_METAL, 4f, "Coifa de cobre, charmosa, com luz embaixo.")
+
+        // ---------- banheiro ----------
+        for (k in intArrayOf(0, 1, 2, 3)) fb("Vaso Sanitário " + EN[k], FurnB.S_TOILET, P(en[k], en[k], 0, 0, chrome, 0, 0, 0), enc[k], M_STONE, 4f, "Vaso com caixa acoplada e descarga cromada.")
+        for (k in intArrayOf(0, 1, 2, 3)) fb("Pia de Banheiro " + EN[k], FurnB.S_BASIN, P(en[k], cream, 0, 0, chrome, 0, 0, 0), enc[k], M_STONE, 4f, "Pia com coluna e torneira.")
+        for (k in intArrayOf(0, 1, 2, 3)) fb("Banheira " + EN[k], FurnB.S_TUB, P(en[k], en[k], 0, 0, if (k % 2 == 0) gold else chrome, 0, bubble, water), enc[k], M_STONE, 4f, "Banheira cheia de água com espuma, pezinhos e torneira.")
+
+        // ---------- camas ----------
+        for (k in c12.indices) { val i = c12[k]
+            fb("Cama Moderna " + DF[i], FurnB.S_BEDM, P(fab[i], tuft[i], wt[k % 8], wtd[k % 8], gold, 0, 0, 0), DYE[i], M_WOOD, 4f, "Cama com cabeceira capitonê, edredom e travesseiros. Junte em fila pra uma cama mais comprida.") }
+        val cribC = intArrayOf(6, 3, 4)
+        for (k in 0 until 3) fb("Berço " + WN[k * 3], FurnB.S_CRIB, P(fab[cribC[k]], tuft[cribC[k]], wt[k * 3], wtd[k * 3], gold, shd[cribC[k]], shd[4], 0), wl[k * 3], M_WOOD, 4f, "Berço com grades e um móbile de bichinhos.")
+
+        // ---------- cortinas ----------
+        for (i in 0 until 16) fb("Cortina Aberta " + DF[i], FurnB.S_CUROPEN, P(fab[i], tuft[i], wt[0], wtd[0], if (i % 2 == 0) gold else blkT, gold, 0, 0), DYE[i], M_SOFT, 2f, "Cortina aberta pros lados, presa com laço. Fica na parede de trás.")
+        for (i in 0 until 16) fb("Cortina Fechada " + DF[i], FurnB.S_CURCLOSED, P(fab[i], tuft[i], wt[0], wtd[0], if (i % 2 == 0) gold else blkT, gold, 0, 0), DYE[i], M_SOFT, 2f, "Cortina fechada com dobras. Junte lado a lado pra janelas largas.")
+        for (k in 0 until 8) fb("Cortina Transparente " + DF[c8[k]], FurnB.S_CURSHEER, P(she[k], lace, wt[0], wtd[0], chrome, gold, 0, 0), DYE[c8[k]], M_SOFT, 2f, "Voal leve com barra de renda. Junte lado a lado.")
+        for (k in 0 until 8) fb("Cortina com Babado " + DF[c8[k]], FurnB.S_CURVAL, P(fab[c8[k]], tuft[c8[k]], wt[0], wtd[0], gold, gold, 0, 0), DYE[c8[k]], M_SOFT, 2f, "Cortina aberta com bandô de babados e franjinhas douradas.")
+        for (k in 0 until 8) fb("Persiana Romana " + DF[c8[k]], FurnB.S_ROMAN, P(fab[c8[k]], tuft[c8[k]], wt[k % 8], wtd[k % 8], gold, cream, 0, 0), DYE[c8[k]], M_SOFT, 2f, "Persiana de tecido em faixas, com cordinha.")
+        for (k in 0 until 8) fb("Cortina Listrada " + DF[c8[k]], FurnB.S_CURCLOSED, P(str[k], fab[c8[k]], wt[0], wtd[0], gold, gold, 0, 0), DYE[c8[k]], M_SOFT, 2f, "Cortina fechada de listras verticais.")
+
+        // ---------- lâmpadas de verdade (não são blocos!) ----------
+        for (i in 0 until 12) fb("Abajur " + DM[c12[i]], FurnB.S_TLAMP, P(0, 0, if (i % 2 == 0) gold else wt[i % 8], 0, gold, 0, shd[c12[i]], 0), DYE[c12[i]], M_SOFT, 2f, "Abajur de mesa com cúpula acesa. Fica em cima de móveis.", true)
+        for (k in c8.indices) fb("Luminária de Chão " + DF[c8[k]], FurnB.S_FLOOR, P(0, 0, 0, 0, if (k % 2 == 0) blkT else gold, 0, shd[c8[k]], 0), DYE[c8[k]], M_METAL, 2f, "Luminária alta de haste fina e cúpula acesa.", true)
+        for (k in intArrayOf(0, 4, 6, 3)) fb("Luminária Arco " + DF[k], FurnB.S_ARC, P(0, 0, marb, 0, steel, 0, shd[k], 0), DYE[k], M_METAL, 2f, "Luminária de arco com base de mármore.", true)
+        for (k in 0 until 8) fb("Pendente " + EN[k], FurnB.S_PEND, P(0, 0, en[k], 0, blkT, 0, warm, 0), enc[k], M_METAL, 2f, "Luminária pendente que pende do teto, com lâmpada acesa embaixo.", true)
+        val lm = arrayOf("Dourado" to gold, "Prateado" to steel, "Preto" to blkT)
+        for (q in lm) fb("Lustre " + q.first, FurnB.S_CHAND, P(0, whiteT, 0, 0, q.second, 0, flame, 0), 0xF2CF68, M_METAL, 2f, "Lustre de braços com velas acesas e pingentes de cristal.", true)
+        val sc = arrayOf(Triple("Dourada", gold, 4), Triple("Preta", blkT, 4), Triple("de Cobre", copper, 4), Triple("Prateada", steel, 4), Triple("Rosa", gold, 6), Triple("Azul", chrome, 3))
+        for (q in sc) fb("Arandela " + q.first, FurnB.S_SCONCE, P(0, 0, 0, 0, q.second, 0, if (q.third == 4) warm else shd[q.third], 0), 0xFFE9B0, M_METAL, 2f, "Luz de parede com cúpula acesa. Gruda na parede de trás.", true)
+        val dl = arrayOf(Triple("Preta", blkT, 6), Triple("Branca", whiteT, 0), Triple("Prateada", steel, 8), Triple("Dourada", gold, 4), Triple("de Cobre", copper, 1), Triple("Vermelha", en[5], 14))
+        for (q in dl) fb("Luminária de Mesa " + q.first, FurnB.S_DESKL, P(0, 0, 0, 0, q.second, q.second, warm, 0), 0xFFE9B0, M_METAL, 2f, "Luminária articulada de escritório. Fica em cima de mesas.", true)
+        for (i in 0 until 10) { val j = intArrayOf(14, 1, 4, 6, 3, 13, 10, 2, 9, 0)[i]
+            fb("Lanterna de Papel " + DF[j], FurnB.S_PAPER, P(0, 0, 0, wtd[1], 0, gold, shd[j], 0), DYE[j], M_SOFT, 2f, "Lanterna de papel que pende do teto, brilhando por dentro.", true) }
+        for (q in lm) fb("Candelabro " + q.first, FurnB.S_CANDLE, P(0, 0, 0, 0, q.second, 0, flame, 0), 0xF2CF68, M_METAL, 2f, "Candelabro com três velinhas acesas. Fica em cima de móveis.", true)
+        val mn = arrayOf("Amarela" to 4, "Azul" to 3, "Rosa" to 6, "Verde" to 13)
+        for (q in mn) fb("Luz Noturna Lua " + q.first, FurnB.S_MOON, P(0, 0, 0, 0, whiteT, shd[q.second], shd[q.second], 0), DYE[q.second], M_SOFT, 2f, "Luz noturna em forma de lua com estrelinha. Fica em cima de móveis.", true)
+        val lv = intArrayOf(14, 10, 3, 13, 1, 6)
+        for (k in lv.indices) fb("Lâmpada de Lava " + DF[lv[k]], FurnB.S_LAVA, P(0, 0, 0, 0, if (k % 2 == 0) blkT else steel, shd[lv[k]], shd[lv[k]], 0), DYE[lv[k]], M_METAL, 2f, "Lâmpada de lava com bolhas brilhando. Fica em cima de móveis.", true)
+
+        // ---------- decoração ----------
+        for (k in 0 until 6) fb("Palmeira em Vaso " + PN[k], FurnB.S_PALM, P(gA, gB, pot[k], wtd[0], 0, 0, 0, 0), 0x3F9A4A, M_SOFT, 2f, "Palmeira alta de folhas longas num vaso.")
+        for (k in 0 until 6) fb("Samambaia " + PN[k], FurnB.S_FERN, P(gC, gA, pot[k], wtd[0], 0, 0, 0, 0), 0x2F7A3A, M_SOFT, 2f, "Samambaia cheia de folhinhas num vaso.")
+        for (k in 0 until 6) fb("Cacto em Vaso " + PN[k], FurnB.S_CACTUS, P(gD, 0, pot[k], 0, 0, fl[(k + 1) % 6], 0, 0), 0x6FA84A, M_SOFT, 2f, "Cacto com bracinhos e florzinha no topo.")
+        for (k in 0 until 6) fb("Vaso de Flores " + FN[k], FurnB.S_FLOWERS, P(0, fl[(k + 3) % 6], pot[(k + 1) % 6], 0, 0, fl[k], fl[2], 0), flC[k], M_SOFT, 2f, "Vasinho com flores. Fica em cima de móveis.")
+        fb("Bonsai Verde", FurnB.S_BONSAI, P(gA, gB, pot[4], wtd[1], 0, 0, 0, 0), 0x3F9A4A, M_SOFT, 2f, "Bonsai numa bandeja com pedrinha. Fica em cima de móveis.")
+        fb("Bonsai de Outono", FurnB.S_BONSAI, P(gAut, gAut, pot[0], wtd[1], 0, 0, 0, 0), 0xE07A26, M_SOFT, 2f, "Bonsai de folhas alaranjadas. Fica em cima de móveis.")
+        fb("Bonsai Cerejeira", FurnB.S_BONSAI, P(gCh, gCh, pot[1], wtd[1], 0, 0, 0, 0), 0xF0A0C0, M_SOFT, 2f, "Bonsai florido cor-de-rosa. Fica em cima de móveis.")
+        for (a in 0 until 10) for (m in 0..1) fb("Quadro " + artN[a] + (if (m == 0) " Dourado" else " Escuro"), FurnB.S_PAINT, P(art[a], 0, if (m == 0) gold else wtd[1], 0, 0, 0, 0, 0), 0xE0B070, M_WOOD, 2f, "Quadro de parede com moldura. Gruda na parede de trás.")
+        val mf = arrayOf("Dourado" to gold, "Preto" to blkT, "de Carvalho" to wt[0], "Branco" to whiteT)
+        for (q in mf) fb("Espelho " + q.first, FurnB.S_MIRROR, P(mir, 0, q.second, 0, gold, 0, mir, 0), 0xCDEAF5, M_GLASS, 2f, "Espelho de parede com moldura. Gruda na parede de trás.")
+        for (q in mf) fb("Relógio de Parede " + q.first, FurnB.S_CLOCK, P(face, 0, q.second, blkT, gold, 0, face, 0), 0xFFFDF4, M_WOOD, 2f, "Relógio de parede com ponteiros. Gruda na parede de trás.")
+        for (k in intArrayOf(0, 1, 2)) fb("Relógio de Pé " + WN[k], FurnB.S_GRAND, P(wt[k], 0, wt[k], wtd[k], gold, 0, face, 0), wl[k], M_WOOD, 5f, "Relógio de pêndulo alto, com mostrador e pêndulo dourado.")
+        val bk = Furniture.T_BOOK0
+        for (k in 0 until 4) fb("Pilha de Livros " + (k + 1), FurnB.S_BOOKS, P(F[bk + k], F[bk + (k + 2) % 6], F[bk + (k + 4) % 6], 0, 0, F[bk + (k + 1) % 6], 0, 0), 0xB5503C, M_SOFT, 2f, "Pilha de livros com um marcador. Fica em cima de móveis.")
+        for (k in intArrayOf(0, 4, 6)) fb("Fruteira " + WN[k], FurnB.S_FRUIT, P(en[5], fl[5], wt[k], wtd[0], 0, fl[2], gA, 0), 0xE5584A, M_WOOD, 2f, "Fruteira com maçã, laranja e limão. Fica em cima de móveis.")
+        fb("Globo Dourado", FurnB.S_GLOBE, P(globeT, gB, 0, 0, gold, 0, 0, 0), 0x6DB6F5, M_METAL, 2f, "Globo terrestre num suporte. Fica em cima de móveis.")
+        fb("Globo Preto", FurnB.S_GLOBE, P(globeT, gB, 0, 0, blkT, 0, 0, 0), 0x6DB6F5, M_METAL, 2f, "Globo terrestre num suporte preto. Fica em cima de móveis.")
+        fb("Lareira de Pedra", FurnB.S_FIRE, P(stone, 0, wt[1], wtd[2], 0, 0, flame, 0), 0xB4BAC4, M_STONE, 8f, "Lareira com fogo crepitando, lenha e prateleira de madeira.", true)
+        fb("Lareira de Tijolos", FurnB.S_FIRE, P(redBrick, 0, wt[0], wtd[2], 0, 0, flame, 0), 0xD8584A, M_STONE, 8f, "Lareira de tijolinhos com fogo crepitando.", true)
+        fb("Lareira Branca", FurnB.S_FIRE, P(whiteBrick, 0, wt[4], wtd[2], 0, 0, flame, 0), 0xF4F4F0, M_STONE, 8f, "Lareira branca com fogo crepitando.", true)
+        fb("Lareira de Mármore", FurnB.S_FIRE, P(marb, 0, gold, wtd[2], 0, 0, flame, 0), 0xE8E4DE, M_STONE, 8f, "Lareira de mármore com fogo crepitando.", true)
     }
 }

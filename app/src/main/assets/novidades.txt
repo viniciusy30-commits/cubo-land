@@ -1,3 +1,17 @@
+#id 2026-10-14-a
+#titulo Mobília nova: sofás, cortinas, lâmpadas e muito mais
+- Mais de 400 móveis novos na aba Mobília, cada modelo em várias cores e madeiras
+- Sofás modernos e chesterfield (emendam em fila), poltronas orelhudas, puffs, divãs, banquetas de bar, cadeiras modernas e bancos de jardim
+- Mesas de jantar, de cabeceira, laterais, aparadores e balcões de cozinha; armários, guarda-roupas, estantes, cristaleiras e baús
+- Geladeiras (inox e retrô coloridas), frigobar, fogão, micro-ondas, máquina de lavar, pia de cozinha e coifa
+- Banheiro: vaso, pia e banheira com água e espuma. Camas modernas com cabeceira capitonê e berços com móbile
+- Cortinas abertas, fechadas, transparentes, listradas, com babado e persianas romanas. Empilham na vertical e emendam nos lados
+- Lâmpadas de verdade (não são blocos): abajur, luminária de chão e de arco, pendente, lustre, arandela, luminária de mesa, lanterna de papel, candelabro, luz noturna e lâmpada de lava
+- Os blocos que brilham agora se chamam Bloco Luminoso de cada cor
+- Decoração: palmeiras, samambaias, cactos, bonsais, vasos de flores, quadros, espelhos, relógios, relógio de pé, livros, fruteira, globo e lareiras com fogo
+- Itens pequenos ficam em cima de mesas e balcões; os de parede grudam na parede de trás
+- Nova vitrine MOBÍLIA nova na Galeria de blocos, com os ambientes montados
+
 #id 2026-10-13-g
 #titulo Vidro liso e emendado
 - Vidros lisos (grosso, fino, coloridos e janelas) ficaram com cor uniforme: sem listras de reflexo, sem estrelinha e sem brilho nas bordas
