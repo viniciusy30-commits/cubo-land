@@ -58,7 +58,9 @@ object B {
             defined[id] = true; if (id + 1 > used) used = id + 1
             byName[d.name] = id
             if (d.name.startsWith("Tronco ") || d.name.startsWith("Caule ")) isLog[id] = true
-            relief[id] = (d.flags and (Blk.F_GLASS or Blk.F_LIGHT or Blk.F_LEAF)) == 0 && !d.name.startsWith("Lã ") && d.cat != Blk.C_BUILD && !Blk.isMc(d.top) && !Blk.isMc(d.side)   // Construção: textura lisa estilo Minecraft, sem relevo 3D
+            relief[id] = (d.flags and (Blk.F_GLASS or Blk.F_LIGHT or Blk.F_LEAF)) == 0 && !d.name.startsWith("Lã ") &&
+                (if (Blk.isMc(d.top) || Blk.isMc(d.side)) (d.cat == Blk.C_NAT || d.cat == Blk.C_BUILD) && (d.flags and (Blk.F_SHAPE or Blk.F_THIN)) == 0   // texturas do pack: relevo sutil na Natureza e na Construção
+                 else d.cat != Blk.C_BUILD)
         }
     }
     fun solid(id: Int) = id != AIR && id != WATER
@@ -1216,6 +1218,7 @@ class World {
         }
         val inv = 1f / G
         val step = Relief.step(tile)
+        val soft = Relief.soft(tile)
         fun lvOf(iu: Int, iv: Int): Int = if (iu < 0 || iv < 0 || iu >= G || iv >= G) 0 else lv[iv * G + iu]
         // topos: retângulos de peças com o mesmo nível
         val used = BooleanArray(G * G)
@@ -1233,12 +1236,12 @@ class World {
             }
             for (yy in iv until iv + hh) for (xx in iu until iu + w) used[yy * G + xx] = true
             val h = l * step
-            val sh = shade * Relief.tone(l)
+            val sh = shade * Relief.tone(l, soft)
             val fu0 = iu * inv; val fu1 = (iu + w) * inv; val fv0 = iv * inv; val fv1 = (iv + hh) * inv
             quadV(fu0, fv0, h, fu1, fv0, h, fu1, fv1, h, fu0, fv1, h, sh, false)
         }
         // paredinhas: da peça mais alta pra mais baixa, mescladas ao longo da aresta. Na borda do bloco o "vizinho" é o nível 0 (frestas também fecham ali).
-        fun wallTone(bot: Int): Float = if (bot < 0) 0.64f else 0.82f
+        fun wallTone(bot: Int): Float = if (soft) (if (bot < 0) 0.74f else 0.88f) else (if (bot < 0) 0.64f else 0.82f)
         for (side in 0..1) {      // planos de u constante (esquerda/direita)
             val du = if (side == 0) -1 else 1
             for (iu in 0 until G) {

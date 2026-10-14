@@ -1,3 +1,14 @@
+#id 2026-10-14-f
+#titulo Relevo 3D sutil também na Construção
+- Pedras, tijolos, tábuas, concreto, terracota, metais e cobre da Construção ganharam o mesmo relevinho 3D sutil da Natureza, tirado dos pixels das texturas do Actions & Stuff (rejunte e veios afundam, tijolos e nós saem um pouco)
+- As texturas continuam exatamente as mesmas; vidros, lã e blocos que brilham seguem lisos
+
+#id 2026-10-14-e
+#titulo Relevo 3D sutil na Natureza e grama de volta
+- Blocos da Natureza (terra, pedra, areia, troncos, minérios, cascalho, basalto e outros) ganharam um relevinho 3D de verdade, tirado dos próprios pixels das texturas do Actions & Stuff: as texturas continuam as mesmas, só com um detalhe a mais
+- Minérios têm as pintas levemente salientes; texturas bem lisas continuam lisas
+- Bloco de grama e matinhos voltaram pra textura de antes
+
 #id 2026-10-14-d
 #titulo Texturas do Actions & Stuff em todo o jogo
 - Terreno (grama, terra, areia, pedra, tronco), troncos de todas as árvores, minérios, neve, gelo, cacto, abóbora, melancia, feno, mel e magma agora usam as texturas do pack Actions & Stuff

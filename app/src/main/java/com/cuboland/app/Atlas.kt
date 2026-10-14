@@ -894,6 +894,8 @@ object Atlas {
             "concrete_pink", "concrete_light_blue", "concrete_yellow", "glowstone", "tallgrass", "flower_tulip_pink", "flower_dandelion", "flower_oxeye_daisy")
         for (k in packTiles.indices) {
             val t = packTiles[k][0]; val tint = if (packTiles[k][1] != 0) packTiles[k][1] else -1
+            // grama (topo 1 e lateral 2) e matinho (16) voltam à textura anterior (pixel art do Atlas), não usam o pack
+            if (t == 1 || t == 2 || t == 16) continue
             val mt = McTex.id(packNames[k])
             val plant = t >= 16
             for (py in 0 until T) for (px in 0 until T) {

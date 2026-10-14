@@ -36,6 +36,9 @@ object McTex {
     }
     private val tinted = HashMap<Long, IntArray>()
 
+    /** nome do arquivo da textura i ("" se não existir) */
+    fun nameOf(i: Int): String = if (i in ALL.indices) ALL[i].substring(0, ALL[i].indexOf(':')) else ""
+
     /** índice da textura pelo nome do arquivo (0 se não existir) */
     fun id(name: String): Int = names[name] ?: 0
 

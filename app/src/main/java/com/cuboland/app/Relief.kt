@@ -10,7 +10,12 @@ object Relief {
     const val G = 8
     const val STEP = 0.045f
     /** degrau de relevo por tile: a Construção (estilo Minecraft) tem relevo mais fundo, pra os detalhes 3D aparecerem bem */
+    /** relevo sutil das texturas do pack Actions & Stuff na Natureza: só 1 degrau pra fora/dentro, mais raso e com luz mais fraca (a textura em si não muda) */
+    const val STEP_SOFT = 0.04f
+    private val packBase = arrayOf("", "", "", "dirt", "stone", "sand", "log_oak", "log_oak_top")   // tiles básicos 3..7 pintados com o pack
+    fun soft(tile: Int): Boolean = (tile in 3..7) || Blk.isMc(tile)
     fun step(tile: Int): Float {
+        if (soft(tile)) return STEP_SOFT
         val sp = Blk.specs.getOrNull(tile)
         return if (BuildArt.baseTile(tile) != null || (sp != null && sp[0] == Blk.K_BUILD)) 0.058f else STEP
     }
@@ -20,14 +25,8 @@ object Relief {
 
     /** mapa escrito à mão desse tile (tipo K_PAL da NatArt ou padrão Pix de K_PIX), ou null se o bloco usa o automático */
     private fun hand(tile: Int): Map? {
-        if (tile == 6 || tile == 7) {   // tronco do carvalho: mesmo relevo da casca / topo dos outros troncos
-            val rows = NatRelief.pix.getOrNull(if (tile == 6) Pix.BARK else Pix.LOGTOP)
-            if (rows != null && rows.size == 16) {
-                val out = ByteArray(256)
-                for (y in 0 until 16) for (x in 0 until 16) out[y * 16 + x] = (rows[y][x] - '0' - 2).coerceIn(-2, 2).toByte()
-                return Map(16, out)
-            }
-        }
+        if (tile in 3..7) return packMap(McTex.id(packBase[tile]))
+        run { val sp = Blk.specs.getOrNull(tile); if (sp != null && sp[0] == Blk.K_MC) return packMap(sp[1]) }
         BuildArt.baseTile(tile)?.let { return BuildArt.relief(it[0]) }
         val sp = Blk.specs.getOrNull(tile) ?: return null
         if (sp[0] == Blk.K_BUILD) return BuildArt.relief(sp[1], sp[6] and 255)
@@ -40,6 +39,57 @@ object Relief {
         if (rows == null || rows.size != 16) return null
         val out = ByteArray(256)
         for (y in 0 until 16) for (x in 0 until 16) out[y * 16 + x] = (rows[y][x] - '0' - 2).coerceIn(-2, 2).toByte()
+        return Map(16, out)
+    }
+
+    /** relevo sutil a partir dos pixels 16x16 da textura do pack: só níveis -1/0/+1, borda sempre 0 (blocos encostam sem fresta).
+     *  Texturas lisas ficam planas; minérios levantam as pintas que destoam da pedra; o resto levanta o claro e afunda o escuro. */
+    private fun packMap(tex: Int): Map {
+        val px = McTex.pix(tex)
+        val out = ByteArray(256)
+        val nm = McTex.nameOf(tex)
+        val lum = FloatArray(256); val ok = BooleanArray(256)
+        var sum = 0f; var n = 0
+        for (i in 0 until 256) {
+            val c = px[i]
+            if ((c ushr 24) < 100) continue
+            lum[i] = (((c shr 16) and 255) * 0.299f + ((c shr 8) and 255) * 0.587f + (c and 255) * 0.114f) / 255f
+            ok[i] = true
+            val x = i and 15; val y = i shr 4
+            if (x in 1..14 && y in 1..14) { sum += lum[i]; n++ }
+        }
+        if (n == 0) return Map(16, out)
+        val m = sum / n
+        var vr = 0f
+        for (y in 1..14) for (x in 1..14) if (ok[y * 16 + x]) { val d = lum[y * 16 + x] - m; vr += d * d }
+        val sd = sqrt(vr / n)
+        if (sd < 0.045f) return Map(16, out)   // textura quase lisa: fica plana
+        val ore = nm.contains("_ore") || nm.contains("debris")
+        // distância de cor até a cor mediana (minério: as pintas diferentes da pedra)
+        var med = 0
+        if (ore) {
+            val rs = IntArray(n); val gs = IntArray(n); val bs = IntArray(n); var k = 0
+            for (y in 1..14) for (x in 1..14) if (ok[y * 16 + x] && k < n) { val c = px[y * 16 + x]; rs[k] = (c shr 16) and 255; gs[k] = (c shr 8) and 255; bs[k] = c and 255; k++ }
+            rs.sort(0, k); gs.sort(0, k); bs.sort(0, k)
+            med = (rs[k / 2] shl 16) or (gs[k / 2] shl 8) or bs[k / 2]
+        }
+        fun dist(c: Int): Float {
+            val dr = ((c shr 16) and 255) - ((med shr 16) and 255); val dg = ((c shr 8) and 255) - ((med shr 8) and 255); val db = (c and 255) - (med and 255)
+            return sqrt((dr * dr + dg * dg + db * db).toFloat())
+        }
+        var thr = 1.0f
+        repeat(3) {
+            var cnt = 0
+            for (y in 1..14) for (x in 1..14) {
+                val i = y * 16 + x
+                if (!ok[i]) { out[i] = 0; continue }
+                val l: Int = if (ore) (if (dist(px[i]) > 38f) 1 else 0)
+                    else { val z = (lum[i] - m) / sd; if (z > thr) 1 else if (z < -thr) -1 else 0 }
+                out[i] = l.toByte(); if (l != 0) cnt++
+            }
+            if (cnt <= 64) return Map(16, out)   // limite de peças: não pesar a malha
+            thr += 0.3f
+        }
         return Map(16, out)
     }
 
@@ -87,5 +137,5 @@ object Relief {
     }
 
     /** tom de cada nível: o fundo das frestas escurece (parece fundo mesmo), o alto pega mais luz */
-    fun tone(l: Int): Float = when (l) { 2 -> 1.12f; 1 -> 1.06f; 0 -> 1f; -1 -> 0.84f; else -> 0.72f }
+    fun tone(l: Int, soft: Boolean = false): Float = if (soft) (when (l) { 1 -> 1.05f; -1 -> 0.9f; else -> 1f }) else when (l) { 2 -> 1.12f; 1 -> 1.06f; 0 -> 1f; -1 -> 0.84f; else -> 0.72f }
 }
