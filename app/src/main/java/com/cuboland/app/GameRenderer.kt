@@ -118,11 +118,13 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                         ripGlow += env * 0.5;
                     }
                 }
+                float pool = 1.0 - step(0.5, vCol.b);   // piscina/tanque (acima do nível do mar): água calma, sem espuma de praia
+                g *= mix(1.0, 0.45, pool);
                 vec3 n = normalize(vec3(-g.x * 1.25, 1.0, -g.y * 1.25));
                 vec3 V = normalize(vView);
                 if (dot(n, V) < 0.0) n = -n;
                 vec3 L = normalize(vec3(0.55, 0.5, 0.65));
-                float depth = clamp(vCol.g, 0.0, 1.0);
+                float depth = mix(clamp(vCol.g, 0.0, 1.0), 0.40, pool);
                 vec3 shallow = vec3(0.38, 0.86, 0.84);
                 vec3 deep = vec3(0.10, 0.48, 0.78);
                 vec3 base = mix(shallow, deep, smoothstep(0.12, 0.95, depth) * 0.6);
@@ -143,6 +145,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                 wc = mix(wc, vec3(1.0), clamp(foam, 0.0, 1.0) * 0.45);
                 float wa = mix(0.50, 0.78, smoothstep(0.0, 0.5, depth));
                 wa = clamp(wa + fres * 0.30 + foam * 0.3, 0.0, 1.0);
+                wa = mix(wa, clamp(0.56 + fres * 0.26, 0.0, 0.88), pool);
                 if (uUnder > 0.5) {   // vista de baixo: lisa, degradê suave com brilho do sol e um balanço bem leve
                     float win = smoothstep(0.52, 0.80, ndv);
                     float sh = 0.5 + 0.5 * sin(P.x * 0.45 + P.y * 0.35 + tm * 0.5);

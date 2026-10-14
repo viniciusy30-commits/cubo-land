@@ -65,6 +65,21 @@ object McTex {
         return out
     }
 
+    /** vidro liso: cor única (média do miolo da textura, sem a moldura de 1 pixel) pra blocos de vidro vizinhos emendarem sem divisa nenhuma.
+     *  Vidro comum tem o miolo quase transparente: vira uma película bem clara; os coloridos e o fumê mantêm a própria cor. */
+    fun flatGlass(i: Int, tint: Int): Int {
+        val a = if (tint >= 0) tint(i, tint and 0xFFFFFF) else pix(i)
+        var sr = 0; var sg = 0; var sb = 0; var sa = 0; var n = 0
+        for (y in 3..12) for (x in 3..12) {
+            val c = a[(y shl 4) + x]; val al = c ushr 24
+            sa += al
+            if (al > 0) { sr += (c shr 16) and 255; sg += (c shr 8) and 255; sb += c and 255; n++ }
+        }
+        val avgA = sa / 100
+        if (n == 0 || avgA < 30) return (54 shl 24) or 0xD8F2FF
+        return (avgA.coerceIn(60, 200) shl 24) or ((sr / n) shl 16) or ((sg / n) shl 8) or (sb / n)
+    }
+
     /** pixel (x, y em 0..15) da textura i, recolorida se tint >= 0 */
     fun sample(i: Int, tint: Int, x: Int, y: Int): Int {
         val a = if (tint >= 0) tint(i, tint and 0xFFFFFF) else pix(i)

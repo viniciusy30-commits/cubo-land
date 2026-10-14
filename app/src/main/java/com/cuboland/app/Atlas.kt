@@ -899,7 +899,7 @@ object Atlas {
             val x0 = (t % NT) * T; val y0 = (t / NT) * T
             for (y in 0 until T) for (x in 0 until T) {
                 val qx = x / 4; val qy = y / 4   // grade de 16x16 pixels grandes (pixel art)
-                val g0 = if (sp[0] == Blk.K_MC) McTex.sample(sp[1], sp[2], qx, qy) else if (sp[0] == Blk.K_BUILD) BuildArt.sample(sp[1], sp[2], sp[3], sp[4], x * 64 / T, y * 64 / T, sp[6] and 255) else genNew(sp, (qx + 0.5f) / 16f, (qy + 0.5f) / 16f)
+                val g0 = if (sp[0] == Blk.K_MC && sp[4] == 1) McTex.flatGlass(sp[1], sp[2]) else if (sp[0] == Blk.K_MC) McTex.sample(sp[1], sp[2], qx, qy) else if (sp[0] == Blk.K_BUILD) BuildArt.sample(sp[1], sp[2], sp[3], sp[4], x * 64 / T, y * 64 / T, sp[6] and 255) else genNew(sp, (qx + 0.5f) / 16f, (qy + 0.5f) / 16f)
                 val c = if (sp[0] == Blk.K_PIX || sp[0] == Blk.K_LEAF || sp[0] == Blk.K_PAL || sp[0] == Blk.K_PLEAF || sp[0] == Blk.K_SPRITE || sp[0] == Blk.K_PALV || sp[0] == Blk.K_MC || sp[0] == Blk.K_BUILD) g0 else pixelArt(g0, qx, qy, sp[5])
                 out[(y0 + y) * w + x0 + x] = if ((c ushr 24) == 0) CLEAR else c
             }

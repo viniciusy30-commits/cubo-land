@@ -1,3 +1,10 @@
+#id 2026-10-14-c
+#titulo Casa moderna refeita, vidro liso e piscina
+- Vidros (comum, fumê e coloridos) agora são lisos de verdade: sem moldura em cada bloco, paredes e fachadas de vidro emendam sem nenhuma divisa
+- Água da piscina: sem espuma nem listras de praia, calma e cristalina; o mar continua igual
+- Casa moderna refeita com a mobília nova: lareira com estantes, sofás e poltronas, jantar com lustres, cozinha com ilha, cinema, suítes com closet e banheiro, pendentes e arandelas acesas
+- Piscina com luzes no fundo, espreguiçadeiras e mesa; jardim com luminárias, cobertura na entrada e área gourmet nos fundos
+
 #id 2026-10-14-b
 #titulo Construção estilo Minecraft, sem repetidos
 - Texturas da Construção agora são as do Minecraft (pack Actions & Stuff): pedras, tijolos, tábuas, concreto, terracota, vidros, metais e cobre
