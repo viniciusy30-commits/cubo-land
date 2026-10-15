@@ -166,10 +166,10 @@ class CarState {
         // ----- rodas e inclinação da carroceria -----
         wheel += vf * dt / 0.31f * 57.3f
         if (wheel > 36000f || wheel < -36000f) wheel = 0f
-        val accel = if (dt > 0f) (vf - lastVf) / dt else 0f
+        val accelMeas = if (dt > 0f) (vf - lastVf) / dt else 0f
         lastVf = vf
         val rollT = -steer * min(1f, sp / (if (bike) 14f else 18f)) * (if (bike) 30f else 4f)
-        val pitchT = (-accel * 0.22f).coerceIn(-3.5f, 3.5f)
+        val pitchT = (-accelMeas * 0.22f).coerceIn(-3.5f, 3.5f)
         roll += (rollT - roll) * min(1f, 6f * dt)
         pitchA += (pitchT - pitchA) * min(1f, 6f * dt)
         yOff += (0f - yOff) * min(1f, 9f * dt)

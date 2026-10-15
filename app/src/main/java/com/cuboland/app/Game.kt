@@ -195,7 +195,7 @@ class Game(val world: World) {
     @Volatile var attackHeld = false; @Volatile var attackPress = false; @Volatile var attackRelease = false
     @Volatile var charging = false; @Volatile var charge = 0f
     private var pressT = 0f; private var pressing = false; var swingDur = 0.46f; @Volatile var powerSwing = false
-    @Volatile var creative = false; @Volatile var flying = false; @Volatile var downHeld = false; private var lastJumpT = -9f; private var lastDownT = -9f
+    @Volatile var creative = false; @Volatile var flying = false; @Volatile var freeFly = false; private var flyVy = 0f; @Volatile var downHeld = false; private var lastJumpT = -9f; private var lastDownT = -9f
     var brX = 0; var brY = -1; var brZ = 0; @Volatile var hitPulse = 0f; var rT = 0f
     val dmg = HashMap<Long, Dmg>(); val debris = ArrayList<Debris>(); val trees = ArrayList<FallTree>()
     private var hitT = -1f; private var hitItem = 0; private var hitStab = false
@@ -361,7 +361,7 @@ class Game(val world: World) {
 
     private fun physics(e: Ent, dt: Float) {
         if (flying && e === player) {
-            val tv = (if (jumpHeld) 7f else 0f) - (if (downHeld) 7f else 0f)
+            val tv = (if (jumpHeld) 7f else 0f) - (if (downHeld) 7f else 0f) + (if (freeFly) flyVy else 0f)
             e.vy += (tv - e.vy) * min(1f, 8f * dt)
             move(e, e.vx * dt, e.vy * dt, e.vz * dt)
             return
@@ -1377,7 +1377,11 @@ class Game(val world: World) {
         if (hypot(stickX, stickY) < 0.1f || posture != 0) sprint = false   // parou de andar: desliga a corrida
         val sp = (if (p.inWater && !flying) 3.6f else if (flying) 10f else 5f) * (if (charging) 0.55f else 1f) * (if (sprint) (if (flying) 1.9f else if (p.inWater) 1.7f else 1.55f) else 1f) * (1f - 0.45f * crouchA) * (1f - 0.72f * lieA)
         val f = sin(yaw); val c = cos(yaw)
-        val mx = (f * stickY + (-c) * stickX) * sp; val mz = (c * stickY + f * stickX) * sp
+        // voo livre: voando, o joystick segue a câmera em todas as direções (olha pra cima e sobe, olha pra baixo e desce)
+        val ff = flying && freeFly && !p.inWater
+        val cp = if (ff) cos(pitch) else 1f
+        flyVy = if (ff) sin(pitch) * stickY * sp else 0f
+        val mx = (f * stickY * cp + (-c) * stickX) * sp; val mz = (c * stickY * cp + f * stickX) * sp
         wishX = mx; wishZ = mz
         val k = min(1f, (if (p.onGround) 14f else 5f) * dt)
         p.vx += (mx - p.vx) * k; p.vz += (mz - p.vz) * k

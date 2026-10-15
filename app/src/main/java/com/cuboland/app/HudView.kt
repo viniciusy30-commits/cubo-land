@@ -233,13 +233,14 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         ptrId = -1; ptrDrag = false
     }
 
-    private fun pbox() = RectF(width / 2f - 160 * d, height / 2f - 142 * d, width / 2f + 160 * d, height / 2f + 142 * d)
+    private fun pbox() = RectF(width / 2f - 160 * d, height / 2f - 170 * d, width / 2f + 160 * d, height / 2f + 170 * d)
     private fun pbtn(k: Int): RectF { val b = pbox(); val t = b.top + 98 * d + k * 56 * d; return RectF(b.left + 22 * d, t, b.right - 22 * d, t + 48 * d) }
 
     private fun pauseDown(x: Float, y: Float) {
         if (pbtn(0).contains(x, y)) { togglePause(); return }
         if (pbtn(1).contains(x, y)) { game.creative = !game.creative; if (!game.creative) game.flying = false; onMode(game.creative); return }
-        if (pbtn(2).contains(x, y)) { onExit(); return }
+        if (pbtn(2).contains(x, y)) { game.freeFly = !game.freeFly; return }
+        if (pbtn(3).contains(x, y)) { onExit(); return }
     }
 
     private fun toggleInv() {
@@ -674,8 +675,10 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         pxBtn(c, pbtn(0), Cz.GREEN, "Continuar", null, ICO_PLAY, null)
         val cre = game.creative
         pxBtn(c, pbtn(1), if (cre) Cz.LILAC else Cz.ORANGE, if (cre) "Criativo" else "Sobrevivência", "MODO DE JOGO", if (cre) ICO_STAR else ICO_HEART, ICO_SWAP)
-        pxBtn(c, pbtn(2), Cz.RED, "Salvar e sair", null, ICO_EXIT, null)
-        pxText(c, if (cre) "Toque para ir ao modo sobrevivência" else "Toque para ir ao modo criativo", w / 2, pbtn(2).bottom + 12 * d, tsc(1f), Cz.TXT_SOFT, 1, false)
+        val ff = game.freeFly
+        pxBtn(c, pbtn(2), if (ff) Cz.GREEN else Cz.ORANGE, if (ff) "Ligado" else "Desligado", "VOO LIVRE", ICO_STAR, ICO_SWAP)
+        pxBtn(c, pbtn(3), Cz.RED, "Salvar e sair", null, ICO_EXIT, null)
+        pxText(c, if (cre) "Toque para ir ao modo sobrevivência" else "Toque para ir ao modo criativo", w / 2, pbtn(3).bottom + 12 * d, tsc(1f), Cz.TXT_SOFT, 1, false)
     }
 
     private fun pxBtn(c: Canvas, r: RectF, base: Int, label: String, sub: String?, icon: Array<String>, right: Array<String>?) {
