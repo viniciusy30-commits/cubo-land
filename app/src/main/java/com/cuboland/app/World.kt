@@ -324,6 +324,7 @@ class World {
         val lk = java.util.BitSet(blocks.size)
         for (i in blocks.indices) if (blocks[i] != B.AIR) lk.set(i)
         locked = lk
+        scanElevAnchors()   // a galeria escreve direto em blocks[]: remonta o registro dos elevadores
         java.util.Arrays.fill(dirty, true)
     }
 

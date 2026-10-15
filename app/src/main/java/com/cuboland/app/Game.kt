@@ -135,6 +135,7 @@ class Game(val world: World) {
     init { world.scanElevAnchors(); respawn() }
 
     fun respawn() {
+        world.scanElevAnchors()
         val x = if (world.spawnX >= 0) world.spawnX else World.SX / 2; val z = if (world.spawnZ >= 0) world.spawnZ else World.SZ / 2
         player.x = x + 0.5f; player.z = z + 0.5f; player.y = world.surfaceY(x, z) + 0.05f
         player.vx = 0f; player.vy = 0f; player.vz = 0f
