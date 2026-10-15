@@ -9,7 +9,7 @@ object Furniture {
     const val S_TDARK = 20; const val S_TMARB = 21; const val S_TCLOTH = 22; const val S_TROUND = 23; const val S_COFFEE = 24; const val S_DESK = 25; const val S_TROUNDM = 26
     const val S_SHELF = 30; const val S_WARD = 31; const val S_DRESS = 32; const val S_FRIDGE = 33
     const val S_PC = 40; const val S_TV = 41; const val S_LAMP = 42
-    const val S_ELEV = 60
+    const val S_ELEV = 55   // 60..99 é da BuildShapes (Painel, Placa, Laje...)
     const val S_PLANT = 50; const val S_RUGR = 51; const val S_RUGB = 52
 
     const val T_OAK = 0; const val T_OAKD = 1; const val T_DARK = 2; const val T_DARKD = 3; const val T_BIRCH = 4
