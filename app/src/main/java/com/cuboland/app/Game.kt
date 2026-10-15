@@ -691,6 +691,43 @@ class Game(val world: World) {
         tvAim = best
     }
 
+    // ---------- móveis interativos: abrir/fechar e ligar/desligar (estado salvo no World.fState) ----------
+    /** móvel interativo (x,y,z) que o jogador está olhando de perto, ou null; o HUD mostra o botão de ação */
+    @Volatile var fAim: IntArray? = null
+    private var fScanT = 0f
+    private fun scanFurn(dt: Float) {
+        fScanT -= dt; if (fScanT > 0f) return
+        fScanT = 0.1f
+        if (driving) { fAim = null; return }
+        val p = player
+        val ex = p.x; val ey = p.y + eyeH(); val ez = p.z
+        val fx = fwdX(); val fy = fwdY(); val fz = fwdZ()
+        val bx = floor(p.x).toInt(); val by = floor(p.y).toInt(); val bz = floor(p.z).toInt()
+        var best: IntArray? = null; var bs = -9f
+        for (dy in -2..3) for (dz in -3..3) for (dx in -3..3) {
+            val x = bx + dx; val y = by + dy; val z = bz + dz
+            val id = world.get(x, y, z)
+            if (id == 0 || Furniture.fKind(id) == 0) continue
+            val vx = x + 0.5f - ex; val vy = y + 0.5f - ey; val vz = z + 0.5f - ez
+            val dist = sqrt(vx * vx + vy * vy + vz * vz)
+            if (dist > 3.4f || dist < 0.05f) continue
+            val dot = (vx * fx + vy * fy + vz * fz) / dist
+            if (dot < 0.86f) continue
+            val sc = dot - dist * 0.05f
+            if (sc <= bs) continue
+            if (!tvLineClear(ex, ey, ez, x, y, z)) continue
+            bs = sc; best = intArrayOf(x, y, z)
+        }
+        fAim = best
+    }
+    /** abre/fecha ou liga/desliga o móvel; devolve true se mudou algo */
+    fun toggleFurn(x: Int, y: Int, z: Int): Boolean {
+        val id = world.get(x, y, z)
+        val bit = when (Furniture.fKind(id)) { 1 -> Furniture.ST_OPEN; 2 -> Furniture.ST_OFF; else -> return false }
+        world.setFState(x, y, z, world.fStateOf(x, y, z) xor bit)
+        return true
+    }
+
     fun eyeH() = 1.6f - 0.35f * crouchA - 0.65f * sitA - 1.15f * lieA
     private fun aimVec(): FloatArray {
         val fx = fwdX(); val fy = fwdY(); val fz = fwdZ()
@@ -1360,6 +1397,7 @@ class Game(val world: World) {
         waterStep(dt)
         val p = player
         scanTv(dt)
+        scanFurn(dt)
         scanElev()
         if (!creative) flying = false
         if (flying && p.onGround && downHeld) flying = false

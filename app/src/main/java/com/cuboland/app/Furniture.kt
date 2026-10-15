@@ -90,7 +90,7 @@ object Furniture {
 
     // ---------- pincel: caixas e cilindros com UV pela posição (a textura não "amassa" nas peças pequenas) ----------
     internal class C(val o: MeshBuf, val x: Int, val y: Int, val z: Int, val vr: Float) {
-        var rot = 0; var oy = 0f; var lit = false
+        var rot = 0; var oy = 0f; var lit = false; var off = false   // off = luz apagada: ignora o brilho próprio
         var sc = 1f   // escala do móvel (TV grande): cresce a partir do centro da base, pode passar da célula
         private fun rx(a: Float, c: Float) = when (rot) { 0 -> a; 1 -> 1f - a; 2 -> c; else -> 1f - c }
         private fun rz(a: Float, c: Float) = when (rot) { 0 -> c; 1 -> 1f - c; 2 -> 1f - a; else -> a }
@@ -103,7 +103,7 @@ object Furniture {
             val ax = rx(x0, z0); val bx = rx(x1, z1); val az = rz(x0, z0); val bz = rz(x1, z1)
             val a0 = min(ax, bx); val a1 = max(ax, bx); val c0 = min(az, bz); val c1 = max(az, bz)
             val ya = y0 + oy; val yb = y1 + oy
-            val lt = lit || glow
+            val lt = (lit || glow) && !off
             val xs = floatArrayOf(a0, a1, a1, a0); val zs = floatArrayOf(c0, c0, c1, c1)
             val shd = floatArrayOf(0.8f, 0.7f, 0.9f, 0.76f)
             for (i in 0 until 4) {
@@ -124,7 +124,7 @@ object Furniture {
         fun cyl(top: Int, side: Int, bot: Int, cx: Float, cz: Float, r0: Float, r1: Float, y0: Float, y1: Float, n: Int = 14, glow: Boolean = false) {
             val ox = rx(cx, cz); val oz = rz(cx, cz)
             val ya = y0 + oy; val yb = y1 + oy
-            val lt = lit || glow
+            val lt = (lit || glow) && !off
             fun sh(th: Float) = if (lt) 1f else vr * (0.72f + 0.28f * (0.5f + 0.5f * cos(th - 0.9f)))
             for (i in 0 until n) {
                 val t0 = TAU * i / n; val t1 = TAU * (i + 1) / n
@@ -148,9 +148,56 @@ object Furniture {
         }
         /** folha em losango: base, meio (esq/dir) e ponta, em coordenadas locais */
         fun leaf(t: Int, bx: Float, by: Float, bz: Float, mx: Float, my: Float, mz: Float, sx: Float, sz: Float, tx: Float, ty: Float, tz: Float, s: Float) {
-            fun p(lx: Float, ly: Float, lz: Float, u: Float, vv: Float) = v(t, rx(lx, lz), ly + oy, rz(lx, lz), u, vv, if (lit) 1f else s * vr)
+            fun p(lx: Float, ly: Float, lz: Float, u: Float, vv: Float) = v(t, rx(lx, lz), ly + oy, rz(lx, lz), u, vv, if (lit && !off) 1f else s * vr)
             p(bx, by, bz, 0.5f, 1f); p(mx - sx, my, mz - sz, 0f, 0.5f); p(tx, ty, tz, 0.5f, 0f); p(mx + sx, my, mz + sz, 1f, 0.5f); fin()
         }
+    }
+
+    // ---------- interação genérica: abrir/fechar e ligar/desligar ----------
+    /** 0 = sem interação extra, 1 = abre/fecha (porta, tampa), 2 = liga/desliga a luz */
+    fun fKind(id: Int): Int = when (sub(id)) {
+        S_WARD, S_FRIDGE -> 1
+        S_LAMP -> 2
+        FurnB.S_TALL, FurnB.S_WARDM, FurnB.S_CABINET, FurnB.S_TRUNK, FurnB.S_WALLCAB, FurnB.S_FRIDGE2, FurnB.S_FRIDGER,
+        FurnB.S_MINI, FurnB.S_MICRO, FurnB.S_WASHER -> 1
+        FurnB.S_TLAMP, FurnB.S_FLOOR, FurnB.S_ARC, FurnB.S_PEND, FurnB.S_CHAND, FurnB.S_SCONCE, FurnB.S_DESKL,
+        FurnB.S_PAPER, FurnB.S_MOON, FurnB.S_LAVA -> 2
+        else -> 0
+    }
+    const val ST_OPEN = 1; const val ST_OFF = 2
+    /** rótulo do botão da mira: o que vai acontecer ao tocar */
+    fun fLabel(id: Int, st: Int): String = when (fKind(id)) {
+        1 -> if (st and ST_OPEN != 0) "FECHAR" else "ABRIR"
+        2 -> if (st and ST_OFF != 0) "LIGAR" else "DESLIGAR"
+        else -> ""
+    }
+    /** frente (z), retângulo da abertura [x0, y0, x1, y1] de cada móvel que abre; null = sem desenho de abertura */
+    private fun openSpec(s: Int): FloatArray? = when (s) {
+        S_WARD -> floatArrayOf(1f, 0.08f, 0.06f, 0.92f, 0.94f)
+        S_FRIDGE -> floatArrayOf(0.95f, 0.1f, 0.05f, 0.9f, 0.95f)
+        FurnB.S_TALL, FurnB.S_WARDM, FurnB.S_CABINET, FurnB.S_FRIDGE2, FurnB.S_FRIDGER -> floatArrayOf(0.98f, 0.1f, 0.06f, 0.9f, 0.94f)
+        FurnB.S_WALLCAB -> floatArrayOf(0.5f, 0.1f, 0.46f, 0.9f, 0.96f)
+        FurnB.S_MINI -> floatArrayOf(0.92f, 0.12f, 0.05f, 0.88f, 0.57f)
+        FurnB.S_MICRO -> floatArrayOf(0.86f, 0.1f, 0.06f, 0.9f, 0.44f)
+        FurnB.S_WASHER -> floatArrayOf(0.96f, 0.16f, 0.14f, 0.84f, 0.62f)
+        else -> null
+    }
+    /** desenha por cima do móvel fechado: vão escuro, prateleira e a porta aberta (ou a tampa levantada, no baú) */
+    private fun openOverlay(c: C, T: IntArray, id: Int, s: Int) {
+        val bk = T[T_BLACK]
+        val dt = if (s >= 100) Blk.fp(id)[0] else if (s == S_FRIDGE) T[T_WHITE] else T[T_OAK]
+        if (s == FurnB.S_TRUNK) {
+            c.box(bk, bk, bk, 0.1f, 0.5f, 0.14f, 0.9f, 0.565f, 0.86f)
+            c.box(dt, dt, dt, 0.06f, 0.55f, 0.02f, 0.94f, 1.05f, 0.1f)
+            return
+        }
+        val o = openSpec(s) ?: return
+        val fd = o[0]; val x0 = o[1]; val y0 = o[2]; val x1 = o[3]; val y1 = o[4]
+        c.box(bk, bk, bk, x0, y0, fd - 0.35f, x1, y1, fd + 0.012f)
+        val ym = (y0 + y1) / 2f
+        c.box(dt, dt, dt, x0 + 0.02f, ym, fd - 0.3f, x1 - 0.02f, ym + 0.035f, fd + 0.02f)
+        if (y1 - y0 > 0.7f) { val yl = y0 + (y1 - y0) * 0.25f; c.box(dt, dt, dt, x0 + 0.02f, yl, fd - 0.3f, x1 - 0.02f, yl + 0.03f, fd + 0.02f) }
+        c.box(dt, dt, dt, x0, y0, fd + 0.014f, x0 + 0.05f, y1, fd + 0.014f + (x1 - x0) * 0.85f)
     }
 
     fun emit(o: MeshBuf, w: World, x: Int, y: Int, z: Int, id: Int, vr: Float) {
@@ -159,6 +206,9 @@ object Furniture {
         val c = C(o, x, y, z, vr)
         c.lit = B.light(id)
         c.oy = baseOff(w, x, y, z, s)
+        val fk = fKind(id)
+        val fst = if (fk != 0 && y >= 0) w.fStateOf(x, y, z) else 0
+        if (fk == 2 && (fst and ST_OFF) != 0) c.off = true
         when (s) {
             S_CHAIR -> { c.rot = facing(w, x, y, z, s); chair(c, T) }
             S_CHAIR2 -> { c.rot = facing(w, x, y, z, s); chair2(c, T) }
@@ -182,6 +232,9 @@ object Furniture {
             S_RUGR -> c.box(T[T_RUGR], T[T_RUGR], T[T_RUGR], 0f, 0f, 0f, 1f, 0.04f, 1f)
             S_RUGB -> c.box(T[T_RUGB], T[T_RUGB], T[T_RUGB], 0f, 0f, 0f, 1f, 0.04f, 1f)
             else -> if (s >= 100) FurnB.emit(c, w, x, y, z, id, s)
+        }
+        if (fk == 1 && (fst and ST_OPEN) != 0) {
+            openOverlay(c, T, id, s)
         }
     }
 

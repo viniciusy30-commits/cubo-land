@@ -1,3 +1,9 @@
+#id 2026-10-15-d
+#titulo Móveis que abrem e abajures que ligam
+- Mire num armário, guarda-roupa, geladeira, frigobar, micro-ondas, máquina de lavar, baú ou armário suspenso de perto: aparece o botão ABRIR / FECHAR e a porta (ou a tampa do baú) abre de verdade, com o vão escuro e prateleira dentro
+- Mire num abajur, luminária de mesa, de piso, de leitura, arco, pendente, lustre, arandela, luminária de papel, lua ou lava lamp: botão DESLIGAR / LIGAR apaga e acende o brilho
+- O estado de cada móvel é individual e fica salvo no mundo: fechou, saiu e voltou, continua como deixou
+
 #id 2026-10-15-c
 #titulo Moto que empina + personagem no carro e na moto
 - Botão MOTO (embaixo do CARRO, no alto da tela) chama a moto esportiva; SAIR desce. Na pista de veículos da galeria o carro e a moto já esperam lá

@@ -100,6 +100,7 @@ class World {
         /** modos extras da galeria de blocos (além das categorias de blocos) */
         const val GAL_FURN = 1; const val GAL_HOUSE = 2; const val GAL_TREES = 3; const val GAL_FURN2 = 4; const val GAL_CAR = 5
         const val SAVE_MAGIC = 0x434C3402
+        const val FS_MAGIC = 0x46533031   // trailer opcional depois do das TVs: estado dos móveis (aberto/ligado)
         const val TV_MAGIC = 0x54563031   // trailer opcional depois dos blocos: tamanho de cada TV
         /** deve ser chamado ANTES de criar World/Game/GameRenderer: o mapa plano é bem maior que a ilha */
         fun configure(flat: Boolean, tall: Boolean = false) { SX = if (flat) 256 else 96; SZ = if (tall) 384 else SX }   // tall: a galeria de blocos precisa de mais fundo
@@ -187,6 +188,15 @@ class World {
         markDirty(x, z)
     }
 
+    /** estado dos móveis interativos (bit 1 = aberto, bit 2 = luz apagada). Chave = índice do bloco; sem entrada = estado padrão (fechado / aceso) */
+    val fState = java.util.concurrent.ConcurrentHashMap<Int, Int>()
+    fun fStateOf(x: Int, y: Int, z: Int): Int = fState[(y * SZ + z) * SX + x] ?: 0
+    fun setFState(x: Int, y: Int, z: Int, v: Int) {
+        val k = (y * SZ + z) * SX + x
+        if (v == 0) fState.remove(k) else fState[k] = v
+        markDirty(x, z)
+    }
+
     /** âncoras de elevador (índice do bloco) e versão, pro Game remontar os poços só quando algo muda */
     val elevAnchors: MutableSet<Int> = java.util.concurrent.ConcurrentHashMap.newKeySet<Int>()
     @Volatile var elevVer = 0
@@ -197,6 +207,7 @@ class World {
         run { val k = (y * SZ + z) * SX + x; val old = blocks[k]
             if (old != 0 && Furniture.isElev(old)) { elevAnchors.remove(k); elevVer++ }
             if (id != 0 && Furniture.isElev(id)) { elevAnchors.add(k); elevVer++ } }
+        if (!fState.isEmpty()) fState.remove((y * SZ + z) * SX + x)   // móvel novo começa fechado/aceso
         if (!tvSize.isEmpty()) tvSize.remove((y * SZ + z) * SX + x)   // trocou/quebrou o bloco: a TV nova começa no tamanho normal
         blocks[(y * SZ + z) * SX + x] = id
         for (dx in -1..1) for (dz in -1..1) {
@@ -307,7 +318,7 @@ class World {
     fun generateTest(catIdx: Int = -1, secFilter: Int = -1, extra: Int = 0) {
         locked = null
         carSpawnX = -2
-        java.util.Arrays.fill(blocks, 0); labels.clear(); tvSize.clear()
+        java.util.Arrays.fill(blocks, 0); labels.clear(); tvSize.clear(); fState.clear()
         val floor = B.byName["Concreto Cinza-claro"] ?: B.STONE
         val plate = B.byName["Concreto Branco"] ?: floor
         val top = 10
@@ -1172,13 +1183,18 @@ class World {
     fun save(f: File) {
         try {
             val tvs = HashMap(tvSize)
-            val extra = if (tvs.isEmpty()) 0 else 8 + tvs.size * 8
+            val fss = HashMap(fState)
+            val extra = if (tvs.isEmpty() && fss.isEmpty()) 0 else 8 + tvs.size * 8 + (if (fss.isEmpty()) 0 else 8 + fss.size * 8)
             val bb = java.nio.ByteBuffer.allocate(4 + blocks.size * 4 + extra)
             bb.putInt(SAVE_MAGIC); bb.asIntBuffer().put(blocks)
             if (extra > 0) {
                 bb.position(4 + blocks.size * 4)
                 bb.putInt(TV_MAGIC); bb.putInt(tvs.size)
                 for ((k, v) in tvs) { bb.putInt(k); bb.putInt(v) }
+                if (fss.isNotEmpty()) {
+                    bb.putInt(FS_MAGIC); bb.putInt(fss.size)
+                    for ((k, v) in fss) { bb.putInt(k); bb.putInt(v) }
+                }
             }
             GZIPOutputStream(f.outputStream()).use { it.write(bb.array()) }
         } catch (_: Exception) {}
@@ -1194,13 +1210,17 @@ class World {
                 val bb = java.nio.ByteBuffer.wrap(data)
                 if (bb.getInt() != SAVE_MAGIC) return false
                 bb.asIntBuffer().get(blocks)
-                tvSize.clear()
+                tvSize.clear(); fState.clear()
                 val tp = 4 + blocks.size * 4
                 if (data.size >= tp + 8) {   // trailer opcional: tamanhos das TVs (saves antigos não têm)
                     bb.position(tp)
                     if (bb.getInt() == TV_MAGIC) {
                         val n = bb.getInt(); var i = 0
                         while (i < n && bb.remaining() >= 8) { val k = bb.getInt(); val lv = bb.getInt(); if (lv in 1..3) tvSize[k] = lv; i++ }
+                        if (bb.remaining() >= 8 && bb.getInt() == FS_MAGIC) {
+                            val m = bb.getInt(); var j = 0
+                            while (j < m && bb.remaining() >= 8) { val k = bb.getInt(); val v = bb.getInt(); if (v in 1..3) fState[k] = v; j++ }
+                        }
                     }
                 }
             } else return false

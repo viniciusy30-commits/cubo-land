@@ -54,6 +54,32 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         }
     }
 
+    // ----- Móveis interativos: botão ABRIR/FECHAR/LIGAR/DESLIGAR quando a mira está num armário, geladeira, abajur... -----
+    private fun fPromptOn() = !paused && !invOpen && !game.driving && game.fAim != null
+    private fun fBtn(): RectF {
+        val bw = 150 * d; val bh = 38 * d
+        val l = width / 2f - bw / 2f
+        val t = hbTop() - 108 * d - (if (tvPromptOn()) 46 * d else 0f)
+        return RectF(l, t, l + bw, t + bh)
+    }
+    private fun fPromptDown(x: Float, y: Float): Boolean {
+        if (!fPromptOn()) return false
+        val a = game.fAim ?: return false
+        if (!fBtn().contains(x, y)) return false
+        game.toggleFurn(a[0], a[1], a[2])
+        return true
+    }
+    private fun drawFPrompt(c: Canvas) {
+        val a = game.fAim ?: return
+        val id = game.world.get(a[0], a[1], a[2])
+        val label = Furniture.fLabel(id, game.world.fStateOf(a[0], a[1], a[2]))
+        if (label.isEmpty()) return
+        val r = fBtn(); val sc = tsc(1.3f)
+        val closing = label == "FECHAR" || label == "DESLIGAR"
+        pxPanel(c, r.left, r.top, r.right, r.bottom, if (closing) Cz.RED else Cz.GREEN)
+        pxText(c, label, (r.left + r.right) / 2f, (r.top + r.bottom) / 2f - 3.5f * sc, sc, Color.WHITE, 1)
+    }
+
     // ----- Elevador: só aparece quando a mira está nos botões (painel da cabine ou de chamada); escolhe o andar direto -----
     private fun elevOn() = !paused && !invOpen && game.elevSel != null
     private fun elevRect(i: Int, n: Int): RectF {
@@ -278,6 +304,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         if (game.driving && game.car.kind == 0 && motoRect().contains(x, y)) { game.car.roofOn = !game.car.roofOn; return }   // botão TETO
         if (game.driving && carDown(id, x, y)) return
         if (tvPromptDown(x, y)) return
+        if (fPromptDown(x, y)) return
         if (elevDown(x, y)) return
         for (i in intArrayOf(1, 3, 4, 6, 7, 8)) if ((!game.driving || i == 4) && (i != 6 || wet()) && (i != 8 || !wet()) && hypot(x - bx(i), y - byy(i)) < br(i) * 1.15f) {
             btnId[id] = i
@@ -928,6 +955,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         }
         if (game.deadTimer > 0f) pxText(c, "Você desmaiou! Renascendo...", w / 2, h / 2 - 40 * d, tsc(2.6f), Color.WHITE, 1)
         if (tvPromptOn()) drawTvPrompt(c)
+        if (fPromptOn()) drawFPrompt(c)
         if (elevOn()) drawElev(c)
         drawFloorBadge(c)
         if (invOpen) drawInventory(c)
