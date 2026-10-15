@@ -222,6 +222,8 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         skyCam = G.glGetUniformLocation(skyProg, "uCam"); skyHor = G.glGetUniformLocation(skyProg, "uHor")
         skyTime = G.glGetUniformLocation(skyProg, "uTime")
         Matrix.setIdentityM(ident, 0)
+        tvProg = 0; tvTex = 0; tvTexOk = false
+        run { val sb = IntArray(1); G.glGetIntegerv(G.GL_STENCIL_BITS, sb, 0); stencilOk = sb[0] >= 1 }
         G.glEnable(G.GL_DEPTH_TEST); G.glEnable(G.GL_CULL_FACE); G.glCullFace(G.GL_BACK); G.glFrontFace(G.GL_CCW)
         G.glBlendFunc(G.GL_SRC_ALPHA, G.GL_ONE_MINUS_SRC_ALPHA)
         // textura (atlas)
@@ -1041,9 +1043,206 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         for (sh in game.elevShafts.values) { val dx = sh.ax + 2f - cvx; val dz = sh.az + 2f - cvz; if (dx * dx + dz * dz < 90f * 90f) near.add(sh) }
         if (near.isEmpty()) return
         for (sh in near) drawShaft(sh, false)
+        reflectCabins()
         G.glDepthMask(false)
         for (sh in near) drawShaft(sh, true)
         G.glDepthMask(true)
+    }
+
+
+    // ---------- espelhos de verdade (reflexo planar com stencil + corte oblíquo do plano) ----------
+    private var stencilOk = false
+    private var mirSkip = -1
+    private var curFr = 0.6f; private var curFg = 0.8f; private var curFb = 1f; private var curUnder = false
+    private var curVx = 0f; private var curVy = 0f; private var curVz = 0f
+    private val rmM = FloatArray(16); private val vR = FloatArray(16); private val pO = FloatArray(16)
+    private val vpR = FloatArray(16); private val pvR = FloatArray(16); private val tmpI = FloatArray(16)
+    private val mirN = FloatArray(3)
+
+    /** caixa do espelho k (0 fundo, 1 esquerda, 2 direita) em coords locais do poço: x0,y0,z0,x1,y1,z1 */
+    private fun mirBox(k: Int, cy: Float, o: FloatArray) {
+        val y0 = cy + 1.0f; val y1 = cy + 2.8f
+        when (k) { 0 -> { o[0] = 0.32f; o[2] = 0.28f; o[3] = 3.68f; o[5] = 0.34f }
+                   1 -> { o[0] = 0.28f; o[2] = 0.34f; o[3] = 0.34f; o[5] = 3.6f }
+                   else -> { o[0] = 3.66f; o[2] = 0.34f; o[3] = 3.72f; o[5] = 3.6f } }
+        o[1] = y0; o[4] = y1
+    }
+    private val mb = FloatArray(6)
+    private fun drawMirBox(sh: ElevShaft, k: Int) {
+        mirBox(k, sh.carY, mb)
+        setBase(sh.ax.toFloat(), 0f, sh.az.toFloat(), 0f)
+        box(base, (mb[0] + mb[3]) / 2f, (mb[1] + mb[4]) / 2f, (mb[2] + mb[5]) / 2f, 0f, 0f, mb[3] - mb[0], mb[4] - mb[1], mb[5] - mb[2], 0f, 0x9FB4C2, 1f, 1f)
+    }
+    private fun drawSkyWith(m: FloatArray, ex: Float, ey: Float, ez: Float) {
+        Matrix.invertM(tmpI, 0, m, 0)
+        G.glUseProgram(skyProg)
+        G.glUniformMatrix4fv(skyInv, 1, false, tmpI, 0); G.glUniform3f(skyCam, ex, ey, ez)
+        G.glUniform3f(skyHor, curFr, curFg, curFb); G.glUniform1f(skyTime, game.time)
+        G.glBindBuffer(G.GL_ARRAY_BUFFER, 0)
+        G.glEnableVertexAttribArray(skyP); G.glVertexAttribPointer(skyP, 2, G.GL_FLOAT, false, 0, quad)
+        G.glDrawArrays(G.GL_TRIANGLE_STRIP, 0, 4)
+        G.glDisableVertexAttribArray(skyP)
+    }
+
+    private fun reflectCabins() {
+        if (!stencilOk) return
+        var sref = 0
+        for (sh in game.elevShafts.values) {
+            val lx = curVx - sh.ax; val lz = curVz - sh.az; val cy = sh.carY
+            if (lx < -1f || lx > 5f || lz < -1f || lz > 9f || curVy < cy - 0.5f || curVy > cy + 3.4f) continue
+            val inside = lx > 0f && lx < 4f && lz > 0f && lz < 4f
+            for (k in 0..2) {
+                // plano do espelho (mundo): n aponta pra dentro da cabine
+                mirBox(k, cy, mb)
+                val nx = when (k) { 1 -> 1f; 2 -> -1f; else -> 0f }; val nz = if (k == 0) 1f else 0f
+                val px = sh.ax + (when (k) { 1 -> mb[3]; 2 -> mb[0]; else -> 0f }); val pz = sh.az + (if (k == 0) mb[5] else 0f)
+                val d = -(nx * px + nz * pz)
+                if (nx * curVx + nz * curVz + d < 0.03f) continue          // câmera atrás do espelho
+                if (!inside) {   // fora da cabine: só se algum canto do espelho cai na tela
+                    var any = false
+                    for (c in 0 until 4) {
+                        val wx = sh.ax + (if (k == 0) (if (c and 1 == 0) mb[0] else mb[3]) else (if (k == 1) mb[3] else mb[0]))
+                        val wz = sh.az + (if (k == 0) mb[5] else (if (c and 1 == 0) mb[2] else mb[5]))
+                        val wy = if (c and 2 == 0) mb[1] else mb[4]
+                        val cx = vp[0] * wx + vp[4] * wy + vp[8] * wz + vp[12]; val cyy = vp[1] * wx + vp[5] * wy + vp[9] * wz + vp[13]
+                        val cw = vp[3] * wx + vp[7] * wy + vp[11] * wz + vp[15]
+                        if (cw > 0.05f && abs(cx) <= cw * 1.1f && abs(cyy) <= cw * 1.1f) { any = true; break }
+                    }
+                    if (!any) continue
+                }
+                sref++
+                // 1) marca o stencil só onde o espelho aparece (respeita oclusão)
+                G.glEnable(G.GL_STENCIL_TEST); G.glStencilMask(0xFF)
+                G.glStencilFunc(G.GL_ALWAYS, sref, 0xFF); G.glStencilOp(G.GL_KEEP, G.GL_KEEP, G.GL_REPLACE)
+                G.glColorMask(false, false, false, false); G.glDepthMask(false); G.glDepthFunc(G.GL_LEQUAL)
+                drawMirBox(sh, k)
+                // 2) zera a profundidade dentro do espelho
+                G.glStencilFunc(G.GL_EQUAL, sref, 0xFF); G.glStencilOp(G.GL_KEEP, G.GL_KEEP, G.GL_KEEP)
+                G.glDepthFunc(G.GL_ALWAYS); G.glDepthMask(true); G.glDisable(G.GL_CULL_FACE)
+                G.glUseProgram(skyProg); G.glBindBuffer(G.GL_ARRAY_BUFFER, 0)
+                G.glEnableVertexAttribArray(skyP); G.glVertexAttribPointer(skyP, 2, G.GL_FLOAT, false, 0, quad)
+                G.glDrawArrays(G.GL_TRIANGLE_STRIP, 0, 4); G.glDisableVertexAttribArray(skyP)
+                G.glEnable(G.GL_CULL_FACE)
+                // 3) câmera refletida
+                for (c in 0 until 3) for (r in 0 until 3) rmM[c * 4 + r] = (if (r == c) 1f else 0f) - 2f * (if (r == 0) nx else if (r == 1) 0f else nz) * (if (c == 0) nx else if (c == 1) 0f else nz)
+                rmM[3] = 0f; rmM[7] = 0f; rmM[11] = 0f; rmM[15] = 1f
+                rmM[12] = -2f * d * nx; rmM[13] = 0f; rmM[14] = -2f * d * nz
+                Matrix.multiplyMM(vR, 0, view, 0, rmM, 0)
+                val ed = nx * curVx + nz * curVz + d
+                val rex = curVx - 2f * ed * nx; val rey = curVy; val rez = curVz - 2f * ed * nz
+                Matrix.multiplyMM(pvR, 0, proj, 0, vR, 0)
+                // corte oblíquo: plano do espelho vira o near plane
+                Matrix.invertM(tmpI, 0, vR, 0)
+                val pl = floatArrayOf(nx, 0f, nz, d)
+                val cc = FloatArray(4); for (i in 0..3) { var sum = 0f; for (j in 0..3) sum += tmpI[i * 4 + j] * pl[j]; cc[i] = sum }
+                System.arraycopy(proj, 0, pO, 0, 16)
+                val qx = ((if (cc[0] > 0f) 1f else -1f) + pO[8]) / pO[0]; val qy = ((if (cc[1] > 0f) 1f else -1f) + pO[9]) / pO[5]
+                val qz = -1f; val qw = (1f + pO[10]) / pO[14]
+                val sc = 2f / (cc[0] * qx + cc[1] * qy + cc[2] * qz + cc[3] * qw)
+                pO[2] = cc[0] * sc; pO[6] = cc[1] * sc; pO[10] = cc[2] * sc + 1f; pO[14] = cc[3] * sc
+                Matrix.multiplyMM(vpR, 0, pO, 0, vR, 0)
+                // 4) desenha o mundo espelhado só dentro do stencil
+                G.glColorMask(true, true, true, true); G.glDepthFunc(G.GL_LEQUAL); G.glFrontFace(G.GL_CW)
+                G.glDisable(G.GL_DEPTH_TEST); G.glDisable(G.GL_CULL_FACE)
+                drawSkyWith(pvR, rex, rey, rez)
+                G.glEnable(G.GL_DEPTH_TEST); G.glEnable(G.GL_CULL_FACE)
+                G.glUseProgram(prog)
+                G.glActiveTexture(G.GL_TEXTURE0); G.glUniform1i(uTex, 0)
+                G.glUniformMatrix4fv(uVP, 1, false, vpR, 0); G.glUniform3f(uCam, rex, rey, rez)
+                updateFrustum(vpR)
+                G.glDisable(G.GL_BLEND)
+                G.glUniformMatrix4fv(uModel, 1, false, ident, 0); tint(0xFFFFFF, 1f); G.glUniform1f(uWind, 1f)
+                for (i in 0 until World.CX * World.CZ) {
+                    if (cnt[i * 2] == 0 || !chunkVis[i]) continue
+                    bindMesh(vbo[i * 2], ibo[i * 2]); G.glDrawElements(G.GL_TRIANGLES, cnt[i * 2], G.GL_UNSIGNED_INT, 0)
+                }
+                G.glUniform1f(uWind, 0f); bindMesh(cubeVb, cubeIb)
+                G.glEnable(G.GL_BLEND)
+                mirSkip = k; drawShaft(sh, false); mirSkip = -1
+                if (!game.thirdPerson && game.deadTimer <= 0f) drawPlayer(game.time)
+                G.glUniform1f(uWind, 1f); G.glUniformMatrix4fv(uModel, 1, false, ident, 0); G.glDisable(G.GL_CULL_FACE); tint(0xFFFFFF, 1f)
+                for (i in 0 until World.CX * World.CZ) {
+                    if (cnt[i * 2 + 1] == 0 || !chunkVis[i]) continue
+                    bindMesh(vbo[i * 2 + 1], ibo[i * 2 + 1]); G.glDrawElements(G.GL_TRIANGLES, cnt[i * 2 + 1], G.GL_UNSIGNED_INT, 0)
+                }
+                G.glUniform1f(uWind, 0f); bindMesh(cubeVb, cubeIb); G.glEnable(G.GL_CULL_FACE)
+                // 5) restaura câmera real e a profundidade do próprio espelho
+                G.glFrontFace(G.GL_CCW)
+                G.glUniformMatrix4fv(uVP, 1, false, vp, 0); G.glUniform3f(uCam, curVx, curVy, curVz)
+                G.glColorMask(false, false, false, false); G.glDepthFunc(G.GL_ALWAYS); G.glDepthMask(true)
+                drawMirBox(sh, k)
+                G.glColorMask(true, true, true, true); G.glDepthFunc(G.GL_LESS)
+            }
+        }
+        if (sref > 0) {
+            G.glDisable(G.GL_STENCIL_TEST); G.glDepthFunc(G.GL_LESS); G.glDepthMask(true)
+            updateFrustum(vp)
+            G.glUseProgram(prog); G.glUniformMatrix4fv(uVP, 1, false, vp, 0); G.glUniform3f(uCam, curVx, curVy, curVz)
+            G.glUniformMatrix4fv(uModel, 1, false, ident, 0); bindMesh(cubeVb, cubeIb)
+        }
+    }
+
+
+    // ---------- tela da TV ao vivo (o navegador vira textura colada na tela da TV do mundo) ----------
+    private var tvProg = 0; private var tvTex = 0; private var tvTexOk = false
+    private var tvAPos = 0; private var tvAUv = 0; private var tvUVP = 0; private var tvUT = 0; private var tvUB = 0
+    private val tvQuad = ByteBuffer.allocateDirect(20 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer()
+    private val TVVS = """
+        attribute vec3 aPos; attribute vec2 aUv; uniform mat4 uVP; varying vec2 vUv;
+        void main() { vUv = aUv; gl_Position = uVP * vec4(aPos, 1.0); }"""
+    private val TVFS = """
+        precision mediump float; uniform sampler2D uT; uniform float uB; varying vec2 vUv;
+        void main() { vec3 c = texture2D(uT, vUv).rgb; gl_FragColor = vec4(c * uB + vec3(0.03, 0.04, 0.06), 1.0); }"""
+    private fun drawTvScreen() {
+        val tl = game.tvLive ?: return
+        if (!Furniture.isTv(world.get(tl.x, tl.y, tl.z))) return
+        if (tvProg == 0) {
+            tvProg = G.glCreateProgram()
+            G.glAttachShader(tvProg, shader(G.GL_VERTEX_SHADER, TVVS)); G.glAttachShader(tvProg, shader(G.GL_FRAGMENT_SHADER, TVFS))
+            G.glLinkProgram(tvProg)
+            tvAPos = G.glGetAttribLocation(tvProg, "aPos"); tvAUv = G.glGetAttribLocation(tvProg, "aUv")
+            tvUVP = G.glGetUniformLocation(tvProg, "uVP"); tvUT = G.glGetUniformLocation(tvProg, "uT"); tvUB = G.glGetUniformLocation(tvProg, "uB")
+        }
+        val g = game.tvGeom(tl.x, tl.y, tl.z)
+        val dx = g[0] - cvx; val dy = g[1] - cvy; val dz = g[2] - cvz
+        tl.seen = dx * dx + dy * dy + dz * dz < 40f * 40f && (dx * cdx + dy * cdy + dz * cdz) > -2f
+        if (!tl.seen) return
+        val ids = IntArray(1)
+        if (tvTex == 0) { G.glGenTextures(1, ids, 0); tvTex = ids[0] }
+        G.glActiveTexture(G.GL_TEXTURE0); G.glBindTexture(G.GL_TEXTURE_2D, tvTex)
+        if (tl.ready) {
+            val b = tl.bmp
+            if (b != null && !b.isRecycled) {
+                if (!tvTexOk) {
+                    G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_MIN_FILTER, G.GL_LINEAR); G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_MAG_FILTER, G.GL_LINEAR)
+                    G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_WRAP_S, G.GL_CLAMP_TO_EDGE); G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_WRAP_T, G.GL_CLAMP_TO_EDGE)
+                    GLUtils.texImage2D(G.GL_TEXTURE_2D, 0, b, 0); tvTexOk = true
+                } else GLUtils.texSubImage2D(G.GL_TEXTURE_2D, 0, 0, 0, b)
+            }
+            tl.ready = false
+        }
+        if (!tvTexOk) { G.glBindTexture(G.GL_TEXTURE_2D, atlasTex); return }
+        val o = 0.004f * g[7] / 0.88f
+        val hw = g[7] / 2f; val hh = g[8] / 2f
+        val px = g[0] + g[3] * o; val pz = g[2] + g[4] * o
+        val q = tvQuad; q.position(0)
+        // TL, BL, TR, BR (u,v: bitmap com a linha 0 em cima)
+        q.put(px - g[5] * hw); q.put(g[1] + hh); q.put(pz - g[6] * hw); q.put(0f); q.put(0f)
+        q.put(px - g[5] * hw); q.put(g[1] - hh); q.put(pz - g[6] * hw); q.put(0f); q.put(1f)
+        q.put(px + g[5] * hw); q.put(g[1] + hh); q.put(pz + g[6] * hw); q.put(1f); q.put(0f)
+        q.put(px + g[5] * hw); q.put(g[1] - hh); q.put(pz + g[6] * hw); q.put(1f); q.put(1f)
+        G.glUseProgram(tvProg)
+        G.glUniformMatrix4fv(tvUVP, 1, false, vp, 0); G.glUniform1i(tvUT, 0); G.glUniform1f(tvUB, 1.05f)
+        G.glBindBuffer(G.GL_ARRAY_BUFFER, 0)
+        q.position(0); G.glEnableVertexAttribArray(tvAPos); G.glVertexAttribPointer(tvAPos, 3, G.GL_FLOAT, false, 20, q)
+        q.position(3); G.glEnableVertexAttribArray(tvAUv); G.glVertexAttribPointer(tvAUv, 2, G.GL_FLOAT, false, 20, q)
+        G.glDisable(G.GL_CULL_FACE); G.glDisable(G.GL_BLEND)
+        G.glDrawArrays(G.GL_TRIANGLE_STRIP, 0, 4)
+        G.glDisableVertexAttribArray(tvAPos); G.glDisableVertexAttribArray(tvAUv)
+        G.glEnable(G.GL_CULL_FACE); G.glEnable(G.GL_BLEND)
+        G.glUseProgram(prog); G.glBindTexture(G.GL_TEXTURE_2D, atlasTex)
+        G.glUniform1i(uTex, 0)
+        bindMesh(cubeVb, cubeIb)
     }
 
     private val SEG7 = intArrayOf(63, 6, 91, 79, 102, 109, 125, 7, 127, 111)
@@ -1072,17 +1271,17 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             if (n >= 10) { val tot = w * 2 + gap; digit(n / 10, cu - tot / 2f, v, w, h, t, alongX, p0, p1); digit(n % 10, cu - tot / 2f + w + gap, v, w, h, t, alongX, p0, p1) }
             else digit(n, cu - w / 2f, v, w, h, t, alongX, p0, p1)
         }
-        /** seta em degraus (3 fileiras) */
+        /** seta em degraus (3 fileiras + haste): cima = ponta em cima, baixo = ponta embaixo */
         fun arrow(up: Boolean, cu: Float, cv: Float, sz: Float, alongX: Boolean, p0: Float, p1: Float, on: Boolean) {
             val col = if (on) AMB else 0x5A4E38; val mul = if (on) 1.7f else 1f
-            val rh = sz * 0.28f
-            for (i in 0..2) {
-                val k = if (up) i else 2 - i                 // largura cresce de cima pra baixo (seta pra cima)
-                val hw = sz * (0.12f + 0.2f * (2 - k)) 
-                val v0 = cv - sz * 0.42f + (if (up) 2 - i else i) * rh
+            val rh = sz * 0.25f; val base0 = cv - sz * 0.5f; val stem = rh * 0.9f
+            for (r in 0..2) {
+                val hw = sz * (0.12f + 0.2f * (if (up) 2 - r else r))
+                val v0 = if (up) base0 + stem + r * rh else base0 + r * rh
                 pb(alongX, p0, p1, cu - hw, cu + hw, v0, v0 + rh, col, 1f, mul)
             }
-            pb(alongX, p0, p1, cu - sz * 0.07f, cu + sz * 0.07f, cv - sz * 0.42f - rh * 0.0f, cv - sz * 0.42f + rh * 0.9f, col, 1f, mul)
+            val sv = if (up) base0 else base0 + 3 * rh
+            pb(alongX, p0, p1, cu - sz * 0.07f, cu + sz * 0.07f, sv, sv + stem, col, 1f, mul)
         }
         val ys = s.ys; val n = ys.size
         val y0 = ys.first().toFloat(); val yt = ys.last().toFloat(); val top = yt + 3.4f
@@ -1101,6 +1300,11 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                 cb(3.95f, yy, 0f, 4f, yy + 0.05f, 4f, 0xC6D2DC, 0.8f)
                 cb(0f, yy, 3.95f, 4f, yy + 0.05f, 4f, 0xC6D2DC, 0.8f)
             }
+            // véu de vidro sobre os espelhos (o reflexo vem por baixo)
+            run { val g0 = cy + 1.0f; val g1 = cy + 2.8f
+                cb(0.32f, g0, 0.342f, 3.68f, g1, 0.347f, 0xCFE6F2, 0.13f)
+                cb(0.342f, g0, 0.34f, 0.347f, g1, 3.6f, 0xCFE6F2, 0.13f)
+                cb(3.653f, g0, 0.34f, 3.658f, g1, 3.6f, 0xCFE6F2, 0.13f) }
             // portas de vidro da cabine
             val w = 0.02f + 1.7f * (1f - s.door)
             cb(0.28f, cy + 0.15f, 3.62f, 0.28f + w, cy + 2.9f, 3.68f, 0xC9E4F2, 0.42f)
@@ -1121,8 +1325,10 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             // verga da porta + friso dourado + visor com o andar da cabine
             cb(0.22f, y + 2.78f, 3.9f, 3.78f, y + 3f, 4.02f, GRAPH)
             cb(0.22f, y + 2.75f, 3.9f, 3.78f, y + 2.78f, 4.03f, GOLD)
-            cb(1.6f, y + 2.8f, 4.02f, 2.4f, y + 2.98f, 4.03f, 0x0B0F12)
-            number(cur + 1, 2f, y + 2.82f, 0.13f, 0.14f, 0.03f, true, 4.03f, 4.04f)
+            // visor do andar ABAIXO de y+2.0: a sacada do andar de cima ocupa y+2..3 na frente do poço e escondia o número
+            cb(1.45f, y + 1.7f, 4.02f, 2.55f, y + 1.98f, 4.035f, 0x0B0F12)
+            cb(1.43f, y + 1.68f, 4.015f, 2.57f, y + 1.70f, 4.04f, GOLD); cb(1.43f, y + 1.98f, 4.015f, 2.57f, y + 2.0f, 4.04f, GOLD)
+            number(cur + 1, 2f, y + 1.74f, 0.14f, 0.20f, 0.035f, true, 4.035f, 4.045f)
             // painel de chamada no pilar direito: só subir e descer
             cb(3.74f, y + 0.98f, 4.0f, 3.98f, y + 1.62f, 4.05f, GRAPH)
             cb(3.76f, y + 1.0f, 4.05f, 3.96f, y + 1.6f, 4.055f, 0x1A1E23)
@@ -1150,15 +1356,15 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         cb(0.28f, cy + 0.9f, 0.28f, 3.72f, cy + 0.95f, 0.32f, GOLD)
         cb(0.28f, cy + 0.9f, 0.32f, 0.32f, cy + 0.95f, 3.6f, GOLD)
         cb(3.68f, cy + 0.9f, 0.32f, 3.72f, cy + 0.95f, 3.6f, GOLD)
-        // espelho grande no fundo (moldura dourada + faixas de brilho)
-        cb(0.55f, cy + 1.0f, 0.28f, 3.45f, cy + 2.8f, 0.32f, GOLD)
-        val tones = intArrayOf(0xDDEFF8, 0xC3DCEA, 0xEAF6FC, 0xB7D2E3, 0xDDEFF8, 0xC9E1EE, 0xEAF6FC)
-        for (i in 0..6) cb(0.62f + i * 0.4f, cy + 1.07f, 0.32f, 0.62f + (i + 1) * 0.4f, cy + 2.73f, 0.335f, tones[i], 1f, 1.2f)
-        box(base, 1.4f, cy + 1.9f, 0.34f, 0f, 0f, 0.14f, 2.1f, 0.01f, 0f, 0xFFFFFF, 0.5f, 1.5f, null, 0, 30f)
-        box(base, 2.3f, cy + 1.9f, 0.34f, 0f, 0f, 0.07f, 2.1f, 0.01f, 0f, 0xFFFFFF, 0.4f, 1.5f, null, 0, 30f)
-        // espelho menor na parede esquerda
-        cb(0.28f, cy + 1.05f, 1.0f, 0.32f, cy + 2.75f, 3.0f, GOLD)
-        for (i in 0..3) cb(0.32f, cy + 1.12f, 1.07f + i * 0.465f, 0.335f, cy + 2.68f, 1.07f + (i + 1) * 0.465f, tones[i], 1f, 1.2f)
+        // espelhos conectados (fundo + 2 lados, mesma altura): o reflexo de verdade é desenhado em reflectCabin() (stencil)
+        val MY0 = cy + 1.0f; val MY1 = cy + 2.8f
+        cb(0.32f, MY1, 0.28f, 3.68f, MY1 + 0.05f, 0.34f, GOLD); cb(0.28f, MY1, 0.28f, 0.34f, MY1 + 0.05f, 3.6f, GOLD); cb(3.66f, MY1, 0.28f, 3.72f, MY1 + 0.05f, 3.6f, GOLD)
+        cb(0.28f, MY0 - 0.05f, 0.28f, 3.72f, MY0, 0.34f, GOLD)
+        for (px in floatArrayOf(0.28f, 3.66f)) cb(px, MY0 - 0.05f, 0.28f, px + 0.06f, MY1 + 0.05f, 0.34f, GOLD)
+        cb(0.28f, MY0 - 0.05f, 0.34f, 0.34f, MY0, 3.6f, GOLD); cb(3.66f, MY0 - 0.05f, 0.34f, 3.72f, MY0, 3.6f, GOLD)
+        if (mirSkip != 0) cb(0.32f, MY0, 0.28f, 3.68f, MY1, 0.34f, 0x9FB4C2)
+        if (mirSkip != 1) cb(0.28f, MY0, 0.34f, 0.34f, MY1, 3.6f, 0x9FB4C2)
+        if (mirSkip != 2) cb(3.66f, MY0, 0.34f, 3.72f, MY1, 3.6f, 0x9FB4C2)
         // teto com luz embutida
         cb(0.22f, cy + 3f, 0.22f, 3.78f, cy + 3.08f, 3.78f, GRAPH)
         cb(0.64f, cy + 2.975f, 0.64f, 3.36f, cy + 2.99f, 3.36f, GOLD)
@@ -1665,7 +1871,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             cnt[ci * 2 + 1] = upload(wb, vbo[ci * 2 + 1], ibo[ci * 2 + 1])
         }
 
-        G.glClear(G.GL_COLOR_BUFFER_BIT or G.GL_DEPTH_BUFFER_BIT)
+        G.glClear(G.GL_COLOR_BUFFER_BIT or G.GL_DEPTH_BUFFER_BIT or G.GL_STENCIL_BUFFER_BIT)
         G.glUseProgram(prog)
         G.glActiveTexture(G.GL_TEXTURE0); G.glUniform1i(uTex, 0)
         val sh = game.shake * 0.25f
@@ -1679,6 +1885,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val uwy = floor(ey).toInt()
         val under = world.get(floor(ex).toInt(), uwy, floor(ez).toInt()) == B.WATER && (world.get(floor(ex).toInt(), uwy + 1, floor(ez).toInt()) != B.AIR || ey < uwy + 0.88f)
         val fr = if (under) 0.36f else fogR; val fg = if (under) 0.78f else fogG; val fb = if (under) 0.95f else fogB
+        curFr = fr; curFg = fg; curFb = fb; curUnder = under; curVx = ex; curVy = ey; curVz = ez
         // céu: degradê, sol, nuvens suaves
         Matrix.invertM(inv, 0, vp, 0)
         G.glDisable(G.GL_DEPTH_TEST); G.glDisable(G.GL_CULL_FACE)
@@ -1716,6 +1923,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         G.glDepthMask(true)
         for (s in game.slimes) drawSlime(s)
         drawElevators()
+        drawTvScreen()
         drawDebris(); drawTrees(); drawDrops()
         for (q in game.parts) {
             if (!seen(q.x, q.y, q.z, 28f)) continue
@@ -1765,6 +1973,6 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         
         G.glEnable(G.GL_CULL_FACE)
         G.glUniform1f(uWind, 0f)
-        if (!game.thirdPerson && game.deadTimer <= 0f) drawHand(dt)
+        if (!game.thirdPerson && game.deadTimer <= 0f && game.tvZoomT < 0.02f) drawHand(dt)
     }
 }

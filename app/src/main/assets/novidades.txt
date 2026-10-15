@@ -1,3 +1,17 @@
+#id 2026-10-14-i
+#titulo TV de verdade na tela
+- Ao ligar a TV, a câmera dá zoom na tela dela e o navegador fica certinho em cima dela (toque normal pra mexer)
+- Botão de tela cheia (usa a tela inteira do celular) e botão X pra sair do zoom
+- Fora do zoom a página continua rodando presa na tela da TV, no tamanho dela, dentro do mundo
+- Com a TV ligada, mire nela e toque em ZOOM NA TV pra voltar, ou DESLIGAR
+
+#id 2026-10-14-h
+#titulo Elevador: espelhos de verdade
+- Espelhos conectados (fundo + 2 lados, mesma altura) que refletem de verdade: você, a cabine, o céu e o mundo aparecem no espelho
+- Seta de subir corrigida (as duas apontavam pra baixo)
+- Entra no elevador só andando, sem precisar pular
+- O número do andar agora aparece também na tela quando você está dentro ou na frente do elevador
+
 #id 2026-10-14-g
 #titulo Elevador de vidro 4x4
 - Novo bloco "Elevador" (Mobília): torre de vidro 4x4 com colunas grafite e frisos dourados, piso transparente em cada andar e cabine com espelhos, lambri de madeira, luz embutida e portas de vidro que abrem e fecham

@@ -17,28 +17,39 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
     var onTvSized: (() -> Unit)? = null
     @Volatile var tvOn = false
     private fun tvPromptOn() = !paused && !invOpen && game.tvAim != null
+    var onTvZoom: (() -> Unit)? = null
+    private fun tvN() = if (tvOn) 3 else 2
     private fun tvBtn(k: Int): RectF {
-        val bw = 124 * d; val bh = 38 * d; val gp = 10 * d
-        val l = width / 2f - (bw * 2 + gp) / 2f + k * (bw + gp)
+        val n = tvN(); val bw = 124 * d; val bh = 38 * d; val gp = 10 * d
+        val l = width / 2f - (bw * n + gp * (n - 1)) / 2f + k * (bw + gp)
         val t = hbTop() - 108 * d
         return RectF(l, t, l + bw, t + bh)
     }
     private fun tvPromptDown(x: Float, y: Float): Boolean {
         if (!tvPromptOn()) return false
         val a = game.tvAim ?: return false
-        if (tvBtn(0).contains(x, y)) { if (tvOn) onTvOff?.invoke() else onUseTv?.invoke(a[0], a[1], a[2]); return true }
-        if (tvBtn(1).contains(x, y)) { game.cycleTvSize(a[0], a[1], a[2]); onTvSized?.invoke(); return true }
+        for (k in 0 until tvN()) if (tvBtn(k).contains(x, y)) {
+            val act = if (!tvOn) k else if (k == 0) 10 else if (k == 1) 11 else 1   // 0 usar, 1 tamanho, 10 zoom, 11 desligar
+            when (act) {
+                0 -> onUseTv?.invoke(a[0], a[1], a[2])
+                10 -> onTvZoom?.invoke()
+                11 -> onTvOff?.invoke()
+                else -> { game.cycleTvSize(a[0], a[1], a[2]); onTvSized?.invoke() }
+            }
+            return true
+        }
         return false
     }
     private fun drawTvPrompt(c: Canvas) {
         val a = game.tvAim ?: return
         val sc = tsc(1.3f)
         val lv = game.tvLevel(a[0], a[1], a[2]) + 1
-        for (k in 0..1) {
+        for (k in 0 until tvN()) {
             val r = tvBtn(k)
-            val base = if (k == 0) (if (tvOn) Cz.RED else Cz.GREEN) else Cz.SKY
+            val kind = if (!tvOn) k else if (k == 0) 10 else if (k == 1) 11 else 1
+            val base = when (kind) { 0 -> Cz.GREEN; 10 -> Cz.GREEN; 11 -> Cz.RED; else -> Cz.SKY }
             pxPanel(c, r.left, r.top, r.right, r.bottom, base)
-            val label = if (k == 0) (if (tvOn) "DESLIGAR" else "\u25B6 USAR TV") else "TAMANHO $lv/${Furniture.TV_SCALE.size}"
+            val label = when (kind) { 0 -> "\u25B6 USAR TV"; 10 -> "ZOOM NA TV"; 11 -> "DESLIGAR"; else -> "TAMANHO $lv/${Furniture.TV_SCALE.size}" }
             pxText(c, label, (r.left + r.right) / 2f, (r.top + r.bottom) / 2f - 3.5f * sc, sc, Color.WHITE, 1)
         }
     }
@@ -57,6 +68,20 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         val n = s.ys.size
         for (i in 0 until n) if (elevRect(i, n).contains(x, y)) { if (!s.moving) game.elevReq = i + 1; return true }
         return false
+    }
+    /** andar do elevador sempre visível (na tela) quando o jogador está dentro ou diante do poço, mesmo com bloco em cima escondendo o visor 3D */
+    private fun drawFloorBadge(c: Canvas) {
+        if (paused || invOpen || game.elevSel != null) return
+        val p = game.player
+        for (s in game.elevShafts.values) {
+            if (s.ys.isEmpty()) continue
+            if (abs(p.x - (s.ax + 2f)) > 6f || abs(p.z - (s.az + 2f)) > 7f) continue
+            if (p.y < s.ys.first() - 1f || p.y > s.ys.last() + 3.5f) continue
+            val cur = s.idxNear() + 1
+            val tag = if (s.moving) (if (s.dir > 0) "  SUBINDO" else "  DESCENDO") else ""
+            pxText(c, "ELEVADOR  ANDAR $cur$tag", width / 2f, 92 * d, tsc(1.2f), Color.WHITE, 1)
+            return
+        }
     }
     private fun drawElev(c: Canvas) {
         val s = game.elevSel ?: return
@@ -824,6 +849,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         if (game.deadTimer > 0f) pxText(c, "Você desmaiou! Renascendo...", w / 2, h / 2 - 40 * d, tsc(2.6f), Color.WHITE, 1)
         if (tvPromptOn()) drawTvPrompt(c)
         if (elevOn()) drawElev(c)
+        drawFloorBadge(c)
         if (invOpen) drawInventory(c)
         if (paused) drawPause(c)
         postInvalidateOnAnimation()

@@ -2,6 +2,7 @@ package com.cuboland.app
 
 import android.opengl.GLSurfaceView
 import android.os.Bundle
+import android.view.View
 import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.Toast
@@ -44,7 +45,7 @@ class GameActivity : AppCompatActivity() {
         root.addView(loading)
         setContentView(root)
         onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() { val t = tv; if (t != null) t.onBack() else if (galPanel?.isOpen == true) galPanel?.onBack() else if (hud != null) hud?.togglePause() }
+            override fun handleOnBackPressed() { val t = tv; if (t != null && t.onBack()) { } else if (galPanel?.isOpen == true) galPanel?.onBack() else if (hud != null) hud?.togglePause() }
         })
         val t0 = System.currentTimeMillis()
         Thread {
@@ -76,7 +77,7 @@ class GameActivity : AppCompatActivity() {
         game.noMobs = test
         gl = GLSurfaceView(this)
         gl.setEGLContextClientVersion(2)
-        gl.setEGLConfigChooser(8, 8, 8, 8, 24, 0)
+        gl.setEGLConfigChooser(8, 8, 8, 8, 24, 8)
         gl.setRenderer(GameRenderer(game))
         root.addView(gl, 0)
         gl.post {   // renderiza em ~80% da resolução em telas grandes: bem mais fluido, o HUD continua nítido
@@ -90,6 +91,7 @@ class GameActivity : AppCompatActivity() {
         h.onUseTv = { x, y, z -> openTv(root, x, y, z) }
         h.onTvOff = { tv?.close() }
         h.onTvSized = { tv?.relayout() }
+        h.onTvZoom = { tv?.zoom() }
         root.addView(h, 1)
         if (test) setupGalleryPanel(root, h)
         loading.setProgress(1f)
@@ -125,7 +127,10 @@ class GameActivity : AppCompatActivity() {
         if (tv != null || !::game.isInitialized) return
         try {
             hud?.tvOn = true
-            tv = TvOverlay(this, root, game, x, y, z) { tv = null; hud?.tvOn = false }
+            tv = TvOverlay(this, root, game, x, y, z, { hide ->
+                hud?.let { if (hide) { it.releaseInput(); it.visibility = View.GONE } else it.visibility = View.VISIBLE }
+            }) { tv = null; hud?.tvOn = false }
+            tv?.zoom()   // ao ligar, a câmera já dá zoom na tela
         } catch (e: Exception) {   // aparelho sem WebView instalado/atualizado
             tv = null; hud?.tvOn = false
             Toast.makeText(this, "Navegador indisponível neste aparelho (instale/atualize o Android System WebView)", Toast.LENGTH_LONG).show()

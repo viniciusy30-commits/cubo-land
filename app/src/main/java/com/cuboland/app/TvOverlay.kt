@@ -89,15 +89,17 @@ class TvIconBtn(ctx: Context, var kind: Int) : View(ctx) {
 }
 
 /**
- * A janela da TV: um navegador (WebView, o motor do Chrome) numa moldura de TV por cima do jogo.
- * Modo janela: o jogo continua rodando atrás, dá pra arrastar pela barra. Modo tela cheia: o jogo pausa.
- * O tamanho da janela acompanha o tamanho da TV no mundo.
+ * A TV do mundo: um navegador (WebView) que roda "dentro" da tela da TV.
+ * - Zoom: a câmera encosta na tela da TV e o navegador real fica exatamente em cima dela (toque normal); dá pra ir pra tela cheia (a tela do celular toda).
+ * - Fora do zoom: a página continua rodando; ela é copiada ~15x por segundo pra uma textura que o renderizador cola na tela da TV (no tamanho da TV, presa nela).
  */
 class TvOverlay(private val act: Activity, private val root: FrameLayout, private val game: Game,
-                private val tx: Int, private val ty: Int, private val tz: Int, private val onClosed: () -> Unit) {
+                private val tx: Int, private val ty: Int, private val tz: Int,
+                private val onUi: (Boolean) -> Unit, private val onClosed: () -> Unit) {
     companion object {
         private const val HOME_BASE = "https://tv.local/"
-        private val FRAC = floatArrayOf(0.40f, 0.52f, 0.64f, 0.78f)   // largura da janela por tamanho da TV
+        private const val RW = 1024; private const val RH = 675      // tamanho lógico da página (proporção da tela da TV)
+        private const val BW = 512; private const val BH = 338       // tamanho da textura na TV
         private const val HOME = """<!doctype html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
@@ -120,66 +122,52 @@ a{flex:1 1 120px;max-width:170px;padding:14px 8px;border-radius:14px;text-align:
     }
 
     private val MATCH = ViewGroup.LayoutParams.MATCH_PARENT
-    private val BEZ = act.dp(6)
-    private val BAR = act.dp(34)
-    private val GAP = act.dp(4)
+    private val BAR = act.dp(36)
+    private val handler = android.os.Handler(android.os.Looper.getMainLooper())
     private var full = false
     private var closed = false
+    private var goalZoom = false       // quer estar com zoom
+    private var uiShown = false        // navegador interativo + barra visíveis
+    private var uiHidden = false       // HUD escondido (zoom em andamento ou ativo)
     private var reasons = 0
     private var pausedBefore = false
-    private var dragDx = 0f; private var dragDy = 0f
+    private var tick = 0
     private var custom: View? = null
     private var customCb: WebChromeClient.CustomViewCallback? = null
     private var customHolder: FrameLayout? = null
 
-    private val panel = LinearLayout(act)
+    private val bar = LinearLayout(act)
     private val urlField = EditText(act)
     private lateinit var web: WebView
     private lateinit var fsBtn: TvIconBtn
+    private val live = Game.TvLive(tx, ty, tz)
 
     init {
-        build()
-        root.addView(panel)
-        relayout()
+        web = buildWeb()
+        buildBar()
+        parkWeb()
+        root.addView(web)
+        bar.visibility = View.GONE
+        root.addView(bar, FrameLayout.LayoutParams(MATCH, BAR, Gravity.TOP))
+        game.tvLive = live
         loadHome()
+        handler.post { loop.run() }
     }
 
     // ---------------------------------------------------------------- montagem
-    private fun bezelBg() = GradientDrawable().apply { setColor(Color.rgb(24, 25, 34)); cornerRadius = act.dp(10).toFloat(); setStroke(act.dp(2), Color.rgb(96, 100, 128)) }
-
     @SuppressLint("ClickableViewAccessibility")
-    private fun build() {
-        web = buildWeb()
-        panel.orientation = LinearLayout.VERTICAL
-        panel.isClickable = true            // não deixa o toque na moldura "vazar" pro jogo
-        panel.setPadding(BEZ, BEZ, BEZ, BEZ)
-        panel.background = bezelBg()
-        panel.elevation = act.dp(8).toFloat()
-
-        val bar = LinearLayout(act); bar.orientation = LinearLayout.HORIZONTAL; bar.gravity = Gravity.CENTER_VERTICAL
-        fun add(b: TvIconBtn, wdp: Int, click: (() -> Unit)?) {
-            if (click != null) b.setOnClickListener { click() }
+    private fun buildBar() {
+        bar.orientation = LinearLayout.HORIZONTAL; bar.gravity = Gravity.CENTER_VERTICAL
+        bar.setBackgroundColor(Color.argb(210, 14, 15, 22))
+        bar.setPadding(act.dp(6), act.dp(3), act.dp(6), act.dp(3))
+        bar.isClickable = true
+        fun add(b: TvIconBtn, wdp: Int, click: () -> Unit) {
+            b.setOnClickListener { click() }
             bar.addView(b, LinearLayout.LayoutParams(act.dp(wdp), act.dp(30)).apply { rightMargin = act.dp(3) })
         }
-        val grip = TvIconBtn(act, TvIconBtn.GRIP)
-        grip.setOnTouchListener { v, e ->
-            if (!full) when (e.actionMasked) {
-                MotionEvent.ACTION_DOWN -> { dragDx = e.rawX - panel.translationX; dragDy = e.rawY - panel.translationY; v.isPressed = true }
-                MotionEvent.ACTION_MOVE -> {
-                    val lp = panel.layoutParams
-                    val baseL = (root.width - lp.width) / 2f; val baseT = act.dp(6).toFloat()
-                    panel.translationX = clampF(e.rawX - dragDx, -baseL, root.width - lp.width - baseL)
-                    panel.translationY = clampF(e.rawY - dragDy, -baseT, root.height - lp.height - baseT)
-                }
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> v.isPressed = false
-            }
-            true
-        }
-        add(grip, 26, null)
         add(TvIconBtn(act, TvIconBtn.BACK), 34) { if (web.canGoBack()) web.goBack() }
         add(TvIconBtn(act, TvIconBtn.RELOAD), 34) { web.reload() }
         add(TvIconBtn(act, TvIconBtn.HOME), 34) { loadHome() }
-
         urlField.setSingleLine(true)
         urlField.textSize = 12f
         urlField.setTextColor(Color.WHITE)
@@ -193,15 +181,9 @@ a{flex:1 1 120px;max-width:170px;padding:14px 8px;border-radius:14px;text-align:
         urlField.setSelectAllOnFocus(true)
         urlField.setOnEditorActionListener { _, a, _ -> if (a == EditorInfo.IME_ACTION_GO) { go(urlField.text.toString()); true } else false }
         bar.addView(urlField, LinearLayout.LayoutParams(0, act.dp(30), 1f).apply { rightMargin = act.dp(3) })
-
         fsBtn = TvIconBtn(act, TvIconBtn.FULL)
         add(fsBtn, 34) { setFull(!full) }
-        add(TvIconBtn(act, TvIconBtn.CLOSE), 34) { close() }
-
-        val screen = FrameLayout(act); screen.setBackgroundColor(Color.BLACK)
-        screen.addView(web, FrameLayout.LayoutParams(MATCH, MATCH))
-        panel.addView(bar, LinearLayout.LayoutParams(MATCH, BAR))
-        panel.addView(screen, LinearLayout.LayoutParams(MATCH, 0, 1f).apply { topMargin = GAP })
+        add(TvIconBtn(act, TvIconBtn.CLOSE), 34) { unzoom() }     // X = sai do zoom (a TV continua ligada)
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -221,14 +203,12 @@ a{flex:1 1 120px;max-width:170px;padding:14px 8px;border-radius:14px;text-align:
         w.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                 val u = request?.url?.toString() ?: return false
-                // só navega dentro da TV; esquemas de outros apps (intent://, youtube://...) são ignorados
                 return !(u.startsWith("http://") || u.startsWith("https://") || u.startsWith("about:") || u.startsWith("data:"))
             }
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) { showUrl(url) }
             override fun onPageFinished(view: WebView?, url: String?) { showUrl(url) }
         }
         w.webChromeClient = object : WebChromeClient() {
-            // botão de tela cheia do próprio vídeo (YouTube etc.)
             override fun onShowCustomView(view: View?, callback: WebChromeClient.CustomViewCallback?) {
                 if (view == null) return
                 if (custom != null) { callback?.onCustomViewHidden(); return }
@@ -271,47 +251,74 @@ a{flex:1 1 120px;max-width:170px;padding:14px 8px;border-radius:14px;text-align:
         web.requestFocus()
     }
 
-    // ---------------------------------------------------------------- tamanho / tela cheia
-    private fun clampF(v: Float, lo: Float, hi: Float) = min(max(v, lo), max(lo, hi))
+    // ---------------------------------------------------------------- posições do navegador
+    /** fora do zoom: do tamanho da página, fora da tela do celular (continua rodando; a imagem vai pra tela da TV no mundo) */
+    private fun parkWeb() {
+        web.layoutParams = FrameLayout.LayoutParams(RW, RH, Gravity.TOP or Gravity.START)
+        web.pivotX = 0f; web.pivotY = 0f; web.scaleX = 1f; web.scaleY = 1f
+        web.translationX = -(RW + 300f); web.translationY = 0f
+    }
 
-    /** janela do tamanho da TV (16:9, sem passar da tela); chamado de novo quando o tamanho da TV muda */
-    fun relayout() {
-        if (closed || full) return
-        val rw = root.width; val rh = root.height
-        if (rw <= 0 || rh <= 0) { root.post { relayout() }; return }
-        val lv = game.tvLevel(tx, ty, tz).coerceIn(0, FRAC.size - 1)
-        var pw = min(max(act.dp(360), (rw * FRAC[lv]).toInt()), rw - act.dp(12))
-        var sh = ((pw - 2 * BEZ) * 9f / 16f).toInt()
-        val maxH = (rh * 0.94f).toInt()
-        val chrome = BAR + GAP + 2 * BEZ
-        if (sh + chrome > maxH) { sh = maxH - chrome; pw = (sh * 16f / 9f).toInt() + 2 * BEZ }
-        val lp = FrameLayout.LayoutParams(pw, sh + chrome, Gravity.TOP or Gravity.CENTER_HORIZONTAL)
-        lp.topMargin = act.dp(6)
-        panel.layoutParams = lp
-        panel.translationX = 0f; panel.translationY = 0f
+    /** zoom: o navegador real fica exatamente em cima da tela da TV que a câmera enquadrou */
+    private fun placeZoom() {
+        val w = root.width.toFloat(); val h = root.height.toFloat()
+        if (w <= 0f || h <= 0f) return
+        game.tvAspect = w / h
+        val p = game.tvZoomPlan() ?: return
+        val pw = p[5] * w; val ph = p[6] * h
+        web.layoutParams = FrameLayout.LayoutParams(RW, RH, Gravity.TOP or Gravity.START)
+        web.pivotX = 0f; web.pivotY = 0f
+        web.scaleX = pw / RW; web.scaleY = ph / RH
+        web.translationX = w / 2f - pw / 2f; web.translationY = h * 0.55f - ph / 2f
+    }
+
+    private fun placeFull() {
+        web.layoutParams = FrameLayout.LayoutParams(MATCH, MATCH).apply { topMargin = BAR }
+        web.pivotX = 0f; web.pivotY = 0f; web.scaleX = 1f; web.scaleY = 1f
+        web.translationX = 0f; web.translationY = 0f
+    }
+
+    fun relayout() { if (!closed && uiShown && !full) placeZoom() }
+
+    // ---------------------------------------------------------------- zoom / tela cheia
+    fun zoom() {
+        if (closed || goalZoom) return
+        goalZoom = true
+        game.tvAspect = root.width.toFloat().coerceAtLeast(1f) / root.height.toFloat().coerceAtLeast(1f)
+        if (!uiHidden) { uiHidden = true; onUi(true) }
+        game.tvZoomGoal = 1f
+    }
+
+    fun unzoom() {
+        if (closed || !goalZoom) return
+        if (full) setFull(false)
+        hideKeyboard()
+        goalZoom = false
+        capture()                       // último quadro: a TV mantém o que estava na tela
+        uiShown = false
+        bar.visibility = View.GONE
+        parkWeb()
+        game.tvZoomGoal = 0f
+    }
+
+    private fun showZoomUi() {
+        uiShown = true
+        placeZoom()
+        bar.visibility = View.VISIBLE
+        web.requestFocus()
     }
 
     private fun setFull(on: Boolean) {
         if (closed || full == on) return
         full = on
-        panel.translationX = 0f; panel.translationY = 0f
         if (on) {
-            holdPause()
-            panel.layoutParams = FrameLayout.LayoutParams(MATCH, MATCH)
-            panel.setPadding(0, 0, 0, 0)
-            panel.background = ColorDrawable(Color.BLACK)
-            fsBtn.kind = TvIconBtn.WINDOW
+            holdPause(); placeFull(); fsBtn.kind = TvIconBtn.WINDOW
         } else {
-            releasePause()
-            panel.setPadding(BEZ, BEZ, BEZ, BEZ)
-            panel.background = bezelBg()
-            fsBtn.kind = TvIconBtn.FULL
-            relayout()
+            releasePause(); placeZoom(); fsBtn.kind = TvIconBtn.FULL
         }
         fsBtn.invalidate()
     }
 
-    // ---------------------------------------------------------------- pausa do jogo (tela cheia / vídeo em tela cheia)
     private fun holdPause() { if (reasons++ == 0) pausedBefore = game.paused; game.paused = true }
     private fun releasePause() { if (reasons > 0 && --reasons == 0) game.paused = pausedBefore }
 
@@ -325,14 +332,44 @@ a{flex:1 1 120px;max-width:170px;padding:14px 8px;border-radius:14px;text-align:
         cb?.onCustomViewHidden()
     }
 
+    // ---------------------------------------------------------------- imagem da página -> textura da TV
+    private fun capture() {
+        if (closed || live.ready) return
+        try {
+            var b = live.bmp
+            if (b == null || b.isRecycled) { b = Bitmap.createBitmap(BW, BH, Bitmap.Config.ARGB_8888); live.bmp = b }
+            val cv = Canvas(b)
+            cv.drawColor(Color.BLACK)
+            cv.scale(BW / RW.toFloat(), BH / RH.toFloat())
+            web.draw(cv)
+            live.ready = true
+        } catch (_: Exception) {}
+    }
+
+    private val loop = object : Runnable {
+        override fun run() {
+            if (closed) return
+            // o bloco da TV sumiu (quebrado): desliga
+            if (!Furniture.isTv(game.world.get(tx, ty, tz))) { close(); return }
+            tick++
+            val t = game.tvZoomT
+            if (goalZoom && !uiShown && t >= 0.999f) showZoomUi()
+            if (!goalZoom && uiHidden && t <= 0.001f) { uiHidden = false; onUi(false) }
+            if (!uiShown && !full && tick % 2 == 0 && live.seen) capture()
+            handler.postDelayed(this, 33)
+        }
+    }
+
     // ---------------------------------------------------------------- ciclo de vida
-    /** botão voltar do celular: sai do vídeo em tela cheia, depois da tela cheia, depois desliga a TV */
-    fun onBack() {
+    /** botão voltar: sai do vídeo em tela cheia, depois da tela cheia, depois do zoom; devolve false se não tinha nada a fazer */
+    fun onBack(): Boolean {
         when {
             custom != null -> hideCustom()
             full -> setFull(false)
-            else -> close()
+            goalZoom -> unzoom()
+            else -> return false
         }
+        return true
     }
 
     fun onPause() { if (closed) return; web.onPause(); web.pauseTimers() }
@@ -341,14 +378,19 @@ a{flex:1 1 120px;max-width:170px;padding:14px 8px;border-radius:14px;text-align:
     fun close() {
         if (closed) return
         hideCustom()
+        if (full) { full = false; releasePause() }
         closed = true
+        handler.removeCallbacksAndMessages(null)
         while (reasons > 0) releasePause()
+        game.tvLive = null
+        game.tvZoomGoal = 0f; game.tvZoomT = 0f
         try {
             web.stopLoading()
             (web.parent as? ViewGroup)?.removeView(web)
             web.destroy()
         } catch (_: Exception) {}
-        root.removeView(panel)
+        root.removeView(bar)
+        if (uiHidden) { uiHidden = false; onUi(false) }
         onClosed()
     }
 }

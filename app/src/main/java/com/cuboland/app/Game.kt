@@ -421,7 +421,7 @@ class Game(val world: World) {
             if (!s.moving) { var b = l[0]; for (y in l) if (abs(y - s.carY) < abs(b - s.carY)) b = y; s.carY = b.toFloat() }
             val ax = x.toFloat(); val az = z.toFloat(); val y0 = l[0].toFloat(); val yt = l.last().toFloat(); val top = yt + 3.4f
             val bx = ArrayList<FloatArray>()
-            for (y in l) bx.add(floatArrayOf(ax, y.toFloat(), az, ax + 4f, y + 0.06f, az + 4f))
+            for (y in l) bx.add(floatArrayOf(ax, y - 0.12f, az, ax + 4f, y.toFloat(), az + 4f))   // laje ABAIXO do piso: sem degrau na entrada
             for (cx in floatArrayOf(0f, 3.78f)) for (cz in floatArrayOf(0f, 3.78f)) bx.add(floatArrayOf(ax + cx, y0, az + cz, ax + cx + 0.22f, top, az + cz + 0.22f))
             bx.add(floatArrayOf(ax, y0, az, ax + 4f, top, az + 0.12f))
             bx.add(floatArrayOf(ax, y0, az, ax + 0.12f, top, az + 4f))
@@ -507,6 +507,42 @@ class Game(val world: World) {
     }
 
     // ---------- televisão ----------
+    /** TV ligada: a página do navegador é copiada pra este bitmap, que o renderizador cola na tela da TV */
+    class TvLive(val x: Int, val y: Int, val z: Int) { @Volatile var bmp: android.graphics.Bitmap? = null; @Volatile var ready = false; @Volatile var seen = false }
+    @Volatile var tvLive: TvLive? = null
+    @Volatile var tvZoomT = 0f; @Volatile var tvZoomGoal = 0f
+    @Volatile var tvAspect = 2f
+    /** tela da TV no mundo: [cx, cy, cz, nx, nz, rx, rz, largura, altura]; n = pra onde a tela olha, r = direita de quem olha */
+    fun tvGeom(x: Int, y: Int, z: Int): FloatArray {
+        val rot = Furniture.facing(world, x, y, z, Furniture.S_TV)
+        val sc = Furniture.TV_SCALE[world.tvLevel(x, y, z).coerceIn(0, Furniture.TV_SCALE.size - 1)]
+        val ra = floatArrayOf(0.5f, 0.5f, 0.53f, 0.47f)[rot]; val rc = floatArrayOf(0.53f, 0.47f, 0.5f, 0.5f)[rot]
+        return floatArrayOf(x + 0.5f + (ra - 0.5f) * sc, y + 0.54f * sc, z + 0.5f + (rc - 0.5f) * sc,
+            floatArrayOf(0f, 0f, 1f, -1f)[rot], floatArrayOf(1f, -1f, 0f, 0f)[rot], floatArrayOf(1f, -1f, 0f, 0f)[rot], floatArrayOf(0f, 0f, -1f, 1f)[rot],
+            0.88f * sc, 0.58f * sc)
+    }
+    /** câmera de zoom: [camX, camY, camZ, dirX, dirZ, meia-largura (ndc), meia-altura (ndc)]; a tela fica centrada em 55% da altura */
+    fun tvZoomPlan(): FloatArray? {
+        val tl = tvLive ?: return null
+        val g = tvGeom(tl.x, tl.y, tl.z); val a = tvAspect.coerceAtLeast(0.5f); val k = 0.70021f
+        val dist = max(g[8] / 2f / (0.78f * k), g[7] / 2f / (0.92f * k * a))
+        return floatArrayOf(g[0] + g[3] * dist, g[1] + 0.1f * dist * k, g[2] + g[4] * dist, -g[3], -g[4], g[7] / 2f / (dist * k * a), g[8] / 2f / (dist * k))
+    }
+    private fun tvBlend() {
+        if (tvZoomT <= 0.001f) return
+        val p = tvZoomPlan() ?: return
+        val e = tvZoomT * tvZoomT * (3f - 2f * tvZoomT)
+        camX += (p[0] - camX) * e; camY += (p[1] - camY) * e; camZ += (p[2] - camZ) * e
+    }
+    private fun tvLook(): FloatArray {
+        val fx = fwdX(); val fy = fwdY(); val fz = fwdZ()
+        if (tvZoomT <= 0.001f) return floatArrayOf(fx, fy, fz)
+        val p = tvZoomPlan() ?: return floatArrayOf(fx, fy, fz)
+        val e = tvZoomT * tvZoomT * (3f - 2f * tvZoomT)
+        val x = fx + (p[3] - fx) * e; val y = fy - fy * e; val z = fz + (p[4] - fz) * e
+        val l = max(0.0001f, sqrt(x * x + y * y + z * z))
+        return floatArrayOf(x / l, y / l, z / l)
+    }
     /** TV (x,y,z) que o jogador está olhando de perto, ou null; o HUD mostra "Usar TV" e "Tamanho" quando existe */
     @Volatile var tvAim: IntArray? = null
     private var tvScanT = 0f
@@ -571,7 +607,8 @@ class Game(val world: World) {
     private fun dirY() = aimVec()[1]
     private fun dirZ() = aimVec()[2]
 
-    private fun updateCamera() {
+    private fun updateCamera() { updateCamera0(); tvBlend() }
+    private fun updateCamera0() {
         val ex = player.x; val ey = player.y + eyeH(); val ez = player.z
         if (!thirdPerson) { camX = ex; camY = ey; camZ = ez; camDist = 0f; return }
         val dx = -fwdX(); val dy = -fwdY(); val dz = -fwdZ()
@@ -1199,6 +1236,7 @@ class Game(val world: World) {
     @Volatile var paused = false
 
     fun update(dt: Float) {
+        if (tvZoomT != tvZoomGoal) { val st = dt * 2.2f; tvZoomT = if (tvZoomT < tvZoomGoal) min(tvZoomGoal, tvZoomT + st) else max(tvZoomGoal, tvZoomT - st) }
         if (paused) return
     for (sl in slashes) if (time - sl.born > SLASH_LIFE || world.get(sl.d.x, sl.d.y, sl.d.z) != sl.d.id) slashes.remove(sl)
         time += dt
@@ -1611,5 +1649,5 @@ class Game(val world: World) {
         }
     }
 
-    fun lookDirX() = fwdX(); fun lookDirY() = fwdY(); fun lookDirZ() = fwdZ()
+    fun lookDirX() = tvLook()[0]; fun lookDirY() = tvLook()[1]; fun lookDirZ() = tvLook()[2]
 }
