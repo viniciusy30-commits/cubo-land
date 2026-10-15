@@ -937,7 +937,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         if (wasAirP && p.onGround && lastVyP < -4f) landA = (-lastVyP / 12f).coerceIn(0.35f, 1f)
         landA = max(0f, landA - dtp * 5f)
         wasAirP = airNow; lastVyP = p.vy
-        val id = game.cur()
+        val id = if (game.driving) 0 else game.cur()   // dirigindo: mãos no volante/guidão, sem item
         airSm += ((if (airNow) 1f else 0f) - airSm) * min(1f, 9f * dtp)
         if (airNow) vyHold += (p.vy - vyHold) * min(1f, 12f * dtp)   // segura a pose de queda até os pés tocarem de verdade (sem pulo de frame)
         landSm += (landA - landSm) * min(1f, 16f * dtp)
@@ -956,13 +956,17 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         tiltSm += (tiltTarget - tiltSm) * min(1f, 9f * dtp)
         an.t = t; an.phase = phaseA; an.move = wa; an.run = runA; an.vy = vyHold; an.air = airNow; an.airA = airSm; an.fly = flySm; an.flySpd = flySp
         val impK = ((1f - game.flyImp) * 3f).coerceIn(0f, 1f)   // o impulso entra em ~0,2s em vez de estalar
-        an.dash = dashSm; an.imp = game.flyImp * impK * impK * (3f - 2f * impK); an.swimFast = swimFastA; an.swimPh = swimPhA; an.crouch = game.crouchA; an.sit = game.sitA; an.lie = game.lieA; an.landT = landSm; an.swim = swm; an.dive = diveSm; an.tilt = tiltSm
+        an.dash = dashSm; an.imp = game.flyImp * impK * impK * (3f - 2f * impK); an.swimFast = swimFastA; an.swimPh = swimPhA; an.crouch = game.crouchA; an.sit = game.sitA; an.lie = game.lieA; an.ride = if (game.driving) 1f else 0f; an.bent = if (game.driving && game.car.kind == 1) 1f else 0f; an.landT = landSm; an.swim = swm; an.dive = diveSm; an.tilt = tiltSm
         an.atk = game.swing; an.atkArm = swingDelta(id, game.swing); an.hasTool = id > 0
         // mesmos keyframes de golpe/carga da 1ª pessoa, aplicados no braço do boneco
         if (game.charging) { chargePose(tpP, id, game.charge, t); an.charge = min(1f, game.charge) }
         else { evalPose(tpP, kfFor(id), game.swing); an.charge = 0f }
         an.poseOn = true; an.pP = tpP[3]; an.pY = tpP[4]; an.pR = tpP[5]; an.pW = tpP[6]
         setBase(p.x, p.y, p.z, Math.toDegrees(game.bodyYaw.toDouble()).toFloat())
+        if (game.driving && game.car.kind == 1) {   // piloto acompanha a inclinação da moto e a empinada
+            Matrix.rotateM(base, 0, -game.car.roll, 0f, 0f, 1f)
+            Matrix.rotateM(base, 0, -game.car.wheelieDeg(), 1f, 0f, 0f)
+        }
         if (swm > 0.01f) {   // nadando: boia na superfície (cabeça fora) ou desliza deitado quando mergulha
             Matrix.translateM(base, 0, 0f, sin(t * 2.2f) * 0.025f * (1f - diveSm) * swm, 0f)
             Matrix.translateM(base, 0, 0f, 0.9f, 0f)
@@ -1384,15 +1388,18 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         arrow(false, 3.05f, cy + 1.17f, 0.22f, false, 3.595f, 3.61f, goingDn || (!s.moving && cur > 0))
     }
 
-    // ---------- carro esportivo vermelho ----------
-    private fun drawCar() {
-        val c = game.car
+    // ---------- veículos: carro esportivo vermelho (conversível, o boneco aparece sentado) e moto ----------
+    private fun drawVeh(c: CarState) {
         if (!c.placed) return
         if (!seen(c.x, c.y + 0.6f, c.z, 70f)) return
         setBase(c.x, c.y + c.yOff, c.z, Math.toDegrees(c.h.toDouble()).toFloat())
         Matrix.rotateM(base, 0, c.pitchA, 1f, 0f, 0f)
         Matrix.rotateM(base, 0, -c.roll, 0f, 0f, 1f)
-        val red = 0xD4141C; val redD = 0xA80F16; val blk = 0x15151A; val glass = 0x1E2C3A; val wht = 0xF4F4F4
+        if (c.kind == 1) drawBike(c) else drawCar(c)
+    }
+
+    private fun drawCar(c: CarState) {
+        val red = 0xD4141C; val redD = 0xA80F16; val blk = 0x15151A; val glass = 0x2A4157; val wht = 0xF4F4F4; val leather = 0x2A2A30
         fun b(px: Float, py: Float, pz: Float, sx: Float, sy: Float, sz: Float, col: Int, a: Float = 1f, mul: Float = 1f, rx: Float = 0f) =
             box(base, px, py, pz, rx, 0f, sx, sy, sz, 0f, col, a, mul)
         // rodas (eixo X local; a esquerda do carro é +X): 3 quadrados girados formam um pneu redondinho
@@ -1407,35 +1414,32 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             box(base, wx, 0.33f, wz, c.wheel, ry, 0.34f, 0.07f, 0.3f, 0f, 0xD9DDE2, 1f, 1.1f)
             box(base, wx, 0.33f, wz, c.wheel + 45f, ry, 0.34f, 0.2f, 0.05f, 0f, 0xB4B9C0)
             box(base, wx, 0.33f, wz, c.wheel + 45f, ry, 0.34f, 0.05f, 0.2f, 0f, 0xB4B9C0)
-            // paralama por cima de cada roda
-            b(if (left) 0.96f else -0.96f, 0.76f, wz, 0.34f, 0.09f, 0.86f, red)
+            b(if (left) 0.96f else -0.96f, 0.76f, wz, 0.34f, 0.09f, 0.86f, red)   // paralama
         }
-        // fundo, corpo e para-choques
+        // fundo e carroceria CONVERSÍVEL: frente (capô) e traseira inteiras, cabine aberta no meio pro boneco aparecer
         b(0f, 0.27f, 0f, 1.6f, 0.16f, 3.9f, blk)
-        b(0f, 0.5f, 0f, 1.7f, 0.42f, 4.15f, red)
+        b(0f, 0.5f, 1.26f, 1.7f, 0.42f, 1.62f, red)            // capô
+        b(0f, 0.5f, -1.55f, 1.7f, 0.42f, 1.04f, red)           // traseira
+        b(0f, 0.37f, -0.28f, 1.6f, 0.1f, 1.5f, 0x1D1D22)        // assoalho da cabine
+        b(0.8f, 0.5f, -0.28f, 0.1f, 0.42f, 1.5f, red); b(-0.8f, 0.5f, -0.28f, 0.1f, 0.42f, 1.5f, red)   // portas
+        b(0.75f, 0.66f, -0.28f, 0.04f, 0.1f, 1.46f, leather); b(-0.75f, 0.66f, -0.28f, 0.04f, 0.1f, 1.46f, leather) // forro das portas
         b(0f, 0.43f, 2.06f, 1.76f, 0.26f, 0.2f, redD)
         b(0f, 0.43f, -2.06f, 1.76f, 0.26f, 0.2f, redD)
-        b(0f, 0.26f, 2.12f, 1.84f, 0.06f, 0.42f, blk)       // spoiler dianteiro (splitter)
-        b(0f, 0.4f, 2.17f, 0.9f, 0.12f, 0.03f, 0x0C0C0F)    // grade
-        b(0.9f, 0.33f, 0f, 0.05f, 0.09f, 2.4f, blk); b(-0.9f, 0.33f, 0f, 0.05f, 0.09f, 2.4f, blk)   // saias laterais
-        b(0f, 0.8f, -1.5f, 1.5f, 0.1f, 1.0f, red)            // tampa do porta-malas
+        b(0f, 0.26f, 2.12f, 1.84f, 0.06f, 0.42f, blk)
+        b(0f, 0.4f, 2.17f, 0.9f, 0.12f, 0.03f, 0x0C0C0F)
+        b(0.9f, 0.33f, 0f, 0.05f, 0.09f, 2.4f, blk); b(-0.9f, 0.33f, 0f, 0.05f, 0.09f, 2.4f, blk)
+        b(0f, 0.8f, -1.5f, 1.5f, 0.1f, 1.0f, red)               // tampa do porta-malas
         b(0f, 0.75f, 1.25f, 1.3f, 0.07f, 1.5f, red, 1f, 1.08f)   // capô com leve volume
-        // interior (aparece pelo vidro quando o jogador está dentro)
-        b(0.32f, 0.9f, -0.78f, 0.4f, 0.4f, 0.12f, 0x2A2A30); b(-0.32f, 0.9f, -0.78f, 0.4f, 0.4f, 0.12f, 0x2A2A30)
-        b(0.32f, 0.97f, 0.1f, 0.32f, 0.04f, 0.32f, 0x101010, 1f, 1f, -60f)
-        if (game.driving) {
-            b(0.32f, 1.05f, -0.62f, 0.26f, 0.26f, 0.26f, Look.skin())
-            b(0.32f, 0.86f, -0.66f, 0.36f, 0.34f, 0.2f, 0x3A5FA8)
-        }
-        // vidros e teto
-        b(0f, 0.94f, -0.4f, 1.46f, 0.44f, 1.25f, glass, 0.62f)
-        b(0f, 0.95f, 0.5f, 1.46f, 0.64f, 0.05f, 0x2A4157, 0.6f, 1f, -48f)
-        b(0f, 0.95f, -1.22f, 1.46f, 0.6f, 0.05f, 0x2A4157, 0.6f, 1f, 48f)
-        b(0f, 1.18f, -0.4f, 1.5f, 0.07f, 1.12f, red)
+        // painel, volante e bancos (o motorista senta no banco da esquerda)
+        b(0f, 0.78f, 0.4f, 1.6f, 0.22f, 0.22f, leather)
+        b(0.32f, 0.9f, 0.18f, 0.34f, 0.04f, 0.34f, 0x101010, 1f, 1f, -55f)
+        for (sx in floatArrayOf(0.32f, -0.32f)) { b(sx, 0.47f, -0.5f, 0.5f, 0.12f, 0.5f, leather); b(sx, 0.78f, -0.8f, 0.5f, 0.55f, 0.12f, leather); b(sx, 1.02f, -0.86f, 0.3f, 0.2f, 0.1f, red) }
+        // para-brisa baixo e arco de segurança atrás dos bancos
+        b(0f, 0.95f, 0.5f, 1.5f, 0.4f, 0.04f, glass, 0.55f, 1f, -38f)
+        b(0.78f, 0.9f, 0.52f, 0.06f, 0.5f, 0.06f, redD, 1f, 1f, -38f); b(-0.78f, 0.9f, 0.52f, 0.06f, 0.5f, 0.06f, redD, 1f, 1f, -38f)
         // faixas brancas de corrida
         b(0.13f, 0.718f, 1.3f, 0.15f, 0.014f, 1.5f, wht); b(-0.13f, 0.718f, 1.3f, 0.15f, 0.014f, 1.5f, wht)
         b(0.13f, 0.857f, -1.5f, 0.15f, 0.014f, 0.98f, wht); b(-0.13f, 0.857f, -1.5f, 0.15f, 0.014f, 0.98f, wht)
-        b(0.13f, 1.222f, -0.4f, 0.15f, 0.014f, 1.1f, wht); b(-0.13f, 1.222f, -0.4f, 0.15f, 0.014f, 1.1f, wht)
         // aerofólio
         b(0.55f, 0.92f, -1.95f, 0.08f, 0.3f, 0.1f, blk); b(-0.55f, 0.92f, -1.95f, 0.08f, 0.3f, 0.1f, blk)
         b(0f, 1.08f, -2.0f, 1.95f, 0.06f, 0.52f, redD)
@@ -1449,6 +1453,48 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val tm = if (c.braking) 1.9f else 1.1f
         b(0.6f, 0.6f, -2.17f, 0.5f, 0.1f, 0.04f, tl, 1f, tm); b(-0.6f, 0.6f, -2.17f, 0.5f, 0.1f, 0.04f, tl, 1f, tm)
         if (c.reversing) { b(0.22f, 0.5f, -2.18f, 0.14f, 0.07f, 0.04f, 0xFFFFFF, 1f, 1.6f); b(-0.22f, 0.5f, -2.18f, 0.14f, 0.07f, 0.04f, 0xFFFFFF, 1f, 1.6f) }
+    }
+
+    private fun drawBike(c: CarState) {
+        val red = 0xD4141C; val redD = 0xA80F16; val blk = 0x15151A; val chrome = 0xB4B9C0
+        // empinada: a moto inteira gira em volta do eixo da roda de trás
+        val wd = c.wheelieDeg()
+        if (wd > 0.01f) { Matrix.translateM(base, 0, 0f, 0.38f, -0.78f); Matrix.rotateM(base, 0, -wd, 1f, 0f, 0f); Matrix.translateM(base, 0, 0f, -0.38f, 0.78f) }
+        fun b(px: Float, py: Float, pz: Float, sx: Float, sy: Float, sz: Float, col: Int, a: Float = 1f, mul: Float = 1f, rx: Float = 0f, ry: Float = 0f) =
+            box(base, px, py, pz, rx, ry, sx, sy, sz, 0f, col, a, mul)
+        val steerDeg = -c.steer * 24f
+        // rodas
+        for (front in booleanArrayOf(true, false)) {
+            val wz = if (front) 0.78f else -0.78f
+            val ry = if (front) steerDeg else 0f
+            for (k in 0 until 3) box(base, 0f, 0.38f, wz, c.wheel + k * 30f, ry, 0.17f, 0.56f, 0.56f, 0f, 0x141414)
+            box(base, 0f, 0.38f, wz, c.wheel, ry, 0.19f, 0.34f, 0.07f, 0f, 0xD9DDE2, 1f, 1.1f)
+            box(base, 0f, 0.38f, wz, c.wheel, ry, 0.19f, 0.07f, 0.34f, 0f, 0xD9DDE2, 1f, 1.1f)
+            box(base, 0f, 0.38f, wz, c.wheel + 45f, ry, 0.19f, 0.22f, 0.05f, 0f, chrome)
+            box(base, 0f, 0.38f, wz, c.wheel + 45f, ry, 0.19f, 0.05f, 0.22f, 0f, chrome)
+        }
+        // garfo e guidão (giram com o volante)
+        b(0.12f, 0.78f, 0.7f, 0.05f, 0.8f, 0.06f, chrome, 1f, 1f, -16f, steerDeg); b(-0.12f, 0.78f, 0.7f, 0.05f, 0.8f, 0.06f, chrome, 1f, 1f, -16f, steerDeg)
+        b(0f, 1.18f, 0.55f, 0.72f, 0.05f, 0.05f, blk, 1f, 1f, 0f, steerDeg)
+        b(0.38f, 1.18f, 0.55f, 0.1f, 0.07f, 0.07f, 0x222222, 1f, 1f, 0f, steerDeg); b(-0.38f, 1.18f, 0.55f, 0.1f, 0.07f, 0.07f, 0x222222, 1f, 1f, 0f, steerDeg)
+        // carenagem da frente, farol e para-brisa
+        b(0f, 1.0f, 0.68f, 0.36f, 0.36f, 0.22f, red, 1f, 1f, 0f, steerDeg)
+        b(0f, 1.0f, 0.8f, 0.24f, 0.14f, 0.04f, 0xFFF6C8, 1f, 1.5f, 0f, steerDeg)
+        b(0f, 1.3f, 0.6f, 0.28f, 0.28f, 0.04f, 0x2A4157, 0.55f, 1f, -30f, steerDeg)
+        b(0f, 0.62f, 0.9f, 0.3f, 0.05f, 0.34f, redD, 1f, 1f, 0f, steerDeg)   // paralama dianteiro
+        // corpo: motor, tanque, banco, rabeta e escapamento
+        b(0f, 0.5f, 0.12f, 0.32f, 0.4f, 0.6f, 0x2B2B30)
+        b(0f, 0.9f, 0.3f, 0.36f, 0.28f, 0.6f, red, 1f, 1.05f)
+        b(0f, 1.045f, 0.3f, 0.12f, 0.014f, 0.58f, 0xF4F4F4)               // faixa branca no tanque
+        b(0f, 0.84f, -0.3f, 0.32f, 0.1f, 0.7f, 0x1A1A1E)
+        b(0f, 0.98f, -0.85f, 0.34f, 0.24f, 0.5f, red, 1f, 1f, 8f)
+        b(0f, 0.68f, -0.9f, 0.3f, 0.05f, 0.4f, redD)
+        b(0.14f, 0.3f, -0.45f, 0.1f, 0.13f, 1.0f, chrome); b(0.14f, 0.3f, -0.95f, 0.14f, 0.16f, 0.12f, 0x555A60)
+        b(0.12f, 0.45f, -0.5f, 0.1f, 0.1f, 0.85f, 0x2B2B30); b(-0.12f, 0.45f, -0.5f, 0.1f, 0.1f, 0.85f, 0x2B2B30)   // balança traseira
+        b(0.2f, 0.36f, -0.1f, 0.18f, 0.04f, 0.08f, chrome); b(-0.2f, 0.36f, -0.1f, 0.18f, 0.04f, 0.08f, chrome)   // pedaleiras
+        // lanterna (acende forte ao frear) e luz de ré
+        b(0f, 1.0f, -1.12f, 0.24f, 0.08f, 0.04f, if (c.braking) 0xFF4A4A else 0xB01212, 1f, if (c.braking) 1.9f else 1.1f)
+        if (c.reversing) b(0f, 0.9f, -1.12f, 0.1f, 0.06f, 0.04f, 0xFFFFFF, 1f, 1.6f)
     }
 
     private fun drawSlime(s: Slime) {
@@ -1981,16 +2027,17 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         }
         G.glUniform1f(uWind, 0f)
         bindMesh(cubeVb, cubeIb)
-        if (game.thirdPerson && game.deadTimer <= 0f && !game.driving) drawPlayer(game.time)
+        if (game.thirdPerson && game.deadTimer <= 0f) drawPlayer(game.time)
         G.glEnable(G.GL_BLEND)
         G.glDepthMask(false)
         for (s in game.slimes) shadow(s.x, s.y, s.z, 0.9f)
         if (game.thirdPerson && !game.driving) shadow(game.player.x, game.player.y, game.player.z, 0.8f)
-        if (game.car.placed) shadow(game.car.x, game.car.y, game.car.z, 3.2f)
+        if (game.carV.placed) shadow(game.carV.x, game.carV.y, game.carV.z, 3.2f)
+        if (game.bikeV.placed) shadow(game.bikeV.x, game.bikeV.y, game.bikeV.z, 1.6f)
         drawPrints()
         G.glDepthMask(true)
         for (s in game.slimes) drawSlime(s)
-        drawCar()
+        drawVeh(game.carV); drawVeh(game.bikeV)
         drawElevators()
         drawTvScreen()
         drawDebris(); drawTrees(); drawDrops()

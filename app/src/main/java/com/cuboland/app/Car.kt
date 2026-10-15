@@ -8,13 +8,15 @@ import kotlin.math.min
 import kotlin.math.sin
 
 /**
- * Carro esportivo vermelho dirigível. Física estilo jogo de corrida (arcade):
+ * Veículo dirigível (kind 0 = carro esportivo vermelho, kind 1 = moto que empina). Física estilo jogo de corrida (arcade):
  * aceleração com limite de velocidade, freio/ré, esterçar só quando está andando,
  * aderência lateral (freio de mão solta a traseira e derrapa), cai com gravidade,
  * sobe degraus de 1 bloco e bate nas paredes.
  * Frente do carro = (sin h, cos h); direita = (-cos h, sin h).
  */
 class CarState {
+    var kind = 0                     // 0 = carro, 1 = moto
+    var wheelie = 0f                 // 0..1: moto empinada (só kind 1)
     var placed = false
     var x = 0f; var y = 0f; var z = 0f
     var h = 0f                       // direção (rad)
@@ -35,15 +37,36 @@ class CarState {
     val speed: Float get() = vx * sin(h) + vz * cos(h)
     fun kmh(): Int = (abs(speed) * 3.6f * 1.5f).toInt()
 
-    // pontos de colisão (metade do comprimento 1.9, metade da largura 0.78)
+    // pontos de colisão (carro: metade do comprimento 1.9, da largura 0.78; moto: 1.0 e 0.28)
     private val PX = floatArrayOf(0f, 0.78f, -0.78f, 0.78f, -0.78f, 0.78f, -0.78f)
     private val PZ = floatArrayOf(0f, 1.9f, 1.9f, -1.9f, -1.9f, 0f, 0f)
+    fun wheelieDeg(): Float = wheelie * 42f
+
+    /** posição do assento no mundo (out = x, y, z): o boneco senta aqui, seguindo a inclinação e a empinada */
+    fun seat(out: FloatArray) {
+        var lx: Float; var ly: Float; var lz: Float      // local: x = esquerda, y = cima, z = frente
+        if (kind == 1) { lx = 0f; ly = 0.9f; lz = -0.2f } else { lx = 0.32f; ly = 0.5f; lz = -0.5f }
+        val a = Math.toRadians(wheelieDeg().toDouble()).toFloat()
+        if (kind == 1 && a != 0f) {                       // gira em volta do eixo da roda de trás
+            val pz = -0.78f; val rz = lz - pz
+            val yy = ly * cos(a) + rz * sin(a); val zz = -ly * sin(a) + rz * cos(a)
+            ly = yy; lz = pz + zz
+        }
+        val r = Math.toRadians((-roll).toDouble()).toFloat()
+        val nx = lx * cos(r) - ly * sin(r); val ny = lx * sin(r) + ly * cos(r)
+        lx = nx; ly = ny
+        val sh = sin(h); val ch = cos(h)
+        out[0] = x + ch * lx + sh * lz
+        out[1] = y + yOff + ly
+        out[2] = z - sh * lx + ch * lz
+    }
 
     fun blocked(px: Float, py: Float, pz: Float, coll: (Float, Float, Float) -> Boolean): Boolean {
         val sh = sin(h); val ch = cos(h)
+        val kx = if (kind == 1) 0.28f / 0.78f else 1f; val kz = if (kind == 1) 1.0f / 1.9f else 1f
         for (i in PX.indices) {
             // local (lx = direita, lz = frente) -> mundo
-            val lx = PX[i]; val lz = PZ[i]
+            val lx = PX[i] * kx; val lz = PZ[i] * kz
             val wx = px + (-ch) * lx + sh * lz
             val wz = pz + sh * lx + ch * lz
             if (coll(wx, py, wz)) return true
@@ -51,12 +74,14 @@ class CarState {
         return false
     }
 
-    fun update(dt: Float, gas: Float, brake: Float, steerIn: Float, hand: Boolean,
+    fun update(dt: Float, gas: Float, brake: Float, steerIn: Float, hand: Boolean, wheelieIn: Boolean,
                coll: (Float, Float, Float) -> Boolean, water: (Float, Float, Float) -> Boolean) {
         val sh = sin(h); val ch = cos(h)
         var vf = vx * sh + vz * ch            // velocidade pra frente
         var vl = vx * (-ch) + vz * sh         // velocidade pro lado (direita +)
-        val maxF = 32f; val maxR = 9f
+        val bike = kind == 1
+        val maxF = if (bike) 38f else 32f; val maxR = if (bike) 7f else 9f
+        val accel = if (bike) 27f else 20f
         inWater = water(x, y + 0.3f, z)
 
         // ----- motor, freio e ré -----
@@ -65,7 +90,7 @@ class CarState {
             if (vf < -0.5f) { vf += 38f * dt; braking = true }      // estava de ré: freia antes de ir pra frente
             else {
                 val k = 1f - (max(vf, 0f) / maxF)
-                vf += 20f * gas * (if (k > 0f) k else 0f) * dt   // arranca forte e vai abrandando perto da velocidade máxima
+                vf += accel * gas * (if (k > 0f) k else 0f) * dt   // arranca forte e vai abrandando perto da velocidade máxima
             }
         }
         if (brake > 0f) {
@@ -85,16 +110,24 @@ class CarState {
         if (inWater) { vf -= vf * 2.6f * dt; vl -= vl * 2.6f * dt }
 
         // ----- aderência: freio de mão solta a traseira (derrapa) -----
-        val grip = if (hand) 1.5f else 9f
+        val grip = if (hand) 1.5f else if (bike) 12f else 9f
         vl -= vl * min(1f, grip * dt)
         slip = abs(vl)
 
         // ----- volante -----
         steer += (steerIn - steer) * min(1f, 8f * dt)
         val sp = abs(vf)
-        val authority = (if (sp / 4f > 1f) 1f else sp / 4f) / (1f + sp / 20f)   // gira menos em velocidade alta
+        // ----- empinar (moto): segura o botão com ela em movimento; solta, freia ou perde velocidade e ela abaixa -----
+        if (bike) {
+            val want = wheelieIn && onGround && !inWater && brake <= 0f && (abs(vf) > 3f || wheelie > 0.2f)
+            val tg = if (want) 1f else 0f
+            wheelie += (tg - wheelie) * min(1f, (if (tg > wheelie) 3.0f else 4.5f) * dt)
+            if (wheelie < 0.01f && tg == 0f) wheelie = 0f
+            if (wheelie > 0.4f && gas > 0f && vf > 0f) vf += 6f * wheelie * dt
+        } else wheelie = 0f
+        val authority = (if (sp / 4f > 1f) 1f else sp / 4f) / (1f + sp / 20f) * (if (bike) 1.25f - 0.55f * wheelie else 1f)   // gira menos em velocidade alta
         val dir = if (vf >= 0f) 1f else -1f
-        val turn = -steer * 2.5f * authority * dir * (if (hand) 1.7f else 1f) * dt
+        val turn = -steer * (if (bike) 3.0f else 2.5f) * authority * dir * (if (hand) 1.7f else 1f) * dt
 
         // velocidade no referencial ANTES de girar: o carro "escorrega" um pouco nas curvas rápidas
         vx = vf * sh + vl * (-ch)
@@ -135,7 +168,7 @@ class CarState {
         if (wheel > 36000f || wheel < -36000f) wheel = 0f
         val accel = if (dt > 0f) (vf - lastVf) / dt else 0f
         lastVf = vf
-        val rollT = -steer * min(1f, sp / 18f) * 4f
+        val rollT = -steer * min(1f, sp / (if (bike) 14f else 18f)) * (if (bike) 30f else 4f)
         val pitchT = (-accel * 0.22f).coerceIn(-3.5f, 3.5f)
         roll += (rollT - roll) * min(1f, 6f * dt)
         pitchA += (pitchT - pitchA) * min(1f, 6f * dt)

@@ -141,6 +141,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
     // ----- Carro: botão CARRO/SAIR, volante (◀ ▶), acelerador, freio/ré, freio de mão e velocímetro -----
     private val carPtr = HashMap<Int, Int>()
     private fun carToggleRect() = RectF(width - 208 * d, 18 * d, width - 124 * d, 62 * d)
+    private fun motoRect() = RectF(width - 208 * d, 68 * d, width - 124 * d, 112 * d)
     private fun carBtn(k: Int): RectF {
         val m = 18 * d; val bot = height - m
         val pedalL = width - m - 104 * d - 12 * d - 92 * d
@@ -149,11 +150,12 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
             1 -> RectF(m + 104 * d, bot - 104 * d, m + 196 * d, bot)
             2 -> RectF(width - m - 104 * d, bot - 128 * d, width - m, bot)
             3 -> RectF(pedalL, bot - 84 * d, pedalL + 92 * d, bot)
-            else -> RectF(pedalL, bot - 84 * d - 10 * d - 44 * d, pedalL + 92 * d, bot - 84 * d - 10 * d)
+            4 -> RectF(pedalL, bot - 84 * d - 10 * d - 44 * d, pedalL + 92 * d, bot - 84 * d - 10 * d)
+            else -> RectF(width - m - 104 * d, bot - 128 * d - 10 * d - 52 * d, width - m, bot - 128 * d - 10 * d)   // EMPINAR (moto)
         }
     }
     private fun carDown(id: Int, x: Float, y: Float): Boolean {
-        for (k in 0 until 5) if (carBtn(k).contains(x, y)) { carPtr[id] = k; carSync(); return true }
+        for (k in 0 until 6) { if (k == 5 && game.car.kind != 1) continue; if (carBtn(k).contains(x, y)) { carPtr[id] = k; carSync(); return true } }
         return false
     }
     private fun carSync() {
@@ -162,6 +164,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         game.carGas = if (v.contains(2)) 1f else 0f
         game.carBrake = if (v.contains(3)) 1f else 0f
         game.carHand = v.contains(4)
+        game.carWheelie = v.contains(5)
     }
     private fun drawCarUi(c: Canvas, w: Float, h: Float) {
         if (paused) return
@@ -169,12 +172,18 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         pxPanel(c, r0.left, r0.top, r0.right, r0.bottom, if (game.driving) Cz.RED else Cz.GOLD)
         val s0 = tsc(1.0f)
         pxText(c, if (game.driving) "SAIR" else "CARRO", (r0.left + r0.right) / 2f, (r0.top + r0.bottom) / 2f - 3.5f * s0, s0, Color.WHITE, 1)
-        if (!game.driving) return
+        if (!game.driving) {
+            val m0 = motoRect()
+            pxPanel(c, m0.left, m0.top, m0.right, m0.bottom, Cz.ORANGE)
+            pxText(c, "MOTO", (m0.left + m0.right) / 2f, (m0.top + m0.bottom) / 2f - 3.5f * s0, s0, Color.WHITE, 1)
+            return
+        }
         val on = carPtr.values
         val sc = tsc(1.1f)
-        for (k in 0 until 5) {
+        for (k in 0 until 6) {
+            if (k == 5 && game.car.kind != 1) continue
             val r = carBtn(k)
-            val base = when (k) { 0, 1 -> Cz.SKY; 2 -> Cz.GREEN; 3 -> Cz.RED; else -> Cz.ORANGE }
+            val base = when (k) { 0, 1 -> Cz.SKY; 2 -> Cz.GREEN; 3 -> Cz.RED; 5 -> Cz.PINK; else -> Cz.ORANGE }
             val pressed = on.contains(k)
             pxPanel(c, r.left, r.top, r.right, r.bottom, base, false, pressed)
             val cx = (r.left + r.right) / 2f; val cy = (r.top + r.bottom) / 2f + (if (pressed) u else 0f)
@@ -183,7 +192,8 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
                 1 -> pxText(c, ">", cx, cy - 3.5f * tsc(3f), tsc(3f), Color.WHITE, 1)
                 2 -> pxText(c, "ACELERAR", cx, cy - 3.5f * sc, sc, Color.WHITE, 1)
                 3 -> { pxText(c, "FREIO", cx, cy - 8f * sc, sc, Color.WHITE, 1); pxText(c, "RE", cx, cy + 1f * sc, sc, Color.WHITE, 1) }
-                else -> pxText(c, "DERRAPAR", cx, cy - 3.5f * sc, tsc(0.9f), Color.WHITE, 1)
+                4 -> pxText(c, "DERRAPAR", cx, cy - 3.5f * sc, tsc(0.9f), Color.WHITE, 1)
+                else -> pxText(c, "EMPINAR", cx, cy - 3.5f * sc, sc, Color.WHITE, 1)
             }
         }
         // velocímetro
@@ -257,7 +267,8 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         if (paused) { pauseDown(x, y); return }
         if (!invOpen && !game.driving && hypot(x - bx(5), y - byy(5)) < br(5) * 1.2f) { toggleInv(); return }
         if (invOpen) { invDown(id, x, y); return }
-        if (carToggleRect().contains(x, y)) { game.wantCar = true; return }
+        if (carToggleRect().contains(x, y)) { game.wantVeh = 1; return }
+        if (!game.driving && motoRect().contains(x, y)) { game.wantVeh = 2; return }
         if (game.driving && carDown(id, x, y)) return
         if (tvPromptDown(x, y)) return
         if (elevDown(x, y)) return

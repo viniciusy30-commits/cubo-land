@@ -36,6 +36,7 @@ class Anim {
     @JvmField var fly = 0f        // 0..1 voando (suavizado)
     @JvmField var flySpd = 0f     // 0 pairando .. 1 voando rápido
     @JvmField var crouch = 0f; @JvmField var sit = 0f; @JvmField var lie = 0f   // posturas 0..1
+    @JvmField var ride = 0f; @JvmField var bent = 0f   // dirigindo: braços à frente no volante/guidão (ride) e pernas dobradas nas pedaleiras (bent)
     @JvmField var dash = 0f; @JvmField var imp = 0f; @JvmField var swimPh = 0f; @JvmField var armFwdR = 0f   // voo rápido, impulso, fase da braçada, (saída) quanto o braço do item está esticado
     @JvmField var tilt = 0f       // graus que o corpo deita ao nadar (o jogo aplica na matriz)
     @JvmField var swimFast = 0f   // 0..1 (suavizado) acelerando na água: só aí os braços batem; sem acelerar, boia/desliza
@@ -710,6 +711,8 @@ class CharModel {
         var qLegL = 0f; var qLegR = 0f
         if (cr > 0f) { hipL = lp(hipL, -62f + sw * 0.4f, cr); hipR = lp(hipR, -62f - sw * 0.4f, cr); kneeL = lp(kneeL, 72f + kneeL * 0.3f, cr); kneeR = lp(kneeR, 72f + kneeR * 0.3f, cr) }
         if (si > 0f) { val br = sin(t * 1.6f) * 2f; hipL = lp(hipL, -87f + br, si); hipR = lp(hipR, -87f + br, si); kneeL = lp(kneeL, 4f, si); kneeR = lp(kneeR, 4f, si) }
+        val bt = an.bent.coerceIn(0f, 1f)
+        if (bt > 0f) { hipL = lp(hipL, -72f, bt); hipR = lp(hipR, -72f, bt); kneeL = lp(kneeL, 62f, bt); kneeR = lp(kneeR, 62f, bt) }
         if (li > 0f) { val mc = min(1f, mv * 3f); qLegL = (0.5f + 0.5f * sin(ph + 3.1416f)) * mc; qLegR = (0.5f + 0.5f * sin(ph)) * mc
             hipL = lp(hipL, 2f + 7f * qLegL, li); hipR = lp(hipR, 2f + 7f * qLegR, li)
             kneeL = lp(kneeL, 4f + 26f * qLegL, li); kneeR = lp(kneeR, 4f + 26f * qLegR, li) }
@@ -1307,6 +1310,8 @@ class CharModel {
             elL = lp(elL, -(14f + 36f * (1f - pl)), li); elR = lp(elR, -(14f + 36f * (1f - pr)), li)
             ryR = lp(ryR, 0f, li); ryL = lp(ryL, 0f, li); elbowSpin = 90f * li
         }
+        val rd = an.ride.coerceIn(0f, 1f)
+        if (rd > 0.001f) { rxL = lp(rxL, -62f, rd); rxR = lp(rxR, -62f, rd); elL = lp(elL, -14f, rd); elR = lp(elR, -14f, rd); rzL = lp(rzL, -5f, rd); rzR = lp(rzR, 5f, rd) }
         for (sd in intArrayOf(-1, 1)) {
             val s = sd.toFloat()
             val rx = if (sd < 0) rxR else rxL; val rz = if (sd < 0) -rzR else -rzL; val el = if (sd < 0) elR else elL   // +x é a ESQUERDA do boneco: o item vai na direita (sd<0)

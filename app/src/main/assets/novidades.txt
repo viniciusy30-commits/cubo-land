@@ -1,3 +1,10 @@
+#id 2026-10-15-c
+#titulo Moto que empina + personagem no carro e na moto
+- Botão MOTO (embaixo do CARRO, no alto da tela) chama a moto esportiva; SAIR desce. Na pista de veículos da galeria o carro e a moto já esperam lá
+- Segure EMPINAR pra levantar a roda da frente (precisa estar em movimento); soltar, frear ou perder velocidade abaixa. Empinando ela acelera um pouco mais e esterça menos
+- A moto inclina bastante nas curvas e levanta poeira ao derrapar
+- Agora o seu personagem aparece dirigindo: sentado no carro (que virou conversível) com as mãos no volante, e na moto com as pernas nas pedaleiras e as mãos no guidão, acompanhando a inclinação e a empinada
+
 #id 2026-10-15-b
 #titulo Pista de teste de veículos na galeria
 - Na galeria de blocos, em VITRINES, tem o botão VEÍCULOS (teste): o carro vermelho já nasce lá, é só tocar em CARRO pra entrar
