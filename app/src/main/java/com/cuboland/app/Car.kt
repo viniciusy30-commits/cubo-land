@@ -32,6 +32,8 @@ class CarState {
     var slip = 0f                    // quanto está derrapando de lado
     var impact = 0f                  // força da última batida (o jogo lê e zera)
     var engine = 0f                  // 0..1 pra barulho/efeito
+    @Volatile var roofOn = false     // teto: quer fechado?
+    var roof = 0f                    // 0 = aberto (conversível) .. 1 = fechado (animado)
     private var lastVf = 0f
 
     val speed: Float get() = vx * sin(h) + vz * cos(h)
@@ -45,7 +47,7 @@ class CarState {
     /** posição do assento no mundo (out = x, y, z): o boneco senta aqui, seguindo a inclinação e a empinada */
     fun seat(out: FloatArray) {
         var lx: Float; var ly: Float; var lz: Float      // local: x = esquerda, y = cima, z = frente
-        if (kind == 1) { lx = 0f; ly = 0.9f; lz = -0.2f } else { lx = 0.32f; ly = 0.5f; lz = -0.5f }
+        if (kind == 1) { lx = 0f; ly = 0.9f; lz = -0.2f } else { val rf = roof * roof * (3f - 2f * roof); lx = 0.32f; ly = 0.5f - 0.22f * rf; lz = -0.5f }   // com teto o motorista afunda no banco (a cabeça não bate no teto)
         val a = Math.toRadians(wheelieDeg().toDouble()).toFloat()
         if (kind == 1 && a != 0f) {                       // gira em volta do eixo da roda de trás
             val pz = -0.78f; val rz = lz - pz
@@ -76,6 +78,7 @@ class CarState {
 
     fun update(dt: Float, gas: Float, brake: Float, steerIn: Float, hand: Boolean, wheelieIn: Boolean,
                coll: (Float, Float, Float) -> Boolean, water: (Float, Float, Float) -> Boolean) {
+        run { val tgt = if (roofOn) 1f else 0f; val st = 0.8f * dt; roof = if (roof < tgt) min(tgt, roof + st) else max(tgt, roof - st) }   // teto abre/fecha em ~1,2 s
         val sh = sin(h); val ch = cos(h)
         var vf = vx * sh + vz * ch            // velocidade pra frente
         var vl = vx * (-ch) + vz * sh         // velocidade pro lado (direita +)

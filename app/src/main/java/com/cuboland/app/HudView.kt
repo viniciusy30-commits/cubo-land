@@ -178,6 +178,11 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
             pxText(c, "MOTO", (m0.left + m0.right) / 2f, (m0.top + m0.bottom) / 2f - 3.5f * s0, s0, Color.WHITE, 1)
             return
         }
+        if (game.car.kind == 0) {   // TETO: fecha/abre o teto do carro (o botão fica onde o MOTO ficava)
+            val t0 = motoRect(); val cl = game.car.roofOn
+            pxPanel(c, t0.left, t0.top, t0.right, t0.bottom, if (cl) Cz.SKY else Cz.GREEN)
+            pxText(c, if (cl) "ABRIR" else "TETO", (t0.left + t0.right) / 2f, (t0.top + t0.bottom) / 2f - 3.5f * s0, s0, Color.WHITE, 1)
+        }
         val on = carPtr.values
         val sc = tsc(1.1f)
         for (k in 0 until 6) {
@@ -270,6 +275,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         if (invOpen) { invDown(id, x, y); return }
         if (carToggleRect().contains(x, y)) { game.wantVeh = 1; return }
         if (!game.driving && motoRect().contains(x, y)) { game.wantVeh = 2; return }
+        if (game.driving && game.car.kind == 0 && motoRect().contains(x, y)) { game.car.roofOn = !game.car.roofOn; return }   // botão TETO
         if (game.driving && carDown(id, x, y)) return
         if (tvPromptDown(x, y)) return
         if (elevDown(x, y)) return

@@ -1260,20 +1260,20 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             if (alongX) cb(u0, v0, p0, u1, v1, p1, col, a, mul) else cb(p0, v0, u0, p1, v1, u1, col, a, mul)
         }
         val LIT = 0xFFB347; val AMB = 0xFFC24A
-        fun digit(d: Int, u: Float, v: Float, w: Float, h: Float, t: Float, alongX: Boolean, p0: Float, p1: Float) {
+        fun digit(d: Int, u: Float, v: Float, w: Float, h: Float, t: Float, alongX: Boolean, p0: Float, p1: Float, col: Int = LIT) {
             val m = SEG7[d.coerceIn(0, 9)]; val mid = v + h / 2f
-            if (m and 1 != 0) pb(alongX, p0, p1, u + t, u + w - t, v + h - t, v + h, LIT, 1f, 1.8f)
-            if (m and 8 != 0) pb(alongX, p0, p1, u + t, u + w - t, v, v + t, LIT, 1f, 1.8f)
-            if (m and 64 != 0) pb(alongX, p0, p1, u + t, u + w - t, mid - t / 2f, mid + t / 2f, LIT, 1f, 1.8f)
-            if (m and 2 != 0) pb(alongX, p0, p1, u + w - t, u + w, mid, v + h - t / 2f, LIT, 1f, 1.8f)
-            if (m and 4 != 0) pb(alongX, p0, p1, u + w - t, u + w, v + t / 2f, mid, LIT, 1f, 1.8f)
-            if (m and 16 != 0) pb(alongX, p0, p1, u, u + t, v + t / 2f, mid, LIT, 1f, 1.8f)
-            if (m and 32 != 0) pb(alongX, p0, p1, u, u + t, mid, v + h - t / 2f, LIT, 1f, 1.8f)
+            if (m and 1 != 0) pb(alongX, p0, p1, u + t, u + w - t, v + h - t, v + h, col, 1f, 1.8f)
+            if (m and 8 != 0) pb(alongX, p0, p1, u + t, u + w - t, v, v + t, col, 1f, 1.8f)
+            if (m and 64 != 0) pb(alongX, p0, p1, u + t, u + w - t, mid - t / 2f, mid + t / 2f, col, 1f, 1.8f)
+            if (m and 2 != 0) pb(alongX, p0, p1, u + w - t, u + w, mid, v + h - t / 2f, col, 1f, 1.8f)
+            if (m and 4 != 0) pb(alongX, p0, p1, u + w - t, u + w, v + t / 2f, mid, col, 1f, 1.8f)
+            if (m and 16 != 0) pb(alongX, p0, p1, u, u + t, v + t / 2f, mid, col, 1f, 1.8f)
+            if (m and 32 != 0) pb(alongX, p0, p1, u, u + t, mid, v + h - t / 2f, col, 1f, 1.8f)
         }
-        fun number(n: Int, cu: Float, v: Float, w: Float, h: Float, t: Float, alongX: Boolean, p0: Float, p1: Float) {
+        fun number(n: Int, cu: Float, v: Float, w: Float, h: Float, t: Float, alongX: Boolean, p0: Float, p1: Float, col: Int = LIT) {
             val gap = w * 0.35f
-            if (n >= 10) { val tot = w * 2 + gap; digit(n / 10, cu - tot / 2f, v, w, h, t, alongX, p0, p1); digit(n % 10, cu - tot / 2f + w + gap, v, w, h, t, alongX, p0, p1) }
-            else digit(n, cu - w / 2f, v, w, h, t, alongX, p0, p1)
+            if (n >= 10) { val tot = w * 2 + gap; digit(n / 10, cu - tot / 2f, v, w, h, t, alongX, p0, p1, col); digit(n % 10, cu - tot / 2f + w + gap, v, w, h, t, alongX, p0, p1, col) }
+            else digit(n, cu - w / 2f, v, w, h, t, alongX, p0, p1, col)
         }
         /** seta em degraus (3 fileiras + haste): cima = ponta em cima, baixo = ponta embaixo */
         fun arrow(up: Boolean, cu: Float, cv: Float, sz: Float, alongX: Boolean, p0: Float, p1: Float, on: Boolean) {
@@ -1329,10 +1329,22 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             // verga da porta + friso dourado + visor com o andar da cabine
             cb(0.22f, y + 2.78f, 3.9f, 3.78f, y + 3f, 4.02f, GRAPH)
             cb(0.22f, y + 2.75f, 3.9f, 3.78f, y + 2.78f, 4.03f, GOLD)
-            // visor do andar ABAIXO de y+2.0: a sacada do andar de cima ocupa y+2..3 na frente do poço e escondia o número
-            cb(1.45f, y + 1.7f, 4.02f, 2.55f, y + 1.98f, 4.035f, 0x0B0F12)
-            cb(1.43f, y + 1.68f, 4.015f, 2.57f, y + 1.70f, 4.04f, GOLD); cb(1.43f, y + 1.98f, 4.015f, 2.57f, y + 2.0f, 4.04f, GOLD)
-            number(cur + 1, 2f, y + 1.74f, 0.14f, 0.20f, 0.035f, true, 4.035f, 4.045f)
+            // painel do pilar ESQUERDO (espelha o de chamada): em cima o andar DESTE patamar (azul), embaixo o andar onde o elevador está (âmbar),
+            // e no pé uma seta quando ele anda (sobe/desce) ou uma lâmpada verde quando está parado neste andar. Fica abaixo de y+2: a sacada de cima não cobre.
+            cb(0.02f, y + 0.66f, 4.0f, 0.26f, y + 1.98f, 4.05f, GRAPH)
+            cb(0.04f, y + 0.68f, 4.05f, 0.24f, y + 1.96f, 4.055f, 0x1A1E23)
+            for (k in 0..1) {
+                val lo = if (k == 0) 1.46f else 0.92f; val hi = lo + 0.47f
+                cb(0.05f, y + lo, 4.055f, 0.23f, y + hi, 4.06f, GOLD)
+                cb(0.06f, y + lo + 0.01f, 4.06f, 0.22f, y + hi - 0.01f, 4.065f, 0x0B0F12)
+                val num = if (k == 0) i + 1 else cur + 1
+                val two = num >= 10
+                number(num, 0.14f, y + lo + 0.105f, if (two) 0.056f else 0.08f, 0.26f, if (two) 0.015f else 0.02f, true, 4.065f, 4.075f, if (k == 0) 0x6FD3FF else AMB)
+            }
+            cb(0.05f, y + 0.70f, 4.055f, 0.23f, y + 0.88f, 4.06f, GOLD)
+            cb(0.06f, y + 0.71f, 4.06f, 0.22f, y + 0.87f, 4.065f, 0x0B0F12)
+            if (s.moving) arrow(s.dir > 0, 0.14f, y + 0.79f, 0.13f, true, 4.065f, 4.075f, true)
+            else { val here = cur == i; cb(0.09f, y + 0.75f, 4.065f, 0.19f, y + 0.83f, 4.075f, if (here) 0x57E389 else 0x2B3A30, 1f, if (here) 1.8f else 1f) }
             // painel de chamada no pilar direito: só subir e descer
             cb(3.74f, y + 0.98f, 4.0f, 3.98f, y + 1.62f, 4.05f, GRAPH)
             cb(3.76f, y + 1.0f, 4.05f, 3.96f, y + 1.6f, 4.055f, 0x1A1E23)
@@ -1453,6 +1465,40 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val tm = if (c.braking) 1.9f else 1.1f
         b(0.6f, 0.6f, -2.17f, 0.5f, 0.1f, 0.04f, tl, 1f, tm); b(-0.6f, 0.6f, -2.17f, 0.5f, 0.1f, 0.04f, tl, 1f, tm)
         if (c.reversing) { b(0.22f, 0.5f, -2.18f, 0.14f, 0.07f, 0.04f, 0xFFFFFF, 1f, 1.6f); b(-0.22f, 0.5f, -2.18f, 0.14f, 0.07f, 0.04f, 0xFFFFFF, 1f, 1.6f) }
+        // ----- TETO (hardtop): janelas sobem, colunas e vidros crescem e a tampa sai do porta-malas e desliza pra cima da cabine -----
+        val rk = c.roof
+        if (rk > 0.002f) {
+            val hf = sm01((rk - 0.15f) / 0.85f)                       // altura das colunas/vidros
+            val rp = sm01(rk / 0.85f)                                  // percurso da tampa do teto
+            val glassA = 0.38f
+            // coluna A + vidro superior do para-brisa (continuam o para-brisa baixo, mais em pé pra caber a cabeça); crescem a partir da base
+            if (hf > 0.01f) {
+                val la = 0.999f * hf; val ay = 1.108f + 0.441f * hf; val az = 0.377f - 0.2345f * hf
+                b(0f, ay, az, 1.5f, la, 0.04f, glass, glassA, 1f, -28f)
+                b(0.79f, ay, az, 0.07f, la, 0.08f, red, 1f, 1f, -28f); b(-0.79f, ay, az, 0.07f, la, 0.08f, red, 1f, 1f, -28f)
+                // vidro traseiro (inclinado) e colunas C, crescem a partir do deck do porta-malas
+                val lr = 1.164f * hf; val ry = 0.85f + 0.555f * hf; val rz = -1.5f + 0.175f * hf
+                b(0f, ry, rz, 1.5f, lr, 0.04f, glass, glassA, 1f, 17.5f)
+                b(0.8f, ry, rz, 0.1f, lr, 0.16f, red, 1f, 1f, 17.5f); b(-0.8f, ry, rz, 0.1f, lr, 0.16f, red, 1f, 1f, 17.5f)
+                // vidros laterais: sobem de dentro da porta (3 fatias seguindo a coluna A)
+                val wTop = 0.8f + 1.16f * hf
+                val sl = arrayOf(floatArrayOf(0.8f, 1.1f, 0.45f), floatArrayOf(1.1f, 1.5f, 0.18f), floatArrayOf(1.5f, 1.96f, -0.03f))
+                for (s in sl) {
+                    val top = min(s[1], wTop)
+                    if (top > s[0] + 0.01f) for (sx in floatArrayOf(0.81f, -0.81f)) b(sx, (s[0] + top) / 2f, (s[2] - 1.15f) / 2f, 0.03f, top - s[0], s[2] + 1.15f, glass, glassA, 1f)
+                }
+                if (hf > 0.99f) for (sx in floatArrayOf(0.8f, -0.8f)) b(sx, 1.0f, -0.35f, 0.05f, 0.04f, 1.6f, redD)   // friso inferior da janela
+            }
+            // tampa do teto: 4 vigas + teto solar de vidro; sai do porta-malas girando e pousa nas colunas
+            val rm = FloatArray(16); System.arraycopy(base, 0, rm, 0, 16)
+            val ty = 0.62f + 1.37f * rp + 0.25f * sin(rp * 3.14159f); val tz = -1.55f + 0.935f * rp
+            Matrix.translateM(rm, 0, 0f, ty, tz); Matrix.rotateM(rm, 0, -14f * sin(rp * 3.14159f), 1f, 0f, 0f)
+            fun rb(px: Float, py: Float, pz: Float, sx: Float, sy: Float, sz: Float, col: Int, a: Float = 1f, mul: Float = 1f) = box(rm, px, py, pz, 0f, 0f, sx, sy, sz, 0f, col, a, mul)
+            rb(0f, 0f, 0.4f, 1.62f, 0.06f, 0.27f, red); rb(0f, 0f, -0.43f, 1.62f, 0.06f, 0.21f, red)
+            rb(0.68f, 0f, -0.03f, 0.26f, 0.06f, 0.6f, red); rb(-0.68f, 0f, -0.03f, 0.26f, 0.06f, 0.6f, red)
+            rb(0f, 0f, -0.03f, 1.1f, 0.03f, 0.6f, glass, 0.4f)
+            rb(0f, 0.034f, 0.4f, 0.5f, 0.012f, 0.03f, wht, 1f, 1.1f)   // frisinho branco de corrida
+        }
     }
 
     private fun drawBike(c: CarState) {
