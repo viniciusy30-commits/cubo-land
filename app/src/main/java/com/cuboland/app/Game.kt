@@ -517,7 +517,8 @@ class Game(val world: World) {
         val rot = Furniture.facing(world, x, y, z, Furniture.S_TV)
         val sc = Furniture.TV_SCALE[world.tvLevel(x, y, z).coerceIn(0, Furniture.TV_SCALE.size - 1)]
         val ra = floatArrayOf(0.5f, 0.5f, 0.53f, 0.47f)[rot]; val rc = floatArrayOf(0.53f, 0.47f, 0.5f, 0.5f)[rot]
-        return floatArrayOf(x + 0.5f + (ra - 0.5f) * sc, y + 0.54f * sc, z + 0.5f + (rc - 0.5f) * sc,
+        val oy = Furniture.baseOff(world, x, y, z, Furniture.S_TV)   // TV em cima de cômoda/mesa desce um pouco
+        return floatArrayOf(x + 0.5f + (ra - 0.5f) * sc, y + oy + 0.54f * sc, z + 0.5f + (rc - 0.5f) * sc,
             floatArrayOf(0f, 0f, 1f, -1f)[rot], floatArrayOf(1f, -1f, 0f, 0f)[rot], floatArrayOf(1f, -1f, 0f, 0f)[rot], floatArrayOf(0f, 0f, -1f, 1f)[rot],
             0.88f * sc, 0.58f * sc)
     }

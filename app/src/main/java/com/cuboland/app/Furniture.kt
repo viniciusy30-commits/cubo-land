@@ -41,7 +41,7 @@ object Furniture {
         n = (n xor (n ushr 13)) * 1274126177; n = n xor (n ushr 16)
         return (n and 0xFFFF) / 65535f
     }
-    private fun baseOff(w: World, x: Int, y: Int, z: Int, s: Int): Float {
+    fun baseOff(w: World, x: Int, y: Int, z: Int, s: Int): Float {
         if (s >= 100) { if (!FurnB.small(s)) return 0f } else if (s != S_PC && s != S_TV && s != S_LAMP && s != S_PLANT) return 0f
         val th = topH(sub(w.get(x, y - 1, z)))
         return if (th > 0f) th - 1f else 0f
@@ -457,7 +457,7 @@ object Furniture {
         val bk = T[T_BLACK]; val st = T[T_STEEL]
         c.box(st, st, st, 0.28f, 0f, 0.34f, 0.72f, 0.06f, 0.6f); c.box(bk, bk, bk, 0.44f, 0.06f, 0.44f, 0.56f, 0.22f, 0.5f)
         c.box(bk, bk, bk, 0.03f, 0.22f, 0.42f, 0.97f, 0.86f, 0.52f)
-        c.box(bk, T[T_TVSCR], bk, 0.06f, 0.25f, 0.515f, 0.94f, 0.83f, 0.53f, true)
+        c.box(bk, bk, bk, 0.06f, 0.25f, 0.515f, 0.94f, 0.83f, 0.53f)   // desligada = preta; ligada, o renderizador cola a página por cima
     }
 
     private fun lamp(c: C, T: IntArray) {
