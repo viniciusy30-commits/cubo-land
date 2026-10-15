@@ -22,19 +22,19 @@ object Furniture {
 
     fun sub(id: Int): Int = when (B.shape(id)) {
         4 -> S_CHAIR; 5 -> S_TABLE; 6 -> S_BED
-        7 -> (B.flags[id and 16383] shr 8) and 255
+        7 -> (B.flags[id and 16383] shr 8) and 4095
         else -> 0
     }
     fun isTv(id: Int): Boolean = sub(id) == S_TV
     fun isElev(id: Int): Boolean = sub(id) == S_ELEV
     /** escala da TV por nível de tamanho (0 = normal) */
     val TV_SCALE = floatArrayOf(1f, 1.5f, 2f, 3f)
-    fun sittable(id: Int): Boolean { val s = sub(id); if (s >= 100) return FurnB.sittable(s); return s == S_CHAIR || s == S_CHAIR2 || s == S_STOOL || s == S_ARM || s == S_OFFICE || s == S_SOFA }
-    fun isTable(id: Int): Boolean { val s = sub(id); if (s >= 100) return FurnB.isTable(s); return s == S_TABLE || (s in 20..26) }
-    fun seatH(s: Int): Float = when (s) { S_STOOL -> 0.56f; S_ARM -> 0.5f; S_OFFICE -> 0.62f; S_SOFA -> 0.5f; S_CHAIR2 -> 0.6f; else -> if (s >= 100) FurnB.seatH(s) else 0.58f }
+    fun sittable(id: Int): Boolean { val s = sub(id); if (s >= 256) return FurnC.sittable(s); if (s >= 100) return FurnB.sittable(s); return s == S_CHAIR || s == S_CHAIR2 || s == S_STOOL || s == S_ARM || s == S_OFFICE || s == S_SOFA }
+    fun isTable(id: Int): Boolean { val s = sub(id); if (s >= 256) return FurnC.isTable(s); if (s >= 100) return FurnB.isTable(s); return s == S_TABLE || (s in 20..26) }
+    fun seatH(s: Int): Float = when (s) { S_STOOL -> 0.56f; S_ARM -> 0.5f; S_OFFICE -> 0.62f; S_SOFA -> 0.5f; S_CHAIR2 -> 0.6f; else -> if (s >= 256) FurnC.seatH(s) else if (s >= 100) FurnB.seatH(s) else 0.58f }
     fun topH(s: Int): Float = when (s) {
         S_TABLE, S_TDARK, S_TMARB, S_TROUND, S_TROUNDM -> 0.94f; S_TCLOTH -> 0.96f; S_COFFEE -> 0.48f
-        S_DESK -> 0.92f; S_DRESS -> 0.9f; S_SHELF -> 1f; else -> if (s >= 100) FurnB.topH(s) else 0f
+        S_DESK -> 0.92f; S_DRESS -> 0.9f; S_SHELF -> 1f; else -> if (s >= 256) FurnC.topH(s) else if (s >= 100) FurnB.topH(s) else 0f
     }
     private fun hh(x: Int, z: Int, k: Int): Float {
         var n = x * 374761393 + z * 668265263 + k * 1442695041
@@ -42,9 +42,30 @@ object Furniture {
         return (n and 0xFFFF) / 65535f
     }
     fun baseOff(w: World, x: Int, y: Int, z: Int, s: Int): Float {
-        if (s >= 100) { if (!FurnB.small(s)) return 0f } else if (s != S_PC && s != S_TV && s != S_LAMP && s != S_PLANT) return 0f
+        if (s >= 256) { if (!FurnC.small(s)) return 0f } else if (s >= 100) { if (!FurnB.small(s)) return 0f } else if (s != S_PC && s != S_TV && s != S_LAMP && s != S_PLANT) return 0f
         val th = topH(sub(w.get(x, y - 1, z)))
         return if (th > 0f) th - 1f else 0f
+    }
+
+    /** direção escolhida pelo jogador (botão GIRAR) vale mais que a automática; bit 64 = tem direção manual, bits 4-5 = direção */
+    fun faceOf(w: World, x: Int, y: Int, z: Int, s: Int): Int {
+        if (y >= 0) { val st = w.fStateOf(x, y, z); if ((st and 64) != 0) return (st shr 4) and 3 }
+        return facing(w, x, y, z, s)
+    }
+    /** palavras de busca por comportamento (a mochila acha "sentar", "abre", "liga", "guarda", "gira"...) */
+    fun tags(id: Int): String {
+        val sh = B.shape(id)
+        if (sh < 4 || sh > 7) return ""
+        val sb = StringBuilder()
+        if (sittable(id)) sb.append("sentar senta sentavel ")
+        if (isTable(id)) sb.append("mesa apoiar ")
+        when (fKind(id)) {
+            1 -> sb.append("abre fecha abrir fechar ")
+            2 -> sb.append("liga desliga ligar desligar acende apaga energia ")
+            3 -> sb.append("gira girar ")
+        }
+        if (slotsOf(id) > 0) sb.append("guarda guardar armazena armazenar itens ")
+        return sb.toString()
     }
 
     /** direção da frente: 0 = +Z, 1 = -Z, 2 = +X, 3 = -X */
@@ -81,7 +102,7 @@ object Furniture {
             S_PLANT -> floatArrayOf(0.18f, 0f, 0.18f, 0.82f, 0.85f, 0.82f)
             S_RUGR, S_RUGB -> floatArrayOf(0f, 0f, 0f, 1f, 0.04f, 1f)
             S_ELEV -> floatArrayOf(0f, 0f, 0f, 0.3f, 1f, 0.3f)
-            else -> (if (s >= 100) FurnB.box(w, x, y, z, s) else null) ?: return null
+            else -> (if (s >= 256) FurnC.box(s, w.fStateOf(x, y, z), faceOf(w, x, y, z, s)) else if (s >= 100) FurnB.box(w, x, y, z, s) else null) ?: return null
         }
         val oy = if (y >= 0) baseOff(w, x, y, z, s) else 0f
         if (oy != 0f) { b[1] += oy; b[4] += oy }
@@ -90,7 +111,7 @@ object Furniture {
 
     // ---------- pincel: caixas e cilindros com UV pela posição (a textura não "amassa" nas peças pequenas) ----------
     internal class C(val o: MeshBuf, val x: Int, val y: Int, val z: Int, val vr: Float) {
-        var rot = 0; var oy = 0f; var lit = false; var off = false   // off = luz apagada: ignora o brilho próprio
+        var rot = 0; var oy = 0f; var lit = false; var off = false; var opened = false; var spin = 0; var store: IntArray? = null   // off = luz apagada: ignora o brilho próprio
         var sc = 1f   // escala do móvel (TV grande): cresce a partir do centro da base, pode passar da célula
         private fun rx(a: Float, c: Float) = when (rot) { 0 -> a; 1 -> 1f - a; 2 -> c; else -> 1f - c }
         private fun rz(a: Float, c: Float) = when (rot) { 0 -> c; 1 -> 1f - c; 2 -> 1f - a; else -> a }
@@ -155,7 +176,51 @@ object Furniture {
 
     // ---------- interação genérica: abrir/fechar e ligar/desligar ----------
     /** 0 = sem interação extra, 1 = abre/fecha (porta, tampa), 2 = liga/desliga a luz */
-    fun fKind(id: Int): Int = when (sub(id)) {
+    /** quantos lugares de guardar o móvel tem (0 = não guarda) */
+    fun slotsOf(id: Int): Int {
+        val sb = sub(id)
+        if (sb >= 256) return FurnC.slots(sb)
+        return when (sb) {
+            S_WARD, S_FRIDGE, FurnB.S_TALL, FurnB.S_WARDM, FurnB.S_CABINET, FurnB.S_FRIDGE2, FurnB.S_FRIDGER -> 6
+            FurnB.S_WALLCAB, FurnB.S_MINI, FurnB.S_TRUNK -> 4
+            FurnB.S_MICRO, FurnB.S_WASHER -> 2
+            else -> 0
+        }
+    }
+    /** itens guardados num móvel que abre: aparecem na abertura (prateleira) ou em cima do vão escuro (tampa) quando ele está aberto */
+    private fun drawInside(c: C, s: Int, st: IntArray, n: Int) {
+        val ld = if (s >= 256) FurnC.lid(s) else null
+        val cnt = minOf(n, st.size)
+        if (ld != null || s == FurnB.S_TRUNK) {
+            val b = ld ?: floatArrayOf(0.1f, 0.14f, 0.9f, 0.86f, 0.55f)   // x0, z0, x1, z1, altura do topo
+            val sz = 0.16f
+            for (i in 0 until cnt) {
+                val it = st[i]; if (it == 0) continue
+                val x = b[0] + 0.06f + (i % 2) * (b[2] - b[0] - 0.12f - sz)
+                val z = b[1] + 0.06f + (i / 2) * (b[3] - b[1] - 0.12f - sz)
+                miniItem(c, it, x, b[4] - 0.03f, z, sz)
+            }
+            return
+        }
+        val o = openSpec(s) ?: return
+        val cols = minOf(3, maxOf(1, cnt)); val w = o[3] - o[1] - 0.08f
+        val sz = minOf(0.15f, w / cols - 0.02f)
+        val ym = (o[2] + o[4]) / 2f
+        for (i in 0 until cnt) {
+            val it = st[i]; if (it == 0) continue
+            val col = i % cols; val row = i / cols
+            val x = o[1] + 0.04f + (if (cols > 1) col * ((w - sz) / (cols - 1)) else (w - sz) / 2f)
+            val y = if (row == 0) o[2] + 0.02f else ym + 0.055f
+            miniItem(c, it, x, y, o[0] + 0.02f, sz)
+        }
+    }
+    internal fun miniItem(c: C, id: Int, x: Float, y: Float, z: Float, sz: Float) {
+        val ok = id in 104..16383 && B.defined[id]
+        val top = if (ok) B.tTop[id] else B.tTop[B.PLANK]; val side = if (ok) B.tSide[id] else B.tSide[B.PLANK]
+        c.box(top, side, side, x, y, z, x + sz, y + sz, z + sz)
+    }
+    fun fKind(id: Int): Int { val sb = sub(id); return if (sb >= 256) FurnC.fKind(sb) else fKind0(sb) }
+    private fun fKind0(sb: Int): Int = when (sb) {
         S_WARD, S_FRIDGE -> 1
         S_LAMP -> 2
         FurnB.S_TALL, FurnB.S_WARDM, FurnB.S_CABINET, FurnB.S_TRUNK, FurnB.S_WALLCAB, FurnB.S_FRIDGE2, FurnB.S_FRIDGER,
@@ -166,7 +231,7 @@ object Furniture {
     }
     const val ST_OPEN = 1; const val ST_OFF = 2
     /** rótulo do botão da mira: o que vai acontecer ao tocar */
-    fun fLabel(id: Int, st: Int): String = when (fKind(id)) {
+    fun fLabel(id: Int, st: Int): String = if (sub(id) >= 256) FurnC.fLabel(sub(id), st) else when (fKind(id)) {
         1 -> if (st and ST_OPEN != 0) "FECHAR" else "ABRIR"
         2 -> if (st and ST_OFF != 0) "LIGAR" else "DESLIGAR"
         else -> ""
@@ -180,7 +245,7 @@ object Furniture {
         FurnB.S_MINI -> floatArrayOf(0.92f, 0.12f, 0.05f, 0.88f, 0.57f)
         FurnB.S_MICRO -> floatArrayOf(0.86f, 0.1f, 0.06f, 0.9f, 0.44f)
         FurnB.S_WASHER -> floatArrayOf(0.96f, 0.16f, 0.14f, 0.84f, 0.62f)
-        else -> null
+        else -> if (s >= 256) FurnC.openSpec(s) else null
     }
     /** desenha por cima do móvel fechado: vão escuro, prateleira e a porta aberta (ou a tampa levantada, no baú) */
     private fun openOverlay(c: C, T: IntArray, id: Int, s: Int) {
@@ -189,6 +254,12 @@ object Furniture {
         if (s == FurnB.S_TRUNK) {
             c.box(bk, bk, bk, 0.1f, 0.5f, 0.14f, 0.9f, 0.565f, 0.86f)
             c.box(dt, dt, dt, 0.06f, 0.55f, 0.02f, 0.94f, 1.05f, 0.1f)
+            return
+        }
+        val ld = if (s >= 256) FurnC.lid(s) else null
+        if (ld != null) {   // tampa: [x0, z0, x1, z1, altura do topo]; vão escuro em cima e a tampa em pé no fundo
+            c.box(bk, bk, bk, ld[0] + 0.04f, ld[4] - 0.05f, ld[1] + 0.04f, ld[2] - 0.04f, ld[4] + 0.015f, ld[3] - 0.04f)
+            c.box(dt, dt, dt, ld[0], ld[4], ld[1] - 0.08f, ld[2], ld[4] + 0.45f, ld[1])
             return
         }
         val o = openSpec(s) ?: return
@@ -208,7 +279,10 @@ object Furniture {
         c.oy = baseOff(w, x, y, z, s)
         val fk = fKind(id)
         val fst = if (fk != 0 && y >= 0) w.fStateOf(x, y, z) else 0
-        if (fk == 2 && (fst and ST_OFF) != 0) c.off = true
+        if (fk == 2) c.off = if (s >= 256) FurnC.isOff(s, fst) else (fst and ST_OFF) != 0
+        if (fk == 1 && (fst and ST_OPEN) != 0) c.opened = true
+        if (fk == 3) c.spin = (fst shr 2) and 3
+        if ((fk == 4 || fk == 1) && y >= 0) c.store = w.storeOf(x, y, z)
         when (s) {
             S_CHAIR -> { c.rot = facing(w, x, y, z, s); chair(c, T) }
             S_CHAIR2 -> { c.rot = facing(w, x, y, z, s); chair2(c, T) }
@@ -231,10 +305,12 @@ object Furniture {
             S_PLANT -> plant(c, T, x, z)
             S_RUGR -> c.box(T[T_RUGR], T[T_RUGR], T[T_RUGR], 0f, 0f, 0f, 1f, 0.04f, 1f)
             S_RUGB -> c.box(T[T_RUGB], T[T_RUGB], T[T_RUGB], 0f, 0f, 0f, 1f, 0.04f, 1f)
-            else -> if (s >= 100) FurnB.emit(c, w, x, y, z, id, s)
+            else -> if (s >= 256) { c.rot = faceOf(w, x, y, z, s); FurnC.emit(c, id, s) } else if (s >= 100) FurnB.emit(c, w, x, y, z, id, s)
         }
         if (fk == 1 && (fst and ST_OPEN) != 0) {
             openOverlay(c, T, id, s)
+            val stv = c.store
+            if (stv != null) drawInside(c, s, stv, slotsOf(id))
         }
     }
 

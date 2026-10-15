@@ -723,8 +723,54 @@ class Game(val world: World) {
     /** abre/fecha ou liga/desliga o móvel; devolve true se mudou algo */
     fun toggleFurn(x: Int, y: Int, z: Int): Boolean {
         val id = world.get(x, y, z)
-        val bit = when (Furniture.fKind(id)) { 1 -> Furniture.ST_OPEN; 2 -> Furniture.ST_OFF; else -> return false }
-        world.setFState(x, y, z, world.fStateOf(x, y, z) xor bit)
+        val st = world.fStateOf(x, y, z)
+        when (Furniture.fKind(id)) {
+            1 -> world.setFState(x, y, z, st xor Furniture.ST_OPEN)
+            2 -> world.setFState(x, y, z, st xor Furniture.ST_OFF)
+            3 -> world.setFState(x, y, z, (st and 3) or ((((st shr 2) + 1) and 3) shl 2))   // gira 90° por toque
+            else -> return false
+        }
+        return true
+    }
+
+    /** prévia ao colocar móveis: 0 = nada, 1 = pode colocar (verde), 2 = bloqueado (vermelho), 3 = sem apoio embaixo (amarelo, ainda dá pra colocar) */
+    fun placeCheck(): Int {
+        if (!hasHit || driving) return 0
+        val id = cur()
+        if (!Items.isBlock(id) || B.cat[id] != Blk.C_FURN) return 0
+        val p = player
+        val ddx = px + 0.5f - p.x; val ddy = py + 0.5f - (p.y + 0.9f); val ddz = pz + 0.5f - p.z
+        if (ddx * ddx + ddy * ddy + ddz * ddz > 49f) return 0
+        val overlap = px + 1 > p.x - p.hw && px < p.x + p.hw && pz + 1 > p.z - p.hw && pz < p.z + p.hw && py + 1 > p.y && py < p.y + p.h
+        if (overlap || py < 1 || py >= World.SY - 1 || world.get(px, py, pz) != B.AIR) return 2
+        val below = world.get(px, py - 1, pz)
+        return if (below == B.AIR || below == B.WATER) 3 else 1
+    }
+
+    /** gira um móvel novo (FurnC) 90° pra direita, sobrepondo a direção automática */
+    fun rotateFurn(x: Int, y: Int, z: Int): Boolean {
+        val id = world.get(x, y, z)
+        val s = Furniture.sub(id)
+        if (s < 256) return false
+        val st = world.fStateOf(x, y, z)
+        val cur = Furniture.faceOf(world, x, y, z, s)
+        world.setFState(x, y, z, (st and 15) or 64 or (((cur + 1) and 3) shl 4))
+        return true
+    }
+
+    /** toca num lugar de um móvel de exposição: vazio guarda o item da mão; cheio devolve o item pra mão */
+    fun storeTap(x: Int, y: Int, z: Int, slot: Int): Boolean {
+        val id = world.get(x, y, z)
+        if (slot !in 0 until Furniture.slotsOf(id)) return false
+        val inside = world.storeOf(x, y, z)?.getOrNull(slot) ?: 0
+        if (inside == 0) {
+            val held = cur()
+            if (held == id) return false   // não guarda o próprio móvel dentro dele
+            world.setStore(x, y, z, slot, held)
+        } else {
+            hotbar[sel.coerceIn(0, 7)] = inside
+            world.setStore(x, y, z, slot, 0)
+        }
         return true
     }
 

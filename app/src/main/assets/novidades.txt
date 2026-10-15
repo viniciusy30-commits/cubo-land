@@ -1,3 +1,46 @@
+#id 2026-10-15-j
+#titulo Modo de construção: prévia, girar e busca por comportamento
+- Segurando um móvel, o lugar onde ele vai ficar aparece com uma prévia: VERDE pode colocar, VERMELHO bloqueado (você no caminho ou lugar ocupado) e AMARELO sem apoio embaixo
+- Mire num móvel novo de perto: botão GIRAR vira o móvel 90° e sobrepõe a direção automática
+- Na busca da mochila, digite o que o móvel faz: sentar, abre, liga, guarda, gira, mesa
+
+#id 2026-10-15-i
+#titulo Armários, geladeiras e baús agora guardam itens
+- Todos os móveis que abrem (guarda-roupa, geladeiras, frigobar, micro-ondas, máquina de lavar, armários, baús, caixas, composteira, barril, bancada...) ganharam lugares pra guardar: mire de perto e toque num lugar vazio pra guardar o que está na mão, ou num cheio pra pegar de volta
+- Abra o móvel pra ver o que tem dentro: os itens aparecem nas prateleiras ou dentro da caixa
+- O conteúdo fica salvo no mundo
+
+#id 2026-10-15-h
+#titulo Prateleiras e vitrines que guardam de verdade
+- 8 móveis de exposição: prateleira de parede, estante de exposição, vitrine de vidro, pedestal, armário de troféus, caixa organizadora, prateleira de toalhas e de sementes
+- Mire de perto: aparece uma fileira de lugares. Toque num lugar vazio pra guardar o item que está na sua mão; toque num lugar cheio pra pegar de volta
+- O que você guarda aparece dentro do móvel e fica salvo no mundo
+
+#id 2026-10-15-g
+#titulo Portas que abrem de verdade, portões, janelas e decoração que gira
+- Porta, porta de correr, portão de jardim e portão de curral: toque pra ABRIR e FECHAR. Fechados bloqueiam a passagem, abertos deixam você passar. Ao colocar entre duas paredes, o painel se alinha com o vão sozinho
+- Janela (abre o vidro) e persiana (sobe e desce)
+- Poltrona reclinável: sentar e reclinar, com apoio de pés
+- Rack de TV com gavetas que abrem
+- Estátua, escultura, espantalho e prancha de surfe: botão GIRAR vira 90° por toque
+- Correção: a colisão dos móveis novos agora gira junto com o desenho
+
+#id 2026-10-15-f
+#titulo 46 móveis novos para dentro de casa, oficina e fazenda
+- Eletrodomésticos pequenos que ligam e desligam (com luzinha): air fryer, liquidificador, cafeteira, torradeira, chaleira, batedeira, sanduicheira, ferro, roteador, impressora, monitor, videogame, projetor, despertador, máquina de costura. Notebook fecha e abre a tampa
+- Que abrem: freezer, lava-louças, secadora, forno, cesto de roupa, gabinete de banheiro, bancada e armário de oficina, caixa de ferramentas, composteira, barril e silo
+- Água e vento: chuveiro interno, tanque de lavar e torneira de jardim (abrem a água), ventilador de pé e ar-condicionado
+- Lazer: lareira, aquário, fliperama e mesa de pingue-pongue (dobra). Tábua de passar também dobra
+- Fazenda: comedouro, bebedouro, cocho, caixa de colheita e comedouros de pássaros enchem e esvaziam
+
+#id 2026-10-15-e
+#titulo 42 móveis novos: piscina, praia, jardim e camping
+- Em MOBÍLIA agora tem espreguiçadeira, cadeiras de piscina/praia/camping, cadeira de balanço, poltrona e pufe externos, banco de piquenique, de pesca e de balanço, daybed e rede (dá pra sentar em todos), além de 8 mesas externas (bistrô, praia, camping, buffet, rural...)
+- Que abrem e fecham: armário de piscina, armário externo, de ferramentas e de praia, caixa de correio, baú impermeável, caixa térmica, lixeira com tampa e tenda de camping
+- Que acendem e apagam: fogueira, braseiro, tocha, lanterna de jardim e de camping, balizador, poste de rua, holofote, letreiro, caixa de som, churrasqueira, fogareiro, forno de pizza, chuveiro externo e fonte de jardim
+- Que dobram ou recolhem: guarda-sol (fecha), mesa de praia e de camping (dobram), rede de vôlei e varal (recolher/instalar)
+- A maioria vem em 8 cores (cada bloco colocado é de uma cor, então pintar um não muda os outros)
+
 #id 2026-10-15-d
 #titulo Móveis que abrem e abajures que ligam
 - Mire num armário, guarda-roupa, geladeira, frigobar, micro-ondas, máquina de lavar, baú ou armário suspenso de perto: aparece o botão ABRIR / FECHAR e a porta (ou a tampa do baú) abre de verdade, com o vão escuro e prateleira dentro

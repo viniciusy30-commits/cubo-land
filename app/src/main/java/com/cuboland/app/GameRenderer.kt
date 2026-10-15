@@ -2122,7 +2122,16 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             box(base, 0f, 0f, 0f, 0f, 0f, if (hb != null) hb[3] - hb[0] + 0.01f else 1.01f, if (hb != null) hb[4] - hb[1] + 0.01f else 1.01f, if (hb != null) hb[5] - hb[2] + 0.01f else 1.01f, 0f, 0xFFFFFF, 0.18f + 0.1f * sin(game.time * 6f))
             G.glDepthMask(true)
         }
-        if (game.deadTimer <= 0f) drawDamage(dt)
+        if (game.deadTimer <= 0f) {
+            val pc = game.placeCheck()
+            if (pc != 0) {   // prévia da colocação: verde pode, vermelho bloqueado, amarelo sem apoio embaixo
+                setBase(game.px + 0.5f, game.py + 0.5f, game.pz + 0.5f, 0f)
+                G.glDepthMask(false)
+                box(base, 0f, 0f, 0f, 0f, 0f, 1.02f, 1.02f, 1.02f, 0f, if (pc == 1) 0x55E070 else if (pc == 2) 0xFF5555 else 0xFFD34A, 0.26f + 0.08f * sin(game.time * 6f))
+                G.glDepthMask(true)
+            }
+            drawDamage(dt)
+        }
         G.glUniform1f(uWind, 1f)
         G.glUniformMatrix4fv(uModel, 1, false, ident, 0)
         G.glDisable(G.GL_CULL_FACE)

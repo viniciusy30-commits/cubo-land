@@ -100,6 +100,7 @@ class World {
         /** modos extras da galeria de blocos (além das categorias de blocos) */
         const val GAL_FURN = 1; const val GAL_HOUSE = 2; const val GAL_TREES = 3; const val GAL_FURN2 = 4; const val GAL_CAR = 5
         const val SAVE_MAGIC = 0x434C3402
+        const val ST_MAGIC = 0x53543031   // trailer opcional: itens guardados nos móveis
         const val FS_MAGIC = 0x46533031   // trailer opcional depois do das TVs: estado dos móveis (aberto/ligado)
         const val TV_MAGIC = 0x54563031   // trailer opcional depois dos blocos: tamanho de cada TV
         /** deve ser chamado ANTES de criar World/Game/GameRenderer: o mapa plano é bem maior que a ilha */
@@ -190,6 +191,17 @@ class World {
 
     /** estado dos móveis interativos (bit 1 = aberto, bit 2 = luz apagada). Chave = índice do bloco; sem entrada = estado padrão (fechado / aceso) */
     val fState = java.util.concurrent.ConcurrentHashMap<Int, Int>()
+    /** itens guardados nos móveis de exposição: chave = índice do bloco, valor = até 8 ids (0 = lugar vazio) */
+    val fStore = java.util.concurrent.ConcurrentHashMap<Int, IntArray>()
+    fun storeOf(x: Int, y: Int, z: Int): IntArray? = fStore[(y * SZ + z) * SX + x]
+    fun setStore(x: Int, y: Int, z: Int, slot: Int, id: Int) {
+        if (slot !in 0..7) return
+        val k = (y * SZ + z) * SX + x
+        val a = fStore.getOrPut(k) { IntArray(8) }
+        a[slot] = id
+        if (a.all { it == 0 }) fStore.remove(k)
+        markDirty(x, z)
+    }
     fun fStateOf(x: Int, y: Int, z: Int): Int = fState[(y * SZ + z) * SX + x] ?: 0
     fun setFState(x: Int, y: Int, z: Int, v: Int) {
         val k = (y * SZ + z) * SX + x
@@ -207,6 +219,7 @@ class World {
         run { val k = (y * SZ + z) * SX + x; val old = blocks[k]
             if (old != 0 && Furniture.isElev(old)) { elevAnchors.remove(k); elevVer++ }
             if (id != 0 && Furniture.isElev(id)) { elevAnchors.add(k); elevVer++ } }
+        if (!fStore.isEmpty()) fStore.remove((y * SZ + z) * SX + x)
         if (!fState.isEmpty()) fState.remove((y * SZ + z) * SX + x)   // móvel novo começa fechado/aceso
         if (!tvSize.isEmpty()) tvSize.remove((y * SZ + z) * SX + x)   // trocou/quebrou o bloco: a TV nova começa no tamanho normal
         blocks[(y * SZ + z) * SX + x] = id
@@ -318,7 +331,7 @@ class World {
     fun generateTest(catIdx: Int = -1, secFilter: Int = -1, extra: Int = 0) {
         locked = null
         carSpawnX = -2
-        java.util.Arrays.fill(blocks, 0); labels.clear(); tvSize.clear(); fState.clear()
+        java.util.Arrays.fill(blocks, 0); labels.clear(); tvSize.clear(); fState.clear(); fStore.clear()
         val floor = B.byName["Concreto Cinza-claro"] ?: B.STONE
         val plate = B.byName["Concreto Branco"] ?: floor
         val top = 10
@@ -1184,7 +1197,8 @@ class World {
         try {
             val tvs = HashMap(tvSize)
             val fss = HashMap(fState)
-            val extra = if (tvs.isEmpty() && fss.isEmpty()) 0 else 8 + tvs.size * 8 + (if (fss.isEmpty()) 0 else 8 + fss.size * 8)
+            val sts = HashMap(fStore)
+            val extra = if (tvs.isEmpty() && fss.isEmpty() && sts.isEmpty()) 0 else 8 + tvs.size * 8 + (if (fss.isEmpty()) 0 else 8 + fss.size * 8) + (if (sts.isEmpty()) 0 else 8 + sts.size * 36)
             val bb = java.nio.ByteBuffer.allocate(4 + blocks.size * 4 + extra)
             bb.putInt(SAVE_MAGIC); bb.asIntBuffer().put(blocks)
             if (extra > 0) {
@@ -1194,6 +1208,10 @@ class World {
                 if (fss.isNotEmpty()) {
                     bb.putInt(FS_MAGIC); bb.putInt(fss.size)
                     for ((k, v) in fss) { bb.putInt(k); bb.putInt(v) }
+                }
+                if (sts.isNotEmpty()) {
+                    bb.putInt(ST_MAGIC); bb.putInt(sts.size)
+                    for ((k, arr) in sts) { bb.putInt(k); for (q in 0 until 8) bb.putInt(arr[q]) }
                 }
             }
             GZIPOutputStream(f.outputStream()).use { it.write(bb.array()) }
@@ -1210,16 +1228,20 @@ class World {
                 val bb = java.nio.ByteBuffer.wrap(data)
                 if (bb.getInt() != SAVE_MAGIC) return false
                 bb.asIntBuffer().get(blocks)
-                tvSize.clear(); fState.clear()
+                tvSize.clear(); fState.clear(); fStore.clear()
                 val tp = 4 + blocks.size * 4
                 if (data.size >= tp + 8) {   // trailer opcional: tamanhos das TVs (saves antigos não têm)
                     bb.position(tp)
                     if (bb.getInt() == TV_MAGIC) {
                         val n = bb.getInt(); var i = 0
                         while (i < n && bb.remaining() >= 8) { val k = bb.getInt(); val lv = bb.getInt(); if (lv in 1..3) tvSize[k] = lv; i++ }
-                        if (bb.remaining() >= 8 && bb.getInt() == FS_MAGIC) {
-                            val m = bb.getInt(); var j = 0
-                            while (j < m && bb.remaining() >= 8) { val k = bb.getInt(); val v = bb.getInt(); if (v in 1..3) fState[k] = v; j++ }
+                        while (bb.remaining() >= 8) {   // trailers opcionais seguintes, em qualquer ordem
+                            val mg = bb.getInt(); val m = bb.getInt(); var j = 0
+                            if (mg == FS_MAGIC) {
+                                while (j < m && bb.remaining() >= 8) { val k = bb.getInt(); val v = bb.getInt(); if (v in 1..127) fState[k] = v; j++ }
+                            } else if (mg == ST_MAGIC) {
+                                while (j < m && bb.remaining() >= 36) { val k = bb.getInt(); val arr = IntArray(8) { bb.getInt() }; if (arr.any { it != 0 }) fStore[k] = arr; j++ }
+                            } else break
                         }
                     }
                 }

@@ -62,20 +62,53 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         val t = hbTop() - 108 * d - (if (tvPromptOn()) 46 * d else 0f)
         return RectF(l, t, l + bw, t + bh)
     }
+    private fun fSlotRect(i: Int, n: Int, up: Boolean): RectF {
+        val sz = 46 * d; val gap = 8 * d
+        val total = n * sz + (n - 1) * gap
+        val l = width / 2f - total / 2f + i * (sz + gap)
+        val t = hbTop() - 108 * d - 14 * d - (if (tvPromptOn()) 56 * d else 0f) - (if (up) 46 * d else 0f)
+        return RectF(l, t, l + sz, t + sz)
+    }
+    private fun fHasBtn(id: Int) = Furniture.fKind(id) in 1..3
+    private fun fCanRot(id: Int) = Furniture.sub(id) >= 256 && Furniture.fKind(id) != 3
+    private fun fRotBtn(): RectF { val b = fBtn(); return RectF(b.right + 8 * d, b.top, b.right + 86 * d, b.bottom) }
     private fun fPromptDown(x: Float, y: Float): Boolean {
         if (!fPromptOn()) return false
         val a = game.fAim ?: return false
-        if (!fBtn().contains(x, y)) return false
-        game.toggleFurn(a[0], a[1], a[2])
-        return true
+        val id = game.world.get(a[0], a[1], a[2])
+        val n = Furniture.slotsOf(id); val hb = fHasBtn(id); val up = hb || fCanRot(id)
+        for (i in 0 until n) if (fSlotRect(i, n, up).contains(x, y)) { game.storeTap(a[0], a[1], a[2], i); return true }
+        if (hb && fBtn().contains(x, y)) { game.toggleFurn(a[0], a[1], a[2]); return true }
+        if (fCanRot(id) && fRotBtn().contains(x, y)) { game.rotateFurn(a[0], a[1], a[2]); return true }
+        return false
     }
     private fun drawFPrompt(c: Canvas) {
         val a = game.fAim ?: return
         val id = game.world.get(a[0], a[1], a[2])
+        val n = Furniture.slotsOf(id); val hb = fHasBtn(id); val up = hb || fCanRot(id)
+        if (fCanRot(id)) {   // gira o móvel 90° (sobrepõe a direção automática)
+            val rb = fRotBtn(); val rs = tsc(1.3f)
+            pxPanel(c, rb.left, rb.top, rb.right, rb.bottom, Cz.SKY)
+            pxText(c, "GIRAR", (rb.left + rb.right) / 2f, (rb.top + rb.bottom) / 2f - 3.5f * rs, rs, Color.WHITE, 1)
+        }
+        if (n > 0) {   // lugares de guardar: vazio = guardar o que está na mão, cheio = pegar de volta
+            val inside = game.world.storeOf(a[0], a[1], a[2])
+            val sc = tsc(1.1f)
+            val r0 = fSlotRect(0, n, up)
+            pxText(c, "GUARDAR / PEGAR", width / 2f, r0.top - 14 * d, sc, Color.WHITE, 1)
+            for (i in 0 until n) {
+                val r = fSlotRect(i, n, up)
+                val item = inside?.getOrNull(i) ?: 0
+                pxPanel(c, r.left, r.top, r.right, r.bottom, if (item != 0) Cz.ORANGE else Cz.SKY)
+                if (item != 0) icon(c, (r.left + r.right) / 2f, (r.top + r.bottom) / 2f, r.width() * 0.8f, item)
+                else pxText(c, "+", (r.left + r.right) / 2f, (r.top + r.bottom) / 2f - 3.5f * sc, tsc(1.6f), Color.WHITE, 1)
+            }
+        }
+        if (!hb) return
         val label = Furniture.fLabel(id, game.world.fStateOf(a[0], a[1], a[2]))
         if (label.isEmpty()) return
         val r = fBtn(); val sc = tsc(1.3f)
-        val closing = label == "FECHAR" || label == "DESLIGAR"
+        val closing = label == "FECHAR" || label == "DESLIGAR" || label == "APAGAR" || label == "DOBRAR" || label == "RECOLHER" || label == "ESVAZIAR"
         pxPanel(c, r.left, r.top, r.right, r.bottom, if (closing) Cz.RED else Cz.GREEN)
         pxText(c, label, (r.left + r.right) / 2f, (r.top + r.bottom) / 2f - 3.5f * sc, sc, Color.WHITE, 1)
     }
@@ -982,7 +1015,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         if (key == shownKey) return shownList
         val q = normQ(query.trim())
         shownList = if (q.isEmpty()) Items.inventory.filter { invCat == 0 || Items.cat(it) == invCat }
-        else Items.inventory.filter { normQ(Items.name(it)).contains(q) || normQ(Items.CATS[Items.cat(it)]).contains(q) }
+        else Items.inventory.filter { normQ(Items.name(it)).contains(q) || normQ(Items.CATS[Items.cat(it)]).contains(q) || Furniture.tags(it).contains(q) }
         shownKey = key
         return shownList
     }
