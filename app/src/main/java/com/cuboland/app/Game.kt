@@ -94,6 +94,78 @@ class Game(val world: World) {
 
     val rnd = Random()
     val player = Ent(World.SX / 2f + 0.5f, 20f, World.SZ / 2f + 0.5f, 0.3f, 1.8f)
+    // ----- carro esportivo -----
+    val car = CarState()
+    @Volatile var driving = false
+    @Volatile var wantCar = false
+    @Volatile var carGas = 0f; @Volatile var carBrake = 0f; @Volatile var carSteer = 0f; @Volatile var carHand = false
+    private var preDriveTP = true
+    private var carDustT = 0f
+    private val carColl: (Float, Float, Float) -> Boolean = { x, y, z -> collides(x, y, z, 0.34f, 0.95f) }
+    private val carWater: (Float, Float, Float) -> Boolean = { x, y, z -> waterAtPt(x, y, z) }
+
+    private fun carToggleNow() {
+        val p = player
+        if (driving) {
+            driving = false; carGas = 0f; carBrake = 0f; carSteer = 0f; carHand = false
+            thirdPerson = preDriveTP
+            val lx = cos(car.h); val lz = -sin(car.h)       // esquerda do carro
+            var done = false
+            for (side in floatArrayOf(2.0f, -2.0f)) {
+                val tx = car.x + lx * side; val tz = car.z + lz * side
+                if (!collides(tx, car.y, tz, p.hw, p.h)) { p.x = tx; p.z = tz; p.y = car.y + 0.05f; done = true; break }
+            }
+            if (!done) { p.x = car.x; p.z = car.z; p.y = car.y + 1.4f }
+            p.vx = 0f; p.vy = 0f; p.vz = 0f
+        } else {
+            if (seated || elevRide != null || p.inWater) return
+            val near = car.placed && hypot(car.x - p.x, car.z - p.z) < 6f && abs(car.y - p.y) < 3f
+            if (!near) {
+                val ok = car.spawn(p.x, p.y, p.z, yaw, { a, b, c -> world.solid(a, b, c) }, carColl)
+                if (!ok) return
+                burst(car.x, car.y + 0.6f, car.z, 0xFFFFFF, 14, 3f)
+            }
+            flying = false; posture = 0; p.h = 1.8f; sprint = false; jumpHeld = false
+            preDriveTP = thirdPerson; thirdPerson = true; driving = true
+            carGas = 0f; carBrake = 0f; carSteer = 0f; carHand = false
+        }
+    }
+
+    private fun updateCar(dt: Float) {
+        if (wantCar) { wantCar = false; carToggleNow() }
+        val c = car
+        if (!c.placed) return
+        if (driving) c.update(dt, carGas, carBrake, carSteer, carHand, carColl, carWater)
+        else c.update(dt, 0f, 0f, 0f, true, carColl, carWater)
+        val maxX = World.SX - 3f; val maxZ = World.SZ - 3f
+        if (c.x < 3f) { c.x = 3f; c.vx = 0f } else if (c.x > maxX) { c.x = maxX; c.vx = 0f }
+        if (c.z < 3f) { c.z = 3f; c.vz = 0f } else if (c.z > maxZ) { c.z = maxZ; c.vz = 0f }
+        if (c.y < -5f) {
+            c.placed = false
+            if (driving) { driving = false; thirdPerson = preDriveTP; respawn() }
+            return
+        }
+        if (c.impact > 0f) { if (driving) shake = max(shake, min(0.7f, c.impact * 0.04f)); c.impact = 0f }
+        // poeira e fumaça: derrapando, arrancando ou nas curvas com o freio de mão
+        carDustT -= dt
+        val sp = abs(c.speed)
+        if (carDustT <= 0f && c.onGround && ((c.slip > 2.5f && sp > 3f) || (driving && carGas > 0f && sp < 5f && carHand))) {
+            carDustT = 0.045f
+            val bx = c.x - sin(c.h) * 1.7f; val bz = c.z - cos(c.h) * 1.7f
+            for (side in floatArrayOf(-0.7f, 0.7f)) {
+                val px = bx + (-cos(c.h)) * side; val pz = bz + sin(c.h) * side
+                val q = Particle(px, c.y + 0.12f, pz, (rnd.nextFloat() - 0.5f) * 0.8f, 0.5f + rnd.nextFloat() * 0.5f, (rnd.nextFloat() - 0.5f) * 0.8f, 0xD9D4CC, 0.28f, 0.9f)
+                q.dust = true; q.grav = 0f
+                if (parts.size < 400) parts.add(q)
+            }
+        }
+        if (driving && sp > 5f) for (s in slimes) if (!s.dead && hypot(s.x - c.x, s.z - c.z) < 1.7f && abs(s.y - c.y) < 1.8f) hitSlime(s, 20, c.vx, c.vz, 9f)
+        if (driving) {
+            val p = player
+            p.x = c.x; p.z = c.z; p.y = c.y + c.yOff + 0.05f
+            p.vx = 0f; p.vy = 0f; p.vz = 0f; p.onGround = true
+        }
+    }
     val slimes = ArrayList<Slime>()
     /** galeria de blocos: sem monstros */
     @Volatile var noMobs = false
@@ -140,6 +212,13 @@ class Game(val world: World) {
         player.x = x + 0.5f; player.z = z + 0.5f; player.y = world.surfaceY(x, z) + 0.05f
         player.vx = 0f; player.vy = 0f; player.vz = 0f
         hp = 10; slimes.clear(); posture = 0; player.h = 1.8f
+        if (driving) { driving = false; thirdPerson = preDriveTP; carGas = 0f; carBrake = 0f; carSteer = 0f; carHand = false }
+        if (world.carSpawnX >= 0) {   // pista de veículos da galeria: o carro já espera lá
+            car.x = world.carSpawnX + 0.5f; car.z = world.carSpawnZ + 0.5f
+            car.y = world.surfaceY(world.carSpawnX, world.carSpawnZ) + 0.02f
+            car.h = world.carSpawnYaw; car.vx = 0f; car.vy = 0f; car.vz = 0f; car.steer = 0f; car.yOff = 0f
+            car.placed = true
+        } else if (world.carSpawnX == -2) car.placed = false
     }
 
     @Synchronized fun addLook(dx: Float, dy: Float) { lookDx += dx; lookDy += dy }
@@ -610,11 +689,12 @@ class Game(val world: World) {
 
     private fun updateCamera() { updateCamera0(); tvBlend() }
     private fun updateCamera0() {
-        val ex = player.x; val ey = player.y + eyeH(); val ez = player.z
+        val ex = player.x; val ey = player.y + eyeH() + (if (driving) 0.55f else 0f); val ez = player.z
         if (!thirdPerson) { camX = ex; camY = ey; camZ = ez; camDist = 0f; return }
         val dx = -fwdX(); val dy = -fwdY(); val dz = -fwdZ()
         var d = 0.3f
-        while (d < 4.6f) {
+        val maxD = if (driving) 7.8f else 4.6f
+        while (d < maxD) {
             val nx = ex + dx * (d + 0.25f); val ny = ey + 0.3f + dy * (d + 0.25f); val nz = ez + dz * (d + 0.25f)
             if (world.solid(floor(nx).toInt(), floor(ny).toInt(), floor(nz).toInt())) break
             d += 0.1f
@@ -1244,7 +1324,15 @@ class Game(val world: World) {
         var ddx: Float; var ddy: Float
         synchronized(this) { ddx = lookDx; ddy = lookDy; lookDx = 0f; lookDy = 0f }
         yaw -= ddx * 0.0045f * sens; pitch = (pitch - ddy * 0.0045f * sens).coerceIn(-1.45f, 1.45f)
-        if (wantCam) { wantCam = false; thirdPerson = !thirdPerson }
+        if (wantCam) { wantCam = false; if (!driving) thirdPerson = !thirdPerson }
+        if (driving) {   // câmera de perseguição: gira atrás do carro sozinha (arrastar a tela ainda deixa olhar em volta)
+            if (ddx == 0f) {
+                var df = car.h - yaw
+                while (df > PI) df -= (2 * PI).toFloat(); while (df < -PI) df += (2 * PI).toFloat()
+                yaw += df * min(1f, 2.4f * dt) * min(1f, max(0f, car.speed) / 4f)
+            }
+            if (ddy == 0f) pitch += (-0.2f - pitch) * min(1f, 1.4f * dt)
+        }
         atkCd -= dt; comboT -= dt; hurtCd -= dt; shake = max(0f, shake - dt * 1.5f); hurtFlash = max(0f, hurtFlash - dt * 2f)
         if (swing < 1f) swing = min(1f, swing + dt / swingDur)
         if (deadTimer > 0f) { deadTimer -= dt; if (deadTimer <= 0f) respawn(); updateCamera(); return }
@@ -1285,7 +1373,8 @@ class Game(val world: World) {
         }
         val wasW = p.inWater; val vyPre = p.vy
         updateElev(dt)
-        if (seated || elevRide != null) { if (elevRide == null) { p.vx = 0f; p.vy = 0f; p.vz = 0f; p.onGround = true } } else {
+        updateCar(dt)
+        if (driving) { /* o carro move o jogador (updateCar) */ } else if (seated || elevRide != null) { if (elevRide == null) { p.vx = 0f; p.vy = 0f; p.vz = 0f; p.onGround = true } } else {
             for (i in 0 until 2) physics(p, dt / 2f)
             waterAndSteps(dt, wasW, vyPre)
         }

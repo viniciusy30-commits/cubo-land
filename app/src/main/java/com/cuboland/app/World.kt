@@ -98,7 +98,7 @@ class World {
         val CZ: Int get() = SZ / CH
         const val WATER_Y = 9
         /** modos extras da galeria de blocos (além das categorias de blocos) */
-        const val GAL_FURN = 1; const val GAL_HOUSE = 2; const val GAL_TREES = 3; const val GAL_FURN2 = 4
+        const val GAL_FURN = 1; const val GAL_HOUSE = 2; const val GAL_TREES = 3; const val GAL_FURN2 = 4; const val GAL_CAR = 5
         const val SAVE_MAGIC = 0x434C3402
         const val TV_MAGIC = 0x54563031   // trailer opcional depois dos blocos: tamanho de cada TV
         /** deve ser chamado ANTES de criar World/Game/GameRenderer: o mapa plano é bem maior que a ilha */
@@ -301,8 +301,12 @@ class World {
     /** galeria de blocos. Ao entrar vem só o saguão (chão vazio); o painel de categorias chama de novo com o que o jogador escolheu:
      *  catIdx = categoria (índice de galleryMenu) e secFilter = seção dela (-1 = todas), ou extra = GAL_FURN / GAL_HOUSE / GAL_TREES.
      *  Cada tipo de bloco fica numa seção com faixa colorida e título, cada bloco numa célula de piso xadrez com plaquinha. A organização está em Gallery. */
+    // onde o carro esportivo já nasce (pista de veículos): -1 = não mexe no carro, -2 = tira o carro, >= 0 = coloca aqui
+    @JvmField var carSpawnX = -1; @JvmField var carSpawnZ = -1; @JvmField var carSpawnYaw = 0f
+
     fun generateTest(catIdx: Int = -1, secFilter: Int = -1, extra: Int = 0) {
         locked = null
+        carSpawnX = -2
         java.util.Arrays.fill(blocks, 0); labels.clear(); tvSize.clear()
         val floor = B.byName["Concreto Cinza-claro"] ?: B.STONE
         val plate = B.byName["Concreto Branco"] ?: floor
@@ -315,6 +319,7 @@ class World {
             extra == GAL_FURN2 -> { furnitureShowcase2(top); spawnX = 8; spawnZ = 24 }
             extra == GAL_HOUSE -> { modernHouse(top); spawnX = 195; spawnZ = 37 }
             extra == GAL_TREES -> { plantTestTrees(top); spawnX = 94; spawnZ = 2 }
+            extra == GAL_CAR -> { vehicleTrack(top); spawnX = 10; spawnZ = 6; carSpawnX = 17; carSpawnZ = 9; carSpawnYaw = 0f }
             catIdx in cats.indices -> layoutCategory(cats[catIdx], secFilter, top, floor, plate)
             else -> {
                 labels.add(Label(spawnX + 0.5f, top + 5f, spawnZ + 7f, "GALERIA DE BLOCOS", true))
@@ -326,6 +331,50 @@ class World {
         locked = lk
         scanElevAnchors()   // a galeria escreve direto em blocks[]: remonta o registro dos elevadores
         java.util.Arrays.fill(dirty, true)
+    }
+
+    /** pista de testes de veículos: chão reto de largada, degraus de 1 bloco, plataformas, slalom e rampas de 1, 2 e 3 blocos */
+    private fun vehicleTrack(top: Int) {
+        fun cn(n: String) = B.byName[n] ?: B.STONE
+        val red = cn("Concreto Vermelho"); val blue = cn("Concreto Azul"); val green = cn("Concreto Verde")
+        val black = cn("Concreto Preto"); val white = cn("Concreto Branco")
+        val slab = B.byName["Laje de Concreto Azul"] ?: -1
+        fun put(x: Int, y: Int, z: Int, id: Int) { if (x in 0 until SX && z in 0 until SZ && y in 0 until SY) blocks[(y * SZ + z) * SX + x] = id }
+        fun cube(x0: Int, x1: Int, z0: Int, z1: Int, h: Int, id: Int) { for (z in z0..z1) for (x in x0..x1) for (y in 1..h) put(x, top + y, z, id) }
+        fun line(z: Int, x0: Int, x1: Int, id: Int) { for (x in x0..x1) setTopB(x, z, id, top) }
+        fun sign(x: Int, z: Int, t: String, big: Boolean = true) { labels.add(Label(x + 0.5f, top + (if (big) 5f else 3.4f), z + 0.5f, t, big)) }
+        fun ramp(x0: Int, x1: Int, z0: Int, h: Int) {
+            val len = 3
+            for (i in 0 until h * 2) {
+                val hh = i + 1
+                val full = if (slab >= 0) hh / 2 else (hh + 1) / 2
+                for (z in z0 + i * len until z0 + (i + 1) * len) for (x in x0..x1) {
+                    for (y in 1..full) put(x, top + y, z, blue)
+                    if (slab >= 0 && hh % 2 == 1) put(x, top + full + 1, z, slab)
+                }
+            }
+            val zt = z0 + h * 2 * len
+            cube(x0, x1, zt, zt + 7, h, blue)
+        }
+        sign(40, 12, "TESTE DE VEÍCULOS")
+        sign(40, 12, "Chão reto pra acelerar, frear e derrapar", false)
+        line(30, 8, 90, white)
+        // 1) degraus de 1 bloco atravessados na pista
+        sign(40, 38, "DEGRAUS DE 1 BLOCO")
+        for (z in intArrayOf(44, 52, 60)) cube(8, 90, z, z, 1, red)
+        // 2) plataforma larga, estrada elevada estreita e slalom de cubos
+        sign(40, 68, "PLATAFORMAS E SLALOM")
+        cube(10, 34, 76, 92, 1, green)
+        cube(40, 46, 70, 112, 1, green)
+        var zz = 72; var sw = 0
+        while (zz <= 112) { val cx = if (sw % 2 == 0) 64 else 76; cube(cx, cx + 1, zz, zz + 1, 1, black); zz += 6; sw++ }
+        // 3) rampas de 1, 2 e 3 blocos de altura (com plataforma no topo e queda no fim)
+        line(118, 8, 90, white)
+        sign(40, 122, "RAMPAS (1, 2 e 3 BLOCOS)")
+        ramp(10, 24, 126, 1)
+        ramp(34, 48, 126, 2)
+        ramp(58, 72, 126, 3)
+        sign(17, 124, "1 bloco", false); sign(41, 124, "2 blocos", false); sign(65, 124, "3 blocos", false)
     }
 
     /** uma categoria (ou uma seção dela) em faixas: células de 4x4 blocos, 30 por fileira */

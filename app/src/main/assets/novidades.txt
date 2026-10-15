@@ -1,3 +1,17 @@
+#id 2026-10-15-b
+#titulo Pista de teste de veículos na galeria
+- Na galeria de blocos, em VITRINES, tem o botão VEÍCULOS (teste): o carro vermelho já nasce lá, é só tocar em CARRO pra entrar
+- Chão reto pra acelerar, degraus de 1 bloco, plataformas, estrada elevada, slalom de cubos e rampas de 1, 2 e 3 blocos
+- Tudo travado (não quebra), e se você cair o carro volta pro ponto de largada
+
+#id 2026-10-15-a
+#titulo Carro esportivo vermelho dirigível
+- Toque em CARRO (canto de cima, perto da mochila) pra chamar um esportivo vermelho na sua frente e já entrar nele; toque em SAIR pra descer
+- Controles de jogo de corrida: setas < > pra esterçar, ACELERAR, FREIO (e ré, segurando parado) e DERRAPAR (freio de mão)
+- Física arcade: acelera, freia, derrapa, sobe degrau de 1 bloco, bate nas paredes (a tela treme), cai de rampas e dá pra atropelar slimes
+- Câmera de perseguição que gira atrás do carro (arraste a tela pra olhar em volta), velocímetro, lanternas que acendem ao frear e luz de ré
+- Rodas giram e esterçam, a carroceria inclina nas curvas e levanta poeira ao derrapar
+
 #id 2026-10-14-i
 #titulo TV de verdade na tela
 - Ao ligar a TV, a câmera dá zoom na tela dela e o navegador fica certinho em cima dela (toque normal pra mexer)
