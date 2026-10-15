@@ -1034,71 +1034,148 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         G.glDepthMask(true)
     }
 
-    /** elevadores 4x4: poço de vidro, pisos de mármore, cabine com portas e botões (tudo desenhado aqui; o bloco é só a âncora) */
+    /** elevadores 4x4: poço de vidro, cabine com espelho e portas, painéis com setas e número do andar (tudo desenhado aqui; o bloco é só a âncora) */
     private fun drawElevators() {
         if (game.elevShafts.isEmpty()) return
-        for (sh in game.elevShafts.values) if (seen(sh.ax + 2f, (sh.ys.first() + sh.ys.last()) / 2f + 1.5f, sh.az + 2f, 70f)) drawShaft(sh, false)
+        val near = ArrayList<ElevShaft>()
+        for (sh in game.elevShafts.values) { val dx = sh.ax + 2f - cvx; val dz = sh.az + 2f - cvz; if (dx * dx + dz * dz < 90f * 90f) near.add(sh) }
+        if (near.isEmpty()) return
+        for (sh in near) drawShaft(sh, false)
         G.glDepthMask(false)
-        for (sh in game.elevShafts.values) if (seen(sh.ax + 2f, (sh.ys.first() + sh.ys.last()) / 2f + 1.5f, sh.az + 2f, 70f)) drawShaft(sh, true)
+        for (sh in near) drawShaft(sh, true)
         G.glDepthMask(true)
     }
+
+    private val SEG7 = intArrayOf(63, 6, 91, 79, 102, 109, 125, 7, 127, 111)
 
     private fun drawShaft(s: ElevShaft, glass: Boolean) {
         setBase(s.ax.toFloat(), 0f, s.az.toFloat(), 0f)
         fun cb(x0: Float, y0: Float, z0: Float, x1: Float, y1: Float, z1: Float, col: Int, a: Float = 1f, mul: Float = 1f) =
             box(base, (x0 + x1) / 2f, (y0 + y1) / 2f, (z0 + z1) / 2f, 0f, 0f, x1 - x0, y1 - y0, z1 - z0, 0f, col, a, mul)
+        /** retângulo num plano: alongX = plano de frente (u = x, profundidade em z); senão plano lateral (u = z, profundidade em x) */
+        fun pb(alongX: Boolean, p0: Float, p1: Float, u0: Float, u1: Float, v0: Float, v1: Float, col: Int, a: Float = 1f, mul: Float = 1f) {
+            if (alongX) cb(u0, v0, p0, u1, v1, p1, col, a, mul) else cb(p0, v0, u0, p1, v1, u1, col, a, mul)
+        }
+        val LIT = 0xFFB347; val AMB = 0xFFC24A
+        fun digit(d: Int, u: Float, v: Float, w: Float, h: Float, t: Float, alongX: Boolean, p0: Float, p1: Float) {
+            val m = SEG7[d.coerceIn(0, 9)]; val mid = v + h / 2f
+            if (m and 1 != 0) pb(alongX, p0, p1, u + t, u + w - t, v + h - t, v + h, LIT, 1f, 1.8f)
+            if (m and 8 != 0) pb(alongX, p0, p1, u + t, u + w - t, v, v + t, LIT, 1f, 1.8f)
+            if (m and 64 != 0) pb(alongX, p0, p1, u + t, u + w - t, mid - t / 2f, mid + t / 2f, LIT, 1f, 1.8f)
+            if (m and 2 != 0) pb(alongX, p0, p1, u + w - t, u + w, mid, v + h - t / 2f, LIT, 1f, 1.8f)
+            if (m and 4 != 0) pb(alongX, p0, p1, u + w - t, u + w, v + t / 2f, mid, LIT, 1f, 1.8f)
+            if (m and 16 != 0) pb(alongX, p0, p1, u, u + t, v + t / 2f, mid, LIT, 1f, 1.8f)
+            if (m and 32 != 0) pb(alongX, p0, p1, u, u + t, mid, v + h - t / 2f, LIT, 1f, 1.8f)
+        }
+        fun number(n: Int, cu: Float, v: Float, w: Float, h: Float, t: Float, alongX: Boolean, p0: Float, p1: Float) {
+            val gap = w * 0.35f
+            if (n >= 10) { val tot = w * 2 + gap; digit(n / 10, cu - tot / 2f, v, w, h, t, alongX, p0, p1); digit(n % 10, cu - tot / 2f + w + gap, v, w, h, t, alongX, p0, p1) }
+            else digit(n, cu - w / 2f, v, w, h, t, alongX, p0, p1)
+        }
+        /** seta em degraus (3 fileiras) */
+        fun arrow(up: Boolean, cu: Float, cv: Float, sz: Float, alongX: Boolean, p0: Float, p1: Float, on: Boolean) {
+            val col = if (on) AMB else 0x5A4E38; val mul = if (on) 1.7f else 1f
+            val rh = sz * 0.28f
+            for (i in 0..2) {
+                val k = if (up) i else 2 - i                 // largura cresce de cima pra baixo (seta pra cima)
+                val hw = sz * (0.12f + 0.2f * (2 - k)) 
+                val v0 = cv - sz * 0.42f + (if (up) 2 - i else i) * rh
+                pb(alongX, p0, p1, cu - hw, cu + hw, v0, v0 + rh, col, 1f, mul)
+            }
+            pb(alongX, p0, p1, cu - sz * 0.07f, cu + sz * 0.07f, cv - sz * 0.42f - rh * 0.0f, cv - sz * 0.42f + rh * 0.9f, col, 1f, mul)
+        }
         val ys = s.ys; val n = ys.size
         val y0 = ys.first().toFloat(); val yt = ys.last().toFloat(); val top = yt + 3.4f
         val cy = s.carY; val cur = s.idxNear()
-        val STEEL = 0x7B8591; val DARK = 0x363C44; val TRIM = 0xD4AF37; val GLASS = 0xA9D6F2
+        val GRAPH = 0x2E333B; val STEEL = 0x8E97A3; val GOLD = 0xD4AF37; val WOOD = 0x5E4030; val GL = 0xBFE3F7
         if (glass) {
-            cb(0.3f, y0, 0.06f, 3.7f, top, 0.12f, GLASS, 0.30f)
-            cb(0.06f, y0, 0.3f, 0.12f, top, 3.7f, GLASS, 0.30f)
-            cb(3.88f, y0, 0.3f, 3.94f, top, 3.7f, GLASS, 0.30f)
-            val w = 0.02f + 1.62f * (1f - s.door)
-            cb(0.36f, cy + 0.08f, 3.62f, 0.36f + w, cy + 2.95f, 3.68f, 0xBFD9EA, 0.55f)
-            cb(3.64f - w, cy + 0.08f, 3.62f, 3.64f, cy + 2.95f, 3.68f, 0xBFD9EA, 0.55f)
+            // vidros do poço (fundo e laterais) e piso transparente de cada andar
+            cb(0.22f, y0, 0.05f, 3.78f, top, 0.1f, GL, 0.24f)
+            cb(0.05f, y0, 0.22f, 0.1f, top, 3.78f, GL, 0.24f)
+            cb(3.9f, y0, 0.22f, 3.95f, top, 3.78f, GL, 0.24f)
+            for (y in ys) {
+                val yy = y.toFloat()
+                cb(0f, yy, 0f, 4f, yy + 0.05f, 4f, 0xD6EEF9, 0.14f)
+                cb(0f, yy, 0f, 4f, yy + 0.05f, 0.05f, 0xC6D2DC, 0.8f)
+                cb(0f, yy, 0f, 0.05f, yy + 0.05f, 4f, 0xC6D2DC, 0.8f)
+                cb(3.95f, yy, 0f, 4f, yy + 0.05f, 4f, 0xC6D2DC, 0.8f)
+                cb(0f, yy, 3.95f, 4f, yy + 0.05f, 4f, 0xC6D2DC, 0.8f)
+            }
+            // portas de vidro da cabine
+            val w = 0.02f + 1.7f * (1f - s.door)
+            cb(0.28f, cy + 0.15f, 3.62f, 0.28f + w, cy + 2.9f, 3.68f, 0xC9E4F2, 0.42f)
+            cb(3.72f - w, cy + 0.15f, 3.62f, 3.72f, cy + 2.9f, 3.68f, 0xC9E4F2, 0.42f)
+            cb(0.28f, cy + 1.45f, 3.615f, 0.28f + w, cy + 1.55f, 3.685f, 0xFFFFFF, 0.5f)
+            cb(3.72f - w, cy + 1.45f, 3.615f, 3.72f, cy + 1.55f, 3.685f, 0xFFFFFF, 0.5f)
+            cb(0.28f + w - 0.04f, cy + 0.15f, 3.6f, 0.28f + w, cy + 2.9f, 3.7f, 0xB9C2CC, 0.95f)
+            cb(3.72f - w, cy + 0.15f, 3.6f, 3.72f - w + 0.04f, cy + 2.9f, 3.7f, 0xB9C2CC, 0.95f)
             return
         }
-        // colunas + frisos dourados em cada andar
-        for (cx in floatArrayOf(0f, 3.7f)) for (cz in floatArrayOf(0f, 3.7f)) {
-            cb(cx, y0, cz, cx + 0.3f, top, cz + 0.3f, STEEL)
-            for (y in ys) cb(cx - 0.02f, y + 0.06f, cz - 0.02f, cx + 0.32f, y + 0.16f, cz + 0.32f, TRIM)
+        // colunas grafite finas com frisos dourados em cada andar
+        for (cx in floatArrayOf(0f, 3.78f)) for (cz in floatArrayOf(0f, 3.78f)) {
+            cb(cx, y0, cz, cx + 0.22f, top, cz + 0.22f, GRAPH)
+            for (y in ys) cb(cx - 0.015f, y + 0.05f, cz - 0.015f, cx + 0.235f, y + 0.11f, cz + 0.235f, GOLD)
         }
         for (i in 0 until n) {
             val y = ys[i].toFloat()
-            // piso de mármore
-            for (a in 0..3) for (b in 0..3) cb(a.toFloat(), y, b.toFloat(), a + 1f, y + 0.06f, b + 1f, if ((a + b) % 2 == 0) 0xEFE9DC else 0xB5AE9F)
-            // verga da porta + indicador de andar (pontinhos, o aceso é onde a cabine está)
-            cb(0.3f, y + 2.78f, 3.9f, 3.7f, y + 3.0f, 4.02f, DARK)
-            val x00 = 2f - (n - 1) * 0.11f
-            for (j in 0 until n) { val lit = j == cur; cb(x00 + j * 0.22f - 0.06f, y + 2.84f, 4.02f, x00 + j * 0.22f + 0.06f, y + 2.96f, 4.04f, if (lit) 0xFFC24A else 0x4A3A22, 1f, if (lit) 1.7f else 1f) }
-            // painel de chamada (pilar direito): seta pra cima / pra baixo
-            cb(3.72f, y + 1.05f, 4.0f, 3.98f, y + 1.7f, 4.05f, DARK)
-            cb(3.78f, y + 1.45f, 4.05f, 3.92f, y + 1.57f, 4.07f, if (i < n - 1) 0x4CE07A else 0x2A4A33, 1f, if (i < n - 1) 1.5f else 1f)
-            cb(3.78f, y + 1.2f, 4.05f, 3.92f, y + 1.32f, 4.07f, if (i > 0) 0xFF6A5A else 0x4A2A28, 1f, if (i > 0) 1.5f else 1f)
+            // verga da porta + friso dourado + visor com o andar da cabine
+            cb(0.22f, y + 2.78f, 3.9f, 3.78f, y + 3f, 4.02f, GRAPH)
+            cb(0.22f, y + 2.75f, 3.9f, 3.78f, y + 2.78f, 4.03f, GOLD)
+            cb(1.6f, y + 2.8f, 4.02f, 2.4f, y + 2.98f, 4.03f, 0x0B0F12)
+            number(cur + 1, 2f, y + 2.82f, 0.13f, 0.14f, 0.03f, true, 4.03f, 4.04f)
+            // painel de chamada no pilar direito: só subir e descer
+            cb(3.74f, y + 0.98f, 4.0f, 3.98f, y + 1.62f, 4.05f, GRAPH)
+            cb(3.76f, y + 1.0f, 4.05f, 3.96f, y + 1.6f, 4.055f, 0x1A1E23)
+            cb(3.78f, y + 1.3f, 4.055f, 3.94f, y + 1.55f, 4.065f, 0x39414B)
+            cb(3.78f, y + 1.04f, 4.055f, 3.94f, y + 1.29f, 4.065f, 0x39414B)
+            arrow(true, 3.86f, 1.425f + y, 0.2f, true, 4.065f, 4.08f, i < n - 1)
+            arrow(false, 3.86f, 1.165f + y, 0.2f, true, 4.065f, 4.08f, i > 0)
         }
-        for (i in 0 until n - 1) if (ys[i + 1] > ys[i] + 3) cb(0.3f, ys[i] + 3f, 3.88f, 3.7f, ys[i + 1].toFloat(), 4.0f, STEEL)
-        cb(0.3f, yt + 3f, 3.88f, 3.7f, top, 4.0f, STEEL)
-        cb(0f, yt + 3.2f, 0f, 4f, top, 4f, STEEL)
-        // cabine
-        cb(0.3f, cy + 0.06f, 0.3f, 3.7f, cy + 0.075f, 3.7f, DARK)
-        cb(0.6f, cy + 0.075f, 0.6f, 3.4f, cy + 0.08f, 3.4f, 0xCDBFA3)
-        cb(0.3f, cy + 0.075f, 0.3f, 3.7f, cy + 3f, 0.36f, 0xB9C0C9)
-        cb(0.3f, cy + 0.075f, 0.3f, 0.36f, cy + 3f, 3.7f, 0xA9B0B9)
-        cb(3.64f, cy + 0.075f, 0.3f, 3.7f, cy + 3f, 3.7f, 0xA9B0B9)
-        cb(0.3f, cy + 3f, 0.3f, 3.7f, cy + 3.08f, 3.7f, DARK)
-        cb(0.9f, cy + 2.98f, 0.9f, 3.1f, cy + 3f, 3.1f, 0xFFF1C2, 1f, 1.6f)
-        cb(0.5f, cy + 1f, 0.36f, 3.5f, cy + 1.06f, 0.42f, TRIM)
-        cb(0.36f, cy + 1f, 0.5f, 0.42f, cy + 1.06f, 3.5f, TRIM)
-        cb(3.58f, cy + 1f, 0.5f, 3.64f, cy + 1.06f, 2.5f, TRIM)
-        // painel de andares da cabine (parede direita, perto da porta): 1 botão por andar, de baixo pra cima
-        cb(3.52f, cy + 0.9f, 2.7f, 3.64f, cy + 1.15f + 0.28f * n, 3.3f, DARK)
-        for (j in 0 until n) {
-            val col = if (j == cur && !s.moving) 0xFFC24A else if (s.moving && j == s.target) 0x66FF99 else 0xC8C8C8
-            val hot = (j == cur && !s.moving) || (s.moving && j == s.target)
-            cb(3.49f, cy + 1.0f + 0.28f * j, 2.91f, 3.52f, cy + 1.18f + 0.28f * j, 3.09f, col, 1f, if (hot) 1.7f else 1f)
-        }
+        for (i in 0 until n - 1) if (ys[i + 1] > ys[i] + 3) cb(0.22f, ys[i] + 3f, 3.9f, 3.78f, ys[i + 1].toFloat(), 4.0f, GRAPH)
+        cb(0.22f, yt + 3f, 3.9f, 3.78f, top, 4.0f, GRAPH)
+        cb(0f, yt + 3.2f, 0f, 4f, top, 4f, GRAPH)
+        cb(-0.02f, yt + 3.18f, -0.02f, 4.02f, yt + 3.23f, 4.02f, GOLD)
+        // ---------- cabine ----------
+        // piso escuro polido com aro dourado
+        cb(0.22f, cy + 0.05f, 0.22f, 3.78f, cy + 0.075f, 3.78f, 0x1F2228)
+        cb(0.8f, cy + 0.075f, 0.8f, 3.2f, cy + 0.082f, 3.2f, GOLD)
+        cb(0.86f, cy + 0.082f, 0.86f, 3.14f, cy + 0.09f, 3.14f, 0x34383F)
+        // paredes: lambri de madeira embaixo, aço escovado em cima, friso dourado
+        cb(0.22f, cy + 0.075f, 0.22f, 3.78f, cy + 0.9f, 0.28f, WOOD)
+        cb(0.22f, cy + 0.9f, 0.22f, 3.78f, cy + 3f, 0.28f, STEEL)
+        cb(0.22f, cy + 0.075f, 0.28f, 0.28f, cy + 0.9f, 3.78f, WOOD)
+        cb(0.22f, cy + 0.9f, 0.28f, 0.28f, cy + 3f, 3.78f, STEEL)
+        cb(3.72f, cy + 0.075f, 0.28f, 3.78f, cy + 0.9f, 3.78f, WOOD)
+        cb(3.72f, cy + 0.9f, 0.28f, 3.78f, cy + 3f, 3.78f, STEEL)
+        cb(0.28f, cy + 0.9f, 0.28f, 3.72f, cy + 0.95f, 0.32f, GOLD)
+        cb(0.28f, cy + 0.9f, 0.32f, 0.32f, cy + 0.95f, 3.6f, GOLD)
+        cb(3.68f, cy + 0.9f, 0.32f, 3.72f, cy + 0.95f, 3.6f, GOLD)
+        // espelho grande no fundo (moldura dourada + faixas de brilho)
+        cb(0.55f, cy + 1.0f, 0.28f, 3.45f, cy + 2.8f, 0.32f, GOLD)
+        val tones = intArrayOf(0xDDEFF8, 0xC3DCEA, 0xEAF6FC, 0xB7D2E3, 0xDDEFF8, 0xC9E1EE, 0xEAF6FC)
+        for (i in 0..6) cb(0.62f + i * 0.4f, cy + 1.07f, 0.32f, 0.62f + (i + 1) * 0.4f, cy + 2.73f, 0.335f, tones[i], 1f, 1.2f)
+        box(base, 1.4f, cy + 1.9f, 0.34f, 0f, 0f, 0.14f, 2.1f, 0.01f, 0f, 0xFFFFFF, 0.5f, 1.5f, null, 0, 30f)
+        box(base, 2.3f, cy + 1.9f, 0.34f, 0f, 0f, 0.07f, 2.1f, 0.01f, 0f, 0xFFFFFF, 0.4f, 1.5f, null, 0, 30f)
+        // espelho menor na parede esquerda
+        cb(0.28f, cy + 1.05f, 1.0f, 0.32f, cy + 2.75f, 3.0f, GOLD)
+        for (i in 0..3) cb(0.32f, cy + 1.12f, 1.07f + i * 0.465f, 0.335f, cy + 2.68f, 1.07f + (i + 1) * 0.465f, tones[i], 1f, 1.2f)
+        // teto com luz embutida
+        cb(0.22f, cy + 3f, 0.22f, 3.78f, cy + 3.08f, 3.78f, GRAPH)
+        cb(0.64f, cy + 2.975f, 0.64f, 3.36f, cy + 2.99f, 3.36f, GOLD)
+        cb(0.7f, cy + 2.99f, 0.7f, 3.3f, cy + 3f, 3.3f, 0xFFF4D6, 1f, 1.9f)
+        // moldura e trilho da porta
+        cb(0.28f, cy + 2.9f, 3.58f, 3.72f, cy + 2.98f, 3.72f, GRAPH)
+        cb(0.28f, cy + 0.075f, 3.58f, 3.72f, cy + 0.15f, 3.72f, GRAPH)
+        // painel da cabine (parede direita): visor com o andar + seta pra cima + seta pra baixo
+        cb(3.64f, cy + 1.0f, 2.7f, 3.72f, cy + 1.95f, 3.4f, GRAPH)
+        cb(3.62f, cy + 1.03f, 2.73f, 3.64f, cy + 1.92f, 3.37f, 0x1A1E23)
+        cb(3.61f, cy + 1.62f, 2.8f, 3.63f, cy + 1.86f, 3.3f, 0x0B0F12)
+        number(cur + 1, 3.05f, cy + 1.66f, 0.1f, 0.16f, 0.03f, false, 3.595f, 3.61f)
+        cb(3.61f, cy + 1.3f, 2.9f, 3.63f, cy + 1.54f, 3.2f, 0x39414B)
+        cb(3.61f, cy + 1.05f, 2.9f, 3.63f, cy + 1.29f, 3.2f, 0x39414B)
+        val goingUp = s.moving && s.dir > 0; val goingDn = s.moving && s.dir < 0
+        arrow(true, 3.05f, cy + 1.42f, 0.22f, false, 3.595f, 3.61f, goingUp || (!s.moving && cur < n - 1))
+        arrow(false, 3.05f, cy + 1.17f, 0.22f, false, 3.595f, 3.61f, goingDn || (!s.moving && cur > 0))
     }
 
     private fun drawSlime(s: Slime) {

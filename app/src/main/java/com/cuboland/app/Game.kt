@@ -422,7 +422,7 @@ class Game(val world: World) {
             val ax = x.toFloat(); val az = z.toFloat(); val y0 = l[0].toFloat(); val yt = l.last().toFloat(); val top = yt + 3.4f
             val bx = ArrayList<FloatArray>()
             for (y in l) bx.add(floatArrayOf(ax, y.toFloat(), az, ax + 4f, y + 0.06f, az + 4f))
-            for (cx in floatArrayOf(0f, 3.7f)) for (cz in floatArrayOf(0f, 3.7f)) bx.add(floatArrayOf(ax + cx, y0, az + cz, ax + cx + 0.3f, top, az + cz + 0.3f))
+            for (cx in floatArrayOf(0f, 3.78f)) for (cz in floatArrayOf(0f, 3.78f)) bx.add(floatArrayOf(ax + cx, y0, az + cz, ax + cx + 0.22f, top, az + cz + 0.22f))
             bx.add(floatArrayOf(ax, y0, az, ax + 4f, top, az + 0.12f))
             bx.add(floatArrayOf(ax, y0, az, ax + 0.12f, top, az + 4f))
             bx.add(floatArrayOf(ax + 3.88f, y0, az, ax + 4f, top, az + 4f))
@@ -453,7 +453,7 @@ class Game(val world: World) {
         if (elevShafts.isEmpty() || seated || deadTimer > 0f) { elevSel = null; return }
         val p = player
         val dx = fwdX(); val dy = fwdY(); val dz = fwdZ()
-        var best: ElevShaft? = null; var bestDot = 0.975f
+        var best: ElevShaft? = null; var bestDot = 0.965f
         fun test(s: ElevShaft, px: Float, py: Float, pz: Float) {
             val vx = px - camX; val vy = py - camY; val vz = pz - camZ
             val d = sqrt(vx * vx + vy * vy + vz * vz); if (d > 5.5f || d < 0.2f) return
@@ -463,8 +463,8 @@ class Game(val world: World) {
         for (s in elevShafts.values) {
             if (abs(s.ax + 2f - p.x) > 9f || abs(s.az + 2f - p.z) > 9f) continue
             val inside = p.x > s.ax && p.x < s.ax + 4f && p.z > s.az && p.z < s.az + 4f && abs(p.y - s.carY) < 1.5f
-            if (inside) test(s, s.ax + 3.55f, s.carY + 1.45f, s.az + 3.0f)
-            for (y in s.ys) if (abs(p.y - y) < 2.5f) test(s, s.ax + 3.85f, y + 1.35f, s.az + 4.0f)
+            if (inside) test(s, s.ax + 3.62f, s.carY + 1.45f, s.az + 3.05f)
+            for (y in s.ys) if (abs(p.y - y) < 2.5f) test(s, s.ax + 3.86f, y + 1.3f, s.az + 4.05f)
         }
         elevSel = best
     }
