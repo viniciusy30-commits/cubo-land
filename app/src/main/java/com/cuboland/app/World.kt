@@ -299,8 +299,8 @@ class World {
         val cats = ArrayList<GalCat>()
         cats.add(GalCat("NATUREZA", 2, basicsOf(2) + Blk.defs.filter { it.cat == Blk.C_NAT && it.id !in Blk.hidden }.map { it.id }))
         cats.add(GalCat("CONSTRUÇÃO", 3, basicsOf(3) + Blk.defs.filter { it.cat == Blk.C_BUILD && it.id !in Blk.hidden }.map { it.id }))
-        cats.add(GalCat("DECORAÇÃO", 4, basicsOf(4) + Blk.defs.filter { it.cat == Blk.C_DEC }.map { it.id }))
-        cats.add(GalCat("MOBÍLIA", 5, Blk.defs.filter { it.cat == Blk.C_FURN }.map { it.id }))
+        cats.add(GalCat("DECORAÇÃO", 4, basicsOf(4) + Blk.defs.filter { it.cat == Blk.C_DEC && it.id !in Blk.hidden }.map { it.id }))
+        cats.add(GalCat("MOBÍLIA", 5, Blk.defs.filter { it.cat == Blk.C_FURN && it.id !in Blk.hidden }.map { it.id }))
         val other = Blk.defs.filter { it.cat != Blk.C_NAT && it.cat != Blk.C_BUILD && it.cat != Blk.C_DEC && it.cat != Blk.C_FURN }.map { it.id }
         if (other.isNotEmpty()) cats.add(GalCat("OUTROS", 0, other))
         return cats

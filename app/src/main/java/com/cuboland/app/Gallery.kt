@@ -59,7 +59,7 @@ object Gallery {
         f("OUTROS") { _, _ -> true }
     )
 
-    private val DECORACAO = listOf(
+    private val DECORACAO = Deco.groups(4).map { g -> s(g, "") { n, _ -> Deco.groupOf(n) == g } } + listOf(
         s("LÃS", "Lã ") { n, _ -> sw(n, "Lã ") },
         s("TERRACOTA VITRIFICADA", "Terracota Vitrificada ") { n, _ -> sw(n, "Terracota Vitrificada") },
         s("BLOCOS LUMINOSOS", "Bloco Luminoso ") { n, _ -> sw(n, "Bloco Luminoso") },
@@ -73,7 +73,7 @@ object Gallery {
     /** móveis da mobília v3 (FurnC): uma seção por grupo; vêm antes das outras pra não cair em "MESAS", "ASSENTOS"... */
     private fun fc(title: String) = s(title, "") { n, _ -> FurnC.groupOf(n) == title }
 
-    private val MOBILIA = FurnC.GROUPS.map { fc(it) } + listOf(
+    private val MOBILIA = Deco.groups(5).map { g -> s(g, "") { n, _ -> Deco.groupOf(n) == g } } + listOf(
         s("SOFÁS MODERNOS", "Sofá Moderno ") { n, _ -> sw(n, "Sofá Moderno") },
         s("SOFÁS CHESTERFIELD", "Sofá Chesterfield ") { n, _ -> sw(n, "Sofá Chesterfield") },
         s("POLTRONAS ORELHUDAS", "Poltrona Orelhuda ") { n, _ -> sw(n, "Poltrona Orelhuda") },

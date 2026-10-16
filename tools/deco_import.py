@@ -26,8 +26,9 @@ BATCHES = {
  4: None,
 }
 want = [int(x) for x in A.batches.split(',')]
-FURN = re.compile(r'(chair|sofa|stool|bench|table|bed|desk|stand|shelf|cabinet|drawer|wardrobe|ottoman|rack|locker|crib|counter|refrigerator|freezer|oven|stove|sink|toilet|bathtub|washing|dresser|cup_board|filing|furniture)')
+FURN_OLD = re.compile(r'(chair|sofa|stool|bench|table|bed|desk|stand|shelf|cabinet|drawer|wardrobe|ottoman|rack|locker|crib|counter|refrigerator|freezer|oven|stove|sink|toilet|bathtub|washing|dresser|cup_board|filing|furniture)')
 
+def is_furn(f): return group_raw(f, 5) != 'OUTROS MOVEIS' or bool(FURN_OLD.search(f))
 def folder_ok(f): return not SKIP.search(f) and not FAM.match(f)
 def batch_of(f):
     for b in (1, 2, 3):
@@ -40,6 +41,31 @@ for ln in open(RP + '/texts/en_US.lang', encoding='utf8', errors='ignore'):
     m = re.match(r'tile\.drz:(\w+)\.name=(.*?)( - .*)?(§.*)?$', ln.strip())
     if m: names[m.group(1)] = m.group(2).strip()
 PT = {'chair':'Cadeira','sofa':'Sofá','stool':'Banco','bench':'Banco','table':'Mesa','bed':'Cama','desk':'Escrivaninha','night':'Criado','stand':'Suporte','shelf':'Estante','cabinet':'Armário','drawer':'Gaveteiro','wardrobe':'Guarda-roupa','wood':'Madeira','white':'Branco','black':'Preto','gray':'Cinza','brown':'Marrom','red':'Vermelho','blue':'Azul','green':'Verde','yellow':'Amarelo','pink':'Rosa','dark':'Escuro','light':'Claro','lamp':'Luminária','plant':'Planta','pot':'Vaso','picture':'Quadro','mirror':'Espelho','clock':'Relógio','carpet':'Tapete','curtain':'Cortina','refrigerator':'Geladeira','oven':'Forno','stove':'Fogão','sink':'Pia','toilet':'Vaso Sanitário','bathtub':'Banheira','washing':'Lavadora','machine':'Máquina','kitchen':'Cozinha','rack':'Prateleira','locker':'Armário-vestiário','counter':'Balcão','countertop':'Bancada','marble':'Mármore','metal':'Metal','glass':'Vidro','door':'Porta','window':'Janela','fence':'Cerca','box':'Caixa','bag':'Bolsa','book':'Livro','candle':'Vela','flag':'Bandeira','figure':'Figura','doll':'Boneca','toy':'Brinquedo','ceiling':'Teto','wall':'Parede','ground':'Chão','floating':'Flutuante','coffee':'Café','dining':'Jantar','modern':'Moderno','school':'Escola','gaming':'Gamer','plastic':'Plástico','cafe':'Café','train':'Trem','stadium':'Estádio','cinema':'Cinema','piano':'Piano','rocking':'Balanço','bunk':'Beliche','crib':'Berço','cribs':'Berço','ottoman':'Puff'}
+GROUPS = [  # (titulo, regex na pasta) - a primeira que casar vence; separado por categoria (5 = mobilia, 4 = decoracao)
+ (5, 'ASSENTOS', r'chair|sofa|stool|bench|ottoman|rocking|cinema_chair'),
+ (5, 'MESAS E BANCADAS', r'table|desk|countertop|floating|cashier'),
+ (5, 'CAMAS E BERCOS', r'bed|crib'),
+ (5, 'ARMARIOS E ESTANTES', r'cabinet|drawer|wardrobe|shelf|rack|locker|filing|cup_board|night_stand|bookshelf|furniture|display'),
+ (5, 'COZINHA', r'refrigerator|freezer|oven|stove|microwave|air_fryer|blender|toaster|rice|kitchen|sink|cooker|dish|espresson|fryer|grill|frying|dispenser|vending|mixer|ice_cream'),
+ (5, 'BANHEIRO E LIMPEZA', r'toilet|bath|shower|faucet|washing|water_heater|hairdryer|vacuum|ironing|laundry|trash|bucket|cleaning|detergent|glass_clean|glass_wiper'),
+ (5, 'OUTROS MOVEIS', r'.'),
+ (4, 'ILUMINACAO', r'lamp|light|candle|fireplace'),
+ (4, 'PLANTAS', r'plant|pineapple|wreath|leaves|tree'),
+ (4, 'QUADROS E ESPELHOS', r'picture|photo|canvas|modern_art|mirror|poster|calendar|frame|backdrop'),
+ (4, 'RELOGIOS', r'clock'),
+ (4, 'TEXTEIS E TAPETES', r'carpet|doormat|curtain|blanket|pillow|banner|flag'),
+ (4, 'BONECOS E BRINQUEDOS', r'doll|plushi|toy|figure|chess|uno|dart|gift|ballon'),
+ (4, 'ELETRONICOS E MUSICA', r'fan|ac|ac_|jukebox|radio|vinyl|telephone|typewriter|globe|aquarium|radiator|book|paper'),
+ (4, 'OUTRAS DECORACOES', r'.'),
+]
+def group_raw(folder, cat):
+    for c, t, rx in GROUPS:
+        if c == cat and re.search(rx, folder): return t
+    return ''
+def group(folder, cat):
+    for c, t, rx in GROUPS:
+        if c == cat and re.search(rx, folder): return t.replace('MOVEIS','MÓVEIS').replace('ARMARIOS','ARMÁRIOS').replace('BERCOS','BERÇOS').replace('ILUMINACAO','ILUMINAÇÃO').replace('RELOGIOS','RELÓGIOS').replace('TEXTEIS','TÊXTEIS').replace('ELETRONICOS E MUSICA','ELETRÔNICOS E MÚSICA').replace('DECORACOES','DECORAÇÕES').replace('MESAS E BANCADAS','MESAS E BANCADAS').replace('COZINHA','COZINHA')
+    return ''
 def ptname(key, en):
     ws = en.split(); out = []
     for w in ws:
@@ -170,8 +196,8 @@ for key in reg['items']:
     nm = ptname(key, base)
     if nm in usednames: nm = f'{nm} ({key.replace("_drz","")})'
     usednames.add(nm)
-    items.append({'k': key, 'n': nm, 'c': 5 if FURN.search(folder) else 4, 'g': geo_index[gid], 't': tl, 'b': col,
-                  'l': int(c.get('minecraft:light_emission', 0) or 0), 'f': folder, 'sit': 1 if 'md:sit' in c else 0})
+    items.append({'k': key, 'n': nm, 'c': 5 if is_furn(folder) else 4, 'g': geo_index[gid], 't': tl, 'b': col,
+                  'l': int(c.get('minecraft:light_emission', 0) or 0), 'f': folder, 'gp': group(folder, 5 if is_furn(folder) else 4), 'sit': 1 if 'md:sit' in c else 0})
 
 # ---- escreve ----
 with open(OUT + '/geo.bin', 'wb') as fo:

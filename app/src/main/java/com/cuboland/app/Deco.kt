@@ -11,7 +11,7 @@ import java.nio.ByteOrder
  * Cada item é um bloco de formato próprio (kind 7, sub 0); Deco.idx[id] = índice do item.
  */
 object Deco {
-    class Item(val name: String, val cat: Int, val geo: Int, val tex: IntArray, val box: FloatArray?, val light: Int, val sit: Boolean) {
+    class Item(val name: String, val cat: Int, val geo: Int, val tex: IntArray, val box: FloatArray?, val light: Int, val sit: Boolean, val group: String = "") {
         var tile: IntArray = IntArray(0)
     }
     class Geo(val nQuad: Int, val slot: IntArray, val shade: FloatArray, val pos: FloatArray, val uv: FloatArray)
@@ -30,7 +30,7 @@ object Deco {
                 val t = o.getJSONArray("t"); val tex = IntArray(t.length()) { t.getInt(it) }
                 val b = o.optJSONArray("b")
                 val box = if (b == null) null else FloatArray(6) { b.getDouble(it).toFloat() }
-                out.add(Item(o.getString("n"), o.getInt("c"), o.getInt("g"), tex, box, o.optInt("l", 0), o.optInt("sit", 0) == 1))
+                out.add(Item(o.getString("n"), o.getInt("c"), o.getInt("g"), tex, box, o.optInt("l", 0), o.optInt("sit", 0) == 1, o.optString("gp", "")))
             }
         } catch (_: Throwable) { }
         out
@@ -57,6 +57,12 @@ object Deco {
         } catch (_: Throwable) { }
         out
     }
+
+    private val grp: HashMap<String, String> by lazy { val m = HashMap<String, String>(); for (d in items) m[d.name] = d.group; m }
+    /** seção da galeria do item pelo nome */
+    fun groupOf(name: String): String = grp[name] ?: ""
+    /** títulos das seções de uma categoria (4 = decoração, 5 = mobília), na ordem do addon */
+    fun groups(cat: Int): List<String> = items.filter { it.cat == cat && it.group.isNotEmpty() }.map { it.group }.distinct()
 
     fun isDeco(id: Int) = id in 0..16383 && idx[id] >= 0
     fun of(id: Int): Item? { val i = if (id in 0..16383) idx[id] else -1; return if (i >= 0) items[i] else null }
