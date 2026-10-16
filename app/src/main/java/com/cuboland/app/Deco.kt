@@ -64,9 +64,9 @@ object Deco {
     /** títulos das seções de uma categoria (4 = decoração, 5 = mobília), na ordem do addon */
     fun groups(cat: Int): List<String> = items.filter { it.cat == cat && it.group.isNotEmpty() }.map { it.group }.distinct()
 
-    fun isDeco(id: Int) = id in 0..16383 && idx[id] >= 0
-    fun of(id: Int): Item? { val i = if (id in 0..16383) idx[id] else -1; return if (i >= 0) items[i] else null }
-    fun sit(id: Int): Boolean = of(id)?.sit == true
+    fun isDeco(id: Int): Boolean { if (id < 0 || id > 16383) return false; return idx[id] >= 0 }
+    fun of(id: Int): Item? { if (id < 0 || id > 16383) return null; val i = idx[id]; if (i < 0) return null; return items[i] }
+    fun sit(id: Int): Boolean { val d = of(id) ?: return false; return d.sit }
 
     // ---- pixels das texturas (Atlas.build chama por pixel) ----
     private val texCache = HashMap<Int, IntArray>()
@@ -86,18 +86,19 @@ object Deco {
 
     // ---- malha ----
     fun emit(o: MeshBuf, w: World, x: Int, y: Int, z: Int, id: Int, vr: Float) {
-        val it = of(id) ?: return
-        val g = geos.getOrNull(it.geo) ?: return
+        val item = of(id) ?: return
+        if (item.geo < 0 || item.geo >= geos.size) return
+        val g = geos[item.geo]
         val dir = Furniture.faceOf(w, x, y, z, 0)
         for (q in 0 until g.nQuad) {
             val s = g.slot[q]
-            val tile = if (s < it.tile.size) it.tile[s] else -1
+            val tile = if (s < item.tile.size) item.tile[s] else -1
             if (tile < 0) continue
             val sh = (0.55f + 0.45f * g.shade[q]) * vr
             for (v in 0 until 4) {
                 val px = g.pos[q * 12 + v * 3]; val py = g.pos[q * 12 + v * 3 + 1]; val pz = g.pos[q * 12 + v * 3 + 2]
-                val rx: Float; val rz: Float
-                when (dir) { 0 -> { rx = px; rz = pz }; 1 -> { rx = 1f - px; rz = 1f - pz }; 2 -> { rx = pz; rz = 1f - px }; else -> { rx = 1f - pz; rz = px } }
+                var rx = px; var rz = pz
+                if (dir == 1) { rx = 1f - px; rz = 1f - pz } else if (dir == 2) { rx = pz; rz = 1f - px } else if (dir == 3) { rx = 1f - pz; rz = px }
                 o.vert(x + rx, y + py, z + rz, sh, sh, sh,
                     Atlas.u(tile, g.uv[q * 8 + v * 2].coerceIn(0f, 1f)), Atlas.v(tile, g.uv[q * 8 + v * 2 + 1].coerceIn(0f, 1f)))
             }
@@ -107,7 +108,9 @@ object Deco {
 
     /** caixa de colisão/seleção girada pra direção do bloco */
     fun box(w: World, id: Int, x: Int, y: Int, z: Int): FloatArray {
-        val b = of(id)?.box ?: return floatArrayOf(0f, 0f, 0f, 1f, 1f, 1f)
+        val d = of(id)
+        val b = if (d == null) null else d.box
+        if (b == null) return floatArrayOf(0f, 0f, 0f, 1f, 1f, 1f)
         val dir = if (y >= 0) Furniture.faceOf(w, x, y, z, 0) else 0
         return when (dir) {
             0 -> floatArrayOf(b[0], b[1], b[2], b[3], b[4], b[5])
