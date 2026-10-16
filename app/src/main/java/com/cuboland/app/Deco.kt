@@ -17,7 +17,8 @@ object Deco {
     }
     class Geo(val nQuad: Int, val slot: IntArray, val shade: FloatArray, val pos: FloatArray, val uv: FloatArray)
 
-    @JvmField val idx = IntArray(16384) { -1 }
+    @JvmField val idx = IntArray(16384)
+    init { java.util.Arrays.fill(idx, -1) }
 
     private var itemsV: ArrayList<Item>? = null
     private var geosV: ArrayList<Geo>? = null
