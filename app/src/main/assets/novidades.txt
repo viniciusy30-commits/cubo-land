@@ -1,3 +1,9 @@
+#id 2026-10-16-a
+#titulo Galeria nova e mansão completa
+- A galeria agora é organizada em 3 passos: categoria, tipo de bloco e, nos tipos grandes, a parte (24 blocos por vez)
+- Cada tipo de bloco vira uma sala de exposição: piso branco, borda colorida, pedestais em grade e uma plaquinha por bloco, tudo na mesma altura
+- A casa pronta foi apagada. No lugar entrou a MANSÃO (botão MANSÃO nas vitrines): lote murado com portão e rotatória com fonte, hall de pé-direito duplo com escada e galeria, sala de estar, jantar, cozinha, lavanderia, lavabo, sala de TV e jogos, suíte master com banheiro e closet, suíte de hóspedes, quarto infantil, biblioteca, garagem pra 3 vagas com oficina (o carro e a moto já esperam lá), cozinha gourmet, piscina com deque e jardim
+
 #id 2026-10-15-k
 #titulo Móveis novos na galeria de blocos
 - Na galeria de blocos, aba MOBÍLIA, os móveis novos têm seções próprias: assentos externos, mesas externas, armários e caixas, luz fogo e água, abrigo e camping, eletrodomésticos, casa, oficina, fazenda, portas e janelas, sala e decoração, exposição e armazenamento

@@ -50,7 +50,7 @@ class GalleryPanel(
 
         // cabeçalho: voltar | título | fechar
         val head = LinearLayout(act); head.orientation = LinearLayout.HORIZONTAL; head.gravity = Gravity.CENTER_VERTICAL
-        backBtn = small("← Voltar", Color.rgb(150, 150, 160)) { showCats() }
+        backBtn = small("← Voltar", Color.rgb(150, 150, 160)) { }
         closeBtn = small("Fechar ✕", Color.rgb(224, 84, 72)) { if (!busy) close() }
         title.setTextColor(gold); title.textSize = 19f; title.typeface = act.mcFont(); title.gravity = Gravity.CENTER
         title.setShadowLayer(0.5f, act.dp(2).toFloat(), act.dp(2).toFloat(), Color.rgb(40, 28, 20))
@@ -132,7 +132,7 @@ class GalleryPanel(
     private fun showCats() {
         busy = false
         body.removeAllViews(); backBtn.visibility = View.INVISIBLE; closeBtn.visibility = View.VISIBLE
-        title.text = "GALERIA DE BLOCOS"; sub.text = "Escolha uma categoria para carregar os blocos no mapa"
+        title.text = "GALERIA DE BLOCOS"; sub.text = "1. categoria   2. tipo de bloco   3. entre na sala e passeie"
         val bs = ArrayList<Button>()
         for ((i, p) in menu.withIndex()) {
             val c = p.first
@@ -142,28 +142,44 @@ class GalleryPanel(
         val sp = TextView(act); sp.text = "VITRINES"; sp.setTextColor(gold); sp.textSize = 13f; sp.typeface = act.mcFont(); sp.setPadding(act.dp(6), act.dp(12), 0, act.dp(2))
         body.addView(sp)
         val ex = ArrayList<Button>()
-        ex.add(big("MOBÍLIA\nmontada", Color.rgb(84, 144, 232)) { pick(-1, -1, World.GAL_FURN, "Vitrine de mobília") })
-        ex.add(big("MOBÍLIA\nnova", Color.rgb(232, 120, 170)) { pick(-1, -1, World.GAL_FURN2, "Vitrine de mobília nova") })
-        ex.add(big("CASA\nMODERNA", Color.rgb(150, 150, 160)) { pick(-1, -1, World.GAL_HOUSE, "Casa moderna") })
+        ex.add(big("MANSÃO\ncompleta", Color.rgb(150, 150, 160)) { pick(-1, -1, World.GAL_HOUSE, "Mansão") })
         ex.add(big("ÁRVORES", Color.rgb(90, 200, 90)) { pick(-1, -1, World.GAL_TREES, "Galeria de árvores") })
         ex.add(big("VEÍCULOS\nteste", Color.rgb(212, 20, 28)) { pick(-1, -1, World.GAL_CAR, "Teste de veículos") })
         addRow(ex, 3)
     }
 
-    /** passo 2: seções da categoria */
+    /** passo 2: seções da categoria (cada uma vira uma sala de exposição) */
     private fun showSecs(ci: Int) {
         val (cat, secs) = menu[ci]
         body.removeAllViews(); backBtn.visibility = View.VISIBLE; closeBtn.visibility = View.VISIBLE
-        title.text = cat.name; sub.text = "Carregar tudo ou só um tipo de bloco"
+        backBtn.setOnClickListener { showCats() }
+        title.text = cat.name; sub.text = "Escolha um tipo de bloco: ele vira uma sala de exposição"
         val color = catColors[ci % catColors.size]
-        val all = big("TODAS AS SEÇÕES (${cat.ids.size})", color) { pick(ci, -1, 0, cat.name) }
-        addRow(listOf(all), 1)
         val wdp = act.resources.displayMetrics.widthPixels / act.resources.displayMetrics.density
         val bs = secs.map { s ->
-            val b = act.btn("${s.title}\n${s.count}", Color.rgb(160, 160, 170)) { pick(ci, s.idx, 0, "${cat.name} - ${s.title}") }
-            b.textSize = 13f; b.minHeight = act.dp(52); b.minimumHeight = act.dp(52); b.setPadding(act.dp(6), act.dp(4), act.dp(6), act.dp(4))
+            val pages = (s.count + Gallery.PER_PAGE - 1) / Gallery.PER_PAGE
+            val b = act.btn(s.title + "\n" + s.count + (if (pages > 1) " blocos - $pages partes" else " blocos"), color) {
+                if (pages > 1) showPages(ci, s, pages) else pick(ci, s.idx, World.GAL_PAGE, cat.name + " - " + s.title)
+            }
+            b.textSize = 13f; b.minHeight = act.dp(56); b.minimumHeight = act.dp(56); b.setPadding(act.dp(6), act.dp(4), act.dp(6), act.dp(4))
             b
         }
         addRow(bs, if (wdp > 800) 3 else 2)
+    }
+
+    /** passo 3 (só seções grandes): escolher a parte, 24 blocos por vez */
+    private fun showPages(ci: Int, s: World.GalSec, pages: Int) {
+        val cat = menu[ci].first
+        body.removeAllViews(); backBtn.visibility = View.VISIBLE; closeBtn.visibility = View.VISIBLE
+        backBtn.setOnClickListener { showSecs(ci) }
+        title.text = s.title; sub.text = "${s.count} blocos em $pages partes"
+        val color = catColors[ci % catColors.size]
+        val bs = (0 until pages).map { pg ->
+            val a = pg * Gallery.PER_PAGE + 1; val z = minOf(s.count, (pg + 1) * Gallery.PER_PAGE)
+            act.btn("PARTE ${pg + 1}\nblocos $a a $z", color) { pick(ci, s.idx, World.GAL_PAGE + pg, cat.name + " - " + s.title + " (parte ${pg + 1})") }.also {
+                it.textSize = 13f; it.minHeight = act.dp(56); it.minimumHeight = act.dp(56)
+            }
+        }
+        addRow(bs, 2)
     }
 }

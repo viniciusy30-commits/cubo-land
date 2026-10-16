@@ -98,6 +98,7 @@ class World {
         val CZ: Int get() = SZ / CH
         const val WATER_Y = 9
         /** modos extras da galeria de blocos (além das categorias de blocos) */
+        const val GAL_PAGE = 100   // extra >= GAL_PAGE: página (extra - GAL_PAGE) da seção escolhida
         const val GAL_FURN = 1; const val GAL_HOUSE = 2; const val GAL_TREES = 3; const val GAL_FURN2 = 4; const val GAL_CAR = 5
         const val SAVE_MAGIC = 0x434C3402
         const val ST_MAGIC = 0x53543031   // trailer opcional: itens guardados nos móveis
@@ -341,10 +342,10 @@ class World {
         when {
             extra == GAL_FURN -> { furnitureShowcase(top); spawnX = 188; spawnZ = 1 }
             extra == GAL_FURN2 -> { furnitureShowcase2(top); spawnX = 8; spawnZ = 24 }
-            extra == GAL_HOUSE -> { modernHouse(top); spawnX = 195; spawnZ = 37 }
+            extra == GAL_HOUSE -> { grandMansion(top); spawnX = 114; spawnZ = 32; carSpawnX = 138; carSpawnZ = 70; carSpawnYaw = Math.PI.toFloat() }
             extra == GAL_TREES -> { plantTestTrees(top); spawnX = 94; spawnZ = 2 }
             extra == GAL_CAR -> { vehicleTrack(top); spawnX = 10; spawnZ = 6; carSpawnX = 17; carSpawnZ = 9; carSpawnYaw = 0f }
-            catIdx in cats.indices -> layoutCategory(cats[catIdx], secFilter, top, floor, plate)
+            catIdx in cats.indices -> layoutCategory(cats[catIdx], secFilter, if (extra >= GAL_PAGE) extra - GAL_PAGE else 0, top, floor, plate)
             else -> {
                 labels.add(Label(spawnX + 0.5f, top + 5f, spawnZ + 7f, "GALERIA DE BLOCOS", true))
                 labels.add(Label(spawnX + 0.5f, top + 3.4f, spawnZ + 7f, "Toque em CATEGORIAS no alto da tela", false))
@@ -401,48 +402,49 @@ class World {
         sign(17, 124, "1 bloco", false); sign(41, 124, "2 blocos", false); sign(65, 124, "3 blocos", false)
     }
 
-    /** uma categoria (ou uma seção dela) em faixas: células de 4x4 blocos, 30 por fileira */
-    private fun layoutCategory(cat: GalCat, secFilter: Int, top: Int, floor: Int, plate: Int) {
+    /** uma seção da categoria vira uma sala de exposição: pedestais em grade (no máximo 6 por fileira e 24 por página), faixa colorida em volta,
+     *  título grande e uma plaquinha por bloco, sempre na mesma altura. Seções grandes são divididas em páginas (page = 0, 1, 2...). */
+    private fun layoutCategory(cat: GalCat, secFilter: Int, page: Int, top: Int, floor: Int, plate: Int) {
         val colById = HashMap<Int, Int>(); for (d in Blk.defs) colById[d.id] = d.color
         fun blockNamed(n: String) = B.byName[n] ?: floor
-        val cell = 4; val cols = 30; val x0 = 8; var zc = 8
         val secs = Gallery.sections(cat.ci)
         val buckets = galleryBuckets(cat)
-        val total = if (secFilter in secs.indices) buckets[secFilter].size else cat.ids.size
-        // faixa grande da categoria no chão + título
-        val stripe = blockNamed(when (cat.ci) { 2 -> "Concreto Verde"; 3 -> "Concreto Vermelho"; 4 -> "Concreto Rosa"; 5 -> "Concreto Azul"; else -> "Concreto Preto" })
-        for (z in zc until zc + 2) for (x in x0 - 2..x0 + cols * cell) setTopB(x, z, stripe, top)
-        val head = if (secFilter in secs.indices) "${cat.name} - ${secs[secFilter].title}" else cat.name
-        labels.add(Label(x0 + cols * cell / 2f, top + 8f, zc + 0.5f, "$head ($total)", true))
-        zc += 4
-        var secN = 0
-        var open = false; var cur = 0   // faixa aberta: seções pequenas dividem a mesma faixa, uma ao lado da outra
-        fun closeBand(rows: Int) { zc += 1 + rows * cell + 1; open = false; cur = 0 }
-        for ((si, sec) in secs.withIndex()) {
-            val gl = buckets[si]
-            if (gl.isEmpty()) continue
-            if (secFilter in secs.indices && si != secFilter) { secN++; continue }
-            val n = gl.size
-            val rows = (n + cols - 1) / cols
-            if (open && (rows > 1 || cur + n > cols)) closeBand(1)
-            val start: Int
-            if (rows == 1) { start = cur; cur += n + 1; open = true } else start = 0
-            val w = if (rows > 1) cols else n
-            // faixa colorida da seção + título
-            val accent = blockNamed(Gallery.accentName(secN++))
-            for (x in x0 + start * cell until x0 + (start + w) * cell) setTopB(x, zc, accent, top)
-            labels.add(Label(x0 + (start + w / 2f) * cell, top + 6.2f, zc + 0.5f, "${sec.title} (${n})", true))
-            for ((j, id) in gl.withIndex()) {
-                val row = j / cols; val col = start + j % cols
-                val cx = x0 + col * cell + 1; val cz = zc + 1 + row * cell + 1
-                if (cz + 1 >= SZ - 2) continue
-                if ((row + col) % 2 == 0) for (dz in -1..1) for (dx in -1..1) setTopB(cx + dx, cz + dz, plate, top)
-                blocks[((top + 1) * SZ + cz) * SX + cx] = id
-                labels.add(Label(cx + 0.5f, top + (if (col % 2 == 0) 2.7f else 3.9f), cz + 0.5f, Gallery.shortName(sec, B.names[id]), false, colById[id] ?: 0))
-            }
-            if (rows > 1) closeBand(rows)
+        var si = secFilter
+        if (si !in secs.indices || buckets[si].isEmpty()) si = buckets.indexOfFirst { it.isNotEmpty() }
+        if (si < 0) return
+        val sec = secs[si]; val all = buckets[si]
+        val pages = (all.size + Gallery.PER_PAGE - 1) / Gallery.PER_PAGE
+        val pg = page.coerceIn(0, maxOf(0, pages - 1))
+        val list = all.subList(pg * Gallery.PER_PAGE, minOf(all.size, (pg + 1) * Gallery.PER_PAGE))
+        val cols = minOf(list.size, 6); val rows = (list.size + cols - 1) / cols
+        val cell = 6; val hx0 = 10; val hz0 = 16
+        val hw = cols * cell; val hd = rows * cell
+        val accent = blockNamed(Gallery.accentName(si))
+        val lamp = blockNamed("Bloco Luminoso Branco")
+        fun at(x: Int, y: Int, z: Int, b: Int) { if (x in 0 until SX && z in 0 until SZ && y in 0 until SY) blocks[(y * SZ + z) * SX + x] = b }
+        // piso da sala em branco, com borda colorida
+        for (z in hz0 until hz0 + hd) for (x in hx0 until hx0 + hw) setTopB(x, z, plate, top)
+        for (x in hx0 - 1..hx0 + hw) { setTopB(x, hz0 - 1, accent, top); setTopB(x, hz0 + hd, accent, top) }
+        for (z in hz0 - 1..hz0 + hd) { setTopB(hx0 - 1, z, accent, top); setTopB(hx0 + hw, z, accent, top) }
+        // pilares de canto com luz
+        for (px in intArrayOf(hx0 - 1, hx0 + hw)) for (pz in intArrayOf(hz0 - 1, hz0 + hd)) {
+            for (y in 1..5) at(px, top + y, pz, accent)
+            at(px, top + 6, pz, lamp)
         }
-        if (open) closeBand(1)
+        // fundo da sala: parede baixa colorida atrás dos pedestais
+        for (x in hx0 - 1..hx0 + hw) for (y in 1..2) at(x, top + y, hz0 + hd, accent)
+        val head = "${cat.name}  -  ${sec.title}"
+        labels.add(Label(hx0 + hw / 2f, top + 10f, hz0 - 4f, head, true))
+        val sub = if (pages > 1) "Parte ${pg + 1} de $pages  -  ${list.size} blocos" else "${list.size} blocos"
+        labels.add(Label(hx0 + hw / 2f, top + 8f, hz0 - 4f, sub, false))
+        for ((j, id) in list.withIndex()) {
+            val row = j / cols; val col = j % cols
+            val cx = hx0 + col * cell + cell / 2; val cz = hz0 + row * cell + cell / 2
+            // pedestal 3x3 baixinho e o bloco em cima
+            for (dz in -1..1) for (dx in -1..1) at(cx + dx, top + 1, cz + dz, accent)
+            at(cx, top + 2, cz, id)
+            labels.add(Label(cx + 0.5f, top + 4.6f, cz + 0.5f, Gallery.shortName(sec, B.names[id]), false, colById[id] ?: 0))
+        }
     }
 
     /** vitrine da mobília: conjuntos de mesas, sala, escritório e quartos (ficam trancados, mas dá pra sentar) */
@@ -578,218 +580,329 @@ class World {
         put(73, 13, "Espelho Preto", y + 1); put(74, 13, "Relógio de Parede Preto", y + 1)
     }
 
-    /** casa moderna de vitrine (trancada, dá pra entrar e subir a escada): lote murado com jardim e piscina; sala de pé-direito duplo,
-     *  jantar, cozinha, cinema, adega, loft, 3 suítes e escritório no mezanino; sacada, varanda de piscina e terraço dos fundos.
-     *  Coordenadas relativas: x 0..35 e z 0..22 é a casa, y 0 é o piso do térreo, y -1 o chão. */
-    private fun modernHouse(top: Int) {
-        val x0 = 178; val z0 = 52; val y0 = top + 1
+    /** MANSÃO de vitrine (trancada, dá pra entrar e subir a escada): lote murado com portão, rotatória com fonte, hall de pé-direito duplo com escada e galeria,
+     *  sala de estar, sala de jantar, cozinha, lavanderia, lavabo, sala de TV e jogos, 4 suítes/biblioteca no andar de cima, garagem pra 3 vagas com oficina,
+     *  terraço, cozinha gourmet, piscina com deque e jardim. Coordenadas relativas: x 0..63 e z 0..26 é a casa, y 0 é o piso do térreo, y -1 o chão. */
+    private fun grandMansion(top: Int) {
+        val x0 = 70; val z0 = 60; val y0 = top + 1
         fun id(n: String) = B.byName[n] ?: 0
-        fun any(vararg n: String): String { for (s in n) if (B.byName[s] != null) return s; return n[0] }
+        fun fnd(n: String): Int {
+            val a = id(n); if (a != 0) return a
+            for (s in arrayOf(" Branco", " Branca", " Azul-claro", " Azul-clara", " Cinza", " Carvalho", " Preto")) { val b = id(n + s); if (b != 0) return b }
+            return 0
+        }
         fun setB(x: Int, y: Int, z: Int, b: Int) { if (x in 0 until SX && z in 0 until SZ && y in 0 until SY) blocks[(y * SZ + z) * SX + x] = b }
         fun putB(rx: Int, ry: Int, rz: Int, b: Int) = setB(x0 + rx, y0 + ry, z0 + rz, b)
-        fun put(rx: Int, ry: Int, rz: Int, n: String) { val b = id(n); if (b != 0) putB(rx, ry, rz, b) }
+        fun put(rx: Int, ry: Int, rz: Int, n: String) { val b = fnd(n); if (b != 0) putB(rx, ry, rz, b) }
         fun fillB(ax: Int, ay: Int, az: Int, bx: Int, by: Int, bz: Int, b: Int) {
             for (y in minOf(ay, by)..maxOf(ay, by)) for (z in minOf(az, bz)..maxOf(az, bz)) for (x in minOf(ax, bx)..maxOf(ax, bx)) putB(x, y, z, b)
         }
-        fun fill(ax: Int, ay: Int, az: Int, bx: Int, by: Int, bz: Int, n: String) { val b = id(n); if (b != 0) fillB(ax, ay, az, bx, by, bz, b) }
+        fun fill(ax: Int, ay: Int, az: Int, bx: Int, by: Int, bz: Int, n: String) { val b = fnd(n); if (b != 0) fillB(ax, ay, az, bx, by, bz, b) }
         fun hole(ax: Int, ay: Int, az: Int, bx: Int, by: Int, bz: Int) = fillB(ax, ay, az, bx, by, bz, 0)
+        fun rotB(n: String, d: Int): Int { val b = fnd(n); if (b == 0) return 0; return Blk.rotIds[b]?.get(d) ?: b }
+        fun putR(rx: Int, ry: Int, rz: Int, n: String, d: Int) { val b = rotB(n, d); if (b != 0) putB(rx, ry, rz, b) }
+        fun row(xa: Int, xb: Int, y: Int, z: Int, n: String) { for (x in xa..xb) put(x, y, z, n) }
+        fun col(x: Int, y: Int, za: Int, zb: Int, n: String) { for (z in za..zb) put(x, y, z, n) }
+        fun lab(rx: Float, ry: Float, rz: Float, t: String, big: Boolean = false) { labels.add(Label(x0 + rx, y0 + ry, z0 + rz, t, big)) }
         val W = "Concreto Branco"; val G = "Concreto Cinza"; val K = "Concreto Preto"; val P = "Janela de Correr Preta"
-        val GL = "Vidro"; val GF = "Vidro"; val LJ = "Laje de Concreto Branco"
-        val WOOD = "Tábua"; val SLATE = "Ladrilhos de Ardósia"
-        val TILE = any("Concreto Azul-claro")
-        val LAMP = "Bloco Luminoso Branco"
-        labels.add(Label(x0 + 17.5f, y0 + 14f, z0 - 17f, "CASA MODERNA", true))
+        val GL = "Vidro"; val LJ = "Laje de Concreto Branco"; val WOOD = "Tábua"; val SLATE = "Ladrilhos de Ardósia"
+        val LAMP = "Bloco Luminoso Branco"; val QZ = "Quartzo"; val PIL = "Pilar de Quartzo"; val GRY = "Concreto Cinza-claro"
+        val TILE = "Concreto Azul-claro"; val ROOF = "Telhado Preto"; val BARS = "Janela Gradeada"; val STONE = "Tijolos de Pedra"
+        val CARP = "Lã Cinza-clara"
 
-        // ---------- lote: gramado, muro com portão, caminho, cerca-viva ----------
-        fillB(-23, -1, -11, 40, -1, 29, B.GRASS)
-        fill(-24, 0, -12, 41, 2, -12, W); fill(-24, 0, 30, 41, 2, 30, W); fill(-24, 0, -12, -24, 2, 30, W); fill(41, 0, -12, 41, 2, 30, W)
-        for (x in -24..41 step 8) { fill(x, 0, -12, x, 3, -12, K); fill(x, 0, 30, x, 3, 30, K); put(x, 4, -12, LAMP); put(x, 4, 30, LAMP) }
-        for (z in -12..30 step 6) { fill(-24, 0, z, -24, 3, z, K); fill(41, 0, z, 41, 3, z, K) }
-        fill(-24, 3, -12, 41, 3, -12, LJ); fill(-24, 3, 30, 41, 3, 30, LJ); fill(-24, 3, -12, -24, 3, 30, LJ); fill(41, 3, -12, 41, 3, 30, LJ)
-        hole(16, 0, -12, 19, 2, -12); fill(15, 0, -12, 15, 4, -12, K); fill(20, 0, -12, 20, 4, -12, K); fill(16, 3, -12, 19, 3, -12, K)
-        put(15, 5, -12, LAMP); put(20, 5, -12, LAMP)
-        fill(16, -1, -11, 19, -1, -1, SLATE)
-        for (x in -22..39) { if (x in 14..21) continue; fillB(x, 0, -10, x, 1, -10, B.LEAVES) }
+        lab(44.5f, 17f, -33f, "MANSÃO", true)
+        lab(44.5f, 15f, -33f, "Entre pelo portão. Hall, salas, cozinha, suítes, garagem e piscina", false)
 
-        // ---------- piscina com praia rasa, borda branca e deque ----------
-        fill(-22, -1, -3, -1, -1, 0, WOOD); fill(-22, -1, 18, -1, -1, 21, WOOD); fill(-11, -1, 1, -1, -1, 17, WOOD)
-        fill(-21, -4, 1, -12, -2, 17, TILE)
-        fill(-21, -1, 1, -12, -1, 17, W)
-        fillB(-20, -3, 2, -13, -1, 16, B.WATER)
-        fill(-20, -3, 2, -13, -2, 5, TILE)   // parte rasa: só 1 bloco de água
-        for (cx in intArrayOf(-21, -12)) for (cz in intArrayOf(1, 17)) put(cx, 0, cz, LAMP)
-        for (zz in intArrayOf(3, 6, 12, 15)) put(-8, 0, zz, "Divã Branco")
-        put(-8, 0, 4, "Mesa Lateral Branca"); put(-8, 0, 13, "Mesa Lateral Branca"); put(-8, 0, 9, "Palmeira em Vaso Branco")
-        for (pz in intArrayOf(4, 8, 12, 16)) put(-16, -3, pz, LAMP)
-        put(-5, 0, 9, "Mesa de Jantar Carvalho"); put(-5, 0, 10, "Mesa de Jantar Carvalho"); put(-6, 0, 9, "Cadeira Moderna Branca"); put(-4, 0, 10, "Cadeira Moderna Branca")
-        put(-5, 0, 8, "Cadeira Moderna Branca"); put(-5, 0, 11, "Cadeira Moderna Branca")
-        put(-22, 0, 20, "Vaso de Planta"); put(-22, 0, -2, "Vaso de Planta"); put(-2, 0, -2, "Vaso de Planta"); put(-2, 0, 20, "Vaso de Planta")
+        // ================= lote: gramado, muro com pilares e grades, portão, rotatória, caminhos e cerca-viva =================
+        fillB(-30, -1, -34, 100, -1, 90, B.GRASS)
+        for (x in -30..100) for (z in intArrayOf(-34, 90)) { put(x, 0, z, STONE); put(x, 1, z, BARS); put(x, 2, z, BARS) }
+        for (z in -34..90) for (x in intArrayOf(-30, 100)) { put(x, 0, z, STONE); put(x, 1, z, BARS); put(x, 2, z, BARS) }
+        for (x in -30..100 step 8) for (z in intArrayOf(-34, 90)) { fill(x, 0, z, x, 4, z, QZ); put(x, 5, z, LAMP) }
+        for (z in -34..90 step 8) for (x in intArrayOf(-30, 100)) { fill(x, 0, z, x, 4, z, QZ); put(x, 5, z, LAMP) }
+        hole(39, 0, -34, 48, 3, -34); fill(38, 0, -34, 38, 5, -34, QZ); fill(49, 0, -34, 49, 5, -34, QZ); put(38, 6, -34, LAMP); put(49, 6, -34, LAMP)
+        fill(38, 5, -34, 49, 5, -34, K)
+        // caminho de entrada, rotatória com fonte e acesso à garagem
+        fill(40, -1, -33, 47, -1, -24, SLATE)
+        for (z in -24..-4) for (x in 27..61) { val dx = x - 44; val dz = z + 14; val d = Math.sqrt((dx * dx + dz * dz).toDouble()); if (d <= 11.0 && d >= 3.5) put(x, -1, z, SLATE) }
+        fill(44, -1, -3, 44, -1, -3, SLATE); fill(41, -1, -6, 47, -1, -1, SLATE)
+        fill(61, -1, -16, 90, -1, -1, SLATE)
+        put(44, 0, -14, "Fonte de Jardim"); put(44, 0, -16, "Banco de Jardim Carvalho"); put(44, 0, -12, "Banco de Jardim Carvalho")
+        for (zz in intArrayOf(-31, -27)) { put(39, 0, zz, "Poste de Rua"); put(48, 0, zz, "Poste de Rua") }
+        for (x in -28..98) { if (x in 36..51) continue; fillB(x, 0, -32, x, 1, -32, B.LEAVES); fillB(x, 0, 88, x, 1, 88, B.LEAVES) }
+        for (z in -30..86) { fillB(-28, 0, z, -28, 1, z, B.LEAVES); fillB(98, 0, z, 98, 1, z, B.LEAVES) }
+        // jardim da frente: canteiros de flores e vasos ao lado da casa
+        for (x in intArrayOf(2, 8, 14, 20)) { put(x, 0, -3, "Vaso de Planta"); put(x + 44, 0, -3, "Vaso de Planta") }
+        put(1, 0, -2, "Palmeira em Vaso Barro"); put(62, 0, -2, "Palmeira em Vaso Barro")
+        for (x in intArrayOf(4, 16, 48, 58)) put(x, 0, -2, "Lanterna de Jardim")
 
-        // ---------- casa: pisos, casca e lajes ----------
-        fill(0, -1, 0, 35, -1, 22, WOOD)
-        fill(24, -1, 1, 34, -1, 10, SLATE); fill(16, -1, 0, 19, -1, 3, SLATE)
-        fill(0, 0, 0, 35, 8, 0, W); fill(0, 0, 22, 35, 8, 22, W); fill(0, 0, 0, 0, 8, 22, W); fill(35, 0, 0, 35, 8, 22, W)
-        fill(13, 4, 0, 35, 4, 22, G); fill(0, 4, 15, 12, 4, 22, G)             // laje do segundo andar (a sala fica vazada: pé-direito duplo)
-        fill(14, 4, 1, 34, 4, 21, WOOD); fill(1, 4, 16, 11, 4, 21, WOOD)       // piso de madeira lá em cima
-        fill(-2, 9, -5, 37, 9, 24, W)                                           // telhado plano com beiral
-        fill(-2, 10, -5, 37, 10, -5, LJ); fill(-2, 10, 24, 37, 10, 24, LJ); fill(-2, 10, -5, -2, 10, 24, LJ); fill(37, 10, -5, 37, 10, 24, LJ)
+        // ================= casa: pisos, casca e lajes =================
+        fill(0, -1, 0, 63, -1, 26, WOOD)
+        fill(22, -1, 0, 41, -1, 26, QZ)
+        fill(43, -1, 14, 62, -1, 25, SLATE)
+        fill(0, 0, 0, 63, 8, 0, W); fill(0, 0, 26, 63, 8, 26, W); fill(0, 0, 0, 0, 8, 26, W); fill(63, 0, 0, 63, 8, 26, W)
+        fill(0, 4, 0, 21, 4, 26, G); fill(42, 4, 0, 63, 4, 26, G)       // laje do segundo andar nas duas alas
+        fill(22, 4, 10, 41, 4, 25, G)                                   // galeria sobre o fundo do hall (a frente fica vazada: pé-direito duplo)
+        fill(22, 5, 10, 41, 5, 10, GL); fill(22, 6, 10, 41, 6, 10, GL); hole(30, 5, 10, 33, 6, 10)   // guarda-corpo de vidro da galeria
+        // cobertura das alas: laje com beiral e platibanda
+        fill(-1, 9, -1, 21, 9, 27, W); fill(42, 9, -1, 64, 9, 27, W)
+        fill(-1, 10, -1, 21, 10, -1, LJ); fill(-1, 10, 27, 21, 10, 27, LJ); fill(-1, 10, -1, -1, 10, 27, LJ); fill(21, 10, -1, 21, 10, 27, LJ)
+        fill(42, 10, -1, 64, 10, -1, LJ); fill(42, 10, 27, 64, 10, 27, LJ); fill(42, 10, -1, 42, 10, 27, LJ); fill(64, 10, -1, 64, 10, 27, LJ)
+        // telhado de duas águas sobre o hall, com as empenas de vidro (frente) e brancas (fundos)
+        for (k in 0..9) {
+            for (z in 0..26) { putR(22 + k, 9 + k, z, ROOF, 2); putR(41 - k, 9 + k, z, ROOF, 3) }
+            for (y in 9..8 + k) {
+                put(22 + k, y, 0, GL); put(41 - k, y, 0, GL)
+                put(22 + k, y, 26, W); put(41 - k, y, 26, W)
+            }
+        }
+        for (y in 9..17) { put(31, y, 0, K); put(32, y, 0, K) }
 
-        // fachada da frente: vidro de piso a teto entre colunas pretas, portão de entrada e porta da sacada
-        val cols = intArrayOf(0, 6, 12, 16, 19, 24, 30, 35)
-        for (x in 0..35) for (y in 0..8) {
+        // ---------- fachada da frente ----------
+        for (x in 22..41) for (y in 0..8) {
             val b = when {
-                x in cols -> id(K)
-                x in 17..18 && y <= 2 -> 0
-                y == 4 && x >= 13 -> id(G)
+                x == 22 || x == 41 || x == 26 || x == 37 -> id(K)
+                x in 30..33 && y <= 3 -> 0
+                y == 4 -> id(G)
                 else -> id(GL)
             }
             putB(x, y, 0, b)
         }
-        hole(27, 5, 0, 28, 6, 0)
-        // lateral oeste da sala: vidro com porta de correr pro deque da piscina
-        for (z in 1..13) for (y in 0..8) putB(0, y, z, if (z == 7) id(K) else if (z in 5..6 && y <= 2) 0 else id(GL))
-        fill(0, 0, 14, 0, 8, 14, K)
-        // janelas nas paredes fechadas
-        for (y0w in intArrayOf(1, 6)) {
-            fill(0, y0w, 17, 0, y0w + 1, 20, P)
-            fill(35, y0w, 3, 35, y0w + 1, 8, P); fill(35, y0w, 16, 35, y0w + 1, 19, P)
-            fill(15, y0w, 22, 21, y0w + 1, 22, P); fill(26, y0w, 22, 32, y0w + 1, 22, P)
+        for (x in 22..41) for (y in 0..8) {
+            val b = when {
+                x == 22 || x == 41 || x == 26 || x == 37 -> id(K)
+                x in 30..33 && y <= 3 -> 0
+                y == 4 -> id(G)
+                else -> id(GL)
+            }
+            putB(x, y, 26, b)
         }
-        fill(3, 1, 22, 9, 2, 22, P); fill(2, 6, 22, 10, 7, 22, P)
-
-        // paredes internas do térreo (portas = vãos)
-        fill(13, 0, 11, 35, 3, 11, W); hole(14, 0, 11, 15, 2, 11); hole(29, 0, 11, 30, 2, 11)
-        fill(13, 0, 12, 13, 3, 21, W)
-        fill(24, 0, 12, 24, 3, 21, W); hole(24, 0, 16, 24, 2, 17)
-        fill(0, 0, 15, 12, 3, 15, W); hole(4, 0, 15, 8, 2, 15)
-        // andar de cima
-        fill(24, 5, 1, 24, 8, 21, W); hole(24, 5, 3, 24, 6, 4); hole(24, 5, 17, 24, 6, 18)
-        fill(13, 5, 15, 35, 8, 15, W); hole(17, 5, 15, 18, 6, 15); hole(29, 5, 15, 30, 6, 15)
-        fill(13, 5, 16, 13, 8, 21, W); hole(13, 5, 18, 13, 6, 19)
-        fill(13, 5, 1, 13, 6, 14, GF)         // guarda-corpo de vidro do loft sobre a sala
-        fill(3, 5, 15, 12, 6, 15, GF)         // guarda-corpo do mezanino (vão x1..2 é a chegada da escada)
-        // sacada da suíte
-        fill(24, 4, -4, 35, 4, -1, G)
-        fill(24, 5, -4, 35, 6, -4, GF); fill(24, 5, -4, 24, 6, -1, GF); fill(35, 5, -4, 35, 6, -1, GF)
-        fill(24, 5, -4, 24, 8, -4, K); fill(35, 5, -4, 35, 8, -4, K)
-        fill(13, 0, -5, 13, 8, -5, K); fill(22, 0, -5, 22, 8, -5, K)   // colunas da cobertura da entrada
-
-        // escada de concreto de 5 degraus, solta na sala, até o mezanino
-        val st = Blk.rotIds[id("Escada de Concreto Branco")]?.get(0) ?: 0
-        for (sx in 1..2) for (s in 0..4) {
-            for (k in 0 until s) put(sx, k, 10 + s, K)
-            if (st != 0) putB(sx, s, 10 + s, st)
+        for (wx in intArrayOf(0, 43)) {
+            fill(wx + 3, 1, 0, wx + 8, 2, 0, P); fill(wx + 12, 1, 0, wx + 17, 2, 0, P)
+            fill(wx + 3, 6, 0, wx + 8, 7, 0, P); fill(wx + 12, 6, 0, wx + 17, 7, 0, P)
+            fill(wx + 3, 1, 26, wx + 8, 2, 26, P); fill(wx + 12, 1, 26, wx + 17, 2, 26, P)
+            fill(wx + 3, 6, 26, wx + 8, 7, 26, P); fill(wx + 12, 6, 26, wx + 17, 7, 26, P)
         }
+        for (zz in intArrayOf(3, 9, 17, 22)) { fill(0, 1, zz, 0, 2, zz + 1, P); fill(0, 6, zz, 0, 7, zz + 1, P); fill(63, 1, zz, 63, 2, zz + 1, P); fill(63, 6, zz, 63, 7, zz + 1, P) }
+        // pórtico de entrada: colunas, laje e piso de mármore
+        fill(22, -1, -6, 41, -1, -1, QZ)
+        for (cx in intArrayOf(23, 28, 35, 40)) fill(cx, 0, -6, cx, 4, -6, PIL)
+        fill(22, 5, -6, 41, 5, -1, G); fill(22, 6, -6, 41, 6, -6, LJ); fill(22, 6, -6, 22, 6, -1, LJ); fill(41, 6, -6, 41, 6, -1, LJ)
+        put(26, 0, -5, LAMP); put(37, 0, -5, LAMP)
+        // sacadas das suítes da frente
+        fill(6, 4, -4, 15, 4, -1, G); fill(6, 5, -4, 15, 6, -4, GL); fill(6, 5, -4, 6, 6, -1, GL); fill(15, 5, -4, 15, 6, -1, GL)
+        fill(48, 4, -4, 57, 4, -1, G); fill(48, 5, -4, 57, 6, -4, GL); fill(48, 5, -4, 48, 6, -1, GL); fill(57, 5, -4, 57, 6, -1, GL)
+        hole(10, 5, 0, 11, 7, 0); hole(52, 5, 0, 53, 7, 0)
+        for (cx in intArrayOf(6, 15, 48, 57)) fill(cx, 0, -4, cx, 3, -4, PIL)
 
-        // ---------- mobília: térreo (peças novas: costas na parede, sofás em fileira olham pra +Z, cadeiras olham pra mesa) ----------
-        val CARP = "Lã Cinza-clara"
-        // sala de estar: tapete de lã no piso, lareira com estantes, sofás e poltronas em volta da mesa de centro
-        for (x in 3..9) for (z in 7..12) put(x, -1, z, CARP)
-        put(6, 0, 14, "Lareira de Mármore"); put(6, 1, 14, "Espelho Dourado")
-        for (x in intArrayOf(3, 4, 5, 7, 8, 9)) put(x, 0, 14, "Estante Moderna Branca")
-        put(4, 1, 14, "Quadro Mar Calmo Dourado"); put(8, 1, 14, "Quadro Floresta Dourado"); put(3, 2, 14, "Quadro Pôr do Sol Dourado"); put(9, 2, 14, "Quadro Noite Estrelada Dourado")
-        for (x in 4..7) put(x, 0, 8, "Sofá Moderno Cinza")
-        put(5, 0, 10, "Mesa de Centro"); put(6, 0, 10, "Mesa de Centro")
-        put(4, 0, 10, "Poltrona Orelhuda Vermelha"); put(7, 0, 10, "Poltrona Orelhuda Vermelha")
-        put(5, 1, 10, "Vaso de Flores Girassóis"); put(6, 1, 10, "Pilha de Livros 2")
-        put(3, 0, 8, "Luminária de Chão Cinza"); put(8, 0, 8, "Luminária Arco Branca"); put(3, 0, 11, "Puff Rosa"); put(8, 0, 11, "Puff Azul")
-        put(1, 0, 1, "Palmeira em Vaso Barro"); put(11, 0, 1, "Palmeira em Vaso Branco"); put(11, 0, 13, "Samambaia Preto"); put(1, 0, 8, "Cacto em Vaso Branco")
-        // jantar: mesa comprida, cadeiras modernas, lustre; aparadores e cristaleira junto da parede
-        for (x in 16..19) for (z in 6..7) put(x, 0, z, "Mesa de Jantar Carvalho")
-        for (x in 16..19) { put(x, 0, 5, "Cadeira Moderna Cinza"); put(x, 0, 8, "Cadeira Moderna Cinza") }
-        put(15, 0, 6, "Cadeira Moderna Azul"); put(20, 0, 7, "Cadeira Moderna Azul")
-        put(17, 1, 6, "Fruteira Carvalho"); put(18, 1, 7, "Vaso de Flores Rosas Vermelhas"); put(18, 1, 6, "Candelabro Dourado")
-        put(17, 3, 6, "Lustre Dourado"); put(19, 3, 7, "Lustre Dourado")
-        put(20, 0, 10, "Aparador Ébano"); put(21, 0, 10, "Aparador Ébano"); put(22, 0, 10, "Cristaleira Ébano")
-        put(20, 1, 10, "Globo Dourado"); put(21, 1, 10, "Bonsai Verde"); put(21, 2, 10, "Espelho Preto"); put(19, 0, 10, "Relógio de Pé Nogueira")
-        for (zx in intArrayOf(14, 15, 21, 22)) for (k in 0..2) put(zx, k, 1, "Cortina Transparente Branca")
-        put(15, 0, 3, "Banco de Jardim Carvalho"); put(14, 0, 4, "Vaso de Planta")
-        // cozinha: bancada na parede dos fundos, ilha com banquetas e pendentes
-        put(25, 0, 10, "Geladeira Inox"); put(26, 0, 10, "Balcão de Cozinha Branco"); put(27, 0, 10, "Pia de Cozinha Branco"); put(28, 0, 10, "Balcão de Cozinha Branco")
-        put(31, 0, 10, "Fogão Inox"); put(32, 0, 10, "Balcão de Cozinha Branco"); put(33, 0, 10, "Balcão de Cozinha Branco"); put(34, 0, 10, "Armário Alto Carvalho")
-        for (x in intArrayOf(26, 27, 28, 32, 33)) put(x, 2, 10, "Armário Suspenso Branco")
-        put(31, 2, 10, "Coifa Inox"); put(32, 1, 10, "Micro-ondas Inox"); put(26, 1, 10, "Fruteira Carvalho")
-        for (x in 26..31) put(x, 0, 6, "Balcão de Cozinha Branco")
-        for (x in 27..30) put(x, 0, 5, "Banqueta de Bar Branca")
-        for (x in intArrayOf(27, 29, 31)) put(x, 3, 6, "Pendente Branco")
-        put(28, 1, 6, "Vaso de Flores Margaridas"); put(26, 0, 2, "Palmeira em Vaso Preto")
-        // cinema: TV na parede, sofás de frente, poltronas nas laterais, tapete e luz suave
-        for (x in 14..22) for (z in 14..19) put(x, -1, z, "Lã Vermelha")
-        for (x in 17..21) put(x, 0, 12, "Aparador Ébano")
-        put(19, 1, 12, "Televisão"); put(17, 1, 12, "Abajur Vermelho"); put(21, 1, 12, "Abajur Vermelho")
-        for (x in 17..21) put(x, 0, 21, "Sofá Moderno Vermelho")
-        put(14, 0, 14, "Poltrona Orelhuda Vermelha"); put(23, 0, 14, "Poltrona Orelhuda Vermelha")
-        put(16, 0, 17, "Puff Vermelho"); put(22, 0, 17, "Puff Vermelho"); put(19, 0, 17, "Mesa Lateral Ébano")
-        put(14, 2, 19, "Arandela Dourada"); put(23, 2, 19, "Arandela Dourada"); put(19, 3, 16, "Pendente Vermelho")
-        // quarto de hóspedes: cama moderna, criados-mudos, guarda-roupa, divã
-        for (z in 12..13) put(27, 0, z, "Cama Moderna Azul-clara")
-        put(26, 0, 12, "Mesa de Cabeceira Carvalho"); put(28, 0, 12, "Mesa de Cabeceira Carvalho"); put(26, 1, 12, "Abajur Rosa"); put(28, 1, 12, "Luz Noturna Lua Amarela")
-        put(27, 2, 12, "Quadro Noite Estrelada Dourado")
-        for (z in 15..17) put(34, 0, z, "Guarda-Roupa Moderno Carvalho")
-        put(27, 0, 15, "Divã Cinza"); put(34, 0, 21, "Poltrona Orelhuda Rosa"); put(33, 0, 21, "Luminária de Chão Rosa"); put(30, 0, 21, "Samambaia Azul")
-        for (x in 26..32) for (z in 14..18) put(x, -1, z, "Lã Azul-clara")
-        // adega: barris, cristaleiras, mesa redonda com bancos e pendente
-        for (x in 2..8) put(x, 0, 21, "Barril")
-        for (x in 9..11) put(x, 0, 21, "Cristaleira Nogueira")
-        put(6, 0, 18, "Mesa Redonda"); put(5, 0, 18, "Banco"); put(7, 0, 18, "Banco"); put(6, 0, 17, "Banco"); put(6, 0, 19, "Banco"); put(6, 3, 18, "Pendente Vermelho")
-        put(1, 2, 19, "Arandela Dourada"); put(11, 2, 17, "Arandela Dourada")
+        // ---------- paredes internas: térreo ----------
+        fill(21, 0, 1, 21, 3, 25, W); hole(21, 0, 5, 21, 2, 8); hole(21, 0, 17, 21, 2, 20)
+        fill(42, 0, 1, 42, 3, 25, W); hole(42, 0, 5, 42, 2, 8); hole(42, 0, 17, 42, 2, 20)
+        fill(1, 0, 13, 20, 3, 13, W); hole(9, 0, 13, 12, 2, 13)
+        fill(43, 0, 13, 62, 3, 13, W); hole(51, 0, 13, 54, 2, 13)
+        fill(57, 0, 14, 57, 3, 25, W); hole(57, 0, 18, 57, 2, 19)        // lavanderia
+        hole(63, 0, 18, 63, 2, 19)                                       // porta da garagem
+        fill(58, 0, 7, 62, 3, 7, W); fill(57, 0, 1, 57, 3, 6, W); hole(57, 0, 3, 57, 2, 4)   // lavabo (banheiro social)
+        // ---------- paredes internas: andar de cima ----------
+        fill(21, 5, 1, 21, 8, 25, W); hole(21, 5, 10, 21, 6, 11); fill(21, 5, 5, 21, 7, 8, GL)
+        fill(42, 5, 1, 42, 8, 25, W); hole(42, 5, 10, 42, 6, 11); hole(42, 5, 17, 42, 6, 20); fill(42, 5, 5, 42, 7, 8, GL)
+        fill(1, 5, 13, 20, 8, 13, W); hole(10, 5, 13, 11, 6, 13)         // suíte master -> banheiro
+        fill(9, 5, 14, 9, 8, 25, W); hole(9, 5, 18, 9, 6, 19)            // banheiro -> closet
+        fill(43, 5, 13, 62, 8, 13, W); hole(46, 5, 13, 47, 6, 13); hole(57, 5, 13, 58, 6, 13)
+        fill(53, 5, 1, 53, 8, 12, W)
+        // fundo do hall: piso do térreo sob a galeria e portas de vidro pro terraço já estão na fachada de trás
 
-        // ---------- mobília: andar de cima ----------
-        // loft: sala de TV aberta pra sala de baixo
-        for (x in 17..23) for (z in 6..12) put(x, 4, z, CARP)
-        for (x in 19..22) put(x, 5, 14, "Aparador Cinza"); put(20, 6, 14, "Televisão"); put(19, 6, 14, "Abajur Azul"); put(22, 6, 14, "Vaso de Flores Lavandas")
-        for (x in 19..22) put(x, 5, 9, "Sofá Moderno Azul")
-        put(20, 5, 11, "Mesa de Centro"); put(21, 5, 11, "Mesa de Centro"); put(18, 5, 11, "Puff Rosa"); put(23, 5, 11, "Puff Branco")
-        for (x in 21..23) put(x, 5, 1, "Estante Moderna Nogueira"); put(14, 5, 1, "Palmeira em Vaso Barro"); put(14, 5, 14, "Samambaia Branco")
-        put(21, 8, 6, "Lustre Prateado")
-        // suíte master: cama grande, criados-mudos, escrivaninha, poltronas, closet e banheiro
-        for (x in 25..27) put(x, 5, 9, "Cama Moderna Azul")
-        put(25, 5, 8, "Mesa de Cabeceira Ébano"); put(25, 5, 10, "Mesa de Cabeceira Ébano"); put(25, 6, 8, "Abajur Branco"); put(25, 6, 10, "Abajur Branco")
-        put(25, 7, 9, "Quadro Pôr do Sol Dourado")
-        for (x in 27..31) for (z in 5..12) put(x, 4, z, "Lã Cinza-clara")
-        for (x in 26..28) put(x, 5, 2, "Escrivaninha")
-        put(27, 6, 2, "Computador"); put(27, 5, 3, "Cadeira de Escritório"); put(26, 6, 2, "Luminária de Mesa Preta")
-        put(30, 5, 3, "Poltrona Orelhuda Cinza"); put(31, 5, 3, "Mesa Lateral Nogueira"); put(32, 5, 3, "Poltrona Orelhuda Cinza")
-        for (z in 5..9) put(34, 5, z, "Guarda-Roupa Moderno Cinza")
-        put(29, 8, 8, "Pendente Preto")
-        fill(31, 5, 10, 34, 8, 10, W); fill(30, 5, 10, 30, 8, 14, W); hole(30, 5, 12, 30, 6, 13)
-        fill(31, 4, 11, 34, 4, 14, "Quartzo")
-        put(34, 5, 12, "Vaso Sanitário Branco"); put(34, 5, 13, "Pia de Banheiro Branco"); put(34, 6, 13, "Espelho Preto"); put(33, 5, 14, "Banheira Branco"); put(32, 5, 14, "Banheira Branco")
-        put(31, 5, 11, "Máquina de Lavar Branca"); put(31, 8, 12, "Pendente Branco")
-        put(25, 5, -1, "Palmeira em Vaso Preto"); put(34, 5, -1, "Palmeira em Vaso Branco")
-        put(29, 5, -2, "Mesa Lateral Carvalho"); put(28, 5, -2, "Poltrona Orelhuda Branca"); put(30, 5, -2, "Poltrona Orelhuda Branca")
-        // suíte 2
-        for (x in 25..27) put(x, 5, 18, "Cama Moderna Rosa")
-        put(25, 5, 17, "Mesa de Cabeceira Branca"); put(25, 5, 19, "Mesa de Cabeceira Branca"); put(25, 6, 17, "Abajur Rosa"); put(25, 6, 19, "Luz Noturna Lua Rosa")
-        for (z in 18..20) put(34, 5, z, "Guarda-Roupa Moderno Branca")
-        for (x in 32..33) put(x, 5, 21, "Escrivaninha")
-        put(32, 6, 21, "Computador"); put(32, 5, 20, "Cadeira de Escritório"); put(29, 8, 18, "Pendente Rosa")
-        // quarto 3 (infantil)
-        for (x in 14..16) put(x, 5, 18, "Cama Moderna Azul-clara")
-        put(14, 5, 17, "Mesa de Cabeceira Bétula"); put(14, 5, 19, "Mesa de Cabeceira Bétula"); put(14, 6, 17, "Luz Noturna Lua Azul")
-        put(22, 5, 17, "Berço Carvalho"); for (x in 20..22) put(x, 5, 21, "Armário Alto Branca"); put(18, 8, 18, "Pendente Amarelo")
-        // escritório no mezanino
-        for (x in 3..8) put(x, 5, 21, "Escrivaninha")
-        put(4, 6, 21, "Computador"); put(7, 6, 21, "Computador"); put(4, 5, 20, "Cadeira de Escritório"); put(7, 5, 20, "Cadeira de Escritório"); put(6, 6, 21, "Luminária de Mesa Dourada")
-        for (x in 9..11) put(x, 5, 21, "Estante Moderna Carvalho")
-        for (z in 17..19) put(11, 5, z, "Estante Moderna Nogueira")
-        put(2, 5, 17, "Sofá Chesterfield Azul"); put(2, 5, 18, "Sofá Chesterfield Azul"); put(3, 5, 18, "Mesa Lateral Carvalho"); put(5, 8, 17, "Pendente Preto")
+        // ================= mobília: térreo =================
+        // ---- sala de estar (ala oeste, frente) ----
+        lab(10.5f, 3.6f, 6.5f, "SALA DE ESTAR")
+        fill(4, -1, 3, 17, -1, 10, CARP)
+        put(6, 0, 12, "Lareira de Mármore"); put(6, 1, 12, "Espelho Dourado")
+        for (x in intArrayOf(3, 4, 5, 7, 8)) put(x, 0, 12, "Estante Moderna Branca")
+        put(4, 1, 12, "Quadro Mar Calmo Dourado"); put(8, 1, 12, "Quadro Floresta Dourado"); put(3, 2, 12, "Quadro Pôr do Sol Dourado"); put(8, 2, 12, "Quadro Noite Estrelada Dourado")
+        row(4, 7, 0, 6, "Sofá Moderno Cinza")
+        put(5, 0, 9, "Mesa de Centro"); put(6, 0, 9, "Mesa de Centro")
+        put(4, 0, 9, "Poltrona Orelhuda Vermelha"); put(7, 0, 9, "Poltrona Orelhuda Vermelha")
+        put(5, 1, 9, "Vaso de Flores Girassóis"); put(6, 1, 9, "Pilha de Livros 2")
+        put(3, 0, 6, "Luminária de Chão Cinza"); put(8, 0, 6, "Luminária Arco Branca"); put(3, 0, 10, "Puff Rosa"); put(8, 0, 10, "Puff Azul")
+        row(14, 18, 0, 12, "Aparador Ébano"); put(16, 1, 12, "Televisão"); put(14, 1, 12, "Abajur Azul"); put(18, 1, 12, "Vaso de Flores Lavandas")
+        row(14, 17, 0, 7, "Sofá Chesterfield Azul"); put(15, 0, 9, "Mesa de Centro"); put(16, 0, 9, "Mesa de Centro")
+        put(1, 0, 1, "Palmeira em Vaso Barro"); put(19, 0, 1, "Palmeira em Vaso Branco"); put(19, 0, 11, "Samambaia Preto"); put(1, 0, 11, "Cacto em Vaso Branco")
+        put(6, 3, 7, "Lustre Dourado"); put(16, 3, 8, "Lustre Dourado")
+        for (cx in intArrayOf(3, 9, 12, 19)) col(cx, 0, 1, 1, "Cortina Transparente Branca")
+        for (cx in intArrayOf(3, 9, 12, 19)) { put(cx, 1, 1, "Cortina Transparente Branca"); put(cx, 2, 1, "Cortina Transparente Branca") }
+        // ---- sala de jantar (ala oeste, fundos) ----
+        lab(10.5f, 3.6f, 19.5f, "SALA DE JANTAR")
+        fill(4, -1, 16, 17, -1, 23, "Lã Vermelha")
+        for (x in 6..15) { put(x, 0, 19, "Mesa de Jantar Carvalho"); put(x, 0, 20, "Mesa de Jantar Carvalho"); put(x, 0, 18, "Cadeira Moderna Cinza"); put(x, 0, 21, "Cadeira Moderna Cinza") }
+        put(5, 0, 19, "Cadeira Moderna Azul"); put(16, 0, 20, "Cadeira Moderna Azul")
+        put(8, 1, 19, "Candelabro Dourado"); put(13, 1, 20, "Candelabro Dourado"); put(10, 1, 19, "Fruteira Carvalho"); put(11, 1, 20, "Vaso de Flores Rosas Vermelhas")
+        for (lx in intArrayOf(7, 10, 14)) put(lx, 3, 19, "Lustre Dourado")
+        row(3, 4, 0, 25, "Aparador Ébano"); put(5, 0, 25, "Cristaleira Ébano"); put(3, 1, 25, "Globo Dourado"); put(4, 1, 25, "Bonsai Verde"); put(4, 2, 25, "Espelho Preto")
+        row(14, 15, 0, 25, "Aparador Ébano"); put(16, 0, 25, "Cristaleira Ébano"); put(18, 0, 25, "Relógio de Pé Nogueira"); put(14, 1, 25, "Fruteira Carvalho")
+        put(20, 0, 16, "Frigobar Branco"); put(20, 0, 15, "Banqueta de Bar Branca")
+        put(1, 1, 17, "Quadro Mar Calmo Dourado"); put(1, 1, 22, "Quadro Floresta Dourado")
+        put(1, 0, 15, "Palmeira em Vaso Branco"); put(1, 0, 24, "Samambaia Branco")
+        // ---- hall: escada, estátuas, plantas, salinha de espera sob a galeria ----
+        lab(31.5f, 3.6f, 3f, "HALL DE ENTRADA")
+        val st = rotB("Escada de Concreto Branco", 0)
+        for (sx in 30..33) for (s in 0..4) {
+            for (k in 0 until s) put(sx, k, 5 + s, K)
+            if (st != 0) putB(sx, s, 5 + s, st)
+        }
+        for (s in 0..4) { fill(29, 0, 5 + s, 29, s + 1, 5 + s, K); fill(34, 0, 5 + s, 34, s + 1, 5 + s, K) }
+        fill(28, -1, 1, 35, -1, 4, "Lã Vermelha")
+        put(24, 0, 2, "Estátua"); put(39, 0, 2, "Estátua"); put(24, 0, 8, "Vaso de Planta"); put(39, 0, 8, "Vaso de Planta")
+        put(27, 0, 1, "Mesa Lateral Ébano"); put(36, 0, 1, "Mesa Lateral Ébano"); put(27, 1, 1, "Vaso de Flores Rosas Vermelhas"); put(36, 1, 1, "Vaso de Flores Girassóis")
+        put(23, 0, 5, "Palmeira em Vaso Branco"); put(40, 0, 5, "Palmeira em Vaso Branco")
+        put(22, 0, 12, "Relógio de Pé Nogueira"); put(41, 0, 12, "Relógio de Pé Nogueira")
+        row(24, 27, 0, 25, "Sofá Chesterfield Azul"); put(25, 0, 22, "Mesa de Centro"); put(26, 0, 22, "Mesa de Centro"); put(23, 0, 22, "Poltrona Orelhuda Cinza"); put(28, 0, 22, "Poltrona Orelhuda Cinza")
+        row(36, 39, 0, 25, "Sofá Chesterfield Vermelho"); put(37, 0, 22, "Mesa de Centro"); put(38, 0, 22, "Mesa de Centro"); put(35, 0, 22, "Poltrona Orelhuda Cinza"); put(40, 0, 22, "Poltrona Orelhuda Cinza")
+        put(29, 0, 25, "Palmeira em Vaso Branco"); put(34, 0, 25, "Palmeira em Vaso Branco")
+        put(25, 3, 20, "Lustre Dourado"); put(38, 3, 20, "Lustre Dourado"); put(31, 3, 15, "Lustre Dourado"); put(32, 3, 15, "Lustre Dourado")
+        put(23, 1, 14, "Quadro Pôr do Sol Dourado"); put(40, 1, 14, "Quadro Noite Estrelada Dourado")
+        // vigas e lustres do pé-direito duplo
+        fill(22, 12, 3, 41, 12, 3, K); put(27, 11, 3, "Lustre Dourado"); put(36, 11, 3, "Lustre Dourado")
+        // ---- lavabo ----
+        put(58, 0, 6, "Vaso Sanitário Branco"); put(60, 0, 6, "Pia de Banheiro Branco"); put(60, 1, 6, "Espelho Preto"); put(62, 0, 6, "Gabinete de Banheiro")
+        // ---- sala de TV e jogos (ala leste, frente) ----
+        lab(50f, 3.6f, 5.5f, "SALA DE TV E JOGOS")
+        fill(45, -1, 3, 55, -1, 10, "Lã Vermelha")
+        row(46, 50, 0, 12, "Aparador Ébano"); put(48, 1, 12, "Televisão"); put(46, 1, 12, "Abajur Vermelho"); put(50, 1, 12, "Abajur Vermelho"); put(47, 1, 12, "Videogame")
+        row(46, 50, 0, 6, "Sofá Moderno Vermelho")
+        put(44, 0, 8, "Poltrona Orelhuda Vermelha"); put(52, 0, 8, "Poltrona Orelhuda Vermelha"); put(47, 0, 9, "Puff Vermelho"); put(50, 0, 9, "Puff Vermelho"); put(48, 0, 9, "Mesa Lateral Ébano")
+        put(44, 2, 3, "Arandela Dourada"); put(54, 2, 3, "Arandela Dourada"); put(48, 3, 8, "Pendente Vermelho")
+        put(62, 0, 9, "Fliperama"); put(62, 0, 11, "Fliperama"); put(59, 0, 10, "Mesa de Pingue-Pongue"); put(58, 0, 12, "Aquário")
+        put(44, 0, 1, "Estante Moderna Nogueira"); put(45, 0, 1, "Estante Moderna Nogueira"); put(55, 0, 1, "Palmeira em Vaso Barro")
+        // ---- cozinha (ala leste, fundos) ----
+        lab(50f, 3.6f, 19.5f, "COZINHA")
+        put(44, 0, 25, "Geladeira Inox"); put(45, 0, 25, "Balcão de Cozinha Branco"); put(46, 0, 25, "Pia de Cozinha Branco"); put(47, 0, 25, "Balcão de Cozinha Branco")
+        put(48, 0, 25, "Lava-Louças"); put(49, 0, 25, "Fogão Inox"); put(50, 0, 25, "Balcão de Cozinha Branco"); put(51, 0, 25, "Balcão de Cozinha Branco")
+        put(52, 0, 25, "Armário Alto Carvalho"); put(53, 0, 25, "Armário Alto Carvalho"); put(54, 0, 25, "Forno Elétrico"); put(55, 0, 25, "Freezer Horizontal")
+        for (x in intArrayOf(45, 46, 47, 50, 51)) put(x, 2, 25, "Armário Suspenso Branco")
+        put(49, 2, 25, "Coifa Inox"); put(50, 1, 25, "Micro-ondas Inox"); put(45, 1, 25, "Cafeteira"); put(47, 1, 25, "Air Fryer"); put(51, 1, 25, "Fruteira Carvalho")
+        row(46, 51, 0, 20, "Balcão de Cozinha Branco"); row(47, 50, 0, 19, "Banqueta de Bar Branca")
+        for (x in intArrayOf(47, 49, 51)) put(x, 3, 20, "Pendente Branco")
+        put(48, 1, 20, "Vaso de Flores Margaridas"); put(44, 0, 15, "Palmeira em Vaso Preto")
+        put(55, 0, 16, "Mesa Bistrô"); put(55, 0, 15, "Banqueta de Bar Branca"); put(55, 0, 17, "Banqueta de Bar Branca")
+        // ---- lavanderia ----
+        lab(60f, 3.6f, 19.5f, "LAVANDERIA")
+        put(58, 0, 25, "Máquina de Lavar Branca"); put(59, 0, 25, "Secadora"); put(61, 0, 25, "Tanque de Lavar"); put(58, 0, 22, "Cesto de Roupa"); put(62, 0, 22, "Tábua de Passar")
+        put(62, 0, 15, "Armário Alto Branca"); put(62, 0, 16, "Armário Alto Branca"); put(60, 0, 15, "Ferro de Passar")
 
-        // ---------- fundos: terraço, mesa de jantar ao ar livre e jardim ----------
-        fill(2, -1, 23, 34, -1, 27, SLATE)
-        for (x in 14..17) { put(x, 0, 25, "Mesa de Jantar Carvalho"); put(x, 0, 26, "Mesa de Jantar Carvalho"); put(x, 0, 24, "Cadeira Moderna Cinza"); put(x, 0, 27, "Cadeira Moderna Cinza") }
-        put(13, 0, 25, "Cadeira Moderna Cinza"); put(18, 0, 26, "Cadeira Moderna Cinza"); put(15, 1, 25, "Fruteira Carvalho"); put(16, 1, 26, "Vaso de Flores Margaridas")
-        for (x in 24..26) put(x, 0, 24, "Sofá Moderno Cinza")
-        put(24, 0, 26, "Puff Branco"); put(26, 0, 26, "Puff Branco"); put(25, 0, 26, "Mesa Lateral Nogueira"); put(27, 0, 24, "Luminária de Chão Cinza")
-        for (z in intArrayOf(-9, -6, -3)) { put(14, 0, z, "Luminária de Chão Cinza"); put(21, 0, z, "Luminária de Chão Cinza") }
-        put(16, 2, -1, "Arandela Preta"); put(19, 2, -1, "Arandela Preta"); put(17, 3, -3, "Pendente Preto"); put(18, 3, -3, "Pendente Preto")
-        fill(13, 4, -5, 22, 4, -1, G)
-        put(11, 0, -2, "Palmeira em Vaso Preto"); put(24, 0, -2, "Palmeira em Vaso Preto"); put(3, 0, -2, "Samambaia Branco"); put(32, 0, -2, "Samambaia Branco")
-        for (x in intArrayOf(3, 10, 22, 33)) put(x, 0, 28, "Vaso de Planta")
-        for (x in intArrayOf(2, 34)) for (zz in intArrayOf(23, 27)) put(x, 0, zz, LAMP)
+        // ================= mobília: andar de cima =================
+        // ---- galeria do hall ----
+        lab(31.5f, 8.6f, 17f, "GALERIA")
+        fill(26, 4, 12, 37, 4, 22, "Lã Vermelha")
+        row(24, 27, 5, 25, "Estante Moderna Nogueira"); row(36, 39, 5, 25, "Estante Moderna Nogueira")
+        put(25, 6, 25, "Globo Dourado"); put(38, 6, 25, "Bonsai Verde")
+        put(29, 5, 17, "Sofá Chesterfield Azul"); put(30, 5, 17, "Sofá Chesterfield Azul"); put(33, 5, 17, "Sofá Chesterfield Azul"); put(34, 5, 17, "Sofá Chesterfield Azul")
+        put(31, 5, 19, "Mesa de Centro"); put(32, 5, 19, "Mesa de Centro"); put(31, 6, 19, "Vaso de Flores Girassóis")
+        put(31, 5, 13, "Escultura Moderna"); put(32, 5, 13, "Estátua"); put(23, 5, 13, "Palmeira em Vaso Branco"); put(40, 5, 13, "Palmeira em Vaso Branco")
+        put(22, 6, 16, "Quadro Floresta Dourado"); put(22, 6, 21, "Quadro Mar Calmo Dourado"); put(41, 6, 16, "Quadro Noite Estrelada Dourado"); put(41, 6, 21, "Quadro Pôr do Sol Dourado")
+        put(27, 8, 22, "Lustre Prateado"); put(36, 8, 22, "Lustre Prateado")
+        // ---- suíte master (ala oeste, frente) ----
+        lab(10.5f, 8.6f, 6.5f, "SUÍTE MASTER")
+        fill(3, 4, 2, 17, 4, 11, CARP)
+        row(8, 10, 5, 1, "Cama Moderna Azul"); put(7, 5, 1, "Mesa de Cabeceira Ébano"); put(11, 5, 1, "Mesa de Cabeceira Ébano")
+        put(7, 6, 1, "Abajur Branco"); put(11, 6, 1, "Abajur Branco"); put(9, 7, 1, "Quadro Pôr do Sol Dourado")
+        col(1, 5, 8, 11, "Guarda-Roupa Moderno Carvalho")
+        put(1, 5, 5, "Aparador Cinza"); put(1, 6, 5, "Televisão")
+        row(14, 17, 5, 12, "Sofá Moderno Cinza"); put(15, 5, 10, "Mesa de Centro"); put(16, 5, 10, "Mesa de Centro")
+        put(19, 5, 2, "Poltrona Orelhuda Cinza"); put(19, 5, 3, "Mesa Lateral Carvalho"); put(19, 5, 4, "Poltrona Orelhuda Cinza"); put(19, 5, 6, "Luminária de Chão Cinza")
+        put(2, 5, 1, "Palmeira em Vaso Preto"); put(18, 5, 1, "Palmeira em Vaso Branco")
+        put(10, 8, 6, "Lustre Prateado"); put(8, 8, 9, "Pendente Preto")
+        put(7, 5, -2, "Poltrona Orelhuda Branca"); put(8, 5, -2, "Mesa Lateral Carvalho"); put(9, 5, -2, "Poltrona Orelhuda Branca"); put(14, 5, -2, "Palmeira em Vaso Branco")
+        // ---- banheiro e closet da master ----
+        lab(15f, 8.6f, 19.5f, "BANHEIRO MASTER")
+        fill(10, 4, 14, 20, 4, 25, QZ)
+        put(15, 5, 22, "Banheira Branco"); put(16, 5, 22, "Banheira Branco")
+        put(12, 5, 25, "Pia de Banheiro Branco"); put(13, 5, 25, "Pia de Banheiro Branco"); put(12, 6, 25, "Espelho Preto"); put(13, 6, 25, "Espelho Preto")
+        put(19, 5, 25, "Vaso Sanitário Branco"); put(20, 5, 25, "Gabinete de Banheiro"); put(20, 5, 15, "Chuveiro Interno"); put(20, 5, 16, "Chuveiro Interno")
+        put(11, 5, 15, "Cesto de Roupa"); put(15, 8, 20, "Pendente Branco")
+        lab(5f, 8.6f, 19.5f, "CLOSET")
+        fill(1, 4, 14, 8, 4, 25, CARP)
+        col(1, 5, 15, 24, "Guarda-Roupa Moderno Branca"); row(2, 8, 5, 25, "Armário Alto Branca")
+        put(5, 5, 19, "Puff Rosa"); put(5, 5, 20, "Puff Rosa"); put(8, 5, 15, "Espelho Preto"); put(5, 8, 20, "Pendente Rosa")
+        // ---- suíte 2 (ala leste, frente) ----
+        lab(47.5f, 8.6f, 6.5f, "SUÍTE DE HÓSPEDES")
+        fill(44, 4, 2, 51, 4, 11, "Lã Rosa")
+        row(46, 48, 5, 1, "Cama Moderna Rosa"); put(45, 5, 1, "Mesa de Cabeceira Branca"); put(49, 5, 1, "Mesa de Cabeceira Branca")
+        put(45, 6, 1, "Abajur Rosa"); put(49, 6, 1, "Luz Noturna Lua Rosa"); put(47, 7, 1, "Quadro Noite Estrelada Dourado")
+        col(43, 5, 5, 9, "Guarda-Roupa Moderno Branca")
+        put(51, 5, 1, "Escrivaninha"); put(51, 6, 1, "Computador"); put(51, 5, 2, "Cadeira de Escritório")
+        put(51, 5, 11, "Poltrona Orelhuda Rosa"); put(50, 5, 11, "Luminária de Chão Rosa"); put(48, 8, 6, "Pendente Rosa")
+        // ---- quarto infantil (ala leste, frente) ----
+        lab(58f, 8.6f, 6.5f, "QUARTO INFANTIL")
+        fill(55, 4, 2, 61, 4, 11, "Lã Amarela")
+        put(55, 5, 1, "Berço Carvalho"); row(57, 59, 5, 1, "Cama Moderna Azul-clara"); put(56, 5, 1, "Mesa de Cabeceira Bétula"); put(60, 5, 1, "Mesa de Cabeceira Bétula")
+        put(56, 6, 1, "Luz Noturna Lua Azul"); put(60, 6, 1, "Luz Noturna Lua Amarela")
+        col(62, 5, 4, 8, "Armário Alto Branca"); put(61, 5, 11, "Caixa Organizadora"); put(54, 5, 8, "Estante Moderna Carvalho"); put(54, 5, 9, "Estante Moderna Carvalho")
+        put(58, 5, 10, "Videogame"); put(58, 8, 6, "Pendente Amarelo"); put(61, 5, 2, "Samambaia Azul")
+        // ---- biblioteca e escritório (ala leste, fundos) ----
+        lab(52.5f, 8.6f, 19.5f, "BIBLIOTECA E ESCRITÓRIO")
+        fill(45, 4, 15, 60, 4, 24, "Lã Vermelha")
+        for (x in 44..54) { put(x, 5, 25, "Estante Moderna Nogueira"); put(x, 6, 25, "Estante Moderna Nogueira") }
+        row(57, 59, 5, 25, "Escrivaninha"); put(58, 6, 25, "Computador"); put(57, 6, 25, "Luminária de Mesa Dourada"); put(58, 5, 24, "Cadeira de Escritório")
+        row(44, 47, 5, 15, "Sofá Chesterfield Azul"); put(45, 5, 18, "Mesa de Centro"); put(46, 5, 18, "Mesa de Centro"); put(44, 5, 18, "Poltrona Orelhuda Vermelha"); put(47, 5, 18, "Poltrona Orelhuda Vermelha")
+        put(62, 5, 14, "Relógio de Pé Nogueira"); put(62, 5, 18, "Globo Dourado"); put(61, 5, 22, "Palmeira em Vaso Barro"); put(44, 5, 24, "Samambaia Branco")
+        put(50, 8, 19, "Lustre Prateado"); put(58, 8, 22, "Pendente Preto"); put(62, 5, 24, "Lareira de Tijolo")
+
+        // ================= garagem pra 3 vagas, com oficina =================
+        lab(77f, 6.6f, 11f, "GARAGEM", true)
+        fill(64, -1, -1, 90, -1, 22, GRY)
+        fill(64, 0, 22, 90, 4, 22, W); fill(90, 0, 0, 90, 4, 22, W)
+        fill(64, 4, 0, 90, 4, 0, K)
+        for (px in intArrayOf(72, 81, 90)) fill(px, 0, 0, px, 3, 0, QZ)
+        fill(63, 5, -2, 91, 5, 23, W); fill(63, 6, -2, 91, 6, -2, LJ); fill(63, 6, 23, 91, 6, 23, LJ); fill(63, 6, -2, 63, 6, 23, LJ); fill(91, 6, -2, 91, 6, 23, LJ)
+        fill(90, 1, 4, 90, 3, 9, P); fill(90, 1, 13, 90, 3, 18, P); fill(70, 1, 22, 74, 2, 22, P); fill(80, 1, 22, 86, 2, 22, P)
+        for (lx in intArrayOf(68, 76, 85)) for (lz in intArrayOf(5, 12, 19)) put(lx, 4, lz, LAMP)
+        for (lx in intArrayOf(72, 81)) fill(lx, -1, 3, lx, -1, 20, "Concreto Amarelo")
+        // oficina na parede dos fundos
+        put(65, 0, 21, "Bancada de Ferramentas"); put(66, 0, 21, "Bancada de Ferramentas"); put(65, 1, 21, "Caixa de Ferramentas"); put(67, 2, 21, "Prateleira de Parede"); put(66, 2, 21, "Prateleira de Parede")
+        put(68, 0, 21, "Armário Metálico"); put(69, 0, 21, "Armário Metálico"); put(70, 0, 21, "Compressor de Ar"); put(71, 0, 21, "Armário de Ferramentas")
+        put(88, 0, 21, "Freezer Horizontal"); put(89, 0, 21, "Lixeira com Tampa"); put(87, 0, 21, "Armário Metálico"); put(82, 0, 21, "Barril"); put(83, 0, 21, "Barril")
+        put(65, 3, 1, "Holofote"); put(89, 3, 1, "Holofote")
+        put(64, 0, 10, "Caixa de Correio")
+
+        // ================= fundos: terraço, estar externo, cozinha gourmet, piscina, jardim =================
+        fill(0, -1, 27, 63, -1, 37, SLATE)
+        put(3, 0, 28, LAMP); put(60, 0, 28, LAMP)
+        for (cx in intArrayOf(10, 52)) put(cx, 0, 28, "Vaso de Planta")
+        // estar externo
+        lab(15f, 3.6f, 31f, "ESTAR EXTERNO")
+        row(8, 11, 0, 29, "Sofá Moderno Cinza"); put(8, 0, 31, "Puff Branco"); put(11, 0, 31, "Puff Branco"); put(9, 0, 31, "Mesa de Centro Externa"); put(10, 0, 31, "Mesa de Centro Externa")
+        put(13, 0, 29, "Luminária de Chão Cinza"); put(7, 0, 29, "Luminária de Chão Cinza")
+        put(17, 0, 33, "Fogueira"); put(15, 0, 33, "Banco de Piquenique"); put(19, 0, 33, "Banco de Piquenique"); put(17, 0, 31, "Banco de Piquenique")
+        put(24, 0, 33, "Guarda-Sol"); put(23, 0, 33, "Cadeira de Balanço"); put(25, 0, 33, "Cadeira de Balanço")
+        // cozinha gourmet com pérgula
+        lab(53f, 4.6f, 32f, "COZINHA GOURMET")
+        for (cx in intArrayOf(44, 62)) for (cz in intArrayOf(28, 37)) fill(cx, 0, cz, cx, 3, cz, PIL)
+        fill(44, 4, 28, 62, 4, 37, LJ); fill(44, 0, 37, 62, 3, 37, W); fill(46, 1, 37, 50, 2, 37, P)
+        row(55, 57, 0, 36, "Balcão de Cozinha Branco"); put(58, 0, 36, "Churrasqueira a Carvão"); put(59, 0, 36, "Balcão de Cozinha Branco"); put(60, 0, 36, "Forno de Pizza")
+        put(61, 0, 36, "Geladeira Inox"); put(56, 0, 36, "Pia de Cozinha Branco"); put(45, 0, 36, "Mesa de Buffet"); put(46, 0, 36, "Mesa de Buffet")
+        for (x in 48..53) { put(x, 0, 32, "Mesa de Jantar Carvalho"); put(x, 0, 33, "Mesa de Jantar Carvalho"); put(x, 0, 31, "Cadeira Moderna Cinza"); put(x, 0, 34, "Cadeira Moderna Cinza") }
+        put(47, 0, 32, "Cadeira Moderna Azul"); put(54, 0, 33, "Cadeira Moderna Azul")
+        put(50, 1, 32, "Fruteira Carvalho"); put(52, 1, 33, "Vaso de Flores Margaridas")
+        for (px in intArrayOf(49, 52)) put(px, 3, 32, "Pendente Preto")
+        // piscina
+        lab(22f, 4.6f, 47f, "PISCINA")
+        fill(0, -1, 38, 5, -1, 62, WOOD); fill(39, -1, 38, 44, -1, 62, WOOD); fill(6, -1, 57, 38, -1, 62, WOOD); fill(0, -1, 38, 44, -1, 38, WOOD)
+        fill(6, -4, 39, 38, -2, 56, TILE); fill(6, -1, 39, 38, -1, 56, W)
+        fillB(7, -3, 40, 37, -1, 55, B.WATER)
+        fill(7, -3, 40, 37, -2, 44, TILE)
+        for (cx in intArrayOf(6, 38)) for (cz in intArrayOf(39, 56)) put(cx, 0, cz, LAMP)
+        for (pz in intArrayOf(47, 50, 53)) { put(15, -3, pz, LAMP); put(30, -3, pz, LAMP) }
+        for (zz in intArrayOf(40, 43, 46, 49)) put(3, 0, zz, "Espreguiçadeira Branca")
+        for (xx in intArrayOf(12, 16, 20)) put(xx, 0, 59, "Espreguiçadeira Branca")
+        put(2, 0, 44, "Mesa Lateral Externa"); put(3, 0, 51, "Guarda-Sol"); put(24, 0, 59, "Guarda-Sol"); put(41, 0, 40, "Cadeira de Piscina"); put(41, 0, 42, "Cadeira de Piscina"); put(41, 0, 41, "Mesa Lateral Externa")
+        put(42, 0, 55, "Chuveiro Externo"); put(43, 0, 58, "Armário de Piscina"); put(0, 0, 60, "Palmeira em Vaso Barro"); put(44, 0, 60, "Palmeira em Vaso Barro")
+        // jardim dos fundos
+        put(20, 0, 70, "Fonte de Jardim"); put(18, 0, 70, "Banco de Jardim Carvalho"); put(22, 0, 70, "Banco de Jardim Carvalho"); put(30, 0, 66, "Lanterna de Jardim"); put(10, 0, 66, "Lanterna de Jardim")
+        put(50, 0, 66, "Banco de Balanço"); put(52, 0, 66, "Tocha de Jardim"); put(48, 0, 66, "Tocha de Jardim")
         // árvores e arbustos
         val rnd = Random(99L)
-        for ((tx, tz, tp) in listOf(Triple(-17, -7, 1), Triple(30, -7, 2), Triple(38, 10, 1), Triple(-18, 26, 2), Triple(38, 26, 1), Triple(10, 28, 2), Triple(-6, 25, 1)))
+        for ((tx, tz, tp) in listOf(Triple(-22, -26, 1), Triple(-22, -10, 2), Triple(-22, 12, 1), Triple(-22, 40, 2), Triple(-22, 66, 1), Triple(-10, 76, 2),
+            Triple(8, 80, 1), Triple(34, 78, 2), Triple(58, 80, 1), Triple(80, 70, 2), Triple(92, 50, 1), Triple(92, 30, 2), Triple(80, 38, 1), Triple(94, -26, 1),
+            Triple(70, -24, 2), Triple(-6, -24, 1), Triple(24, -24, 2), Triple(60, 48, 1), Triple(70, 56, 2)))
             plantTree(x0 + tx, top, z0 + tz, tp, rnd)
     }
 
