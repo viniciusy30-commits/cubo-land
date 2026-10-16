@@ -692,7 +692,7 @@ object Blk {
         val fup = F_SHAPE or (7 shl 5)
         val tc = HashMap<Int, Int>()
         for ((n, d) in Deco.items.withIndex()) {
-            val tiles = IntArray(d.tex.size) { s -> val t = d.tex[s]; if (t < 0) -1 else tc.getOrPut(t) { tl(K_DECO, t) } }
+            val tiles = IntArray(d.tex.size) { s -> val t = d.tex[s]; if (t < 0) -1 else tc.getOrPut(t) { val nt = tl(K_DECO, t); if (nt < 24) -1 else nt } }
             d.tile = tiles
             val first = tiles.firstOrNull { it >= 0 } ?: continue
             val id = blk(d.name, if (d.cat == 5) C_FURN else C_DEC, first, first, first, 0xB0A090, M_WOOD, 4f,

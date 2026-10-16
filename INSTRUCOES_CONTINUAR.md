@@ -10,13 +10,15 @@ AVISO: nada compilado (sem Android SDK no ambiente). Se o build falhar, mande o 
 - Sentar: itens com `md:sit` do addon são sentáveis (`Furniture.sittable` → `Deco.sit`).
 
 ## FEITO
-- **Lotes 1, 2 e 3 já importados** (1158 itens, 393 modelos, 678 texturas; registry.json em `--batches 1,2,3`). Lote 2 = cozinha/banheiro/eletros; lote 3 = luminárias, plantas, quadros, relógios, tapetes, cortinas, bonecos.
+- **Lotes 1, 2, 3 e 4 já importados** (2736 itens, 961 modelos, 1796 texturas; registry.json em `--batches 1,2,3,4`; só faltam as famílias de construção, ver item 3). Se estourar o limite de tiles (MAXT 4096) os últimos itens ficam sem registro/sem textura (Blk.buildDeco já evita tile errado). Lote 2 = cozinha/banheiro/eletros; lote 3 = luminárias, plantas, quadros, relógios, tapetes, cortinas, bonecos.
 - Lote 1 (508 itens, 121 modelos, 176 texturas): cadeiras, sofás, bancos, mesas, camas, escrivaninhas, criados-mudos, estantes, armários, gavetas, guarda-roupas, bancadas, prateleiras/racks, armários-vestiário, berços etc.
 - Remoção da mobília antiga + ganchos em Shapes/Furniture/Atlas/World/Blk.
 
+- Itens de vários blocos (cama, armário alto, cortina... `md:segment`, ~385 itens) agora são MONTADOS num modelo só pelo conversor (`assemble()` em deco_import.py): o bloco âncora desenha o móvel inteiro, que passa da célula (x/z negativos, y pra cima). Colisão/mira ainda cobrem só 1 célula (falta: estender a colisão pras células extras).
+
 ## FALTA (nesta ordem)
 1. **Compilar e testar** o lote 1 (modelo girado/espelhado errado? ajuste `FACES`/rotação em `deco_import.py` e `Deco.emit`).
-2. Só falta o lote 4 (`--batches 1,2,3,4`, ~1850 itens/~1100 texturas) — rode depois de confirmar que o jogo compila e cabe nos limites. Lote 4: todo o resto (comida, placas, esportes, etc.). Conferir no jogo o limite de tiles (`Blk.MAXT = 4096`) e de ids (16383): total do addon fora das famílias de construção ≈ 3006 itens / 1802 texturas. Se faltar, reduza a 32x32 (tool) ou priorize.
+2. (Lote 4 FEITO) Antigo: (`--batches 1,2,3,4`, ~1850 itens/~1100 texturas) — rode depois de confirmar que o jogo compila e cabe nos limites. Lote 4: todo o resto (comida, placas, esportes, etc.). Conferir no jogo o limite de tiles (`Blk.MAXT = 4096`) e de ids (16383): total do addon fora das famílias de construção ≈ 3006 itens / 1802 texturas. Se faltar, reduza a 32x32 (tool) ou priorize.
 3. Fora do escopo por enquanto (famílias de construção do addon: asfalto, paredes, tiles, calçadas, degraus/curvas/lajes, alfabeto/números/símbolos). Pergunte ao usuário se quer.
 4. Galeria: FEITO — seções por grupo (`gp` no items.json → `Deco.groups/groupOf`), e a galeria agora ignora blocos escondidos. Já agrupado em 14 seções grandes (GROUPS em deco_import.py).
 5. Comportamentos do addon ainda não portados: portas/janelas que abrem, multiblocos (`md:2y`, conectores), TVs novas ligadas ao navegador, estados (`md:top/bottom`), transparência/vidro (`render_method`), animações (texturas altas tipo 64x1600 foram esticadas).

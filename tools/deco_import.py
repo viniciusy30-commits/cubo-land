@@ -56,6 +56,13 @@ GROUPS = [  # (titulo, regex na pasta) - a primeira que casar vence; separado po
  (4, 'TEXTEIS E TAPETES', r'carpet|doormat|curtain|blanket|pillow|banner|flag'),
  (4, 'BONECOS E BRINQUEDOS', r'doll|plushi|toy|figure|chess|uno|dart|gift|ballon'),
  (4, 'ELETRONICOS E MUSICA', r'fan|ac|ac_|jukebox|radio|vinyl|telephone|typewriter|globe|aquarium|radiator|book|paper'),
+ (4, 'COMIDAS E BEBIDAS', r'food|drink|cake|cup|bottle|tumbler|lunch|popcorn|retail_item|retail_stuff|gallon|pack'),
+ (4, 'PLACAS E SINALIZAÇÃO', r'sign|board|billboard|traffic|warning|menu|panel|cinema_poster|street'),
+ (4, 'PORTAS E JANELAS', r'door|window|gate|garage|rolling|slide|prison|partition|railing'),
+ (4, 'CERCAS E EXTERIOR', r'fence|barrier|guard|bollard|pole|pipe|hydrant|mailbox|bike|catenary|train|garden|lawn|swing|manhole|path|parking|ladder|stairs|escalator|elevator|landing|exhaust|expansion|net$'),
+ (4, 'ROUPAS E ACESSÓRIOS', r'clothes|shirt|shoes|boots|slippers|sneakers|bag|hat|jewel|mannequin|totebag|vest|helmet|umbrella|hanger'),
+ (4, 'ESPORTE E MÚSICA', r'sport|gym|guitar|piano|drum|mic|speaker|flute|violin|melodica|angklung|cajon|kentungan|dj|music|racket|skate'),
+ (4, 'CAIXAS E LOJA', r'box|crate|barrel|sack|basket|shopping|cart|trunk|trolley|pharmacy|retail|cashier|atm|payment|scanner|checkout|money|gold|display'),
  (4, 'OUTRAS DECORACOES', r'.'),
 ]
 def group_raw(folder, cat):
@@ -147,6 +154,45 @@ def bake(g):
                 quads.append((mats.index(mn), int(max(0, min(1, sh))*255), vs))
     return mats, quads
 
+def assemble(d, c):
+    """Itens de varios blocos (md:segment: cama, armario alto, cortina...): -> [(geometry_id, (dx,dy,dz) em blocos)] ou None.
+    Layout (frente padrao, igual aos scripts do addon): left=+x/right=-x (esquerda no indice 0), front=0/mid,back = -z, bottom=0/mid/top = +y."""
+    if 'md:segment' not in d['description'].get('states', {}): return None
+    key = next((k for k in c if re.match(r'md:\d', k)), '')
+    segs = {}
+    for pm in d.get('permutations', []):
+        m = re.search(r"md:segment'\) == '(\w+)'", pm['condition'])
+        g = pm['components'].get('minecraft:geometry')
+        if m and g: segs[m.group(1)] = g['identifier'] if isinstance(g, dict) else g
+    if len(segs) < 2: return None
+    def toks(n):
+        if n == 'center': return ['mid', 'mid']
+        return n.split('_')
+    zfirst = 'zh' in key
+    ax = {'x': set(), 'y': set(), 'z': set()}
+    parsed = {}
+    for n in segs:
+        t = toks(n); r = {}
+        if len(t) == 1:
+            if 'h' in key and 'xh' in key and not key.startswith('md:2y') and not key.startswith('md:3y'): r['x'] = t[0]
+            elif 'zh' in key and 'xh' not in key: r['z'] = t[0]
+            elif t[0] in ('left', 'right'): r['x'] = t[0]
+            else: r['y'] = t[0]
+        else:
+            if zfirst: r['z'], r['x'] = t[0], t[1]
+            else: r['y'], r['x'] = t[0], t[1]
+        parsed[n] = r
+        for a, v in r.items(): ax[a].add(v)
+    def idx(a, v):
+        order = {'x': ['left', 'mid', 'right'], 'y': ['bottom', 'mid', 'top'], 'z': ['front', 'mid', 'back']}[a]
+        present = [o for o in order if o in ax[a]]
+        return present.index(v) if v in present else 0
+    out = []
+    for n, gid in segs.items():
+        r = parsed[n]
+        out.append((gid, (-idx('x', r['x']) if 'x' in r else 0, idx('y', r['y']) if 'y' in r else 0, -idx('z', r['z']) if 'z' in r else 0)))
+    return out
+
 # ---- registro persistente ----
 reg = json.load(open(REG)) if os.path.exists(REG) else {'items': [], 'tex': [], 'batches': []}
 folders = sorted(f for f in os.listdir(BP + '/blocks') if folder_ok(f))
@@ -174,10 +220,22 @@ for key in reg['items']:
     gref = c.get('minecraft:geometry'); gid = gref if isinstance(gref, str) else (gref or {}).get('identifier')
     g = geos.get(gid)
     if not g: skipped += 1; continue
-    if gid not in geo_index:
-        mats, quads = bake(g)
-        geo_index[gid] = len(geo_list); geo_list.append((mats, quads))
-    mats, quads = geo_list[geo_index[gid]]
+    asm = assemble(d, c)
+    gkey = gid if not asm else 'ASM:' + '|'.join(f'{a}@{o}' for a, o in sorted(asm))
+    if gkey not in geo_index:
+        if asm:
+            mats = []; quads = []
+            for sg, (dx, dy, dz) in asm:
+                if sg not in geos: continue
+                m2, q2 = bake(geos[sg])
+                for mn in m2:
+                    if mn not in mats: mats.append(mn)
+                for slot, sh, vs in q2:
+                    quads.append((mats.index(m2[slot]), sh, [(x+dx, y+dy, z+dz, u, v) for x, y, z, u, v in vs]))
+        else:
+            mats, quads = bake(g)
+        geo_index[gkey] = len(geo_list); geo_list.append((mats, quads))
+    mats, quads = geo_list[geo_index[gkey]]
     mi = c.get('minecraft:material_instances', {})
     def res(n):
         e = mi.get(n) or mi.get('*') or (next(iter(mi.values())) if mi else None)
@@ -196,7 +254,7 @@ for key in reg['items']:
     nm = ptname(key, base)
     if nm in usednames: nm = f'{nm} ({key.replace("_drz","")})'
     usednames.add(nm)
-    items.append({'k': key, 'n': nm, 'c': 5 if is_furn(folder) else 4, 'g': geo_index[gid], 't': tl, 'b': col,
+    items.append({'k': key, 'n': nm, 'c': 5 if is_furn(folder) else 4, 'g': geo_index[gkey], 't': tl, 'b': col,
                   'l': int(c.get('minecraft:light_emission', 0) or 0), 'f': folder, 'gp': group(folder, 5 if is_furn(folder) else 4), 'sit': 1 if 'md:sit' in c else 0})
 
 # ---- escreve ----
