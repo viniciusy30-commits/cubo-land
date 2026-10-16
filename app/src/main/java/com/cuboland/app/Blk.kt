@@ -680,6 +680,7 @@ object Blk {
         val waM = arrayOf("Branco", "Azul-claro", "Amarelo", "Rosa", "Lima", "Vermelho", "Azul", "Laranja")
         val waF = arrayOf("Branca", "Azul-clara", "Amarela", "Rosa", "Lima", "Vermelha", "Azul", "Laranja")
         val light = arrayOf(mc("glowstone"), tl(K_FLAT, 0x4FB8E8, 0x8AD8F5), tl(K_FLAT, 0xF28A2E, 0xFFD060))
+        val used = HashSet<String>(); for (dd in list) used.add(dd.name)   // segurança: nunca repete o nome de um bloco que já existe
         val cache = HashMap<Int, Int>()   // um tile por cor/estilo, compartilhado entre os móveis (o atlas tem teto)
         fun cached(key: Int, mk: () -> Int): Int { val c = cache[key]; if (c != null) return c; val t = mk(); cache[key] = t; return t }
         for (d in FurnC.defs) {
@@ -691,7 +692,7 @@ object Blk {
                 val p1 = cached(100 + ci + fb * 20, { if (d.fabric) tl(K_FABRIC, lt(col, 0.45f), lt(col, 0.25f)) else tl(K_FLAT, lt(col, 0.3f), col) })
                 val p = intArrayOf(p0, p1, F[Furniture.T_OAK], F[Furniture.T_OAKD], F[Furniture.T_STEEL], F[Furniture.T_WHITE],
                     light[d.lt.coerceIn(0, 2)], F[Furniture.T_BLACK])
-                val name = if (n > 1) d.name + " " + (if (d.fem) waF[k] else waM[k]) else d.name
+                var name = FurnC.fullName(d, k); if (!used.add(name)) name += " (v3)"
                 val id = blk(name, C_FURN, p[0], p[0], p[2], if (n > 1) col else d.color, d.mat, 4f, FUp or (d.sub shl 8), d.desc)
                 if (id != 0) fpal[id] = p
             }

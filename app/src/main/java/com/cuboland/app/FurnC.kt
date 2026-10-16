@@ -19,10 +19,24 @@ object FurnC {
         val name: String, val desc: String, val box: FloatArray, val parts: List<FloatArray>, val alt: List<FloatArray>?,
         val fem: Boolean, val ways: Int, val fabric: Boolean, val mat: Int, val kind: Int, val seat: Float, val top: Float,
         val small: Boolean, val lt: Int, val color: Int, val open: FloatArray?, val lid: FloatArray?, val lab: Int, val inv: Boolean,
-        val boxOpen: FloatArray?, val slots: FloatArray?
+        val boxOpen: FloatArray?, val slots: FloatArray?, val group: String
     ) { var sub = 0 }
 
     val defs = ArrayList<Def>()
+    private var grp = ""
+    /** seções da galeria de blocos (aba MOBÍLIA), na ordem em que aparecem */
+    val GROUPS = listOf("ASSENTOS EXTERNOS", "MESAS EXTERNAS", "ARMÁRIOS E CAIXAS", "LUZ, FOGO E ÁGUA", "ABRIGO E CAMPING", "ELETRODOMÉSTICOS",
+        "CASA: BANHEIRO, LAVANDERIA E LAZER", "OFICINA", "FAZENDA E QUINTAL", "PORTAS E JANELAS", "SALA E DECORAÇÃO", "EXPOSIÇÃO E ARMAZENAMENTO")
+    val WAY_M = arrayOf("Branco", "Azul-claro", "Amarelo", "Rosa", "Lima", "Vermelho", "Azul", "Laranja")
+    val WAY_F = arrayOf("Branca", "Azul-clara", "Amarela", "Rosa", "Lima", "Vermelha", "Azul", "Laranja")
+    /** nome do bloco da cor k deste móvel (os que têm uma cor só levam o nome puro) */
+    fun fullName(d: Def, k: Int): String = if (d.ways > 1) d.name + " " + (if (d.fem) WAY_F[k] else WAY_M[k]) else d.name
+    private val nameGroup: HashMap<String, String> by lazy {
+        val m = HashMap<String, String>()
+        for (d in defs) for (k in 0 until (if (d.ways > 1) WAY_M.size else 1)) m[fullName(d, k)] = d.group
+        m
+    }
+    fun groupOf(n: String): String = nameGroup[n] ?: ""
     fun def(s: Int): Def? = defs.getOrNull(s - BASE)
 
     // ---- pincéis ----
@@ -32,6 +46,8 @@ object FurnC {
         floatArrayOf(1f, p.toFloat(), x0.toFloat(), y0.toFloat(), z0.toFloat(), x1.toFloat(), y1.toFloat(), z1.toFloat())
     private fun y(p: Int, cx: Double, cz: Double, r: Double, y0: Double, y1: Double) =
         floatArrayOf(2f, p.toFloat(), cx.toFloat(), cz.toFloat(), r.toFloat(), r.toFloat(), y0.toFloat(), y1.toFloat())
+    /** cilindro com raio de baixo e de cima diferentes (mesmo que cone) */
+    private fun y(p: Int, cx: Double, cz: Double, r0: Double, r1: Double, y0: Double, y1: Double) = cone(p, cx, cz, r0, r1, y0, y1)
     private fun cone(p: Int, cx: Double, cz: Double, r0: Double, r1: Double, y0: Double, y1: Double) =
         floatArrayOf(2f, p.toFloat(), cx.toFloat(), cz.toFloat(), r0.toFloat(), r1.toFloat(), y0.toFloat(), y1.toFloat())
     private fun a(vararg v: Double) = FloatArray(v.size) { v[it].toFloat() }
@@ -46,7 +62,7 @@ object FurnC {
         lid: FloatArray? = null, lab: Int = 0, inv: Boolean = false, dimOff: Boolean = false, boxOpen: FloatArray? = null, slots: FloatArray? = null
     ) {
         val alt2 = alt ?: if (dimOff && kind == 2) dim(parts) else null
-        val d = Def(name, desc, box, parts, alt2, fem, ways, fabric, mat, kind, seat.toFloat(), top.toFloat(), small, lt, color, open, lid, lab, inv, boxOpen, slots)
+        val d = Def(name, desc, box, parts, alt2, fem, ways, fabric, mat, kind, seat.toFloat(), top.toFloat(), small, lt, color, open, lid, lab, inv, boxOpen, slots, grp)
         d.sub = BASE + defs.size
         defs.add(d)
     }
@@ -57,6 +73,7 @@ object FurnC {
 
     init {
         // ===================== ASSENTOS =====================
+        grp = "ASSENTOS EXTERNOS"
         add("Espreguiçadeira", "Espreguiçadeira reclinável de piscina com encosto e travesseiro. Dá pra sentar e relaxar.",
             a(0.08, 0.0, 0.02, 0.92, 0.5, 0.98),
             parts(b(M, 0.12, 0.0, 0.08, 0.2, 0.2, 0.16), b(M, 0.8, 0.0, 0.08, 0.88, 0.2, 0.16), b(M, 0.12, 0.0, 0.84, 0.2, 0.2, 0.92), b(M, 0.8, 0.0, 0.84, 0.88, 0.2, 0.92),
@@ -118,6 +135,7 @@ object FurnC {
             fem = true, fabric = true, seat = 0.5, color = 0xF5D63B)
 
         // ===================== MESAS =====================
+        grp = "MESAS EXTERNAS"
         add("Mesa Lateral Externa", "Mesinha redonda de apoio pra copos e livros.", a(0.16, 0.0, 0.16, 0.84, 0.56, 0.84),
             parts(y(C0, 0.5, 0.5, 0.34, 0.5, 0.56), y(M, 0.5, 0.5, 0.06, 0.0, 0.5), y(M, 0.5, 0.5, 0.2, 0.0, 0.04)),
             fem = true, top = 0.56, mat = 3, color = 0xF2F2EE)
@@ -146,6 +164,7 @@ object FurnC {
             fem = true, top = 0.76, color = 0xF2F2EE)
 
         // ===================== ARMÁRIOS E CAIXAS (abrem) =====================
+        grp = "ARMÁRIOS E CAIXAS"
         add("Armário de Piscina", "Armário de duas portas pra toalhas e brinquedos. Toque pra abrir e fechar.", a(0.02, 0.0, 0.02, 0.98, 0.95, 0.98),
             parts(b(C0, 0.02, 0.0, 0.02, 0.98, 0.95, 0.98), b(C1, 0.08, 0.06, 0.97, 0.48, 0.9, 0.99), b(C1, 0.52, 0.06, 0.97, 0.92, 0.9, 0.99), b(M, 0.46, 0.45, 0.985, 0.48, 0.55, 0.995), b(M, 0.52, 0.45, 0.985, 0.54, 0.55, 0.995)),
             open = a(0.99, 0.08, 0.06, 0.92, 0.9), kind = 1, color = 0x6DB9EE)
@@ -172,6 +191,7 @@ object FurnC {
             lid = a(0.2, 0.2, 0.8, 0.8, 0.72), kind = 1, fem = true, color = 0x9AD93E)
 
         // ===================== LUZ, FOGO E ÁGUA (ligam/desligam) =====================
+        grp = "LUZ, FOGO E ÁGUA"
         add("Fogueira", "Fogueira de jardim com lenha. Toque pra apagar ou acender.", a(0.15, 0.0, 0.15, 0.85, 0.4, 0.85),
             parts(b(WD, 0.2, 0.0, 0.25, 0.8, 0.1, 0.35), b(WD, 0.2, 0.0, 0.65, 0.8, 0.1, 0.75), b(WD, 0.25, 0.1, 0.2, 0.35, 0.2, 0.8), b(WD, 0.65, 0.1, 0.2, 0.75, 0.2, 0.8),
                 g(L, 0.35, 0.1, 0.35, 0.65, 0.5, 0.65), g(L, 0.42, 0.4, 0.42, 0.58, 0.72, 0.58)),
@@ -235,6 +255,7 @@ object FurnC {
             ways = 8, kind = 2, lab = 1, lt = 2, mat = 1, color = 0xB5503C)
 
         // ===================== ABRIGO E CAMPING =====================
+        grp = "ABRIGO E CAMPING"
         add("Guarda-Sol", "Guarda-sol de haste. Toque pra fechar ou abrir.", a(0.42, 0.0, 0.42, 0.58, 0.85, 0.58),
             parts(b(W, 0.46, 0.0, 0.46, 0.54, 0.82, 0.54), cone(C0, 0.5, 0.5, 0.5, 0.12, 0.66, 0.88), cone(C1, 0.5, 0.5, 0.12, 0.04, 0.88, 1.0)),
             alt = parts(b(W, 0.46, 0.0, 0.46, 0.54, 0.82, 0.54), b(C0, 0.44, 0.45, 0.44, 0.56, 0.85, 0.56)),
@@ -255,6 +276,7 @@ object FurnC {
 
         // ===================== ETAPA 3: INTERIOR (eletrodomésticos, banheiro, lavanderia, lazer, oficina, fazenda) =====================
         // --- eletrodomésticos pequenos (ficam em cima de balcões; ligam e desligam) ---
+        grp = "ELETRODOMÉSTICOS"
         add("Air Fryer", "Fritadeira elétrica sem óleo. Toque pra ligar e desligar.", a(0.2, 0.0, 0.2, 0.8, 0.6, 0.8),
             parts(b(C0, 0.2, 0.0, 0.2, 0.8, 0.55, 0.8), b(K, 0.2, 0.55, 0.2, 0.8, 0.6, 0.8), b(M, 0.4, 0.18, 0.8, 0.6, 0.28, 0.9), g(L, 0.64, 0.46, 0.8, 0.76, 0.5, 0.82)),
             fem = true, small = true, kind = 2, dimOff = true, mat = 5, color = 0x2A2C30)
@@ -312,6 +334,7 @@ object FurnC {
             small = false, kind = 2, dimOff = true, mat = 5, color = 0xE04040)
 
         // --- eletrodomésticos e móveis grandes (abrem) ---
+        grp = "CASA: BANHEIRO, LAVANDERIA E LAZER"
         add("Freezer Horizontal", "Freezer de tampa pra congelados. Toque pra abrir e fechar.", a(0.04, 0.0, 0.1, 0.96, 0.8, 0.9),
             parts(b(D, 0.04, 0.0, 0.1, 0.96, 0.75, 0.9), b(M, 0.04, 0.75, 0.1, 0.96, 0.8, 0.9), b(K, 0.4, 0.5, 0.9, 0.6, 0.56, 0.93)),
             lid = a(0.04, 0.1, 0.96, 0.9, 0.8), ways = 1, kind = 1, mat = 5, color = 0xF6F6F2)
@@ -353,7 +376,7 @@ object FurnC {
         add("Ar-Condicionado Portátil", "Ar-condicionado de chão com visor. Toque pra ligar e desligar.", a(0.2, 0.0, 0.2, 0.8, 0.95, 0.8),
             parts(b(D, 0.2, 0.0, 0.2, 0.8, 0.9, 0.8), b(C0, 0.2, 0.9, 0.2, 0.8, 0.95, 0.8), b(K, 0.26, 0.7, 0.8, 0.74, 0.86, 0.82), g(L, 0.34, 0.9, 0.8, 0.66, 0.93, 0.82)),
             kind = 2, dimOff = true, lt = 1, mat = 5, color = 0xF2F2EE)
-        add("Lareira", "Lareira de tijolo com fogo crepitante. Toque pra apagar ou acender.", a(0.0, 0.0, 0.1, 1.0, 1.0, 0.9),
+        add("Lareira de Tijolo", "Lareira de tijolo com fogo crepitante. Toque pra apagar ou acender.", a(0.0, 0.0, 0.1, 1.0, 1.0, 0.9),
             parts(b(C0, 0.0, 0.0, 0.1, 0.18, 1.0, 0.9), b(C0, 0.82, 0.0, 0.1, 1.0, 1.0, 0.9), b(C0, 0.18, 0.7, 0.1, 0.82, 1.0, 0.9), b(K, 0.18, 0.0, 0.1, 0.82, 0.7, 0.4), b(D, 0.0, 0.0, 0.9, 1.0, 0.05, 1.0),
                 g(L, 0.3, 0.05, 0.3, 0.7, 0.35, 0.6), g(L, 0.4, 0.3, 0.35, 0.6, 0.55, 0.55)),
             alt = parts(b(C0, 0.0, 0.0, 0.1, 0.18, 1.0, 0.9), b(C0, 0.82, 0.0, 0.1, 1.0, 1.0, 0.9), b(C0, 0.18, 0.7, 0.1, 0.82, 1.0, 0.9), b(K, 0.18, 0.0, 0.1, 0.82, 0.7, 0.4), b(D, 0.0, 0.0, 0.9, 1.0, 0.05, 1.0), b(K, 0.3, 0.05, 0.3, 0.7, 0.08, 0.6)),
@@ -371,6 +394,7 @@ object FurnC {
             fem = true, top = 0.86, kind = 2, lab = 3, mat = 5, color = 0x4C74C4)
 
         // --- oficina e garagem ---
+        grp = "OFICINA"
         add("Bancada de Ferramentas", "Bancada de oficina com gavetas. Toque pra abrir as gavetas.", a(0.0, 0.0, 0.0, 1.0, 0.92, 1.0),
             parts(b(WD, 0.0, 0.86, 0.0, 1.0, 0.92, 1.0), b(M, 0.02, 0.0, 0.04, 0.98, 0.86, 0.96), b(C0, 0.08, 0.5, 0.96, 0.92, 0.8, 0.975), b(C0, 0.08, 0.12, 0.96, 0.92, 0.42, 0.975), b(K, 0.4, 0.62, 0.975, 0.6, 0.66, 0.99), b(K, 0.4, 0.24, 0.975, 0.6, 0.28, 0.99)),
             open = a(0.975, 0.08, 0.12, 0.92, 0.8), fem = true, top = 0.92, kind = 1, mat = 5, color = 0xE04040)
@@ -382,6 +406,7 @@ object FurnC {
             lid = a(0.12, 0.25, 0.88, 0.75, 0.4), fem = true, small = true, kind = 1, mat = 5, color = 0xE04040)
 
         // --- fazenda e quintal produtivo ---
+        grp = "FAZENDA E QUINTAL"
         add("Composteira", "Composteira de ripas com tampa. Toque pra abrir e fechar.", a(0.1, 0.0, 0.1, 0.9, 0.8, 0.9),
             parts(b(W, 0.1, 0.0, 0.1, 0.9, 0.75, 0.9), b(WD, 0.1, 0.2, 0.08, 0.9, 0.26, 0.1), b(WD, 0.1, 0.5, 0.08, 0.9, 0.56, 0.1), b(C1, 0.06, 0.75, 0.06, 0.94, 0.8, 0.94)),
             lid = a(0.1, 0.1, 0.9, 0.9, 0.75), fem = true, kind = 1, color = 0x9AD93E)
@@ -418,6 +443,7 @@ object FurnC {
             fem = true, ways = 1, kind = 2, lab = 5, lt = 1, mat = 1, color = 0xD8D8D8)
 
         // ===================== ETAPA 4: PORTAS, PORTÕES, JANELAS, RECLINÁVEL, DECORAÇÃO QUE GIRA =====================
+        grp = "PORTAS E JANELAS"
         // portas/janelas: o painel fica fino em x (x local = largura do vão), porque o móvel gira de costas pra parede ao lado.
         add("Porta", "Porta de madeira com maçanetas. Toque pra abrir e fechar. Aberta, dá pra passar (empilhe duas pra uma porta alta).", a(0.0, 0.0, 0.0, 1.0, 1.0, 1.0),
             parts(b(W, 0.36, 0.0, 0.0, 0.64, 1.0, 0.07), b(W, 0.36, 0.0, 0.93, 0.64, 1.0, 1.0), b(W, 0.36, 0.94, 0.0, 0.64, 1.0, 1.0), b(C0, 0.42, 0.0, 0.07, 0.58, 0.94, 0.93), b(M, 0.3, 0.45, 0.8, 0.42, 0.5, 0.86), b(M, 0.58, 0.45, 0.8, 0.7, 0.5, 0.86)),
@@ -435,16 +461,17 @@ object FurnC {
             parts(b(WD, 0.4, 0.0, 0.0, 0.6, 0.95, 0.1), b(WD, 0.4, 0.0, 0.9, 0.6, 0.95, 1.0), b(W, 0.45, 0.15, 0.1, 0.55, 0.3, 0.9), b(W, 0.45, 0.4, 0.1, 0.55, 0.55, 0.9), b(W, 0.45, 0.65, 0.1, 0.55, 0.8, 0.9), b(W, 0.46, 0.15, 0.1, 0.54, 0.8, 0.2)),
             alt = parts(b(WD, 0.4, 0.0, 0.0, 0.6, 0.95, 0.1), b(WD, 0.4, 0.0, 0.9, 0.6, 0.95, 1.0), b(W, 0.0, 0.15, 0.0, 0.9, 0.3, 0.06), b(W, 0.0, 0.4, 0.0, 0.9, 0.55, 0.06), b(W, 0.0, 0.65, 0.0, 0.9, 0.8, 0.06)),
             ways = 1, kind = 2, lab = 2, inv = true, boxOpen = a(0.0, 0.0, 0.0, 0.1, 0.95, 0.1))
-        add("Janela", "Janela com vidro e travessas. Toque pra abrir e fechar o vidro.", a(0.0, 0.0, 0.0, 1.0, 1.0, 1.0),
+        add("Janela de Abrir", "Janela com vidro e travessas. Toque pra abrir e fechar o vidro.", a(0.0, 0.0, 0.0, 1.0, 1.0, 1.0),
             parts(b(W, 0.4, 0.0, 0.0, 0.6, 0.1, 1.0), b(W, 0.4, 0.9, 0.0, 0.6, 1.0, 1.0), b(W, 0.4, 0.0, 0.0, 0.6, 1.0, 0.1), b(W, 0.4, 0.0, 0.9, 0.6, 1.0, 1.0), b(L, 0.47, 0.1, 0.1, 0.53, 0.9, 0.9), b(W, 0.45, 0.1, 0.46, 0.55, 0.9, 0.54), b(W, 0.45, 0.46, 0.1, 0.55, 0.54, 0.9)),
             alt = parts(b(W, 0.4, 0.0, 0.0, 0.6, 0.1, 1.0), b(W, 0.4, 0.9, 0.0, 0.6, 1.0, 1.0), b(W, 0.4, 0.0, 0.0, 0.6, 1.0, 0.1), b(W, 0.4, 0.0, 0.9, 0.6, 1.0, 1.0), b(L, 0.0, 0.1, 0.0, 0.86, 0.9, 0.05)),
             fem = true, kind = 2, lab = 2, inv = true, lt = 1, color = 0xF2F2EE)
-        add("Persiana", "Persiana de lâminas. Toque pra subir e descer.", a(0.38, 0.0, 0.0, 0.62, 1.0, 1.0),
+        add("Persiana de Enrolar", "Persiana de lâminas. Toque pra subir e descer.", a(0.38, 0.0, 0.0, 0.62, 1.0, 1.0),
             parts(b(C0, 0.46, 0.05, 0.08, 0.54, 0.95, 0.92), b(C1, 0.44, 0.25, 0.08, 0.56, 0.28, 0.92), b(C1, 0.44, 0.5, 0.08, 0.56, 0.53, 0.92), b(C1, 0.44, 0.75, 0.08, 0.56, 0.78, 0.92), b(M, 0.42, 0.95, 0.06, 0.58, 1.0, 0.94)),
             alt = parts(b(C0, 0.44, 0.84, 0.08, 0.56, 0.95, 0.92), b(M, 0.42, 0.95, 0.06, 0.58, 1.0, 0.94)),
             fem = true, kind = 2, lab = 7, color = 0xF2F2EE)
 
         // ===================== sala e quarto =====================
+        grp = "SALA E DECORAÇÃO"
         add("Poltrona Reclinável", "Poltrona com apoio de pés. Toque pra reclinar e endireitar. Dá pra sentar!", a(0.05, 0.0, 0.05, 0.95, 0.9, 0.95),
             parts(b(WD, 0.08, 0.0, 0.1, 0.92, 0.2, 0.9), b(C0, 0.1, 0.2, 0.2, 0.9, 0.42, 0.9), b(C0, 0.1, 0.42, 0.1, 0.9, 0.95, 0.3), b(C1, 0.05, 0.2, 0.2, 0.14, 0.6, 0.9), b(C1, 0.86, 0.2, 0.2, 0.95, 0.6, 0.9), b(C1, 0.12, 0.12, 0.9, 0.88, 0.3, 0.97)),
             alt = parts(b(WD, 0.08, 0.0, 0.1, 0.92, 0.2, 0.9), b(C0, 0.1, 0.2, 0.2, 0.9, 0.42, 0.9), b(C0, 0.1, 0.42, 0.1, 0.9, 0.62, 0.4), b(C0, 0.1, 0.52, 0.0, 0.9, 0.78, 0.2), b(C1, 0.05, 0.2, 0.2, 0.14, 0.6, 0.9), b(C1, 0.86, 0.2, 0.2, 0.95, 0.6, 0.9), b(C1, 0.12, 0.3, 0.9, 0.88, 0.4, 1.0)),
@@ -468,6 +495,7 @@ object FurnC {
             fem = true, kind = 3, color = 0x6DB9EE)
 
         // ===================== ETAPA 5: EXPOSIÇÃO E ARMAZENAMENTO (kind 4) =====================
+        grp = "EXPOSIÇÃO E ARMAZENAMENTO"
         // slots = lista [x, y, z, tamanho] por item guardado; tocar num slot vazio guarda o que você segura, tocar num cheio devolve pra mão.
         add("Prateleira de Parede", "Prateleira com 3 lugares. Toque num lugar vazio pra guardar o item da mão, ou num cheio pra pegar de volta.", a(0.0, 0.3, 0.0, 1.0, 0.72, 0.5),
             parts(b(WD, 0.0, 0.3, 0.0, 1.0, 0.7, 0.06), b(W, 0.0, 0.4, 0.0, 1.0, 0.46, 0.5), b(C0, 0.0, 0.34, 0.0, 1.0, 0.4, 0.5)),

@@ -67,7 +67,10 @@ object Gallery {
         f("DIVERSOS") { _, _ -> true }
     )
 
-    private val MOBILIA = listOf(
+    /** móveis da mobília v3 (FurnC): uma seção por grupo; vêm antes das outras pra não cair em "MESAS", "ASSENTOS"... */
+    private fun fc(title: String) = s(title, "") { n, _ -> FurnC.groupOf(n) == title }
+
+    private val MOBILIA = FurnC.GROUPS.map { fc(it) } + listOf(
         s("SOFÁS MODERNOS", "Sofá Moderno ") { n, _ -> sw(n, "Sofá Moderno") },
         s("SOFÁS CHESTERFIELD", "Sofá Chesterfield ") { n, _ -> sw(n, "Sofá Chesterfield") },
         s("POLTRONAS ORELHUDAS", "Poltrona Orelhuda ") { n, _ -> sw(n, "Poltrona Orelhuda") },

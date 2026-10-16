@@ -1,3 +1,8 @@
+#id 2026-10-15-k
+#titulo Móveis novos na galeria de blocos
+- Na galeria de blocos, aba MOBÍLIA, os móveis novos têm seções próprias: assentos externos, mesas externas, armários e caixas, luz fogo e água, abrigo e camping, eletrodomésticos, casa, oficina, fazenda, portas e janelas, sala e decoração, exposição e armazenamento
+- Renomeados pra não repetir nomes antigos: "Janela de Abrir", "Persiana de Enrolar" e "Lareira de Tijolo"
+
 #id 2026-10-15-j
 #titulo Modo de construção: prévia, girar e busca por comportamento
 - Segurando um móvel, o lugar onde ele vai ficar aparece com uma prévia: VERDE pode colocar, VERMELHO bloqueado (você no caminho ou lugar ocupado) e AMARELO sem apoio embaixo
