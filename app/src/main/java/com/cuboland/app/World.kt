@@ -1363,7 +1363,7 @@ class World {
                 }
             } else return false
             val al = Blk.alias
-            for (i in blocks.indices) { val b = blocks[i]; if (b in 14..16383 && al[b] != 0) blocks[i] = al[b] }
+            for (i in blocks.indices) { val b = blocks[i]; if (b in 14..16383 && al[b] != 0) blocks[i] = if (al[b] < 0) 0 else al[b] }
             java.util.Arrays.fill(dirty, true); true
         } catch (_: Exception) { false }
     }

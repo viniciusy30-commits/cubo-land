@@ -34,7 +34,7 @@ object Furniture {
         S_FRIDGE, S_WARD, S_SHELF, FurnB.S_TALL, FurnB.S_WARDM, FurnB.S_SHELFM, FurnB.S_CABINET, FurnB.S_FRIDGE2, FurnB.S_FRIDGER, FurnB.S_GRAND -> 2f
         else -> if (s >= 256) FurnC.tallOf(s) else 1f
     }
-    fun sittable(id: Int): Boolean { val s = sub(id); if (s >= 256) return FurnC.sittable(s); if (s >= 100) return FurnB.sittable(s); return s == S_CHAIR || s == S_CHAIR2 || s == S_STOOL || s == S_ARM || s == S_OFFICE || s == S_SOFA }
+    fun sittable(id: Int): Boolean { if (Deco.sit(id)) return true; val s = sub(id); if (s >= 256) return FurnC.sittable(s); if (s >= 100) return FurnB.sittable(s); return s == S_CHAIR || s == S_CHAIR2 || s == S_STOOL || s == S_ARM || s == S_OFFICE || s == S_SOFA }
     fun isTable(id: Int): Boolean { val s = sub(id); if (s >= 256) return FurnC.isTable(s); if (s >= 100) return FurnB.isTable(s); return s == S_TABLE || (s in 20..26) }
     fun seatH(s: Int): Float = when (s) { S_STOOL -> 0.56f; S_ARM -> 0.5f; S_OFFICE -> 0.62f; S_SOFA -> 0.5f; S_CHAIR2 -> 0.6f; else -> if (s >= 256) FurnC.seatH(s) else if (s >= 100) FurnB.seatH(s) else 0.58f }
     fun topH(s: Int): Float = when (s) {

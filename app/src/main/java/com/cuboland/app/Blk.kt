@@ -27,6 +27,7 @@ object Blk {
     const val K_SPRITE = 38   // folha desenhada por espécie (Leaf3D): c1 = estilo, c2 = índice da NatArt (paleta; -1 = carvalho)
     const val K_MARBLE = 40; const val K_SCREEN = 41; const val K_FABRIC = 42; const val K_WGRAIN = 43; const val K_RUG = 44; const val K_GINGHAM = 45
     const val K_MC = 47      // textura do Minecraft (McTex, pack Actions & Stuff): c1 = índice, c2 = cor pra recolorir (-1 = original), c4 = 1 se for vidro
+    const val K_DECO = 48   // textura 64x64 do addon monoDeco (Deco): c1 = índice da textura
     const val K_BUILD = 46   // textura da Construção (BuildArt): c1 = padrão, c2 = cor base, c3 = acento (-1 = padrão), c4 = opacidade do miolo do vidro (%)
     const val K_PAL = 36; const val K_PLEAF = 37   // pixel art com paleta própria (NatArt); K_PLEAF = folhagem com buracos transparentes
 
@@ -64,6 +65,8 @@ object Blk {
     private var nextId = 14
     /** blocos que só existem pra mundos antigos abrirem: não aparecem na mochila e viram o bloco equivalente ao carregar */
     val hidden = HashSet<Int>()
+    /** blocos removidos de vez (mobília antiga): somem ao carregar mundos velhos */
+    val vanished = HashSet<Int>()
     private val aliasName = HashMap<Int, String>()
     private val BASE_NAMES = arrayOf("", "Grama", "Terra", "Pedra", "Areia", "Madeira", "Folhas", "Tábua", "Água", "Tijolo", "Rosa", "Azul", "Amarelo", "Lanterna")
     val alias: IntArray by lazy {
@@ -72,6 +75,7 @@ object Blk {
         val a = IntArray(16384)
         for ((id, n) in aliasName) { val t = idx[n]; if (t != null) a[id] = t.id else { val b = BASE_NAMES.indexOf(n); if (b > 0) a[id] = b } }
         for (id in 14 until 16384) { var k = 0; while (a[id] >= 14 && a[a[id]] != 0 && k < 6) { a[id] = a[a[id]]; k++ } }   // alias de alias: segue até o bloco que ficou
+        for (id in vanished) a[id] = -1   // mobília antiga removida: vira ar ao abrir mundo velho
         a
     }
     private val list = ArrayList<Def>()
@@ -666,10 +670,35 @@ object Blk {
             blk("Escada de " + mn, C_BUILD, m.top, m.side, m.bot, m.color, m.mat, m.hard, shp(BuildShapes.S_STAIR), "Escada de degrau único: o lado alto fica pro lado que você olha.")
             rot4(last(), BuildShapes.S_STAIR)
         }
-        buildFurn2()
+        dead = true; try { buildFurn2() } finally { dead = false }   // mobília antiga: ids ficam (mundos antigos), mas sem gastar tile
         buildPack()
         retireDerived()
-        buildFurn3()   // sempre por último: ids novos no fim
+        dead = true; try { buildFurn3() } finally { dead = false }
+        removeOldFurniture()
+        buildDeco()   // sempre por último: ids novos no fim
+    }
+
+    /** remove a mobília antiga (cat C_FURN), menos TV e Elevador, que têm funções próprias (navegador / andares) */
+    private fun removeOldFurniture() {
+        for (d in list) if (d.cat == C_FURN) {
+            val sb = (d.flags shr 8) and 4095
+            if (sb == Furniture.S_TV || sb == Furniture.S_ELEV) continue
+            hidden.add(d.id); vanished.add(d.id)
+        }
+    }
+
+    /** mobília e decoração do addon monoDeco (Deco). Ordem do items.json = ordem dos ids: só acrescente no fim! */
+    private fun buildDeco() {
+        val fup = F_SHAPE or (7 shl 5)
+        val tc = HashMap<Int, Int>()
+        for ((n, d) in Deco.items.withIndex()) {
+            val tiles = IntArray(d.tex.size) { s -> val t = d.tex[s]; if (t < 0) -1 else tc.getOrPut(t) { tl(K_DECO, t) } }
+            d.tile = tiles
+            val first = tiles.firstOrNull { it >= 0 } ?: continue
+            val id = blk(d.name, if (d.cat == 5) C_FURN else C_DEC, first, first, first, 0xB0A090, M_WOOD, 4f,
+                fup or (if (d.light >= 8) F_LIGHT else 0), "")
+            if (id != 0) Deco.idx[id] = n
+        }
     }
 
     // ================= MOBÍLIA v3 (FurnC): catálogo orientado a dados, 1 bloco por cor =================

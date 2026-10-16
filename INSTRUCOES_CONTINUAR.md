@@ -1,3 +1,29 @@
+# >>> IMPORTAÇÃO DO ADDON monoDeco (mobília + decoração) — LEIA PRIMEIRO <<<
+
+AVISO: nada compilado (sem Android SDK no ambiente). Se o build falhar, mande o log.
+
+## Como funciona
+- `tools/deco_import.py <addon_extraido> --batches 1,2,...` lê o .mcaddon (descompacte antes: ele é um zip) e gera em `app/src/main/resources/deco/`: `items.json` (nome, categoria, caixa de colisão, luz, texturas), `geo.bin` (quads já assados em coordenadas de bloco, rotações de osso/cubo aplicadas) e `tex/N.png` (64x64).
+- `tools/deco/registry.json` guarda a ordem dos itens/texturas. **Só cresce no fim** (ids de bloco vão pro save). Rode SEMPRE com todos os lotes já feitos + o novo. Ex.: lotes feitos = 1 → próximo: `--batches 1,2`.
+- `Deco.kt`: carrega os dados, desenha (`emit`, gira pela direção como a mobília antiga) e dá a caixa de colisão. `Blk.buildDeco()` registra um bloco por item (kind 7, sub 0; `Deco.idx[id]`), cat 5 (Mobília) ou 4 (Decoração). `K_DECO` = tile 64x64 vindo do PNG (Atlas.kt).
+- Mobília antiga: `Blk.removeOldFurniture()` esconde todos os blocos cat 5 antigos e os põe em `Blk.vanished` (viram AR ao abrir mundo velho; `World.kt` trata alias < 0). `buildFurn2/3` rodam em modo `dead` (não gastam tile). **Mantidos de propósito:** Televisão (navegador) e Elevador (andares), por terem funções próprias — diga se quer remover. Decorações antigas (cat 4) foram mantidas.
+- Sentar: itens com `md:sit` do addon são sentáveis (`Furniture.sittable` → `Deco.sit`).
+
+## FEITO
+- **Lotes 1, 2 e 3 já importados** (1158 itens, 393 modelos, 678 texturas; registry.json em `--batches 1,2,3`). Lote 2 = cozinha/banheiro/eletros; lote 3 = luminárias, plantas, quadros, relógios, tapetes, cortinas, bonecos.
+- Lote 1 (508 itens, 121 modelos, 176 texturas): cadeiras, sofás, bancos, mesas, camas, escrivaninhas, criados-mudos, estantes, armários, gavetas, guarda-roupas, bancadas, prateleiras/racks, armários-vestiário, berços etc.
+- Remoção da mobília antiga + ganchos em Shapes/Furniture/Atlas/World/Blk.
+
+## FALTA (nesta ordem)
+1. **Compilar e testar** o lote 1 (modelo girado/espelhado errado? ajuste `FACES`/rotação em `deco_import.py` e `Deco.emit`).
+2. Só falta o lote 4 (`--batches 1,2,3,4`, ~1850 itens/~1100 texturas) — rode depois de confirmar que o jogo compila e cabe nos limites. Lote 4: todo o resto (comida, placas, esportes, etc.). Conferir no jogo o limite de tiles (`Blk.MAXT = 4096`) e de ids (16383): total do addon fora das famílias de construção ≈ 3006 itens / 1802 texturas. Se faltar, reduza a 32x32 (tool) ou priorize.
+3. Fora do escopo por enquanto (famílias de construção do addon: asfalto, paredes, tiles, calçadas, degraus/curvas/lajes, alfabeto/números/símbolos). Pergunte ao usuário se quer.
+4. Galeria (`Gallery.kt` MOBILIA/DECORACAO): seções por pasta (`f` no items.json) para os itens novos; hoje caem na seção reserva.
+5. Comportamentos do addon ainda não portados: portas/janelas que abrem, multiblocos (`md:2y`, conectores), TVs novas ligadas ao navegador, estados (`md:top/bottom`), transparência/vidro (`render_method`), animações (texturas altas tipo 64x1600 foram esticadas).
+6. Ícones do inventário dos itens grandes (>1 bloco) podem ficar cortados.
+7. Se der falta de memória no atlas, liberar `Atlas.raw`/cópias ou usar atlas separado.
+
+---
 # Cubo Land – estado do trabalho (Natureza 3D) e o que falta
 
 AVISO: nada disso foi compilado (sem Android SDK/Maven no ambiente). Só checei a lógica com scripts. Se o build do GitHub falhar, mande o log de erro pro Claude.
