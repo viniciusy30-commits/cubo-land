@@ -3,6 +3,7 @@ package com.cuboland.app
 import android.app.Activity
 import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -41,7 +42,7 @@ class GalleryPanel(
     init {
         view.visibility = View.GONE
         view.isClickable = true; view.isFocusable = true
-        view.background = act.dirtBackground().apply { alpha = 240 }
+        view.background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(Color.rgb(20, 25, 34), Color.rgb(9, 11, 17))).apply { alpha = 246 }
 
         val col = LinearLayout(act); col.orientation = LinearLayout.VERTICAL
         val wpx = act.resources.displayMetrics.widthPixels
@@ -58,7 +59,7 @@ class GalleryPanel(
         head.addView(title, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         head.addView(closeBtn, LinearLayout.LayoutParams(act.dp(104), ViewGroup.LayoutParams.WRAP_CONTENT))
         col.addView(head)
-        sub.setTextColor(Color.rgb(236, 226, 206)); sub.textSize = 13f; sub.typeface = Typeface.MONOSPACE; sub.gravity = Gravity.CENTER
+        sub.setTextColor(Color.rgb(176, 184, 198)); sub.textSize = 13f; sub.gravity = Gravity.CENTER
         sub.setPadding(0, act.dp(4), 0, act.dp(6))
         col.addView(sub)
 
@@ -97,89 +98,120 @@ class GalleryPanel(
         onClose()
     }
 
-    private fun addRow(items: List<Button>, cols: Int) {
+    private fun rounded(fill: Int, stroke: Int, radiusDp: Int, strokeDp: Int = 2): GradientDrawable {
+        val g = GradientDrawable(); g.setColor(fill); g.cornerRadius = act.dp(radiusDp).toFloat(); g.setStroke(act.dp(strokeDp), stroke); return g
+    }
+
+    private fun label(text: String, sizeSp: Float, color: Int, bold: Boolean = false, font: Boolean = true): TextView {
+        val t = TextView(act); t.text = text; t.textSize = sizeSp; t.setTextColor(color)
+        if (font) t.typeface = act.mcFont() else t.typeface = if (bold) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
+        return t
+    }
+
+    /** cartão tocável: selo colorido à esquerda, título, subtítulo e seta */
+    private fun card(titleT: String, subT: String, accent: Int, badge: String, click: () -> Unit): View {
+        val row = LinearLayout(act); row.orientation = LinearLayout.HORIZONTAL; row.gravity = Gravity.CENTER_VERTICAL
+        row.background = rounded(Color.rgb(32, 37, 46), accent, 14)
+        row.setPadding(act.dp(10), act.dp(10), act.dp(12), act.dp(10))
+        val b = TextView(act); b.text = badge; b.textSize = 18f; b.typeface = act.mcFont(); b.gravity = Gravity.CENTER
+        b.setTextColor(Color.rgb(24, 24, 30)); b.background = rounded(accent, accent, 10, 0)
+        row.addView(b, LinearLayout.LayoutParams(act.dp(46), act.dp(46)))
+        val tc = LinearLayout(act); tc.orientation = LinearLayout.VERTICAL
+        tc.addView(label(titleT, 15f, Color.WHITE))
+        if (subT.isNotEmpty()) tc.addView(label(subT, 12f, Color.rgb(176, 184, 198), font = false))
+        row.addView(tc, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { leftMargin = act.dp(12) })
+        row.addView(label("›", 26f, accent, bold = true, font = false))
+        row.isClickable = true
+        row.setOnClickListener { click() }
+        row.setOnTouchListener { v, e ->
+            when (e.actionMasked) {
+                android.view.MotionEvent.ACTION_DOWN -> v.alpha = 0.65f
+                android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> v.alpha = 1f
+            }
+            false
+        }
+        return row
+    }
+
+    private fun addGrid(items: List<View>, cols: Int) {
         var i = 0
         while (i < items.size) {
             val row = LinearLayout(act); row.orientation = LinearLayout.HORIZONTAL
             for (k in 0 until cols) {
-                val b = items.getOrNull(i + k)
-                val lp = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f); lp.setMargins(act.dp(4), act.dp(4), act.dp(4), act.dp(4))
-                row.addView(b ?: View(act), lp)
+                val v = items.getOrNull(i + k)
+                val lp = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f); lp.setMargins(act.dp(5), act.dp(5), act.dp(5), act.dp(5))
+                row.addView(v ?: View(act), lp)
             }
             body.addView(row)
             i += cols
         }
     }
 
-    private fun big(text: String, color: Int, click: () -> Unit): Button {
-        val b = act.btn(text, color, click)
-        b.textSize = 15f; b.minHeight = act.dp(64); b.minimumHeight = act.dp(64)
-        return b
+    private fun heading(text: String) {
+        val sp = label(text, 13f, gold); sp.setPadding(act.dp(8), act.dp(14), 0, act.dp(2)); body.addView(sp)
     }
+
+    private fun cols() = if (act.resources.displayMetrics.widthPixels / act.resources.displayMetrics.density > 700) 2 else 1
 
     private fun pick(cat: Int, sec: Int, extra: Int, what: String) {
         if (busy) return
         busy = true
         body.removeAllViews(); backBtn.visibility = View.INVISIBLE; closeBtn.visibility = View.INVISIBLE
-        title.text = "Montando..."; sub.text = what
-        val t = TextView(act); t.text = "Carregando os blocos no mapa, só um instante"; t.setTextColor(Color.WHITE); t.textSize = 15f; t.typeface = act.mcFont(); t.gravity = Gravity.CENTER
+        title.text = "Montando a sala..."; sub.text = what
+        val t = label("Carregando os blocos no mapa, só um instante", 15f, Color.WHITE); t.gravity = Gravity.CENTER
         t.setPadding(0, act.dp(40), 0, 0)
         body.addView(t)
         onPick(cat, sec, extra)
     }
 
-    /** passo 1: categorias */
+    /** passo 1: categorias e vitrines */
     private fun showCats() {
         busy = false
         body.removeAllViews(); backBtn.visibility = View.INVISIBLE; closeBtn.visibility = View.VISIBLE
-        title.text = "GALERIA DE BLOCOS"; sub.text = "1. categoria   2. tipo de bloco   3. entre na sala e passeie"
-        val bs = ArrayList<Button>()
+        title.text = "GALERIA DE BLOCOS"; sub.text = "Escolha uma categoria, depois um tipo de bloco"
+        heading("BLOCOS")
+        val cs = ArrayList<View>()
         for ((i, p) in menu.withIndex()) {
             val c = p.first
-            bs.add(big("${c.name}\n${c.ids.size} blocos", catColors[i % catColors.size]) { showSecs(i) })
+            cs.add(card(c.name, "${p.second.size} tipos  -  ${c.ids.size} blocos", catColors[i % catColors.size], c.name.take(1).uppercase()) { showSecs(i) })
         }
-        addRow(bs, 2)
-        val sp = TextView(act); sp.text = "VITRINES"; sp.setTextColor(gold); sp.textSize = 13f; sp.typeface = act.mcFont(); sp.setPadding(act.dp(6), act.dp(12), 0, act.dp(2))
-        body.addView(sp)
-        val ex = ArrayList<Button>()
-        ex.add(big("MANSÃO\ncompleta", Color.rgb(150, 150, 160)) { pick(-1, -1, World.GAL_HOUSE, "Mansão") })
-        ex.add(big("ÁRVORES", Color.rgb(90, 200, 90)) { pick(-1, -1, World.GAL_TREES, "Galeria de árvores") })
-        ex.add(big("VEÍCULOS\nteste", Color.rgb(212, 20, 28)) { pick(-1, -1, World.GAL_CAR, "Teste de veículos") })
-        addRow(ex, 3)
+        addGrid(cs, cols())
+        heading("PASSEIOS")
+        val ex = ArrayList<View>()
+        ex.add(card("MANSÃO", "casa completa com móveis, garagem e piscina", Color.rgb(255, 190, 80), "M") { pick(-1, -1, World.GAL_HOUSE, "Mansão") })
+        ex.add(card("ÁRVORES", "todas as árvores plantadas", Color.rgb(90, 200, 90), "A") { pick(-1, -1, World.GAL_TREES, "Galeria de árvores") })
+        ex.add(card("VEÍCULOS", "pista para testar os carros", Color.rgb(212, 60, 60), "V") { pick(-1, -1, World.GAL_CAR, "Teste de veículos") })
+        addGrid(ex, cols())
     }
 
-    /** passo 2: seções da categoria (cada uma vira uma sala de exposição) */
+    /** passo 2: tipos de bloco da categoria (cada um vira uma sala de exposição) */
     private fun showSecs(ci: Int) {
         val (cat, secs) = menu[ci]
         body.removeAllViews(); backBtn.visibility = View.VISIBLE; closeBtn.visibility = View.VISIBLE
         backBtn.setOnClickListener { showCats() }
-        title.text = cat.name; sub.text = "Escolha um tipo de bloco: ele vira uma sala de exposição"
+        title.text = cat.name; sub.text = "Galeria  ›  ${cat.name}"
         val color = catColors[ci % catColors.size]
-        val wdp = act.resources.displayMetrics.widthPixels / act.resources.displayMetrics.density
-        val bs = secs.map { s ->
+        val cs = secs.map { s ->
             val pages = (s.count + Gallery.PER_PAGE - 1) / Gallery.PER_PAGE
-            val b = act.btn(s.title + "\n" + s.count + (if (pages > 1) " blocos - $pages partes" else " blocos"), color) {
+            val subT = if (pages > 1) "${s.count} blocos  -  $pages partes" else "${s.count} blocos"
+            card(s.title, subT, color, s.title.take(1).uppercase()) {
                 if (pages > 1) showPages(ci, s, pages) else pick(ci, s.idx, World.GAL_PAGE, cat.name + " - " + s.title)
             }
-            b.textSize = 13f; b.minHeight = act.dp(56); b.minimumHeight = act.dp(56); b.setPadding(act.dp(6), act.dp(4), act.dp(6), act.dp(4))
-            b
         }
-        addRow(bs, if (wdp > 800) 3 else 2)
+        addGrid(cs, cols())
     }
 
-    /** passo 3 (só seções grandes): escolher a parte, 24 blocos por vez */
+    /** passo 3 (só tipos grandes): escolher a parte, 24 blocos por vez */
     private fun showPages(ci: Int, s: World.GalSec, pages: Int) {
         val cat = menu[ci].first
         body.removeAllViews(); backBtn.visibility = View.VISIBLE; closeBtn.visibility = View.VISIBLE
         backBtn.setOnClickListener { showSecs(ci) }
-        title.text = s.title; sub.text = "${s.count} blocos em $pages partes"
+        title.text = s.title; sub.text = "Galeria  ›  ${cat.name}  ›  ${s.title}"
         val color = catColors[ci % catColors.size]
-        val bs = (0 until pages).map { pg ->
+        val cs = (0 until pages).map { pg ->
             val a = pg * Gallery.PER_PAGE + 1; val z = minOf(s.count, (pg + 1) * Gallery.PER_PAGE)
-            act.btn("PARTE ${pg + 1}\nblocos $a a $z", color) { pick(ci, s.idx, World.GAL_PAGE + pg, cat.name + " - " + s.title + " (parte ${pg + 1})") }.also {
-                it.textSize = 13f; it.minHeight = act.dp(56); it.minimumHeight = act.dp(56)
-            }
+            card("Parte ${pg + 1}", "blocos $a a $z", color, "${pg + 1}") { pick(ci, s.idx, World.GAL_PAGE + pg, cat.name + " - " + s.title + " (parte ${pg + 1})") }
         }
-        addRow(bs, 2)
+        addGrid(cs, cols())
     }
 }

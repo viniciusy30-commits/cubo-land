@@ -619,7 +619,9 @@ class World {
         for (z in -34..90) for (x in intArrayOf(-30, 100)) { put(x, 0, z, STONE); put(x, 1, z, BARS); put(x, 2, z, BARS) }
         for (x in -30..100 step 8) for (z in intArrayOf(-34, 90)) { fill(x, 0, z, x, 4, z, QZ); put(x, 5, z, LAMP) }
         for (z in -34..90 step 8) for (x in intArrayOf(-30, 100)) { fill(x, 0, z, x, 4, z, QZ); put(x, 5, z, LAMP) }
-        hole(39, 0, -34, 48, 3, -34); fill(38, 0, -34, 38, 5, -34, QZ); fill(49, 0, -34, 49, 5, -34, QZ); put(38, 6, -34, LAMP); put(49, 6, -34, LAMP)
+        hole(39, 0, -34, 48, 3, -34); fill(38, 0, -34, 38, 5, -34, QZ); fill(49, 0, -34, 49, 5, -34, QZ)
+        fill(40, 0, -34, 47, 0, -34, STONE); fill(40, 1, -34, 47, 3, -34, BARS)
+        put(39, 0, -34, "Portão de Jardim"); put(48, 0, -34, "Portão de Jardim"); put(38, 6, -34, LAMP); put(49, 6, -34, LAMP)
         fill(38, 5, -34, 49, 5, -34, K)
         // caminho de entrada, rotatória com fonte e acesso à garagem
         fill(40, -1, -33, 47, -1, -24, SLATE)
@@ -660,8 +662,8 @@ class World {
         // ---------- fachada da frente ----------
         for (x in 22..41) for (y in 0..8) {
             val b = when {
-                x == 22 || x == 41 || x == 26 || x == 37 -> id(K)
-                x in 30..33 && y <= 3 -> 0
+                x == 22 || x == 41 || x == 26 || x == 37 || x == 30 || x == 33 -> id(K)
+                x in 31..32 && y <= 1 -> 0
                 y == 4 -> id(G)
                 else -> id(GL)
             }
@@ -669,13 +671,14 @@ class World {
         }
         for (x in 22..41) for (y in 0..8) {
             val b = when {
-                x == 22 || x == 41 || x == 26 || x == 37 -> id(K)
-                x in 30..33 && y <= 3 -> 0
+                x == 22 || x == 41 || x == 26 || x == 37 || x == 30 || x == 33 -> id(K)
+                x in 31..32 && y <= 1 -> 0
                 y == 4 -> id(G)
                 else -> id(GL)
             }
             putB(x, y, 26, b)
         }
+        put(31, 0, 0, "Porta Vermelha"); put(32, 0, 0, "Porta Vermelha"); put(31, 0, 26, "Porta de Correr"); put(32, 0, 26, "Porta de Correr")
         for (wx in intArrayOf(0, 43)) {
             fill(wx + 3, 1, 0, wx + 8, 2, 0, P); fill(wx + 12, 1, 0, wx + 17, 2, 0, P)
             fill(wx + 3, 6, 0, wx + 8, 7, 0, P); fill(wx + 12, 6, 0, wx + 17, 7, 0, P)
@@ -691,23 +694,23 @@ class World {
         // sacadas das suítes da frente
         fill(6, 4, -4, 15, 4, -1, G); fill(6, 5, -4, 15, 6, -4, GL); fill(6, 5, -4, 6, 6, -1, GL); fill(15, 5, -4, 15, 6, -1, GL)
         fill(48, 4, -4, 57, 4, -1, G); fill(48, 5, -4, 57, 6, -4, GL); fill(48, 5, -4, 48, 6, -1, GL); fill(57, 5, -4, 57, 6, -1, GL)
-        hole(10, 5, 0, 11, 7, 0); hole(52, 5, 0, 53, 7, 0)
+        hole(10, 5, 0, 11, 6, 0); hole(52, 5, 0, 53, 6, 0); put(10, 5, 0, "Porta de Correr"); put(11, 5, 0, "Porta de Correr"); put(52, 5, 0, "Porta de Correr"); put(53, 5, 0, "Porta de Correr")
         for (cx in intArrayOf(6, 15, 48, 57)) fill(cx, 0, -4, cx, 3, -4, PIL)
 
         // ---------- paredes internas: térreo ----------
-        fill(21, 0, 1, 21, 3, 25, W); hole(21, 0, 5, 21, 2, 8); hole(21, 0, 17, 21, 2, 20)
-        fill(42, 0, 1, 42, 3, 25, W); hole(42, 0, 5, 42, 2, 8); hole(42, 0, 17, 42, 2, 20)
-        fill(1, 0, 13, 20, 3, 13, W); hole(9, 0, 13, 12, 2, 13)
-        fill(43, 0, 13, 62, 3, 13, W); hole(51, 0, 13, 54, 2, 13)
-        fill(57, 0, 14, 57, 3, 25, W); hole(57, 0, 18, 57, 2, 19)        // lavanderia
-        hole(63, 0, 18, 63, 2, 19)                                       // porta da garagem
-        fill(58, 0, 7, 62, 3, 7, W); fill(57, 0, 1, 57, 3, 6, W); hole(57, 0, 3, 57, 2, 4)   // lavabo (banheiro social)
+        fill(21, 0, 1, 21, 3, 25, W); hole(21, 0, 5, 21, 1, 8); hole(21, 0, 17, 21, 1, 20)
+        fill(42, 0, 1, 42, 3, 25, W); hole(42, 0, 5, 42, 1, 8); hole(42, 0, 17, 42, 1, 20)
+        fill(1, 0, 13, 20, 3, 13, W); hole(9, 0, 13, 12, 1, 13)
+        fill(43, 0, 13, 62, 3, 13, W); hole(51, 0, 13, 54, 1, 13)
+        fill(57, 0, 14, 57, 3, 25, W); hole(57, 0, 18, 57, 1, 19); put(57, 0, 18, "Porta"); put(57, 0, 19, "Porta")        // lavanderia
+        hole(63, 0, 18, 63, 1, 19); put(63, 0, 18, "Porta"); put(63, 0, 19, "Porta")                    // porta da garagem
+        fill(58, 0, 7, 62, 3, 7, W); fill(57, 0, 1, 57, 3, 6, W); hole(57, 0, 3, 57, 1, 4); put(57, 0, 3, "Porta"); put(57, 0, 4, "Porta")   // lavabo (banheiro social)
         // ---------- paredes internas: andar de cima ----------
-        fill(21, 5, 1, 21, 8, 25, W); hole(21, 5, 10, 21, 6, 11); fill(21, 5, 5, 21, 7, 8, GL)
-        fill(42, 5, 1, 42, 8, 25, W); hole(42, 5, 10, 42, 6, 11); hole(42, 5, 17, 42, 6, 20); fill(42, 5, 5, 42, 7, 8, GL)
-        fill(1, 5, 13, 20, 8, 13, W); hole(10, 5, 13, 11, 6, 13)         // suíte master -> banheiro
-        fill(9, 5, 14, 9, 8, 25, W); hole(9, 5, 18, 9, 6, 19)            // banheiro -> closet
-        fill(43, 5, 13, 62, 8, 13, W); hole(46, 5, 13, 47, 6, 13); hole(57, 5, 13, 58, 6, 13)
+        fill(21, 5, 1, 21, 8, 25, W); hole(21, 5, 10, 21, 6, 11); put(21, 5, 10, "Porta"); put(21, 5, 11, "Porta"); fill(21, 5, 5, 21, 7, 8, GL)
+        fill(42, 5, 1, 42, 8, 25, W); hole(42, 5, 10, 42, 6, 11); put(42, 5, 10, "Porta"); put(42, 5, 11, "Porta"); hole(42, 5, 17, 42, 6, 20); fill(42, 5, 5, 42, 7, 8, GL)
+        fill(1, 5, 13, 20, 8, 13, W); hole(10, 5, 13, 11, 6, 13); put(10, 5, 13, "Porta"); put(11, 5, 13, "Porta")         // suíte master -> banheiro
+        fill(9, 5, 14, 9, 8, 25, W); hole(9, 5, 18, 9, 6, 19); put(9, 5, 18, "Porta"); put(9, 5, 19, "Porta")            // banheiro -> closet
+        fill(43, 5, 13, 62, 8, 13, W); hole(46, 5, 13, 47, 6, 13); hole(57, 5, 13, 58, 6, 13); put(46, 5, 13, "Porta"); put(47, 5, 13, "Porta"); put(57, 5, 13, "Porta"); put(58, 5, 13, "Porta")
         fill(53, 5, 1, 53, 8, 12, W)
         // fundo do hall: piso do térreo sob a galeria e portas de vidro pro terraço já estão na fachada de trás
 
@@ -717,7 +720,7 @@ class World {
         fill(4, -1, 3, 17, -1, 10, CARP)
         put(6, 0, 12, "Lareira de Mármore"); put(6, 1, 12, "Espelho Dourado")
         for (x in intArrayOf(3, 4, 5, 7, 8)) put(x, 0, 12, "Estante Moderna Branca")
-        put(4, 1, 12, "Quadro Mar Calmo Dourado"); put(8, 1, 12, "Quadro Floresta Dourado"); put(3, 2, 12, "Quadro Pôr do Sol Dourado"); put(8, 2, 12, "Quadro Noite Estrelada Dourado")
+        put(4, 2, 12, "Quadro Mar Calmo Dourado"); put(8, 2, 12, "Quadro Floresta Dourado"); put(3, 3, 12, "Quadro Pôr do Sol Dourado"); put(7, 3, 12, "Quadro Noite Estrelada Dourado")
         row(4, 7, 0, 6, "Sofá Moderno Cinza")
         put(5, 0, 9, "Mesa de Centro"); put(6, 0, 9, "Mesa de Centro")
         put(4, 0, 9, "Poltrona Orelhuda Vermelha"); put(7, 0, 9, "Poltrona Orelhuda Vermelha")
@@ -793,7 +796,7 @@ class World {
         lab(31.5f, 8.6f, 17f, "GALERIA")
         fill(26, 4, 12, 37, 4, 22, "Lã Vermelha")
         row(24, 27, 5, 25, "Estante Moderna Nogueira"); row(36, 39, 5, 25, "Estante Moderna Nogueira")
-        put(25, 6, 25, "Globo Dourado"); put(38, 6, 25, "Bonsai Verde")
+        put(30, 5, 25, "Globo Dourado"); put(33, 5, 25, "Bonsai Verde")
         put(29, 5, 17, "Sofá Chesterfield Azul"); put(30, 5, 17, "Sofá Chesterfield Azul"); put(33, 5, 17, "Sofá Chesterfield Azul"); put(34, 5, 17, "Sofá Chesterfield Azul")
         put(31, 5, 19, "Mesa de Centro"); put(32, 5, 19, "Mesa de Centro"); put(31, 6, 19, "Vaso de Flores Girassóis")
         put(31, 5, 13, "Escultura Moderna"); put(32, 5, 13, "Estátua"); put(23, 5, 13, "Palmeira em Vaso Branco"); put(40, 5, 13, "Palmeira em Vaso Branco")
@@ -840,7 +843,7 @@ class World {
         // ---- biblioteca e escritório (ala leste, fundos) ----
         lab(52.5f, 8.6f, 19.5f, "BIBLIOTECA E ESCRITÓRIO")
         fill(45, 4, 15, 60, 4, 24, "Lã Vermelha")
-        for (x in 44..54) { put(x, 5, 25, "Estante Moderna Nogueira"); put(x, 6, 25, "Estante Moderna Nogueira") }
+        for (x in 44..54) put(x, 5, 25, "Estante Moderna Nogueira")
         row(57, 59, 5, 25, "Escrivaninha"); put(58, 6, 25, "Computador"); put(57, 6, 25, "Luminária de Mesa Dourada"); put(58, 5, 24, "Cadeira de Escritório")
         row(44, 47, 5, 15, "Sofá Chesterfield Azul"); put(45, 5, 18, "Mesa de Centro"); put(46, 5, 18, "Mesa de Centro"); put(44, 5, 18, "Poltrona Orelhuda Vermelha"); put(47, 5, 18, "Poltrona Orelhuda Vermelha")
         put(62, 5, 14, "Relógio de Pé Nogueira"); put(62, 5, 18, "Globo Dourado"); put(61, 5, 22, "Palmeira em Vaso Barro"); put(44, 5, 24, "Samambaia Branco")

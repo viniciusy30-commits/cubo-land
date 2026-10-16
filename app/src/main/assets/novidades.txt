@@ -1,3 +1,11 @@
+#id 2026-10-16-b
+#titulo Móveis maiores, portas de verdade e menu novo
+- Portas agora têm 2 blocos de altura e nascem fechadas (toque pra abrir); portões também aparecem fechados
+- Geladeiras, guarda-roupas, estantes, armários altos, cristaleiras, relógio de pé, fliperama, chuveiros e postes ganharam altura de verdade
+- O interior dos móveis que abrem não é mais preto: agora tem textura
+- Mansão revisada: portão na entrada, porta dupla, portas nos quartos, banheiros, lavabo, lavanderia e garagem
+- Menu da galeria refeito com cartões, passos claros e caminho (Galeria › Categoria › Tipo)
+
 #id 2026-10-16-a
 #titulo Galeria nova e mansão completa
 - A galeria agora é organizada em 3 passos: categoria, tipo de bloco e, nos tipos grandes, a parte (24 blocos por vez)

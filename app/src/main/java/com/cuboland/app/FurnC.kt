@@ -19,7 +19,7 @@ object FurnC {
         val name: String, val desc: String, val box: FloatArray, val parts: List<FloatArray>, val alt: List<FloatArray>?,
         val fem: Boolean, val ways: Int, val fabric: Boolean, val mat: Int, val kind: Int, val seat: Float, val top: Float,
         val small: Boolean, val lt: Int, val color: Int, val open: FloatArray?, val lid: FloatArray?, val lab: Int, val inv: Boolean,
-        val boxOpen: FloatArray?, val slots: FloatArray?, val group: String
+        val boxOpen: FloatArray?, val slots: FloatArray?, val group: String, val sy: Float
     ) { var sub = 0 }
 
     val defs = ArrayList<Def>()
@@ -59,10 +59,10 @@ object FurnC {
         name: String, desc: String, box: FloatArray, parts: List<FloatArray>, alt: List<FloatArray>? = null,
         fem: Boolean = false, ways: Int = 8, fabric: Boolean = false, mat: Int = 2, kind: Int = 0, seat: Double = 0.0,
         top: Double = 0.0, small: Boolean = false, lt: Int = 0, color: Int = 0xC8935A, open: FloatArray? = null,
-        lid: FloatArray? = null, lab: Int = 0, inv: Boolean = false, dimOff: Boolean = false, boxOpen: FloatArray? = null, slots: FloatArray? = null
+        lid: FloatArray? = null, lab: Int = 0, inv: Boolean = false, dimOff: Boolean = false, boxOpen: FloatArray? = null, slots: FloatArray? = null, sy: Double = 1.0
     ) {
         val alt2 = alt ?: if (dimOff && kind == 2) dim(parts) else null
-        val d = Def(name, desc, box, parts, alt2, fem, ways, fabric, mat, kind, seat.toFloat(), top.toFloat(), small, lt, color, open, lid, lab, inv, boxOpen, slots, grp)
+        val d = Def(name, desc, box, parts, alt2, fem, ways, fabric, mat, kind, seat.toFloat(), top.toFloat(), small, lt, color, open, lid, lab, inv, boxOpen, slots, grp, sy.toFloat())
         d.sub = BASE + defs.size
         defs.add(d)
     }
@@ -107,7 +107,7 @@ object FurnC {
             parts(b(M, 0.08, 0.0, 0.08, 0.14, 0.1, 0.14), b(M, 0.86, 0.0, 0.08, 0.92, 0.1, 0.14), b(M, 0.08, 0.0, 0.86, 0.14, 0.1, 0.92), b(M, 0.86, 0.0, 0.86, 0.92, 0.1, 0.92),
                 b(C1, 0.05, 0.1, 0.05, 0.95, 0.4, 0.95), b(C1, 0.05, 0.4, 0.05, 0.95, 0.9, 0.25), b(C1, 0.05, 0.4, 0.25, 0.2, 0.62, 0.95), b(C1, 0.8, 0.4, 0.25, 0.95, 0.62, 0.95),
                 b(C0, 0.2, 0.4, 0.28, 0.8, 0.5, 0.95)),
-            fem = true, fabric = true, seat = 0.5, mat = 3, color = 0x9AD93E)
+            fem = true, fabric = true, seat = 0.5, mat = 3, color = 0x9AD93E, sy = 1.0)
         add("Pufe Impermeável", "Pufe redondo resistente à água. Dá pra sentar em qualquer lugar.",
             a(0.14, 0.0, 0.14, 0.86, 0.46, 0.86),
             parts(y(C0, 0.5, 0.5, 0.36, 0.0, 0.42), y(C1, 0.5, 0.5, 0.3, 0.42, 0.46)), seat = 0.44, mat = 3, color = 0xF5A3C4)
@@ -167,19 +167,19 @@ object FurnC {
         grp = "ARMÁRIOS E CAIXAS"
         add("Armário de Piscina", "Armário de duas portas pra toalhas e brinquedos. Toque pra abrir e fechar.", a(0.02, 0.0, 0.02, 0.98, 0.95, 0.98),
             parts(b(C0, 0.02, 0.0, 0.02, 0.98, 0.95, 0.98), b(C1, 0.08, 0.06, 0.97, 0.48, 0.9, 0.99), b(C1, 0.52, 0.06, 0.97, 0.92, 0.9, 0.99), b(M, 0.46, 0.45, 0.985, 0.48, 0.55, 0.995), b(M, 0.52, 0.45, 0.985, 0.54, 0.55, 0.995)),
-            open = a(0.99, 0.08, 0.06, 0.92, 0.9), kind = 1, color = 0x6DB9EE)
+            open = a(0.99, 0.08, 0.06, 0.92, 0.9), kind = 1, color = 0x6DB9EE, sy = 1.6)
         add("Armário Externo", "Armário de madeira pra varanda e quintal. Toque pra abrir e fechar.", a(0.02, 0.0, 0.02, 0.98, 1.0, 0.98),
             parts(b(W, 0.02, 0.0, 0.02, 0.98, 1.0, 0.98), b(C0, 0.08, 0.06, 0.97, 0.48, 0.94, 0.99), b(C0, 0.52, 0.06, 0.97, 0.92, 0.94, 0.99), b(M, 0.46, 0.45, 0.985, 0.48, 0.55, 0.995), b(M, 0.52, 0.45, 0.985, 0.54, 0.55, 0.995)),
-            open = a(0.99, 0.08, 0.06, 0.92, 0.94), kind = 1, color = 0x9AD93E)
+            open = a(0.99, 0.08, 0.06, 0.92, 0.94), kind = 1, color = 0x9AD93E, sy = 1.8)
         add("Armário de Ferramentas", "Armário de metal pra guardar ferramentas. Toque pra abrir.", a(0.02, 0.0, 0.02, 0.98, 1.0, 0.98),
             parts(b(M, 0.02, 0.0, 0.02, 0.98, 1.0, 0.98), b(C0, 0.06, 0.04, 0.97, 0.94, 0.96, 0.99), b(K, 0.46, 0.45, 0.99, 0.54, 0.55, 1.0)),
-            open = a(0.99, 0.06, 0.04, 0.94, 0.96), kind = 1, mat = 5, color = 0xF59B3D)
+            open = a(0.99, 0.06, 0.04, 0.94, 0.96), kind = 1, mat = 5, color = 0xF59B3D, sy = 1.9)
         add("Armário de Praia", "Cabana-armário de praia pra guardar pertences. Toque pra abrir.", a(0.05, 0.0, 0.1, 0.95, 0.98, 0.9),
             parts(b(C0, 0.05, 0.0, 0.1, 0.95, 0.9, 0.9), b(C1, 0.0, 0.9, 0.05, 1.0, 0.98, 0.95), b(W, 0.12, 0.06, 0.9, 0.88, 0.8, 0.915), b(M, 0.78, 0.4, 0.915, 0.84, 0.5, 0.93)),
-            open = a(0.91, 0.12, 0.06, 0.88, 0.8), kind = 1, color = 0xF5D63B)
+            open = a(0.91, 0.12, 0.06, 0.88, 0.8), kind = 1, color = 0xF5D63B, sy = 1.8)
         add("Caixa de Correio", "Caixa de correio num poste. Toque pra abrir a portinhola.", a(0.22, 0.0, 0.3, 0.78, 1.0, 0.8),
             parts(b(WD, 0.45, 0.0, 0.45, 0.55, 0.7, 0.55), b(C0, 0.22, 0.7, 0.3, 0.78, 0.98, 0.8), b(C1, 0.22, 0.9, 0.3, 0.78, 0.98, 0.8), b(M, 0.6, 0.78, 0.81, 0.72, 0.84, 0.83)),
-            open = a(0.81, 0.26, 0.74, 0.74, 0.94), kind = 1, color = 0xE04040)
+            open = a(0.81, 0.26, 0.74, 0.74, 0.94), kind = 1, color = 0xE04040, sy = 1.4)
         add("Baú Impermeável", "Baú à prova d'água pra toalhas e brinquedos. Toque pra levantar a tampa.", a(0.06, 0.0, 0.1, 0.94, 0.55, 0.9),
             parts(b(C0, 0.06, 0.0, 0.1, 0.94, 0.5, 0.9), b(C1, 0.06, 0.5, 0.1, 0.94, 0.55, 0.9), b(M, 0.44, 0.42, 0.9, 0.56, 0.54, 0.92)),
             lid = a(0.06, 0.1, 0.94, 0.9, 0.55), kind = 1, color = 0x6DB9EE)
@@ -206,7 +206,7 @@ object FurnC {
         add("Tocha de Jardim", "Tocha de jardim com chama. Toque pra apagar ou acender.", a(0.4, 0.0, 0.4, 0.6, 0.95, 0.6),
             parts(b(WD, 0.45, 0.0, 0.45, 0.55, 0.7, 0.55), b(M, 0.4, 0.66, 0.4, 0.6, 0.74, 0.6), g(L, 0.42, 0.74, 0.42, 0.58, 0.95, 0.58)),
             alt = parts(b(WD, 0.45, 0.0, 0.45, 0.55, 0.7, 0.55), b(M, 0.4, 0.66, 0.4, 0.6, 0.74, 0.6), b(K, 0.44, 0.74, 0.44, 0.56, 0.8, 0.56)),
-            fem = true, ways = 1, kind = 2, lab = 1, lt = 2, color = 0xF28A2E)
+            fem = true, ways = 1, kind = 2, lab = 1, lt = 2, color = 0xF28A2E, sy = 1.6)
         add("Lanterna de Jardim", "Lanterna de chão com luz quentinha. Toque pra ligar e desligar.", a(0.3, 0.0, 0.3, 0.7, 0.86, 0.7),
             parts(b(M, 0.3, 0.0, 0.3, 0.7, 0.08, 0.7), b(M, 0.46, 0.08, 0.46, 0.54, 0.5, 0.54), g(L, 0.34, 0.5, 0.34, 0.66, 0.78, 0.66), b(C0, 0.3, 0.78, 0.3, 0.7, 0.86, 0.7)),
             fem = true, kind = 2, lab = 0, color = 0xF5D63B)
@@ -215,7 +215,7 @@ object FurnC {
             kind = 2, lab = 0, color = 0x9AD93E)
         add("Poste de Rua", "Poste com luminária. Toque pra ligar e desligar.", a(0.4, 0.0, 0.4, 0.6, 1.0, 0.6),
             parts(b(K, 0.45, 0.0, 0.45, 0.55, 0.92, 0.55), b(K, 0.35, 0.92, 0.45, 0.55, 0.98, 0.55), g(L, 0.3, 0.86, 0.42, 0.5, 0.93, 0.58)),
-            ways = 1, kind = 2, lab = 0, mat = 5, color = 0x2A2C30)
+            ways = 1, kind = 2, lab = 0, mat = 5, color = 0x2A2C30, sy = 3.0)
         add("Holofote", "Holofote de chão com base. Toque pra ligar e desligar.", a(0.28, 0.0, 0.28, 0.72, 0.55, 0.72),
             parts(b(M, 0.3, 0.0, 0.3, 0.7, 0.1, 0.7), b(M, 0.46, 0.1, 0.46, 0.54, 0.3, 0.54), b(K, 0.28, 0.3, 0.3, 0.72, 0.55, 0.7), g(L, 0.3, 0.32, 0.7, 0.7, 0.52, 0.72)),
             ways = 1, kind = 2, lab = 0, mat = 5, color = 0x2A2C30)
@@ -232,7 +232,7 @@ object FurnC {
         add("Chuveiro Externo", "Chuveiro de poste pra quem sai da piscina. Toque pra ligar a água.", a(0.4, 0.0, 0.4, 0.6, 1.0, 0.6),
             parts(b(M, 0.45, 0.0, 0.45, 0.55, 1.0, 0.55), b(M, 0.3, 0.92, 0.4, 0.7, 1.0, 0.6), g(L, 0.4, 0.1, 0.4, 0.6, 0.92, 0.6), g(L, 0.3, 0.0, 0.3, 0.7, 0.03, 0.7)),
             alt = parts(b(M, 0.45, 0.0, 0.45, 0.55, 1.0, 0.55), b(M, 0.3, 0.92, 0.4, 0.7, 1.0, 0.6)),
-            ways = 1, kind = 2, lab = 0, lt = 1, inv = true, mat = 5, color = 0xBFD8E8)
+            ways = 1, kind = 2, lab = 0, lt = 1, inv = true, mat = 5, color = 0xBFD8E8, sy = 2.0)
         add("Fonte de Jardim", "Fonte de pedra com água corrente. Toque pra ligar e desligar a água.", a(0.08, 0.0, 0.08, 0.92, 0.62, 0.92),
             parts(y(D, 0.5, 0.5, 0.42, 0.0, 0.18), y(L, 0.5, 0.5, 0.36, 0.16, 0.2), y(D, 0.5, 0.5, 0.1, 0.18, 0.6), y(D, 0.5, 0.5, 0.24, 0.55, 0.62), y(L, 0.5, 0.5, 0.2, 0.6, 0.64), g(L, 0.46, 0.62, 0.46, 0.54, 0.95, 0.54)),
             alt = parts(y(D, 0.5, 0.5, 0.42, 0.0, 0.18), b(K, 0.3, 0.17, 0.3, 0.7, 0.19, 0.7), y(D, 0.5, 0.5, 0.1, 0.18, 0.6), y(D, 0.5, 0.5, 0.24, 0.55, 0.62)),
@@ -259,7 +259,7 @@ object FurnC {
         add("Guarda-Sol", "Guarda-sol de haste. Toque pra fechar ou abrir.", a(0.42, 0.0, 0.42, 0.58, 0.85, 0.58),
             parts(b(W, 0.46, 0.0, 0.46, 0.54, 0.82, 0.54), cone(C0, 0.5, 0.5, 0.5, 0.12, 0.66, 0.88), cone(C1, 0.5, 0.5, 0.12, 0.04, 0.88, 1.0)),
             alt = parts(b(W, 0.46, 0.0, 0.46, 0.54, 0.82, 0.54), b(C0, 0.44, 0.45, 0.44, 0.56, 0.85, 0.56)),
-            ways = 8, kind = 2, lab = 2, mat = 3, color = 0xF59B3D)
+            ways = 8, kind = 2, lab = 2, mat = 3, color = 0xF59B3D, sy = 2.4)
         add("Tenda de Camping", "Tenda de camping de lona. Toque pra abrir a entrada.", a(0.06, 0.0, 0.04, 0.94, 0.85, 0.96),
             parts(b(C0, 0.06, 0.0, 0.04, 0.94, 0.22, 0.96), b(C1, 0.18, 0.22, 0.04, 0.82, 0.44, 0.96), b(C0, 0.3, 0.44, 0.04, 0.7, 0.66, 0.96), b(C1, 0.42, 0.66, 0.04, 0.58, 0.85, 0.96), b(C1, 0.36, 0.0, 0.96, 0.64, 0.4, 0.975)),
             alt = parts(b(C0, 0.06, 0.0, 0.04, 0.94, 0.22, 0.96), b(C1, 0.18, 0.22, 0.04, 0.82, 0.44, 0.96), b(C0, 0.3, 0.44, 0.04, 0.7, 0.66, 0.96), b(C1, 0.42, 0.66, 0.04, 0.58, 0.85, 0.96)),
@@ -267,12 +267,12 @@ object FurnC {
         add("Rede de Vôlei", "Rede de vôlei de praia com dois postes. Toque pra recolher ou instalar a rede.", a(0.0, 0.0, 0.4, 1.0, 1.0, 0.6),
             parts(b(W, 0.02, 0.0, 0.45, 0.1, 1.0, 0.55), b(W, 0.9, 0.0, 0.45, 0.98, 1.0, 0.55), b(D, 0.1, 0.55, 0.49, 0.9, 0.95, 0.51), b(C0, 0.1, 0.9, 0.48, 0.9, 0.95, 0.52)),
             alt = parts(b(W, 0.02, 0.0, 0.45, 0.1, 1.0, 0.55), b(W, 0.9, 0.0, 0.45, 0.98, 1.0, 0.55), b(C0, 0.1, 0.0, 0.45, 0.3, 0.08, 0.55)),
-            fem = true, kind = 2, lab = 4, color = 0xF2F2EE)
+            fem = true, kind = 2, lab = 4, color = 0xF2F2EE, sy = 2.4)
         add("Varal Externo", "Varal com roupas penduradas. Toque pra recolher ou pendurar as roupas.", a(0.0, 0.0, 0.4, 1.0, 1.0, 0.6),
             parts(b(M, 0.02, 0.0, 0.45, 0.08, 1.0, 0.55), b(M, 0.92, 0.0, 0.45, 0.98, 1.0, 0.55), b(D, 0.08, 0.94, 0.49, 0.92, 0.96, 0.51),
                 b(C0, 0.14, 0.5, 0.48, 0.36, 0.94, 0.52), b(C1, 0.42, 0.6, 0.48, 0.58, 0.94, 0.52), b(C0, 0.64, 0.45, 0.48, 0.86, 0.94, 0.52)),
             alt = parts(b(M, 0.02, 0.0, 0.45, 0.08, 1.0, 0.55), b(M, 0.92, 0.0, 0.45, 0.98, 1.0, 0.55), b(D, 0.08, 0.94, 0.49, 0.92, 0.96, 0.51)),
-            ways = 8, kind = 2, lab = 4, mat = 5, color = 0xBFBFBF)
+            ways = 8, kind = 2, lab = 4, mat = 5, color = 0xBFBFBF, sy = 2.0)
 
         // ===================== ETAPA 3: INTERIOR (eletrodomésticos, banheiro, lavanderia, lazer, oficina, fazenda) =====================
         // --- eletrodomésticos pequenos (ficam em cima de balcões; ligam e desligam) ---
@@ -356,7 +356,7 @@ object FurnC {
         add("Chuveiro Interno", "Ducha com piso de azulejo. Toque pra ligar a água.", a(0.4, 0.0, 0.4, 0.6, 1.0, 0.6),
             parts(b(D, 0.05, 0.0, 0.05, 0.95, 0.03, 0.95), b(M, 0.46, 0.03, 0.46, 0.54, 1.0, 0.54), b(M, 0.3, 0.92, 0.4, 0.7, 1.0, 0.6), g(L, 0.4, 0.1, 0.4, 0.6, 0.92, 0.6)),
             alt = parts(b(D, 0.05, 0.0, 0.05, 0.95, 0.03, 0.95), b(M, 0.46, 0.03, 0.46, 0.54, 1.0, 0.54), b(M, 0.3, 0.92, 0.4, 0.7, 1.0, 0.6)),
-            ways = 1, kind = 2, lt = 1, inv = true, mat = 5, color = 0xBFD8E8)
+            ways = 1, kind = 2, lt = 1, inv = true, mat = 5, color = 0xBFD8E8, sy = 2.0)
         add("Tanque de Lavar", "Tanque de lavar roupa com torneira. Toque pra abrir e fechar a água.", a(0.04, 0.0, 0.1, 0.96, 0.95, 0.9),
             parts(b(D, 0.04, 0.0, 0.1, 0.96, 0.55, 0.9), b(C0, 0.04, 0.55, 0.1, 0.96, 0.7, 0.9), b(L, 0.1, 0.66, 0.16, 0.9, 0.7, 0.84), b(M, 0.46, 0.7, 0.14, 0.54, 0.9, 0.2), b(M, 0.46, 0.86, 0.14, 0.54, 0.9, 0.36), g(L, 0.48, 0.7, 0.34, 0.52, 0.86, 0.36)),
             alt = parts(b(D, 0.04, 0.0, 0.1, 0.96, 0.55, 0.9), b(C0, 0.04, 0.55, 0.1, 0.96, 0.7, 0.9), b(K, 0.1, 0.66, 0.16, 0.9, 0.7, 0.84), b(M, 0.46, 0.7, 0.14, 0.54, 0.9, 0.2), b(M, 0.46, 0.86, 0.14, 0.54, 0.9, 0.36)),
@@ -372,7 +372,7 @@ object FurnC {
         add("Ventilador de Pé", "Ventilador com pedestal. Toque pra ligar e desligar as pás.", a(0.25, 0.0, 0.25, 0.75, 1.0, 0.75),
             parts(y(M, 0.5, 0.5, 0.22, 0.0, 0.05), b(M, 0.47, 0.05, 0.47, 0.53, 0.75, 0.53), b(K, 0.38, 0.72, 0.38, 0.62, 0.9, 0.62), b(C1, 0.22, 0.62, 0.7, 0.78, 0.98, 0.72)),
             alt = parts(y(M, 0.5, 0.5, 0.22, 0.0, 0.05), b(M, 0.47, 0.05, 0.47, 0.53, 0.75, 0.53), b(K, 0.38, 0.72, 0.38, 0.62, 0.9, 0.62), b(C1, 0.46, 0.62, 0.7, 0.54, 0.98, 0.72), b(C1, 0.28, 0.78, 0.7, 0.72, 0.82, 0.72)),
-            kind = 2, mat = 5, color = 0x6DB9EE)
+            kind = 2, mat = 5, color = 0x6DB9EE, sy = 1.5)
         add("Ar-Condicionado Portátil", "Ar-condicionado de chão com visor. Toque pra ligar e desligar.", a(0.2, 0.0, 0.2, 0.8, 0.95, 0.8),
             parts(b(D, 0.2, 0.0, 0.2, 0.8, 0.9, 0.8), b(C0, 0.2, 0.9, 0.2, 0.8, 0.95, 0.8), b(K, 0.26, 0.7, 0.8, 0.74, 0.86, 0.82), g(L, 0.34, 0.9, 0.8, 0.66, 0.93, 0.82)),
             kind = 2, dimOff = true, lt = 1, mat = 5, color = 0xF2F2EE)
@@ -380,14 +380,14 @@ object FurnC {
             parts(b(C0, 0.0, 0.0, 0.1, 0.18, 1.0, 0.9), b(C0, 0.82, 0.0, 0.1, 1.0, 1.0, 0.9), b(C0, 0.18, 0.7, 0.1, 0.82, 1.0, 0.9), b(K, 0.18, 0.0, 0.1, 0.82, 0.7, 0.4), b(D, 0.0, 0.0, 0.9, 1.0, 0.05, 1.0),
                 g(L, 0.3, 0.05, 0.3, 0.7, 0.35, 0.6), g(L, 0.4, 0.3, 0.35, 0.6, 0.55, 0.55)),
             alt = parts(b(C0, 0.0, 0.0, 0.1, 0.18, 1.0, 0.9), b(C0, 0.82, 0.0, 0.1, 1.0, 1.0, 0.9), b(C0, 0.18, 0.7, 0.1, 0.82, 1.0, 0.9), b(K, 0.18, 0.0, 0.1, 0.82, 0.7, 0.4), b(D, 0.0, 0.0, 0.9, 1.0, 0.05, 1.0), b(K, 0.3, 0.05, 0.3, 0.7, 0.08, 0.6)),
-            fem = true, kind = 2, lab = 1, lt = 2, mat = 1, color = 0xB5503C)
+            fem = true, kind = 2, lab = 1, lt = 2, mat = 1, color = 0xB5503C, sy = 1.5)
         add("Aquário", "Aquário iluminado com peixinhos. Toque pra ligar e desligar a luz.", a(0.04, 0.0, 0.2, 0.96, 0.8, 0.8),
             parts(b(WD, 0.04, 0.0, 0.2, 0.96, 0.3, 0.8), g(L, 0.08, 0.3, 0.24, 0.92, 0.74, 0.76), b(C0, 0.3, 0.5, 0.4, 0.42, 0.56, 0.5), b(C1, 0.6, 0.6, 0.45, 0.7, 0.64, 0.52), b(K, 0.06, 0.74, 0.22, 0.94, 0.8, 0.78)),
             alt = parts(b(WD, 0.04, 0.0, 0.2, 0.96, 0.3, 0.8), b(L, 0.08, 0.3, 0.24, 0.92, 0.74, 0.76), b(C0, 0.3, 0.5, 0.4, 0.42, 0.56, 0.5), b(C1, 0.6, 0.6, 0.45, 0.7, 0.64, 0.52), b(K, 0.06, 0.74, 0.22, 0.94, 0.8, 0.78)),
             small = false, kind = 2, lt = 1, color = 0xF59B3D)
         add("Fliperama", "Máquina de fliperama com tela e botões. Toque pra ligar e desligar.", a(0.1, 0.0, 0.1, 0.9, 1.0, 0.9),
             parts(b(C0, 0.1, 0.0, 0.1, 0.9, 1.0, 0.9), g(L, 0.2, 0.55, 0.9, 0.8, 0.74, 0.915), g(L, 0.16, 0.84, 0.88, 0.84, 0.96, 0.905), b(K, 0.16, 0.38, 0.7, 0.84, 0.46, 0.92), b(C1, 0.3, 0.46, 0.78, 0.4, 0.5, 0.86), b(C1, 0.6, 0.46, 0.78, 0.7, 0.5, 0.86)),
-            kind = 2, dimOff = true, lt = 1, mat = 5, color = 0x4C74C4)
+            kind = 2, dimOff = true, lt = 1, mat = 5, color = 0x4C74C4, sy = 1.7)
         add("Mesa de Pingue-Pongue", "Mesa de pingue-pongue com rede. Toque pra dobrar e abrir.", a(0.0, 0.0, 0.04, 1.0, 0.86, 0.96),
             parts(b(C0, 0.0, 0.8, 0.04, 1.0, 0.86, 0.96), b(D, 0.48, 0.86, 0.0, 0.52, 0.95, 1.0), b(M, 0.05, 0.0, 0.1, 0.1, 0.8, 0.15), b(M, 0.9, 0.0, 0.1, 0.95, 0.8, 0.15), b(M, 0.05, 0.0, 0.85, 0.1, 0.8, 0.9), b(M, 0.9, 0.0, 0.85, 0.95, 0.8, 0.9)),
             alt = parts(b(C0, 0.1, 0.0, 0.46, 0.9, 0.86, 0.54), b(M, 0.1, 0.0, 0.54, 0.9, 0.05, 0.6)),
@@ -400,7 +400,7 @@ object FurnC {
             open = a(0.975, 0.08, 0.12, 0.92, 0.8), fem = true, top = 0.92, kind = 1, mat = 5, color = 0xE04040)
         add("Armário Metálico", "Armário de aço pra equipamentos. Toque pra abrir as portas.", a(0.04, 0.0, 0.04, 0.96, 1.0, 0.96),
             parts(b(M, 0.04, 0.0, 0.04, 0.96, 1.0, 0.96), b(C0, 0.08, 0.06, 0.96, 0.48, 0.94, 0.975), b(C0, 0.52, 0.06, 0.96, 0.92, 0.94, 0.975), b(K, 0.12, 0.8, 0.975, 0.44, 0.86, 0.985), b(K, 0.56, 0.8, 0.975, 0.88, 0.86, 0.985)),
-            open = a(0.975, 0.08, 0.06, 0.92, 0.94), kind = 1, mat = 5, color = 0x6E747B)
+            open = a(0.975, 0.08, 0.06, 0.92, 0.94), kind = 1, mat = 5, color = 0x6E747B, sy = 1.9)
         add("Caixa de Ferramentas", "Caixa de ferramentas com alça. Toque pra abrir a tampa.", a(0.12, 0.0, 0.25, 0.88, 0.4, 0.75),
             parts(b(C0, 0.12, 0.0, 0.25, 0.88, 0.3, 0.75), b(C0, 0.12, 0.3, 0.25, 0.88, 0.4, 0.75), b(M, 0.4, 0.4, 0.45, 0.6, 0.48, 0.55)),
             lid = a(0.12, 0.25, 0.88, 0.75, 0.4), fem = true, small = true, kind = 1, mat = 5, color = 0xE04040)
@@ -415,7 +415,7 @@ object FurnC {
             lid = a(0.14, 0.14, 0.86, 0.86, 0.85), kind = 1, color = 0xB87D45)
         add("Silo Pequeno", "Silo pequeno pra guardar ração e grãos. Toque pra abrir a portinha.", a(0.1, 0.0, 0.1, 0.9, 1.0, 0.9),
             parts(y(C0, 0.5, 0.5, 0.4, 0.0, 0.8), cone(C1, 0.5, 0.5, 0.42, 0.1, 0.8, 1.0), b(M, 0.4, 0.0, 0.88, 0.6, 0.4, 0.9)),
-            open = a(0.9, 0.4, 0.0, 0.6, 0.4), kind = 1, mat = 5, color = 0xBFBFBF)
+            open = a(0.9, 0.4, 0.0, 0.6, 0.4), kind = 1, mat = 5, color = 0xBFBFBF, sy = 2.5)
         add("Comedouro de Animais", "Tigela de ração. Toque pra encher e esvaziar.", a(0.2, 0.0, 0.2, 0.8, 0.2, 0.8),
             parts(y(C0, 0.5, 0.5, 0.3, 0.0, 0.18), y(WD, 0.5, 0.5, 0.24, 0.24, 0.14, 0.2)),
             alt = parts(y(C0, 0.5, 0.5, 0.3, 0.0, 0.18), y(K, 0.5, 0.5, 0.24, 0.24, 0.16, 0.18)),
@@ -446,21 +446,21 @@ object FurnC {
         grp = "PORTAS E JANELAS"
         // portas/janelas: o painel fica fino em x (x local = largura do vão), porque o móvel gira de costas pra parede ao lado.
         add("Porta", "Porta de madeira com maçanetas. Toque pra abrir e fechar. Aberta, dá pra passar (empilhe duas pra uma porta alta).", a(0.0, 0.0, 0.0, 1.0, 1.0, 1.0),
-            parts(b(W, 0.36, 0.0, 0.0, 0.64, 1.0, 0.07), b(W, 0.36, 0.0, 0.93, 0.64, 1.0, 1.0), b(W, 0.36, 0.94, 0.0, 0.64, 1.0, 1.0), b(C0, 0.42, 0.0, 0.07, 0.58, 0.94, 0.93), b(M, 0.3, 0.45, 0.8, 0.42, 0.5, 0.86), b(M, 0.58, 0.45, 0.8, 0.7, 0.5, 0.86)),
-            alt = parts(b(W, 0.36, 0.0, 0.0, 0.64, 1.0, 0.07), b(W, 0.36, 0.0, 0.93, 0.64, 1.0, 1.0), b(W, 0.36, 0.94, 0.0, 0.64, 1.0, 1.0), b(C0, 0.0, 0.0, 0.0, 0.86, 0.94, 0.06), b(M, 0.7, 0.45, 0.06, 0.78, 0.5, 0.1)),
-            fem = true, kind = 2, lab = 2, inv = true, boxOpen = a(0.0, 0.0, 0.0, 0.06, 1.0, 0.06), color = 0xB87D45)
+            parts(b(W, 0.36, 0.0, 0.0, 0.64, 1.0, 0.07), b(W, 0.36, 0.0, 0.93, 0.64, 1.0, 1.0), b(W, 0.36, 0.94, 0.0, 0.64, 1.0, 1.0), b(C0, 0.0, 0.0, 0.0, 0.86, 0.94, 0.06), b(M, 0.7, 0.45, 0.06, 0.78, 0.5, 0.1)),
+            alt = parts(b(W, 0.36, 0.0, 0.0, 0.64, 1.0, 0.07), b(W, 0.36, 0.0, 0.93, 0.64, 1.0, 1.0), b(W, 0.36, 0.94, 0.0, 0.64, 1.0, 1.0), b(C0, 0.42, 0.0, 0.07, 0.58, 0.94, 0.93), b(M, 0.3, 0.45, 0.8, 0.42, 0.5, 0.86), b(M, 0.58, 0.45, 0.8, 0.7, 0.5, 0.86)),
+            fem = true, kind = 2, lab = 2, inv = true, boxOpen = a(0.0, 0.0, 0.0, 0.06, 1.0, 0.06), color = 0xB87D45, sy = 2.0)
         add("Porta de Correr", "Porta de correr moderna. Toque pra abrir e fechar. Aberta, dá pra passar.", a(0.0, 0.0, 0.0, 1.0, 1.0, 1.0),
-            parts(b(M, 0.34, 0.96, 0.0, 0.66, 1.0, 1.0), b(M, 0.34, 0.0, 0.0, 0.66, 0.03, 1.0), b(C0, 0.44, 0.03, 0.04, 0.56, 0.96, 0.96), b(K, 0.4, 0.45, 0.8, 0.44, 0.55, 0.84)),
-            alt = parts(b(M, 0.34, 0.96, 0.0, 0.66, 1.0, 1.0), b(M, 0.34, 0.0, 0.0, 0.66, 0.03, 1.0), b(C0, 0.44, 0.03, 0.0, 0.56, 0.96, 0.14)),
-            fem = true, kind = 2, lab = 2, inv = true, boxOpen = a(0.0, 0.0, 0.0, 0.06, 1.0, 0.06), mat = 5, color = 0xF2F2EE)
+            parts(b(M, 0.34, 0.96, 0.0, 0.66, 1.0, 1.0), b(M, 0.34, 0.0, 0.0, 0.66, 0.03, 1.0), b(C0, 0.44, 0.03, 0.0, 0.56, 0.96, 0.14)),
+            alt = parts(b(M, 0.34, 0.96, 0.0, 0.66, 1.0, 1.0), b(M, 0.34, 0.0, 0.0, 0.66, 0.03, 1.0), b(C0, 0.44, 0.03, 0.04, 0.56, 0.96, 0.96), b(K, 0.4, 0.45, 0.8, 0.44, 0.55, 0.84)),
+            fem = true, kind = 2, lab = 2, inv = true, boxOpen = a(0.0, 0.0, 0.0, 0.06, 1.0, 0.06), mat = 5, color = 0xF2F2EE, sy = 2.0)
         add("Portão de Jardim", "Portão baixo de jardim. Toque pra abrir e fechar. Aberto, dá pra passar.", a(0.0, 0.0, 0.0, 1.0, 0.75, 1.0),
-            parts(b(W, 0.38, 0.0, 0.0, 0.62, 0.8, 0.1), b(W, 0.38, 0.0, 0.9, 0.62, 0.8, 1.0), b(C0, 0.44, 0.2, 0.1, 0.56, 0.3, 0.9), b(C0, 0.44, 0.45, 0.1, 0.56, 0.55, 0.9), b(C0, 0.44, 0.65, 0.1, 0.56, 0.72, 0.9)),
-            alt = parts(b(W, 0.38, 0.0, 0.0, 0.62, 0.8, 0.1), b(W, 0.38, 0.0, 0.9, 0.62, 0.8, 1.0), b(C0, 0.0, 0.2, 0.0, 0.9, 0.3, 0.06), b(C0, 0.0, 0.45, 0.0, 0.9, 0.55, 0.06), b(C0, 0.0, 0.65, 0.0, 0.9, 0.72, 0.06)),
-            kind = 2, lab = 2, inv = true, boxOpen = a(0.0, 0.0, 0.0, 0.06, 0.75, 0.06), color = 0xF2F2EE)
+            parts(b(W, 0.38, 0.0, 0.0, 0.62, 0.8, 0.1), b(W, 0.38, 0.0, 0.9, 0.62, 0.8, 1.0), b(C0, 0.0, 0.2, 0.0, 0.9, 0.3, 0.06), b(C0, 0.0, 0.45, 0.0, 0.9, 0.55, 0.06), b(C0, 0.0, 0.65, 0.0, 0.9, 0.72, 0.06)),
+            alt = parts(b(W, 0.38, 0.0, 0.0, 0.62, 0.8, 0.1), b(W, 0.38, 0.0, 0.9, 0.62, 0.8, 1.0), b(C0, 0.44, 0.2, 0.1, 0.56, 0.3, 0.9), b(C0, 0.44, 0.45, 0.1, 0.56, 0.55, 0.9), b(C0, 0.44, 0.65, 0.1, 0.56, 0.72, 0.9)),
+            kind = 2, lab = 2, inv = true, boxOpen = a(0.0, 0.0, 0.0, 0.06, 0.75, 0.06), color = 0xF2F2EE, sy = 2.5)
         add("Portão de Curral", "Portão de tábuas do curral. Toque pra abrir e fechar. Aberto, dá pra passar.", a(0.0, 0.0, 0.0, 1.0, 0.9, 1.0),
-            parts(b(WD, 0.4, 0.0, 0.0, 0.6, 0.95, 0.1), b(WD, 0.4, 0.0, 0.9, 0.6, 0.95, 1.0), b(W, 0.45, 0.15, 0.1, 0.55, 0.3, 0.9), b(W, 0.45, 0.4, 0.1, 0.55, 0.55, 0.9), b(W, 0.45, 0.65, 0.1, 0.55, 0.8, 0.9), b(W, 0.46, 0.15, 0.1, 0.54, 0.8, 0.2)),
-            alt = parts(b(WD, 0.4, 0.0, 0.0, 0.6, 0.95, 0.1), b(WD, 0.4, 0.0, 0.9, 0.6, 0.95, 1.0), b(W, 0.0, 0.15, 0.0, 0.9, 0.3, 0.06), b(W, 0.0, 0.4, 0.0, 0.9, 0.55, 0.06), b(W, 0.0, 0.65, 0.0, 0.9, 0.8, 0.06)),
-            ways = 1, kind = 2, lab = 2, inv = true, boxOpen = a(0.0, 0.0, 0.0, 0.1, 0.95, 0.1))
+            parts(b(WD, 0.4, 0.0, 0.0, 0.6, 0.95, 0.1), b(WD, 0.4, 0.0, 0.9, 0.6, 0.95, 1.0), b(W, 0.0, 0.15, 0.0, 0.9, 0.3, 0.06), b(W, 0.0, 0.4, 0.0, 0.9, 0.55, 0.06), b(W, 0.0, 0.65, 0.0, 0.9, 0.8, 0.06)),
+            alt = parts(b(WD, 0.4, 0.0, 0.0, 0.6, 0.95, 0.1), b(WD, 0.4, 0.0, 0.9, 0.6, 0.95, 1.0), b(W, 0.45, 0.15, 0.1, 0.55, 0.3, 0.9), b(W, 0.45, 0.4, 0.1, 0.55, 0.55, 0.9), b(W, 0.45, 0.65, 0.1, 0.55, 0.8, 0.9), b(W, 0.46, 0.15, 0.1, 0.54, 0.8, 0.2)),
+            ways = 1, kind = 2, lab = 2, inv = true, boxOpen = a(0.0, 0.0, 0.0, 0.1, 0.95, 0.1), sy = 2.0)
         add("Janela de Abrir", "Janela com vidro e travessas. Toque pra abrir e fechar o vidro.", a(0.0, 0.0, 0.0, 1.0, 1.0, 1.0),
             parts(b(W, 0.4, 0.0, 0.0, 0.6, 0.1, 1.0), b(W, 0.4, 0.9, 0.0, 0.6, 1.0, 1.0), b(W, 0.4, 0.0, 0.0, 0.6, 1.0, 0.1), b(W, 0.4, 0.0, 0.9, 0.6, 1.0, 1.0), b(L, 0.47, 0.1, 0.1, 0.53, 0.9, 0.9), b(W, 0.45, 0.1, 0.46, 0.55, 0.9, 0.54), b(W, 0.45, 0.46, 0.1, 0.55, 0.54, 0.9)),
             alt = parts(b(W, 0.4, 0.0, 0.0, 0.6, 0.1, 1.0), b(W, 0.4, 0.9, 0.0, 0.6, 1.0, 1.0), b(W, 0.4, 0.0, 0.0, 0.6, 1.0, 0.1), b(W, 0.4, 0.0, 0.9, 0.6, 1.0, 1.0), b(L, 0.0, 0.1, 0.0, 0.86, 0.9, 0.05)),
@@ -489,7 +489,7 @@ object FurnC {
             fem = true, kind = 3, mat = 1, color = 0xF59B3D)
         add("Espantalho", "Espantalho de palha com chapéu. Toque pra girar.", a(0.3, 0.0, 0.3, 0.7, 1.0, 0.7),
             parts(b(WD, 0.46, 0.0, 0.46, 0.54, 0.95, 0.54), b(W, 0.1, 0.6, 0.46, 0.9, 0.66, 0.54), b(C0, 0.3, 0.4, 0.4, 0.7, 0.72, 0.6), b(W, 0.4, 0.75, 0.4, 0.6, 0.92, 0.6), b(C1, 0.3, 0.92, 0.3, 0.7, 0.98, 0.7), b(C1, 0.4, 0.98, 0.4, 0.6, 1.06, 0.6), b(W, 0.1, 0.5, 0.46, 0.2, 0.6, 0.54)),
-            kind = 3, color = 0xC8444E)
+            kind = 3, color = 0xC8444E, sy = 1.8)
         add("Prancha de Surfe", "Prancha de surfe em pé num suporte. Toque pra girar.", a(0.25, 0.0, 0.25, 0.75, 0.95, 0.75),
             parts(b(WD, 0.25, 0.0, 0.3, 0.75, 0.06, 0.7), b(C0, 0.4, 0.06, 0.46, 0.6, 0.95, 0.54), b(C1, 0.4, 0.4, 0.46, 0.6, 0.5, 0.54), b(C1, 0.44, 0.7, 0.46, 0.56, 0.78, 0.54)),
             fem = true, kind = 3, color = 0x6DB9EE)
@@ -504,11 +504,11 @@ object FurnC {
             parts(b(WD, 0.04, 0.0, 0.0, 0.96, 1.0, 0.06), b(C0, 0.0, 0.0, 0.0, 0.06, 1.0, 0.5), b(C0, 0.94, 0.0, 0.0, 1.0, 1.0, 0.5), b(W, 0.06, 0.0, 0.0, 0.94, 0.05, 0.5),
                 b(W, 0.06, 0.3, 0.0, 0.94, 0.35, 0.5), b(W, 0.06, 0.65, 0.0, 0.94, 0.7, 0.5), b(C0, 0.0, 0.95, 0.0, 1.0, 1.0, 0.5)),
             slots = a(0.12, 0.35, 0.14, 0.22, 0.39, 0.35, 0.14, 0.22, 0.66, 0.35, 0.14, 0.22, 0.12, 0.7, 0.14, 0.22, 0.39, 0.7, 0.14, 0.22, 0.66, 0.7, 0.14, 0.22),
-            kind = 4, fem = true, color = 0xC8935A)
+            kind = 4, fem = true, color = 0xC8935A, sy = 1.9)
         add("Vitrine de Vidro", "Vitrine de balcão com 4 lugares pra coleções. Toque num lugar pra guardar ou pegar.", a(0.05, 0.0, 0.05, 0.95, 0.95, 0.95),
             parts(b(W, 0.05, 0.0, 0.05, 0.95, 0.3, 0.95), b(K, 0.05, 0.3, 0.05, 0.1, 0.95, 0.1), b(K, 0.9, 0.3, 0.05, 0.95, 0.95, 0.1), b(K, 0.05, 0.3, 0.9, 0.1, 0.95, 0.95), b(K, 0.9, 0.3, 0.9, 0.95, 0.95, 0.95),
                 b(C0, 0.05, 0.9, 0.05, 0.95, 0.95, 0.95), b(L, 0.1, 0.3, 0.1, 0.9, 0.9, 0.12)),
-            slots = a(0.15, 0.3, 0.2, 0.3, 0.55, 0.3, 0.2, 0.3, 0.15, 0.3, 0.55, 0.3, 0.55, 0.3, 0.55, 0.3), kind = 4, fem = true, lt = 1, color = 0x6DB9EE)
+            slots = a(0.15, 0.3, 0.2, 0.3, 0.55, 0.3, 0.2, 0.3, 0.15, 0.3, 0.55, 0.3, 0.55, 0.3, 0.55, 0.3), kind = 4, fem = true, lt = 1, color = 0x6DB9EE, sy = 1.9)
         add("Pedestal de Exposição", "Pedestal de pedra com 1 lugar de destaque. Toque pra expor ou pegar o item.", a(0.15, 0.0, 0.15, 0.85, 0.65, 0.85),
             parts(b(D, 0.2, 0.0, 0.2, 0.8, 0.6, 0.8), b(D, 0.15, 0.6, 0.15, 0.85, 0.65, 0.85)),
             slots = a(0.3, 0.65, 0.3, 0.4), kind = 4, ways = 1, mat = 1, color = 0xD8D8D8)
@@ -516,13 +516,13 @@ object FurnC {
             parts(b(C0, 0.0, 0.0, 0.0, 1.0, 0.2, 0.5), b(C0, 0.0, 0.95, 0.0, 1.0, 1.0, 0.5), b(C0, 0.0, 0.2, 0.0, 0.05, 0.95, 0.5), b(C0, 0.95, 0.2, 0.0, 1.0, 0.95, 0.5),
                 b(L, 0.05, 0.2, 0.0, 0.95, 0.95, 0.04), b(W, 0.05, 0.55, 0.0, 0.95, 0.6, 0.5), b(M, 0.46, 0.0, 0.5, 0.54, 0.12, 0.54)),
             slots = a(0.1, 0.2, 0.12, 0.24, 0.38, 0.2, 0.12, 0.24, 0.66, 0.2, 0.12, 0.24, 0.1, 0.6, 0.12, 0.24, 0.38, 0.6, 0.12, 0.24, 0.66, 0.6, 0.12, 0.24),
-            kind = 4, lt = 1, color = 0x8A5A3C)
+            kind = 4, lt = 1, color = 0x8A5A3C, sy = 1.9)
         add("Caixa Organizadora", "Caixa aberta com 4 divisões pra equipamentos. Toque pra guardar ou pegar.", a(0.1, 0.0, 0.1, 0.9, 0.5, 0.9),
             parts(b(C0, 0.1, 0.0, 0.1, 0.9, 0.08, 0.9), b(C0, 0.1, 0.08, 0.1, 0.9, 0.4, 0.16), b(C0, 0.1, 0.08, 0.84, 0.9, 0.4, 0.9), b(C0, 0.1, 0.08, 0.1, 0.16, 0.4, 0.9), b(C0, 0.84, 0.08, 0.1, 0.9, 0.4, 0.9), b(C1, 0.47, 0.08, 0.16, 0.53, 0.4, 0.84), b(C1, 0.16, 0.08, 0.47, 0.84, 0.4, 0.53)),
             slots = a(0.2, 0.08, 0.2, 0.22, 0.56, 0.08, 0.2, 0.22, 0.2, 0.08, 0.56, 0.22, 0.56, 0.08, 0.56, 0.22), kind = 4, fem = true, small = true, mat = 3, color = 0x4C74C4)
         add("Prateleira de Toalhas", "Prateleira de dois andares com 4 lugares pra toalhas e acessórios. Toque pra guardar ou pegar.", a(0.04, 0.0, 0.2, 0.96, 1.0, 0.8),
             parts(b(WD, 0.04, 0.0, 0.2, 0.1, 1.0, 0.8), b(WD, 0.9, 0.0, 0.2, 0.96, 1.0, 0.8), b(W, 0.1, 0.0, 0.2, 0.9, 0.05, 0.8), b(W, 0.1, 0.4, 0.2, 0.9, 0.45, 0.8), b(W, 0.1, 0.75, 0.2, 0.9, 0.8, 0.8), b(C0, 0.04, 0.95, 0.2, 0.96, 1.0, 0.8)),
-            slots = a(0.15, 0.45, 0.35, 0.3, 0.55, 0.45, 0.35, 0.3, 0.15, 0.8, 0.35, 0.3, 0.55, 0.8, 0.35, 0.3), kind = 4, fem = true, color = 0xF2F2EE)
+            slots = a(0.15, 0.45, 0.35, 0.3, 0.55, 0.45, 0.35, 0.3, 0.15, 0.8, 0.35, 0.3, 0.55, 0.8, 0.35, 0.3), kind = 4, fem = true, color = 0xF2F2EE, sy = 1.8)
         add("Prateleira de Sementes", "Prateleira baixa de sementes com 4 lugares. Toque pra guardar ou pegar.", a(0.04, 0.0, 0.2, 0.96, 0.7, 0.8),
             parts(b(WD, 0.04, 0.0, 0.2, 0.1, 0.7, 0.8), b(WD, 0.9, 0.0, 0.2, 0.96, 0.7, 0.8), b(W, 0.1, 0.0, 0.2, 0.9, 0.05, 0.8), b(W, 0.1, 0.35, 0.2, 0.9, 0.4, 0.8), b(C0, 0.04, 0.65, 0.2, 0.96, 0.7, 0.8), b(C1, 0.1, 0.4, 0.2, 0.9, 0.44, 0.24)),
             slots = a(0.14, 0.05, 0.35, 0.28, 0.58, 0.05, 0.35, 0.28, 0.14, 0.4, 0.35, 0.28, 0.58, 0.4, 0.35, 0.28), kind = 4, fem = true, color = 0x9AD93E)
@@ -558,6 +558,8 @@ object FurnC {
     }
     fun openSpec(s: Int): FloatArray? = def(s)?.open
     fun lid(s: Int): FloatArray? = def(s)?.lid
+    /** esticada na vertical (portas, armários altos...): 1 = um bloco, 2 = dois blocos de altura */
+    fun tallOf(s: Int): Float = def(s)?.sy ?: 1f
     /** luz apagada / desligado / dobrado? (alguns móveis nascem desligados) */
     fun isOff(s: Int, st: Int): Boolean = ((st and Furniture.ST_OFF) != 0) != (def(s)?.inv ?: false)
     fun fLabel(s: Int, st: Int): String {

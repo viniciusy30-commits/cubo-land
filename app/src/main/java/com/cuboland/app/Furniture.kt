@@ -29,6 +29,11 @@ object Furniture {
     fun isElev(id: Int): Boolean = sub(id) == S_ELEV
     /** escala da TV por nível de tamanho (0 = normal) */
     val TV_SCALE = floatArrayOf(1f, 1.5f, 2f, 3f)
+    /** fator de altura: móveis que na vida real passam de 1,5 m viram 2 blocos de altura */
+    fun tallOf(s: Int): Float = when (s) {
+        S_FRIDGE, S_WARD, S_SHELF, FurnB.S_TALL, FurnB.S_WARDM, FurnB.S_SHELFM, FurnB.S_CABINET, FurnB.S_FRIDGE2, FurnB.S_FRIDGER, FurnB.S_GRAND -> 2f
+        else -> if (s >= 256) FurnC.tallOf(s) else 1f
+    }
     fun sittable(id: Int): Boolean { val s = sub(id); if (s >= 256) return FurnC.sittable(s); if (s >= 100) return FurnB.sittable(s); return s == S_CHAIR || s == S_CHAIR2 || s == S_STOOL || s == S_ARM || s == S_OFFICE || s == S_SOFA }
     fun isTable(id: Int): Boolean { val s = sub(id); if (s >= 256) return FurnC.isTable(s); if (s >= 100) return FurnB.isTable(s); return s == S_TABLE || (s in 20..26) }
     fun seatH(s: Int): Float = when (s) { S_STOOL -> 0.56f; S_ARM -> 0.5f; S_OFFICE -> 0.62f; S_SOFA -> 0.5f; S_CHAIR2 -> 0.6f; else -> if (s >= 256) FurnC.seatH(s) else if (s >= 100) FurnB.seatH(s) else 0.58f }
@@ -104,6 +109,7 @@ object Furniture {
             S_ELEV -> floatArrayOf(0f, 0f, 0f, 0.3f, 1f, 0.3f)
             else -> (if (s >= 256) FurnC.box(s, w.fStateOf(x, y, z), faceOf(w, x, y, z, s)) else if (s >= 100) FurnB.box(w, x, y, z, s) else null) ?: return null
         }
+        val ty = tallOf(s); if (ty != 1f) { b[1] *= ty; b[4] *= ty }
         val oy = if (y >= 0) baseOff(w, x, y, z, s) else 0f
         if (oy != 0f) { b[1] += oy; b[4] += oy }
         return b
@@ -112,11 +118,12 @@ object Furniture {
     // ---------- pincel: caixas e cilindros com UV pela posição (a textura não "amassa" nas peças pequenas) ----------
     internal class C(val o: MeshBuf, val x: Int, val y: Int, val z: Int, val vr: Float) {
         var rot = 0; var oy = 0f; var lit = false; var off = false; var opened = false; var spin = 0; var store: IntArray? = null   // off = luz apagada: ignora o brilho próprio
+        var sy = 1f   // esticada na vertical (móveis altos: geladeira, guarda-roupa, portas)
         var sc = 1f   // escala do móvel (TV grande): cresce a partir do centro da base, pode passar da célula
         private fun rx(a: Float, c: Float) = when (rot) { 0 -> a; 1 -> 1f - a; 2 -> c; else -> 1f - c }
         private fun rz(a: Float, c: Float) = when (rot) { 0 -> c; 1 -> 1f - c; 2 -> 1f - a; else -> a }
         private fun v(t: Int, px: Float, py: Float, pz: Float, u: Float, vv: Float, s: Float) =
-            if (sc == 1f) o.vert(x + px, y + py, z + pz, s, s, s, Atlas.u(t, u.coerceIn(0f, 1f)), Atlas.v(t, vv.coerceIn(0f, 1f)))
+            if (sc == 1f) o.vert(x + px, y + py * sy, z + pz, s, s, s, Atlas.u(t, u.coerceIn(0f, 1f)), Atlas.v(t, vv.coerceIn(0f, 1f)))
             else o.vert(x + 0.5f + (px - 0.5f) * sc, y + oy + (py - oy) * sc, z + 0.5f + (pz - 0.5f) * sc, s, s, s, Atlas.u(t, u.coerceIn(0f, 1f)), Atlas.v(t, vv.coerceIn(0f, 1f)))
         private fun fin() { o.tri(0, 1, 2); o.tri(0, 2, 3); o.tri(0, 2, 1); o.tri(0, 3, 2); o.vc += 4 }
 
@@ -249,8 +256,8 @@ object Furniture {
     }
     /** desenha por cima do móvel fechado: vão escuro, prateleira e a porta aberta (ou a tampa levantada, no baú) */
     private fun openOverlay(c: C, T: IntArray, id: Int, s: Int) {
-        val bk = T[T_BLACK]
         val dt = if (s >= 100) Blk.fp(id)[0] else if (s == S_FRIDGE) T[T_WHITE] else T[T_OAK]
+        val bk = if (s == S_FRIDGE || s == FurnB.S_FRIDGE2 || s == FurnB.S_FRIDGER || s == FurnB.S_MINI) T[T_WHITE] else if (s == FurnB.S_MICRO || s == FurnB.S_WASHER) T[T_STEEL] else dt
         if (s == FurnB.S_TRUNK) {
             c.box(bk, bk, bk, 0.1f, 0.5f, 0.14f, 0.9f, 0.565f, 0.86f)
             c.box(dt, dt, dt, 0.06f, 0.55f, 0.02f, 0.94f, 1.05f, 0.1f)
@@ -277,6 +284,7 @@ object Furniture {
         val c = C(o, x, y, z, vr)
         c.lit = B.light(id)
         c.oy = baseOff(w, x, y, z, s)
+        c.sy = tallOf(s)
         val fk = fKind(id)
         val fst = if (fk != 0 && y >= 0) w.fStateOf(x, y, z) else 0
         if (fk == 2) c.off = if (s >= 256) FurnC.isOff(s, fst) else (fst and ST_OFF) != 0
