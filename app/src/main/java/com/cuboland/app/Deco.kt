@@ -12,10 +12,11 @@ import java.nio.ByteOrder
  * (Sem try/catch nem lazy de propósito: o D8 quebrava com o bytecode deles.)
  */
 object Deco {
-    class Item(val name: String, val cat: Int, val geo: Int, val tex: IntArray, val box: FloatArray?, val light: Int, val sit: Boolean, val group: String) {
+    class Item(val name: String, val cat: Int, val geo: Int, val tex: IntArray, val box: FloatArray?, val light: Int, val sit: Boolean, val group: String, val fp: IntArray?, val kd: Int, val ob: FloatArray?, val sc: FloatArray?, val fd: String, val key: String) {
         var tile: IntArray = IntArray(0)
+        var blockId: Int = 0
     }
-    class Geo(val nQuad: Int, val slot: IntArray, val shade: FloatArray, val pos: FloatArray, val uv: FloatArray)
+    class Geo(val nQuad: Int, val slot: IntArray, val shade: FloatArray, val vis: IntArray, val pos: FloatArray, val uv: FloatArray)
 
     @JvmField val idx = IntArray(16384)
     init { java.util.Arrays.fill(idx, -1) }
@@ -26,6 +27,89 @@ object Deco {
     private val texCache = HashMap<Int, IntArray>()
 
     private fun res(p: String): java.io.InputStream? = Deco::class.java.getResourceAsStream(p)
+
+    private fun fpOf(a: JSONArray?): IntArray? {
+        if (a == null) return null
+        val r = IntArray(6)
+        for (k in 0 until 6) r[k] = a.getInt(k)
+        return r
+    }
+
+    private fun floatsOf(a: JSONArray?): FloatArray? {
+        if (a == null) return null
+        val r = FloatArray(a.length())
+        for (k in 0 until a.length()) r[k] = a.getDouble(k).toFloat()
+        return r
+    }
+
+    /** TV / computador com tela que abre o navegador (o conversor acha a tela pelo material "light") */
+    fun isTv(id: Int): Boolean { val d = of(id); if (d == null) return false; return d.sc != null }
+    /** tela no mundo: [cx, cy, cz, nx, nz, rx, rz, largura, altura] (mesmo formato de Game.tvGeom) */
+    fun tvGeom(w: World, x: Int, y: Int, z: Int): FloatArray {
+        val d = of(w.get(x, y, z))
+        val s = if (d == null) null else d.sc
+        if (s == null) return floatArrayOf(x + 0.5f, y + 0.5f, z + 0.5f, 0f, 1f, 1f, 0f, 0.8f, 0.5f)
+        val dir = Furniture.faceOf(w, x, y, z, 0)
+        var px = s[0]; var pz = s[2]; var nx = s[3]; var nz = s[4]
+        if (dir == 1) { px = 1f - s[0]; pz = 1f - s[2]; nx = -s[3]; nz = -s[4] }
+        else if (dir == 2) { px = s[2]; pz = 1f - s[0]; nx = s[4]; nz = -s[3] }
+        else if (dir == 3) { px = 1f - s[2]; pz = s[0]; nx = -s[4]; nz = s[3] }
+        return floatArrayOf(x + px, y + s[1], z + pz, nx, nz, nz, -nx, s[7], s[8])
+    }
+
+    private fun boxOf6(a: JSONArray?): FloatArray? {
+        if (a == null) return null
+        val r = FloatArray(6)
+        for (k in 0 until 6) r[k] = a.getDouble(k).toFloat()
+        return r
+    }
+
+    /** 1 = abre/fecha, 2 = liga/desliga, 0 = nada (usado por Furniture.fKind) */
+    fun kindOf(id: Int): Int { val d = of(id); if (d == null) return 0; return d.kd }
+    private fun toggled(w: World, x: Int, y: Int, z: Int, kd: Int): Boolean {
+        if (kd == 0) return false
+        val st = w.fStateOf(x, y, z)
+        return if (kd == 1) (st and Furniture.ST_OPEN) != 0 else (st and Furniture.ST_OFF) != 0
+    }
+
+    private fun rotBox(b: FloatArray, dir: Int): FloatArray {
+        if (dir == 1) return floatArrayOf(1f - b[3], b[1], 1f - b[5], 1f - b[0], b[4], 1f - b[2])
+        if (dir == 2) return floatArrayOf(b[2], b[1], 1f - b[3], b[5], b[4], 1f - b[0])
+        if (dir == 3) return floatArrayOf(1f - b[5], b[1], b[0], 1f - b[2], b[4], b[3])
+        return floatArrayOf(b[0], b[1], b[2], b[3], b[4], b[5])
+    }
+
+    /** parte extra de um móvel de vários blocos: âncora (ax,ay,az) + caixa local da célula pedida */
+    class Extra(val ax: Int, val ay: Int, val az: Int, val box: FloatArray)
+
+    fun extraFind(w: World, x: Int, y: Int, z: Int): Extra? {
+        for (ay in y - 2..y) for (ax in x - 2..x + 2) for (az in z - 2..z + 2) {
+            if (ax == x && ay == y && az == z) continue
+            val d = of(w.get(ax, ay, az))
+            if (d == null) continue
+            val fp = d.fp
+            if (fp == null) continue
+            val dir = Furniture.faceOf(w, ax, ay, az, 0)
+            for (i in fp[0]..fp[1]) for (j in fp[4]..fp[5]) {
+                var dx = i; var dz = j
+                if (dir == 1) { dx = -i; dz = -j } else if (dir == 2) { dx = j; dz = -i } else if (dir == 3) { dx = -j; dz = i }
+                if (ax + dx != x || az + dz != z) continue
+                for (k in fp[2]..fp[3]) if (ay + k == y) {
+                    val base = d.box
+                    val b = if (base == null) floatArrayOf(0f, 0f, 0f, 1f, 1f, 1f) else floatArrayOf(base[0], base[1], base[2], base[3], if (k < fp[3]) 1f else base[4], base[5])
+                    return Extra(ax, ay, az, rotBox(b, dir))
+                }
+            }
+        }
+        return null
+    }
+
+    /** colisão das células "extras" de móveis de vários blocos (cama, armário alto...): caixa local da célula (x,y,z), ou null */
+    fun extraBox(w: World, x: Int, y: Int, z: Int): FloatArray? {
+        val e = extraFind(w, x, y, z)
+        if (e == null) return null
+        return e.box
+    }
 
     private fun loadItems(): ArrayList<Item> {
         val out = ArrayList<Item>()
@@ -39,7 +123,7 @@ object Deco {
             val b = o.optJSONArray("b")
             var box: FloatArray? = null
             if (b != null) { box = FloatArray(6); for (k in 0 until 6) box[k] = b.getDouble(k).toFloat() }
-            out.add(Item(o.getString("n"), o.getInt("c"), o.getInt("g"), tex, box, o.optInt("l", 0), o.optInt("sit", 0) == 1, o.optString("gp", "")))
+            out.add(Item(o.getString("n"), o.getInt("c"), o.getInt("g"), tex, box, o.optInt("l", 0), o.optInt("sit", 0) == 1, o.optString("gp", ""), fpOf(o.optJSONArray("fp")), o.optInt("kd", 0), boxOf6(o.optJSONArray("ob")), floatsOf(o.optJSONArray("sc")), o.optString("f", ""), o.optString("k", "").replace("_drz", "")))
         }
         return out
     }
@@ -52,10 +136,11 @@ object Deco {
         for (g in 0 until n) {
             bb.getInt()  // nº de materiais
             val nq = bb.getInt()
-            val slot = IntArray(nq); val shade = FloatArray(nq); val pos = FloatArray(nq * 12); val uv = FloatArray(nq * 8)
+            val slot = IntArray(nq); val shade = FloatArray(nq); val vis = IntArray(nq); val pos = FloatArray(nq * 12); val uv = FloatArray(nq * 8)
             for (q in 0 until nq) {
                 slot[q] = bb.get().toInt() and 255
                 shade[q] = (bb.get().toInt() and 255) / 255f
+                vis[q] = bb.get().toInt() and 255
                 for (v in 0 until 4) {
                     pos[q * 12 + v * 3] = bb.getShort().toInt() / 2048f
                     pos[q * 12 + v * 3 + 1] = bb.getShort().toInt() / 2048f
@@ -64,7 +149,7 @@ object Deco {
                     uv[q * 8 + v * 2 + 1] = (bb.getShort().toInt() and 0xFFFF) / 65535f
                 }
             }
-            out.add(Geo(nq, slot, shade, pos, uv))
+            out.add(Geo(nq, slot, shade, vis, pos, uv))
         }
         return out
     }
@@ -114,7 +199,9 @@ object Deco {
         if (item.geo < 0 || item.geo >= geos.size) return
         val g = geos[item.geo]
         val dir = Furniture.faceOf(w, x, y, z, 0)
+        val tg = if (toggled(w, x, y, z, item.kd)) 2 else 1
         for (q in 0 until g.nQuad) {
+            if ((g.vis[q] and tg) == 0) continue
             val s = g.slot[q]
             val tile = if (s < item.tile.size) item.tile[s] else -1
             if (tile < 0) continue
@@ -134,7 +221,8 @@ object Deco {
     /** caixa de colisão/seleção girada pra direção do bloco */
     fun box(w: World, id: Int, x: Int, y: Int, z: Int): FloatArray {
         val d = of(id)
-        val b = if (d == null) null else d.box
+        var b = if (d == null) null else d.box
+        if (d != null && d.ob != null && y >= 0 && toggled(w, x, y, z, d.kd)) b = d.ob
         if (b == null) return floatArrayOf(0f, 0f, 0f, 1f, 1f, 1f)
         val dir = if (y >= 0) Furniture.faceOf(w, x, y, z, 0) else 0
         if (dir == 1) return floatArrayOf(1f - b[3], b[1], 1f - b[5], 1f - b[0], b[4], 1f - b[2])

@@ -25,7 +25,7 @@ object Furniture {
         7 -> (B.flags[id and 16383] shr 8) and 4095
         else -> 0
     }
-    fun isTv(id: Int): Boolean = sub(id) == S_TV
+    fun isTv(id: Int): Boolean = sub(id) == S_TV || Deco.isTv(id)
     fun isElev(id: Int): Boolean = sub(id) == S_ELEV
     /** escala da TV por nível de tamanho (0 = normal) */
     val TV_SCALE = floatArrayOf(1f, 1.5f, 2f, 3f)
@@ -226,7 +226,7 @@ object Furniture {
         val top = if (ok) B.tTop[id] else B.tTop[B.PLANK]; val side = if (ok) B.tSide[id] else B.tSide[B.PLANK]
         c.box(top, side, side, x, y, z, x + sz, y + sz, z + sz)
     }
-    fun fKind(id: Int): Int { val sb = sub(id); return if (sb >= 256) FurnC.fKind(sb) else fKind0(sb) }
+    fun fKind(id: Int): Int { val dk = Deco.kindOf(id); if (dk != 0) return dk; val sb = sub(id); return if (sb >= 256) FurnC.fKind(sb) else fKind0(sb) }
     private fun fKind0(sb: Int): Int = when (sb) {
         S_WARD, S_FRIDGE -> 1
         S_LAMP -> 2

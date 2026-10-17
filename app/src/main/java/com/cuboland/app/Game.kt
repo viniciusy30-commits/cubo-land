@@ -427,7 +427,13 @@ class Game(val world: World) {
         while (t < t1) {
             val cx = floor(ox + dx * t).toInt(); val cy = floor(oy + dy * t).toInt(); val cz = floor(oz + dz * t).toInt()
             if (world.solidPt(cx, cy, cz, ox + dx * t, oy + dy * t, oz + dz * t)) {
-                if (lx != Int.MIN_VALUE) { hasHit = true; hx = cx; hy = cy; hz = cz; px = lx; py = ly; pz = lz; rT = t }
+                if (lx != Int.MIN_VALUE) {
+                    hasHit = true; hx = cx; hy = cy; hz = cz; px = lx; py = ly; pz = lz; rT = t
+                    if (!B.solid(world.get(cx, cy, cz))) {   // parte extra de móvel grande: mira/quebra vale pro bloco principal
+                        val ex = Deco.extraFind(world, cx, cy, cz)
+                        if (ex != null) { hx = ex.ax; hy = ex.ay; hz = ex.az }
+                    }
+                }
                 return
             }
             lx = cx; ly = cy; lz = cz
@@ -613,6 +619,7 @@ class Game(val world: World) {
     @Volatile var tvAspect = 2f
     /** tela da TV no mundo: [cx, cy, cz, nx, nz, rx, rz, largura, altura]; n = pra onde a tela olha, r = direita de quem olha */
     fun tvGeom(x: Int, y: Int, z: Int): FloatArray {
+        if (Deco.isTv(world.get(x, y, z))) return Deco.tvGeom(world, x, y, z)
         val rot = Furniture.facing(world, x, y, z, Furniture.S_TV)
         val sc = Furniture.TV_SCALE[world.tvLevel(x, y, z).coerceIn(0, Furniture.TV_SCALE.size - 1)]
         val ra = floatArrayOf(0.5f, 0.5f, 0.53f, 0.47f)[rot]; val rc = floatArrayOf(0.53f, 0.47f, 0.5f, 0.5f)[rot]
@@ -649,7 +656,7 @@ class Game(val world: World) {
     fun tvLevel(x: Int, y: Int, z: Int) = world.tvLevel(x, y, z)
     /** passa pro próximo tamanho (volta ao normal depois do maior); devolve o nível novo */
     fun cycleTvSize(x: Int, y: Int, z: Int): Int {
-        if (!Furniture.isTv(world.get(x, y, z))) return 0
+        if (!Furniture.isTv(world.get(x, y, z)) || Deco.isDeco(world.get(x, y, z))) return 0
         val lv = (world.tvLevel(x, y, z) + 1) % Furniture.TV_SCALE.size
         world.setTvLevel(x, y, z, lv)
         return lv

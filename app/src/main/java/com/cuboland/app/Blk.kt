@@ -697,7 +697,7 @@ object Blk {
             val first = tiles.firstOrNull { it >= 0 } ?: continue
             val id = blk(d.name, if (d.cat == 5) C_FURN else C_DEC, first, first, first, 0xB0A090, M_WOOD, 4f,
                 fup or (if (d.light >= 8) F_LIGHT else 0), "")
-            if (id != 0) Deco.idx[id] = n
+            if (id != 0) { Deco.idx[id] = n; d.blockId = id }
         }
     }
 

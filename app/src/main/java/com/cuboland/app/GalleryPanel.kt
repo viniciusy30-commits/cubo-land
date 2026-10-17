@@ -179,6 +179,8 @@ class GalleryPanel(
         heading("PASSEIOS")
         val ex = ArrayList<View>()
         ex.add(card("MANSÃO", "casa completa com móveis, garagem e piscina", Color.rgb(255, 190, 80), "M") { pick(-1, -1, World.GAL_HOUSE, "Mansão") })
+        ex.add(card("APLICAÇÕES", "ambientes com todos os móveis e decorações", Color.rgb(170, 110, 220), "P") { pick(-1, -1, World.GAL_APPS, "Aplicações de móveis e decorações") })
+        ex.add(card("MINI PRÉDIO", "4 andares decorados, com elevador", Color.rgb(60, 150, 200), "E") { pick(-1, -1, World.GAL_BUILDING, "Mini prédio com elevador") })
         ex.add(card("ÁRVORES", "todas as árvores plantadas", Color.rgb(90, 200, 90), "A") { pick(-1, -1, World.GAL_TREES, "Galeria de árvores") })
         ex.add(card("VEÍCULOS", "pista para testar os carros", Color.rgb(212, 60, 60), "V") { pick(-1, -1, World.GAL_CAR, "Teste de veículos") })
         addGrid(ex, cols())

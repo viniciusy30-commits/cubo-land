@@ -26,6 +26,7 @@ BATCHES = {
  4: None,
 }
 want = [int(x) for x in A.batches.split(',')]
+LIGHTFOLDERS = set()
 FURN_OLD = re.compile(r'(chair|sofa|stool|bench|table|bed|desk|stand|shelf|cabinet|drawer|wardrobe|ottoman|rack|locker|crib|counter|refrigerator|freezer|oven|stove|sink|toilet|bathtub|washing|dresser|cup_board|filing|furniture)')
 
 def is_furn(f): return group_raw(f, 5) != 'OUTROS MOVEIS' or bool(FURN_OLD.search(f))
@@ -63,6 +64,10 @@ GROUPS = [  # (titulo, regex na pasta) - a primeira que casar vence; separado po
  (4, 'ROUPAS E ACESSÓRIOS', r'clothes|shirt|shoes|boots|slippers|sneakers|bag|hat|jewel|mannequin|totebag|vest|helmet|umbrella|hanger'),
  (4, 'ESPORTE E MÚSICA', r'sport|gym|guitar|piano|drum|mic|speaker|flute|violin|melodica|angklung|cajon|kentungan|dj|music|racket|skate'),
  (4, 'CAIXAS E LOJA', r'box|crate|barrel|sack|basket|shopping|cart|trunk|trolley|pharmacy|retail|cashier|atm|payment|scanner|checkout|money|gold|display'),
+ (4, 'ELETRÔNICOS E TECNOLOGIA', r'laptop|pc_|electronic|gaming|projector|camera|cctv|^tv|printer|smartphone|phone|electric|antena|bluray|drone|headphone|earphone|joystick|switch|router|gpu|teleprompter|monolink|mono_play|sensor|shaver|pump_it'),
+ (4, 'HOSPITAL E OFICINA', r'hospital|syringe|oxygen|nitrogen|scissor|mechanic|gas_|gasoline|lpg|pump|fire_ext|tire|hand_truck|water_storage|watering|hoe|axe|pruning|dipper|steel|wheel|guillotine|gavel'),
+ (4, 'ESTRUTURAS E TELHADOS', r'brick|curve|roof|awning|pillar|handrail|iron_stage|travelator|speed_bump|pulpit|podium|wine_wall|rail'),
+ (4, 'SUPORTES E EXPOSITORES', r'stand|hanger|book_stand|tripod'),
  (4, 'OUTRAS DECORACOES', r'.'),
 ]
 def group_raw(folder, cat):
@@ -151,7 +156,7 @@ def bake(g):
                 sh = sh / (abs(n[0])+abs(n[1])+abs(n[2])+1e-6)
                 mn = fd.get('material_instance', '*')
                 if mn not in mats: mats.append(mn)
-                quads.append((mats.index(mn), int(max(0, min(1, sh))*255), vs))
+                quads.append((mats.index(mn), int(max(0, min(1, sh))*255), vs, b['name']))
     return mats, quads
 
 def assemble(d, c):
@@ -193,6 +198,64 @@ def assemble(d, c):
         out.append((gid, (-idx('x', r['x']) if 'x' in r else 0, idx('y', r['y']) if 'y' in r else 0, -idx('z', r['z']) if 'z' in r else 0)))
     return out
 
+SCREEN_RX = re.compile(r'^(tv|tv_vertical|laptop|pc_setup|pc_potato|teleprompter|touchscreen_menu|tablet_display|smartphone_display)(_\d+[a-z]?)*$')
+def screen_of(mats, quads):
+    """tela -> [cx,cy,cz, nx,nz, rx,rz, largura, altura] no quadro padrao do modelo, ou None.
+    1) maior quad do material 'light'; 2) (sem 'light') o maior quad vertical virado pra +z, dando preferencia pro mais alto"""
+    allv = [v for _, _, vs, _ in quads for v in vs]
+    if not allv: return None
+    cen = [sum(v[i] for v in allv)/len(allv) for i in range(3)]
+    def cand(only_light):
+        out = []
+        li = mats.index('light') if 'light' in mats else -1
+        for slot, sh, vs, bn in quads:
+            if only_light and slot != li: continue
+            ax = [vs[1][i]-vs[0][i] for i in range(3)]; bx = [vs[3][i]-vs[0][i] for i in range(3)]
+            n = [ax[1]*bx[2]-ax[2]*bx[1], ax[2]*bx[0]-ax[0]*bx[2], ax[0]*bx[1]-ax[1]*bx[0]]
+            area = math.sqrt(sum(t*t for t in n))
+            if area < 1e-6: continue
+            n = [t/area for t in n]
+            c = [sum(v[i] for v in vs)/4 for i in range(3)]
+            if sum(n[i]*(c[i]-cen[i]) for i in range(3)) < 0: n = [-t for t in n]
+            if math.hypot(n[0], n[2]) < 0.3: continue
+            out.append((area, n, c, vs))
+        return out
+    best = None
+    c1 = cand(True)
+    if c1: best = max(c1, key=lambda t: t[0])
+    else:
+        c2 = [t for t in cand(False) if t[0] >= 0.02]
+        if c2: best = max(c2, key=lambda t: t[0] * (1 + t[2][1]) * (1.5 if t[1][2] > 0.5 else 1))
+    if not best or best[0] < 0.02: return None
+    _, n, c, vs = best
+    hl = math.hypot(n[0], n[2]); nx, nz = n[0]/hl, n[2]/hl; rx, rz = nz, -nx
+    pr = [(v[0]-c[0])*rx + (v[2]-c[2])*rz for v in vs]; ys = [v[1] for v in vs]
+    w = max(pr)-min(pr); h = max(ys)-min(ys)
+    if w < 0.1 or h < 0.1: return None
+    return [round(c[0], 3), round(c[1], 3), round(c[2], 3), round(nx, 3), round(nz, 3), round(rx, 3), round(rz, 3), round(w, 3), round(h, 3)]
+
+def ev_vis(expr, var, val):
+    """avalia expressao de bone_visibility do addon com var (ex. md:on) = val; qualquer coisa estranha -> visivel"""
+    if isinstance(expr, bool): return expr
+    try:
+        e = str(expr).replace("q.block_state('" + var + "')", 'ST_' + str(bool(val))).replace('&&', ' and ').replace('||', ' or ')
+        e = re.sub(r'!(?!=)', ' not ', e).replace('true', 'True').replace('false', 'False')
+        e = e.replace('ST_True', 'True').replace('ST_False', 'False')
+        if 'q.' in e or 'v.' in e: return True
+        return bool(eval(e, {'__builtins__': {}}, {}))
+    except Exception:
+        return True
+
+def xform(quads, rotY, trans):
+    out = []
+    for slot, sh, vs, bn in quads:
+        nv = []
+        for x, y, z, u, v in vs:
+            p = rot([x*16-8, y*16, z*16-8], [0, rotY, 0], [0, 0, 0]) if rotY else [x*16-8, y*16, z*16-8]
+            nv.append((p[0]/16+0.5+trans[0], p[1]/16+trans[1], p[2]/16+0.5+trans[2], u, v))
+        out.append((slot, sh, nv, bn))
+    return out
+
 # ---- registro persistente ----
 reg = json.load(open(REG)) if os.path.exists(REG) else {'items': [], 'tex': [], 'batches': []}
 folders = sorted(f for f in os.listdir(BP + '/blocks') if folder_ok(f))
@@ -230,11 +293,49 @@ for key in reg['items']:
                 m2, q2 = bake(geos[sg])
                 for mn in m2:
                     if mn not in mats: mats.append(mn)
-                for slot, sh, vs in q2:
-                    quads.append((mats.index(m2[slot]), sh, [(x+dx, y+dy, z+dz, u, v) for x, y, z, u, v in vs]))
+                for slot, sh, vs, bn in q2:
+                    quads.append((mats.index(m2[slot]), sh, [(x+dx, y+dy, z+dz, u, v) for x, y, z, u, v in vs], bn))
         else:
             mats, quads = bake(g)
         geo_index[gkey] = len(geo_list); geo_list.append((mats, quads))
+    # estados abrir/ligar (md:is_open / md:on): bone_visibility ou variante aberta (transformacao da porta)
+    stvar = next((v for v in ('md:is_open', 'md:on') if v in d['description'].get('states', {})), None)
+    kind = 0; openbox = None; vis_sig = ''
+    if stvar:
+        isl = (stvar == 'md:on' and group(folder, 4) == 'ILUMINAÇÃO')
+        kind = 2 if isl else 1
+        bv = gref.get('bone_visibility') if isinstance(gref, dict) else None
+        vis_sig = f'|{stvar}|{kind}|' + json.dumps(bv, sort_keys=True)
+    gkey2 = gkey + vis_sig
+    if gkey2 not in geo_index:
+        mats, quads = geo_list[geo_index[gkey]]
+        nq = []
+        if stvar and isinstance(gref, dict) and isinstance(gref.get('bone_visibility'), dict):
+            bvm = gref['bone_visibility']
+            for slot, sh, vs, bn in quads:
+                e = bvm.get(bn, True)
+                v0 = ev_vis(e, stvar, kind == 2); v1 = ev_vis(e, stvar, kind != 2)
+                nq.append((slot, sh, vs, (1 if v0 else 0) | (2 if v1 else 0)))
+        elif stvar == 'md:is_open':
+            tr = {'rotation': [0, 90, 0], 'translation': [0.875, 0, 0]}
+            for pm in d.get('permutations', []):
+                cd = pm['condition']
+                if "'south'" in cd and "!q.block_state('md:mirror')" in cd and "md:is_open')" in cd and "!q.block_state('md:is_open')" not in cd and 'minecraft:transformation' in pm['components']:
+                    tr = pm['components']['minecraft:transformation']; break
+            rr = tr.get('rotation', [0, 0, 0])[1]; tv = tr.get('translation', [0, 0, 0])
+            for slot, sh, vs, bn in quads: nq.append((slot, sh, vs, 1))
+            for slot, sh, vs, bn in xform(quads, rr, tv): nq.append((slot, sh, vs, 2))
+            ob = c.get('minecraft:collision_box')
+            if isinstance(ob, dict):
+                o_, s_ = ob['origin'], ob['size']
+                pts = [[o_[0]+a*s_[0], o_[1]+b2*s_[1], o_[2]+cc*s_[2]] for a in (0, 1) for b2 in (0, 1) for cc in (0, 1)]
+                pts = [rot(p_, [0, rr, 0], [0, 0, 0]) for p_ in pts]
+                openbox = [round(min(p_[0] for p_ in pts)/16+0.5+tv[0], 3), round(o_[1]/16, 3), round(min(p_[2] for p_ in pts)/16+0.5+tv[2], 3),
+                           round(max(p_[0] for p_ in pts)/16+0.5+tv[0], 3), round((o_[1]+s_[1])/16, 3), round(max(p_[2] for p_ in pts)/16+0.5+tv[2], 3)]
+        else:
+            nq = [(slot, sh, vs, 3) for slot, sh, vs, bn in quads]
+        geo_index[gkey2] = len(geo_list); geo_list.append((mats, nq))
+    gkey = gkey2
     mats, quads = geo_list[geo_index[gkey]]
     mi = c.get('minecraft:material_instances', {})
     def res(n):
@@ -245,6 +346,7 @@ for key in reg['items']:
     for mn in mats:
         t = res(mn); tl.append(tex_id(t) if t and texpath(t) else -1)
     if all(t < 0 for t in tl): skipped += 1; continue
+    scr = screen_of(mats, quads) if SCREEN_RX.match(folder) else None
     def box(b):
         if not b: return None
         o, s = b['origin'], b['size']
@@ -254,16 +356,20 @@ for key in reg['items']:
     nm = ptname(key, base)
     if nm in usednames: nm = f'{nm} ({key.replace("_drz","")})'
     usednames.add(nm)
-    items.append({'k': key, 'n': nm, 'c': 5 if is_furn(folder) else 4, 'g': geo_index[gkey], 't': tl, 'b': col,
-                  'l': int(c.get('minecraft:light_emission', 0) or 0), 'f': folder, 'gp': group(folder, 5 if is_furn(folder) else 4), 'sit': 1 if 'md:sit' in c else 0})
+    fp = None
+    if asm:
+        xs = [o[0] for _, o in asm]; ys = [o[1] for _, o in asm]; zs = [o[2] for _, o in asm]
+        fp = [min(xs), max(xs), min(ys), max(ys), min(zs), max(zs)]
+    items.append({'k': key, 'n': nm, 'c': 5 if is_furn(folder) else 4, 'g': geo_index[gkey], 'kd': kind, 't': tl, 'b': col,
+                  'l': int(c.get('minecraft:light_emission', 0) or 0), 'f': folder, 'gp': group(folder, 5 if is_furn(folder) else 4), 'sit': 1 if 'md:sit' in c else 0, **({'fp': fp} if fp else {}), **({'ob': openbox} if openbox else {}), **({'sc': scr} if scr else {})})
 
 # ---- escreve ----
 with open(OUT + '/geo.bin', 'wb') as fo:
     fo.write(struct.pack('<i', len(geo_list)))
     for mats, quads in geo_list:
         fo.write(struct.pack('<ii', len(mats), len(quads)))
-        for slot, sh, vs in quads:
-            fo.write(struct.pack('<BB', slot, sh))
+        for slot, sh, vs, vb in quads:
+            fo.write(struct.pack('<BBB', slot, sh, vb if isinstance(vb, int) else 3))
             for x, y, z, u, v in vs:
                 fo.write(struct.pack('<hhhHH', int(round(x*2048)), int(round(y*2048)), int(round(z*2048)),
                                      int(max(0, min(1, u))*65535), int(max(0, min(1, v))*65535)))

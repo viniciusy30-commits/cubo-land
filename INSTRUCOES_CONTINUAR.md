@@ -1,3 +1,14 @@
+# >>> STATUS ATUAL (parte 17) <<<
+NOVO: Galeria > PASSEIOS > MINI PRÉDIO (`DecoBuilding.kt`, `World.GAL_BUILDING`): prédio de 4 andares (piso a cada 5 blocos, pé direito 4), saguão central com Elevador do jogo (lx 18, lz 1; 4 paradas) e 16 ambientes decorados à mão (sala, cozinha, loja, café, quartos, banheiro, lavanderia, escritório, jogos, música, boutique, consultório, academia, galeria de arte, jardim). Cada peça tem direção FIXA (`putL(..., dir)` grava fState 64|dir<<4). Chaves de item = nome do bloco no addon sem `_drz` (ex. `sofa_blue`); chave inexistente é ignorada em silêncio (se faltar algo na cena, conferir a chave em items.json).
+
+NOVO: Galeria > PASSEIOS > APLICAÇÕES (`DecoRooms.kt`, `World.GAL_APPS`): um ambiente temático por grupo (piso/paredes por tema), móveis em fileiras, quadros/cortinas nas paredes, janelas, luminárias de teto penduradas, plaquinha em cada item. É uma vitrine em grade, NÃO cômodos decorados à mão. Também: vitrines antigas (mansão) não mostram mais a mobília removida (post-pass em `World.generateTest`).
+
+FEITO: importação de TODA mobília/decoração do addon (2736 itens, lotes 1-4), remoção da mobília antiga (menos TV/Elevador antigos), móveis de vários blocos montados + colisão + mira/quebra, portas/armários que abrem (83), TVs/computadores com navegador (26), galeria em 25 grupos.
+NÃO PRECISA: ligar/desligar luzes (as luminárias do addon são sempre acesas, sem estado `md:on`).
+NÃO MEXER (pedido do usuário): laptops e smartphones deitados (20 itens) — ele vai fazer outra coisa neles.
+AGUARDANDO DECISÃO DO USUÁRIO: (a) remover itens de arma (assault_rifle, bazooka, sniper, landmine, guillotine) — remover desloca ids seguintes; (b) importar famílias de construção (asfalto, paredes, pisos, calçadas, degraus/lajes/curvas, alfabeto/números/símbolos ≈ 5000 blocos; estoura limites de ids/tiles, exigiria atlas separado).
+NUNCA TESTADO NO JOGO além do build compilar e das camas (corrigidas): conferir visual de portas, TVs, colisão e desempenho do raycast perto de móveis grandes; memória do atlas em celular fraco (se der OOM, reduzir texturas deco para 32x32 em deco_import.py).
+
 # >>> IMPORTAÇÃO DO ADDON monoDeco (mobília + decoração) — LEIA PRIMEIRO <<<
 
 AVISO: nada compilado (sem Android SDK no ambiente). Se o build falhar, mande o log.
@@ -14,7 +25,11 @@ AVISO: nada compilado (sem Android SDK no ambiente). Se o build falhar, mande o 
 - Lote 1 (508 itens, 121 modelos, 176 texturas): cadeiras, sofás, bancos, mesas, camas, escrivaninhas, criados-mudos, estantes, armários, gavetas, guarda-roupas, bancadas, prateleiras/racks, armários-vestiário, berços etc.
 - Remoção da mobília antiga + ganchos em Shapes/Furniture/Atlas/World/Blk.
 
-- Itens de vários blocos (cama, armário alto, cortina... `md:segment`, ~385 itens) agora são MONTADOS num modelo só pelo conversor (`assemble()` em deco_import.py): o bloco âncora desenha o móvel inteiro, que passa da célula (x/z negativos, y pra cima). Colisão/mira ainda cobrem só 1 célula (falta: estender a colisão pras células extras).
+- Itens de vários blocos (cama, armário alto, cortina... `md:segment`, ~385 itens) agora são MONTADOS num modelo só pelo conversor (`assemble()` em deco_import.py): o bloco âncora desenha o móvel inteiro, que passa da célula (x/z negativos, y pra cima). COLISÃO das células extras: FEITA (`Deco.extraBox` + `World.boxOf/solidBox`; `fp` no items.json = pegada em células). MIRA/quebrar pelas células extras: FEITO (`Deco.extraFind`; `World.solidPt` e `Game.raycast` remapeiam o acerto pro bloco âncora).
+
+- Estados abrir/fechar: FEITO para 83 itens (`kd`=1 no items.json): portas (variante aberta = giro 90°+deslize, com caixa de colisão aberta `ob`) e itens com `bone_visibility` por `md:on` (ex. armário de parede). Alterna pelo botão ABRIR/FECHAR que já existia (`Furniture.fKind` → `Deco.kindOf`). geo.bin agora tem 1 byte `vis` por quad (bit0 = estado normal, bit1 = alternado). Portas altas de 2-3 blocos: colocar empilhadas. Luzes ligar/desligar (`kd`=2) existe no código mas nenhum item usa ainda.
+
+- Galeria refinada: grupos novos (ELETRÔNICOS E TECNOLOGIA, HOSPITAL E OFICINA, ESTRUTURAS E TELHADOS, SUPORTES E EXPOSITORES). TVs e computadores novos (pastas tv, tv_vertical, laptop, pc_setup*, pc_potato, teleprompter, touchscreen_menu, tablet/smartphone_display) ABREM O NAVEGADOR: o conversor acha a tela (material 'light' ou o maior quad vertical +z) e grava `sc` = [cx,cy,cz,nx,nz,rx,rz,w,h] no items.json; `Furniture.isTv` inclui `Deco.isTv` e `Game.tvGeom` usa `Deco.tvGeom`. Botão 'Tamanho' não age nos novos. Para outro item virar TV, inclua a pasta em SCREEN_RX. A Televisão ANTIGA foi mantida. AVISO: o addon tem itens de armas (assault_rifle, bazooka, sniper, landmine, guillotine) — decidir com o usuário se remove (tirar de items.json desloca ids dos seguintes: só faça se nenhum mundo importante usa).
 
 ## FALTA (nesta ordem)
 1. **Compilar e testar** o lote 1 (modelo girado/espelhado errado? ajuste `FACES`/rotação em `deco_import.py` e `Deco.emit`).

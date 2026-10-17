@@ -99,7 +99,7 @@ class World {
         const val WATER_Y = 9
         /** modos extras da galeria de blocos (além das categorias de blocos) */
         const val GAL_PAGE = 100   // extra >= GAL_PAGE: página (extra - GAL_PAGE) da seção escolhida
-        const val GAL_FURN = 1; const val GAL_HOUSE = 2; const val GAL_TREES = 3; const val GAL_FURN2 = 4; const val GAL_CAR = 5
+        const val GAL_FURN = 1; const val GAL_HOUSE = 2; const val GAL_TREES = 3; const val GAL_FURN2 = 4; const val GAL_CAR = 5; const val GAL_APPS = 6; const val GAL_BUILDING = 7
         const val SAVE_MAGIC = 0x434C3402
         const val ST_MAGIC = 0x53543031   // trailer opcional: itens guardados nos móveis
         const val FS_MAGIC = 0x46533031   // trailer opcional depois do das TVs: estado dos móveis (aberto/ligado)
@@ -159,16 +159,28 @@ class World {
     fun solid(x: Int, y: Int, z: Int) = B.solid(get(x, y, z))
 
     /** caixa real (coords locais do bloco: x0,y0,z0,x1,y1,z1) dos blocos com formato próprio; null = cubo inteiro */
-    fun boxOf(x: Int, y: Int, z: Int): FloatArray? = Shapes.box(this, get(x, y, z), x, z, y)
+    fun boxOf(x: Int, y: Int, z: Int): FloatArray? {
+        val id = get(x, y, z)
+        if (!B.solid(id)) { val e = Deco.extraBox(this, x, y, z); if (e != null) return e }
+        return Shapes.box(this, id, x, z, y)
+    }
     /** o bloco (x,y,z) é sólido dentro da caixa de mundo dada? (respeita o formato real) */
     fun solidBox(x: Int, y: Int, z: Int, ax0: Float, ay0: Float, az0: Float, ax1: Float, ay1: Float, az1: Float): Boolean {
-        val id = get(x, y, z); if (!B.solid(id)) return false
+        val id = get(x, y, z)
+        if (!B.solid(id)) {
+            val e = Deco.extraBox(this, x, y, z) ?: return false
+            return ax1 > x + e[0] && ax0 < x + e[3] && ay1 > y + e[1] && ay0 < y + e[4] && az1 > z + e[2] && az0 < z + e[5]
+        }
         val b = Shapes.box(this, id, x, z, y) ?: return true
         return ax1 > x + b[0] && ax0 < x + b[3] && ay1 > y + b[1] && ay0 < y + b[4] && az1 > z + b[2] && az0 < z + b[5]
     }
     /** o ponto de mundo está dentro do bloco real? (mira/raio) */
     fun solidPt(x: Int, y: Int, z: Int, px: Float, py: Float, pz: Float): Boolean {
-        val id = get(x, y, z); if (!B.solid(id)) return false
+        val id = get(x, y, z)
+        if (!B.solid(id)) {
+            val e = Deco.extraBox(this, x, y, z) ?: return false
+            return px >= x + e[0] && px <= x + e[3] && py >= y + e[1] && py <= y + e[4] && pz >= z + e[2] && pz <= z + e[5]
+        }
         val b = Shapes.pickBox(this, id, x, z, y) ?: return true
         return px >= x + b[0] && px <= x + b[3] && py >= y + b[1] && py <= y + b[4] && pz >= z + b[2] && pz <= z + b[5]
     }
@@ -344,6 +356,8 @@ class World {
             extra == GAL_FURN2 -> { furnitureShowcase2(top); spawnX = 8; spawnZ = 24 }
             extra == GAL_HOUSE -> { grandMansion(top); spawnX = 114; spawnZ = 32; carSpawnX = 138; carSpawnZ = 70; carSpawnYaw = Math.PI.toFloat() }
             extra == GAL_TREES -> { plantTestTrees(top); spawnX = 94; spawnZ = 2 }
+            extra == GAL_BUILDING -> { DecoBuilding.build(this, top); spawnX = DecoBuilding.spawnX; spawnZ = DecoBuilding.spawnZ }
+            extra == GAL_APPS -> { DecoRooms.build(this, top); spawnX = DecoRooms.spawnX; spawnZ = DecoRooms.spawnZ }
             extra == GAL_CAR -> { vehicleTrack(top); spawnX = 10; spawnZ = 6; carSpawnX = 17; carSpawnZ = 9; carSpawnYaw = 0f }
             catIdx in cats.indices -> layoutCategory(cats[catIdx], secFilter, if (extra >= GAL_PAGE) extra - GAL_PAGE else 0, top, floor, plate)
             else -> {
@@ -351,6 +365,10 @@ class World {
                 labels.add(Label(spawnX + 0.5f, top + 3.4f, spawnZ + 7f, "Toque em CATEGORIAS no alto da tela", false))
             }
         }
+        // mobília antiga removida não aparece nem nas vitrines antigas (mansão etc.)
+        val gone = BooleanArray(16384)
+        for (v in Blk.vanished) if (v in 0..16383) gone[v] = true
+        for (i in blocks.indices) { val b = blocks[i]; if (b > 0 && b < 16384 && gone[b]) blocks[i] = 0 }
         val lk = java.util.BitSet(blocks.size)
         for (i in blocks.indices) if (blocks[i] != B.AIR) lk.set(i)
         locked = lk
