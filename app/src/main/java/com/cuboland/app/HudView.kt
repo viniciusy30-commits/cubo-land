@@ -342,7 +342,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         for (i in intArrayOf(1, 3, 4, 6, 7, 8)) if ((!game.driving || i == 4) && (i != 6 || wet()) && (i != 8 || !wet()) && hypot(x - bx(i), y - byy(i)) < br(i) * 1.15f) {
             btnId[id] = i
             when (i) {
-                1 -> { game.jumpHeld = true; game.jumpTap() }
+                1 -> { game.jumpHeld = true; game.jumpLatch = true; game.jumpTap() }
                 6 -> { game.downHeld = true; game.downTap() }
                 7 -> game.sprint = !game.sprint      // toque liga/desliga; parar de andar desliga sozinho
                 8 -> { poseDownT = System.currentTimeMillis(); poseFired = false }
@@ -923,6 +923,12 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
             pxRound(c, cx, byy(i), R, base, on)
             val spr = when (i) { 1 -> S_UP; 6 -> S_DOWN; 7 -> S_RUN; 8 -> S_POSE; 3 -> S_EYE; 5 -> S_BAG; else -> S_PAUSE }
             sprite(c, spr, sn(cx), cy, base)
+            if (i == 1 && game.superCharge > 0.02f) {   // barrinha da carga do super pulo, em cima do botão
+                val bw = 18 * u; val chg = game.superCharge; val by = sn(byy(1) - br(1) - 12 * d)
+                outer(c, cx - bw / 2 - u, by - u, cx + bw / 2 + u, by + 2 * u, Cz.INK)
+                rc(c, cx - bw / 2, by, cx + bw / 2, by + u, Color.argb(120, 255, 255, 255))
+                rc(c, cx - bw / 2, by, cx - bw / 2 + sn(bw * chg), by + u, if (chg >= 1f) Color.rgb(255, 214, 90) else Color.rgb(255, (255 - 60 * chg).toInt(), (255 - 170 * chg).toInt()))
+            }
         }
         if (!invOpen) drawCarUi(c, w, h)
         // barra de carga do golpe poderoso (perto da mira)

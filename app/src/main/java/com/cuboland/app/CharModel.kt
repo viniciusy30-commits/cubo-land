@@ -41,6 +41,9 @@ class Anim {
     @JvmField var tilt = 0f       // graus que o corpo deita ao nadar (o jogo aplica na matriz)
     @JvmField var swimFast = 0f   // 0..1 (suavizado) acelerando na água: só aí os braços batem; sem acelerar, boia/desliza
     @JvmField var toolA = 0f      // (saída) graus extras em X no item da mão, pra ele não furar o corpo/chão (nado e voo rápido)
+    @JvmField var jch = 0f        // 0..1 carregando o pulo (agacha, inclina e treme); a batidinha rápida do pulo normal chega a ~0,35
+    @JvmField var sj = 0f         // 0..1 (suavizado) no ar de um SUPER PULO
+    @JvmField var flip = 0f       // graus da cambalhota do super pulo (0..360)
 }
 
 /** Modelo chibi do personagem, montado só com caixas. Usado no jogo (OpenGL) e na tela de personagem (preview). */

@@ -929,21 +929,26 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     private val an = Anim()
     private var lastPT = 0f; private var phaseA = 0f; private var runA = 0f; private var landA = 0f
     private var wasAirP = false; private var lastVyP = 0f; private var airSm = 0f; private var landSm = 0f; private var vyHold = 0f; private var flySm = 0f; private var flySp = 0f; private val tpP = FloatArray(10); private var diveSm = 0f; private var tiltSm = 0f; private var dashSm = 0f; private var swimPhA = 0f; private var swimFastA = 0f
+    private var airTimeP = 0f; private var jchSm = 0f; private var sjSm = 0f; private var flipAng = 0f; private var landRate = 5f
+    private val SUPER_FLIP = true   // cambalhota no super pulo com a carga quase cheia (false = sem cambalhota)
 
     private fun drawPlayer(t: Float) {
         val p = game.player
         val dtp = (t - lastPT).coerceIn(0f, 0.1f); lastPT = t
         val wa = game.walkAmt
         val swm = game.swimAmt
-        val airNow = !p.onGround && swm < 0.2f
+        val airRaw = !p.onGround && swm < 0.2f
+        airTimeP = if (airRaw) airTimeP + dtp else 0f
+        val airNow = airRaw && (airTimeP > 0.08f || p.vy > 2.5f)   // descer degrau/rampa não vira "pulo" (acabou o piscar de pose); pulo de verdade entra na hora
         val runTarget = if (p.onGround && swm < 0.2f) ((wa - 0.62f) / 0.3f).coerceIn(0f, 1f) else 0f
         runA += (runTarget - runA) * min(1f, 8f * dtp)
         // passada ligada à velocidade real do chão: o pé não desliza (nem devagar)
         val spdH = sqrt(p.vx * p.vx + p.vz * p.vz)
         val strideA = (26f + 30f * runA) * 0.01745f
         phaseA += dtp * (if (wa > 0.02f && p.onGround) (spdH / ((0.89f - 0.49f * game.lieA) * strideA)).coerceIn(0f, 30f) else 0f)
-        if (wasAirP && p.onGround && lastVyP < -4f) landA = (-lastVyP / 12f).coerceIn(0.35f, 1f)
-        landA = max(0f, landA - dtp * 5f)
+        if (wasAirP && p.onGround && lastVyP < -4f) { landA = (-lastVyP / 12f).coerceIn(0.35f, 1.5f); landRate = if (landA > 1.05f) 2.8f else 5f }   // queda de super pulo: afunda mais e levanta mais devagar
+        landA = max(0f, landA - dtp * landRate)
+        if (airNow && !wasAirP) vyHold = p.vy   // começa a pose já na velocidade certa (sem herdar a queda anterior)
         wasAirP = airNow; lastVyP = p.vy
         val id = if (game.driving) 0 else game.cur()   // dirigindo: mãos no volante/guidão, sem item
         airSm += ((if (airNow) 1f else 0f) - airSm) * min(1f, 9f * dtp)
@@ -960,11 +965,23 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         diveSm += (diveTarget - diveSm) * min(1f, 6f * dtp)
         val pitchDeg = Math.toDegrees(game.pitch.toDouble()).toFloat()
         // superfície: quase em pé, inclinado pra frente; mergulhado: deitado, seguindo o olhar
+        // carga do pulo, super pulo e cambalhota (suavizados)
+        jchSm += (game.jumpCharge - jchSm) * min(1f, (if (game.jumpCharge > jchSm) 16f else 26f) * dtp)
+        sjSm += ((if (game.superAir && airNow) 1f else 0f) - sjSm) * min(1f, 10f * dtp)
+        if (SUPER_FLIP && game.superAir && airNow && game.superVy0 > 14.6f) {
+            val v0 = game.superVy0
+            val fp = ((0.8f * v0 - p.vy) / (1.6f * v0)).coerceIn(0f, 1f)   // centrada no topo do pulo
+            flipAng = 360f * fp * fp * (3f - 2f * fp)
+        } else if (flipAng > 0f) {   // pousou no meio da volta: termina rapidinho em vez de estalar
+            flipAng += (360f - flipAng) * min(1f, 14f * dtp)
+            if (flipAng > 358f) flipAng = 0f
+        }
         val tiltTarget = swm * (32f + (((78f - pitchDeg * 0.35f).coerceIn(40f, 110f)) - 32f) * diveSm)
         tiltSm += (tiltTarget - tiltSm) * min(1f, 9f * dtp)
         an.t = t; an.phase = phaseA; an.move = wa; an.run = runA; an.vy = vyHold; an.air = airNow; an.airA = airSm; an.fly = flySm; an.flySpd = flySp
         val impK = ((1f - game.flyImp) * 3f).coerceIn(0f, 1f)   // o impulso entra em ~0,2s em vez de estalar
         an.dash = dashSm; an.imp = game.flyImp * impK * impK * (3f - 2f * impK); an.swimFast = swimFastA; an.swimPh = swimPhA; an.crouch = game.crouchA; an.sit = game.sitA; an.lie = game.lieA; an.ride = if (game.driving) 1f else 0f; an.bent = if (game.driving && game.car.kind == 1) 1f else 0f; an.landT = landSm; an.swim = swm; an.dive = diveSm; an.tilt = tiltSm
+        an.jch = jchSm; an.sj = sjSm; an.flip = flipAng
         an.atk = game.swing; an.atkArm = swingDelta(id, game.swing); an.hasTool = id > 0
         // mesmos keyframes de golpe/carga da 1ª pessoa, aplicados no braço do boneco
         if (game.charging) { chargePose(tpP, id, game.charge, t); an.charge = min(1f, game.charge) }

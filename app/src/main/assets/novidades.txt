@@ -1,3 +1,12 @@
+#id 2026-10-20-b
+#titulo Pulo novo, SUPER PULO e nado rápido
+- Pulo refeito do zero: o boneco agacha rapidinho antes de sair do chão, estica na subida, recolhe os joelhos no topo e desce com as pernas esticadas pra pisar, com os braços acompanhando cada fase (tudo misturado de forma suave, sem trancos)
+- Descer degrau ou rampa não faz mais o boneco pular no ar por um instante
+- SUPER PULO: segure o botão de pular. O boneco agacha, se inclina pra frente, os braços vão pra trás e ele treme quanto mais carrega (barrinha em cima do botão). Solte pra saltar até ~5 blocos, com onda de poeira na saída, rastro no ar e poeira + pedacinhos do chão na aterrissagem (e tremida na tela)
+- Com a carga quase cheia o super pulo ganha uma cambalhota no ar
+- Toque rápido no botão continua sendo o pulo normal (agora com uma nuvenzinha de poeira nos pés). Segurar o botão não pula mais sozinho de novo e de novo
+- Nado rápido na superfície: as pernas sobem um pouco e batem rápido (pernada) jogando respingos, e o corpo rola de leve a cada braçada. Boiando parado continua com a pedalada calma
+
 #id 2026-10-20-a
 #titulo Personagem agora é igual ao do Minecraft (nada de chibi)
 - Boneco: acabou a pele aparecendo na fresta entre as pernas e o tronco (quadril) e nos pés; pernas e braços agora são pintados com a cor da roupa/sapato por dentro, e as mangas compridas deixam a mão aparecer

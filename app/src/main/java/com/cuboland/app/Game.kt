@@ -12,6 +12,9 @@ class Slime(x: Float, y: Float, z: Float) : Ent(x, y, z, 0.42f, 0.85f) {
     var hp = 6; var timer = 1f; var flash = 0f; var squash = 0f; var t = 0f; var dead = false
 }
 
+const val JUMP_TAP_T = 0.14f    // até aqui soltar = pulo normal
+const val JUMP_FULL_T = 0.75f   // depois disso, tempo até a carga encher
+
 class Particle(var x: Float, var y: Float, var z: Float, var vx: Float, var vy: Float, var vz: Float,
                val color: Int, val size: Float, var life: Float) { var grav = 18f; var dust = false; var age = 0f }
 
@@ -211,6 +214,12 @@ class Game(val world: World) {
     // entrada (escrita pela UI)
     @Volatile var stickX = 0f; @Volatile var stickY = 0f
     @Volatile var jumpHeld = false; @Volatile var wantAttack = false; @Volatile var wantPlace = false
+    // pulo: toque = pulo normal (sai ao soltar); segurar = agacha carregando e solta um SUPER PULO
+    @Volatile var jumpLatch = false          // a UI marca no toque (pega até toque mais curto que um frame)
+    @Volatile var jumpCharge = 0f            // 0..1 pra animação: batidinha do toque (~0,35) + carga
+    @Volatile var superCharge = 0f           // 0..1 só da carga do super pulo (barrinha no botão)
+    @Volatile var superAir = false; @Volatile var superVy0 = 0f   // no ar de um super pulo / velocidade de saída
+    private var jumpArmed = false; private var jumpHoldT = 0f; private var jumpDustT = 0f; private var superTrailT = 0f; private var kickT = 0f; private var kickSide = false
     @Volatile var wantCam = false; @Volatile var sel = 0; @Volatile var sens = 1f
     private var lookDx = 0f; private var lookDy = 0f
     // estado
@@ -285,6 +294,113 @@ class Game(val world: World) {
         }
         if (!e.onGround && dy <= 0f && e.vy <= 0f && collides(e.x, e.y - 0.03f, e.z, e.hw, e.h)) { e.onGround = true; e.vy = 0f }
         e.inWater = world.get(floor(e.x).toInt(), floor(e.y + 0.4f).toInt(), floor(e.z).toInt()) == B.WATER
+    }
+
+    // ---------- PULO: toque rápido = pulo normal; segurar = carrega (agacha, inclina, levanta poeira) e solta um super pulo ----------
+    private fun groundId(p: Ent): Int = world.get(floor(p.x).toInt(), floor(p.y - 0.06f).toInt(), floor(p.z).toInt())
+
+    private fun updateJump(p: Ent, dt: Float) {
+        val ok = !flying && posture == 0 && !p.inWater && !driving && !seated && elevRide == null
+        if (jumpLatch) { jumpLatch = false; if (ok && p.onGround && !jumpArmed) { jumpArmed = true; jumpHoldT = 0f; jumpDustT = 0f } }
+        if (superAir && (p.inWater || flying || driving)) superAir = false
+        if (jumpArmed) {
+            if (!ok || !p.onGround) { jumpArmed = false; jumpHoldT = 0f }
+            else if (jumpHeld) {
+                jumpHoldT += dt
+                val ch = ((jumpHoldT - JUMP_TAP_T) / JUMP_FULL_T).coerceIn(0f, 1f)
+                superCharge = ch
+                jumpCharge = 0.35f * min(1f, jumpHoldT / JUMP_TAP_T) + 0.65f * ch
+                if (ch > 0f) chargeFx(p, ch, dt)
+            } else {   // soltou: pulo normal (toque) ou super pulo (segurou)
+                val ch = ((jumpHoldT - JUMP_TAP_T) / JUMP_FULL_T).coerceIn(0f, 1f)
+                jumpArmed = false; jumpHoldT = 0f; superCharge = 0f; jumpCharge = 0f
+                val gid = groundId(p)
+                if (ch > 0.05f) {
+                    p.vy = 9.2f + 8.0f * ch; p.onGround = false
+                    superAir = true; superVy0 = p.vy; superTrailT = 0f
+                    if (stickX != 0f || stickY != 0f) { p.vx += sin(bodyYaw) * 3.2f * ch; p.vz += cos(bodyYaw) * 3.2f * ch }
+                    if (gid != B.AIR && gid != B.WATER) superLaunchDust(p.x, p.y, p.z, gid, ch)
+                    shake = max(shake, 0.06f + 0.14f * ch)
+                } else {
+                    p.vy = 8.6f; p.onGround = false; superAir = false
+                    if (gid != B.AIR && gid != B.WATER) jumpPuff(p.x, p.y, p.z, gid)
+                }
+            }
+        } else { superCharge = 0f; jumpCharge = 0f }
+    }
+
+    private fun chargeFx(p: Ent, ch: Float, dt: Float) {
+        shake = max(shake, 0.008f + 0.028f * ch)
+        jumpDustT -= dt
+        if (jumpDustT > 0f || parts.size > 520) return
+        jumpDustT = 0.11f - 0.07f * ch
+        val gid = groundId(p); if (gid == B.AIR || gid == B.WATER) return
+        val col = dustColor(gid)
+        for (i in 0 until 2 + (ch * 3f).toInt()) {   // anel de poeira que o corpo vai empurrando pra fora do chão
+            val a = rnd.nextFloat() * 6.2832f; val r = 0.25f + rnd.nextFloat() * 0.2f; val sp = 0.9f + rnd.nextFloat() * 1.2f * (0.5f + ch)
+            val pt = Particle(p.x + cos(a) * r, p.y + 0.05f, p.z + sin(a) * r, cos(a) * sp, 0.25f + rnd.nextFloat() * 0.5f, sin(a) * sp, col, 0.07f + rnd.nextFloat() * 0.06f, 0.5f + rnd.nextFloat() * 0.4f)
+            pt.dust = true; pt.grav = 0.5f; parts.add(pt)
+        }
+    }
+
+    private fun jumpPuff(x: Float, y: Float, z: Float, gid: Int) {   // pulinho normal: uma nuvenzinha nos pés
+        if (parts.size > 520) return
+        val col = dustColor(gid)
+        for (i in 0 until 6) {
+            val a = i * 1.0472f + rnd.nextFloat() * 0.5f; val sp = 0.9f + rnd.nextFloat() * 0.8f
+            val pt = Particle(x + cos(a) * 0.15f, y + 0.05f, z + sin(a) * 0.15f, cos(a) * sp, 0.3f + rnd.nextFloat() * 0.4f, sin(a) * sp, col, 0.06f + rnd.nextFloat() * 0.05f, 0.4f + rnd.nextFloat() * 0.3f)
+            pt.dust = true; pt.grav = 0.5f; parts.add(pt)
+        }
+    }
+
+    private fun chip(x: Float, y: Float, z: Float, gid: Int, n: Int, sp: Float) {   // pedacinhos do bloco voando
+        for (i in 0 until n) {
+            val base = if (gid == B.GRASS && rnd.nextFloat() < 0.5f) B.side[gid] else B.top[gid]; val k = 0.82f + rnd.nextFloat() * 0.36f
+            val r = ((base shr 16 and 255) * k).toInt().coerceIn(0, 255); val g = ((base shr 8 and 255) * k).toInt().coerceIn(0, 255); val b = ((base and 255) * k).toInt().coerceIn(0, 255)
+            val a = rnd.nextFloat() * 6.2832f; val v = sp * (0.4f + rnd.nextFloat() * 0.6f)
+            parts.add(Particle(x + cos(a) * 0.3f, y + 0.08f, z + sin(a) * 0.3f, cos(a) * v, 2.5f + rnd.nextFloat() * 3.5f * sp * 0.4f, sin(a) * v, (r shl 16) or (g shl 8) or b, 0.04f + rnd.nextFloat() * 0.04f, 0.7f + rnd.nextFloat() * 0.5f))
+        }
+    }
+
+    /** decolagem do super pulo: onda de poeira rente ao chão, anel mais alto e uma coluna subindo junto com o boneco */
+    private fun superLaunchDust(x: Float, y: Float, z: Float, gid: Int, ch: Float) {
+        if (parts.size > 560) return
+        val col = dustColor(gid); val pw = 0.6f + 0.6f * ch
+        val n1 = 22 + (ch * 18f).toInt()
+        for (i in 0 until n1) {   // onda grande, rasteira
+            val a = i * 6.2832f / n1 + rnd.nextFloat() * 0.25f; val sp = (3.2f + rnd.nextFloat() * 2.4f) * pw
+            val pt = Particle(x + cos(a) * 0.25f, y + 0.06f, z + sin(a) * 0.25f, cos(a) * sp, 0.25f + rnd.nextFloat() * 0.6f, sin(a) * sp, col, 0.13f + rnd.nextFloat() * 0.1f, 0.8f + rnd.nextFloat() * 0.5f)
+            pt.dust = true; pt.grav = 0.3f; parts.add(pt)
+        }
+        for (i in 0 until 14) {   // anel interno, mais alto
+            val a = i * 0.4488f + rnd.nextFloat() * 0.3f; val sp = (1.4f + rnd.nextFloat() * 1.2f) * pw
+            val pt = Particle(x + cos(a) * 0.2f, y + 0.1f, z + sin(a) * 0.2f, cos(a) * sp, 1.4f + rnd.nextFloat() * 1.6f, sin(a) * sp, col, 0.1f + rnd.nextFloat() * 0.08f, 0.8f + rnd.nextFloat() * 0.4f)
+            pt.dust = true; pt.grav = 0.2f; parts.add(pt)
+        }
+        for (i in 0 until 10) {   // coluna de poeira subindo atrás do boneco
+            val a = rnd.nextFloat() * 6.2832f; val r = rnd.nextFloat() * 0.2f
+            val pt = Particle(x + cos(a) * r, y + 0.1f + rnd.nextFloat() * 0.5f, z + sin(a) * r, cos(a) * 0.5f, 2.5f + rnd.nextFloat() * 3.5f * pw, sin(a) * 0.5f, col, 0.1f + rnd.nextFloat() * 0.08f, 0.8f + rnd.nextFloat() * 0.4f)
+            pt.dust = true; pt.grav = 0.2f; parts.add(pt)
+        }
+        chip(x, y, z, gid, 8 + (ch * 6f).toInt(), 3.2f * pw)
+    }
+
+    /** aterrissagem de super pulo: choque de poeira em volta + pedaços do chão */
+    private fun superLandDust(x: Float, y: Float, z: Float, gid: Int, power: Float) {
+        if (parts.size > 540) return
+        val col = dustColor(gid); val pw = (power / 16f).coerceIn(0.6f, 1.3f)
+        for (i in 0 until 30) {
+            val a = i * 0.2094f + rnd.nextFloat() * 0.2f; val sp = (3.4f + rnd.nextFloat() * 2.8f) * pw
+            val pt = Particle(x + cos(a) * 0.3f, y + 0.06f, z + sin(a) * 0.3f, cos(a) * sp, 0.3f + rnd.nextFloat() * 0.7f, sin(a) * sp, col, 0.14f + rnd.nextFloat() * 0.1f, 0.8f + rnd.nextFloat() * 0.5f)
+            pt.dust = true; pt.grav = 0.3f; parts.add(pt)
+        }
+        for (i in 0 until 14) {
+            val a = rnd.nextFloat() * 6.2832f; val sp = (1.2f + rnd.nextFloat() * 1.6f) * pw
+            val pt = Particle(x + cos(a) * 0.25f, y + 0.1f, z + sin(a) * 0.25f, cos(a) * sp, 1.6f + rnd.nextFloat() * 1.8f, sin(a) * sp, col, 0.1f + rnd.nextFloat() * 0.08f, 0.8f + rnd.nextFloat() * 0.4f)
+            pt.dust = true; pt.grav = 0.25f; parts.add(pt)
+        }
+        chip(x, y, z, gid, 12, 3.6f * pw)
+        shake = max(shake, 0.12f + 0.16f * pw)
     }
 
     fun jumpTap() {   // toque duplo no botão de subir (modo criativo) volta a voar
@@ -1506,9 +1622,8 @@ class Game(val world: World) {
             while (diff > PI) diff -= (2 * PI).toFloat(); while (diff < -PI) diff += (2 * PI).toFloat()
             bodyYaw += diff * min(1f, 12f * dt)
         } else if (!thirdPerson) bodyYaw = yaw
-        if (jumpHeld && !flying && posture == 0) {
-            if (p.inWater) { if (p.onGround) { p.vy = max(p.vy, 5.5f); p.onGround = false } } else if (p.onGround) { p.vy = 8.6f; p.onGround = false }
-        }
+        if (jumpHeld && !flying && posture == 0 && p.inWater) { if (p.onGround) { p.vy = max(p.vy, 5.5f); p.onGround = false } }   // na água: segurar sobe/sai da margem
+        updateJump(p, dt)
         val wasW = p.inWater; val vyPre = p.vy
         updateElev(dt)
         updateCar(dt)
@@ -1534,6 +1649,32 @@ class Game(val world: World) {
                     bx * 0.6f, 0.2f, bz * 0.6f, col, 0.05f + rnd.nextFloat() * 0.05f, 0.55f + rnd.nextFloat() * 0.3f)
                 pr.grav = 0f; parts.add(pr)
             }
+        }
+        // super pulo: rastro de poeira/vento branco atrás do boneco enquanto sobe e cai
+        if (superAir && !p.onGround) {
+            superTrailT -= dt
+            if (superTrailT <= 0f && parts.size < 500) {
+                superTrailT = 0.035f
+                for (i in 0 until 2) {
+                    val pt = Particle(p.x + (rnd.nextFloat() - 0.5f) * 0.5f, p.y + 0.2f + rnd.nextFloat() * 1.2f, p.z + (rnd.nextFloat() - 0.5f) * 0.5f,
+                        (rnd.nextFloat() - 0.5f) * 0.6f - p.vx * 0.05f, -p.vy * 0.12f, (rnd.nextFloat() - 0.5f) * 0.6f - p.vz * 0.05f,
+                        if (rnd.nextInt(3) == 0) 0xDFF1FF else 0xFFFFFF, 0.07f + rnd.nextFloat() * 0.06f, 0.5f + rnd.nextFloat() * 0.3f)
+                    pt.dust = true; pt.grav = 0f; parts.add(pt)
+                }
+            }
+        }
+        // nado rápido na superfície: as pernas batem e jogam respingos atrás
+        kickT -= dt
+        if (p.inWater && !flying && sprint && spdF > 3f && p.y + 1.9f > World.WATER_Y + 0.88f && kickT <= 0f && parts.size < 500) {
+            kickT = 0.075f; kickSide = !kickSide
+            val l = max(0.1f, spdF); val dxn = p.vx / l; val dzn = p.vz / l; val sd = if (kickSide) 1f else -1f
+            val fx = p.x - dxn * 0.55f - dzn * 0.12f * sd; val fz = p.z - dzn * 0.55f + dxn * 0.12f * sd
+            val surfY = World.WATER_Y + 0.88f
+            for (i in 0 until 3) {
+                val a = rnd.nextFloat() * 6.2832f
+                parts.add(Particle(fx, surfY, fz, cos(a) * 0.7f - dxn * 0.8f, 2.2f + rnd.nextFloat() * 1.8f, sin(a) * 0.7f - dzn * 0.8f, if (rnd.nextInt(3) == 0) 0xFFFFFF else 0xDFF4FF, 0.035f + rnd.nextFloat() * 0.04f, 0.5f + rnd.nextFloat() * 0.3f))
+            }
+            if (rnd.nextInt(3) == 0) addRipple(fx, fz, 0.35f)
         }
         walkAmt += (min(1f, mag) * (if (p.onGround) 1f else 0.4f) - walkAmt) * min(1f, 10f * dt)
         walkPhase += dt * 9f * walkAmt
@@ -1728,8 +1869,9 @@ class Game(val world: World) {
         val p = player
         if (p.onGround && !prevG && vyPre < -7f && !p.inWater && !flying) {
             val lg = world.get(floor(p.x).toInt(), floor(p.y - 0.06f).toInt(), floor(p.z).toInt())
-            if (lg != B.AIR && lg != B.WATER) landDust(p.x, p.y, p.z, lg, -vyPre)
+            if (lg != B.AIR && lg != B.WATER) { if (superAir && vyPre < -10f) superLandDust(p.x, p.y, p.z, lg, -vyPre) else landDust(p.x, p.y, p.z, lg, -vyPre) }
         }
+        if (p.onGround) superAir = false
         prevG = p.onGround
         val surf = World.WATER_Y + 0.88f
         val sp = hypot(p.vx, p.vz)
