@@ -70,7 +70,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         return RectF(l, t, l + sz, t + sz)
     }
     private fun fHasBtn(id: Int) = Furniture.fKind(id) in 1..3
-    private fun fCanRot(id: Int) = Furniture.sub(id) >= 256 && Furniture.fKind(id) != 3
+    private fun fCanRot(id: Int) = (Furniture.sub(id) >= 256 || Deco.isDeco(id)) && Furniture.fKind(id) != 3
     private fun fRotBtn(): RectF { val b = fBtn(); return RectF(b.right + 8 * d, b.top, b.right + 86 * d, b.bottom) }
     private fun fPromptDown(x: Float, y: Float): Boolean {
         if (!fPromptOn()) return false

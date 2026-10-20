@@ -1,0 +1,554 @@
+package com.cuboland.app
+
+import android.opengl.Matrix
+import kotlin.math.abs
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.sin
+import kotlin.math.sqrt
+
+/**
+ * Personagem no formato do Minecraft (Steve/Alex): cabeça 8x8x8, corpo 8x12x4, braços 4x12x4 (3 de largura nas meninas), pernas 4x12x4.
+ * 1 pixel = 1,8/32 de bloco: o boneco tem 1,8 de altura e 0,6 de largura, igual ao jogador do Minecraft.
+ * Cabelo, roupas, chapéus e acessórios são camadas de caixas por cima do corpo (como a "segunda camada" da skin do Minecraft).
+ * Usa os mesmos estados de animação (Anim) do boneco antigo: andar, correr, pular, nadar, voar, agachar, sentar, deitar, golpe, item na mão.
+ */
+class McChar {
+    private var bx: BoxFn = { _, _, _, _, _, _, _, _, _, _, _, _, _ -> }
+    private val t1 = FloatArray(16); private val t3 = FloatArray(16); private val t4 = FloatArray(16)
+    private val r2 = FloatArray(16); private val bm = FloatArray(16); private val hm = FloatArray(16)
+    private val legM = arrayOf(FloatArray(16), FloatArray(16))
+    private val armM = arrayOf(FloatArray(16), FloatArray(16))
+
+    private fun piv(out: FloatArray, parent: FloatArray, px: Float, py: Float, pz: Float, rx: Float = 0f, ry: Float = 0f, rz: Float = 0f) {
+        System.arraycopy(parent, 0, out, 0, 16)
+        Matrix.translateM(out, 0, px, py, pz)
+        if (rz != 0f) Matrix.rotateM(out, 0, rz, 0f, 0f, 1f)
+        if (ry != 0f) Matrix.rotateM(out, 0, ry, 0f, 1f, 0f)
+        if (rx != 0f) Matrix.rotateM(out, 0, rx, 1f, 0f, 0f)
+    }
+
+    private fun swim01(an: Anim) = if (an.swim > 0.2f) 1f else 0f
+    private fun lite(c: Int, k: Float) = mixC(c, 0xFFFFFF, k)
+    private fun lp(a: Float, b: Float, k: Float) = a + (b - a) * k
+
+    companion object {
+        private val STROKE_KF = arrayOf(floatArrayOf(26f, -10f, -6f), floatArrayOf(52f, -18f, -26f), floatArrayOf(84f, -30f, -62f),
+            floatArrayOf(64f, -42f, -72f), floatArrayOf(26f, -10f, -6f), floatArrayOf(26f, -10f, -6f))
+        private val STROKE_T = floatArrayOf(0f, 0.22f, 0.46f, 0.68f, 0.92f, 1f)
+        private fun armIk(yaw: Float, ev: Float, s: Float, out: FloatArray) {
+            val y = Math.toRadians(yaw.toDouble()).toFloat(); val e = Math.toRadians(ev.toDouble()).toFloat()
+            val dx = s * sin(y) * cos(e); val dy = cos(y) * cos(e); val dz = -sin(e)
+            val h = sqrt(dx * dx + dy * dy)
+            var rx = Math.toDegrees(atan2(-dz, -h).toDouble()).toFloat(); if (rx > 0f) rx -= 360f
+            out[0] = rx; out[1] = Math.toDegrees(atan2(-dx, dy).toDouble()).toFloat()
+        }
+        const val U = 0.05625f
+        private val HAIR_BK = floatArrayOf(5f, 4f, 9f, 6f, 6f, 6f, 16f, 8f, 3f, 6f, 5f, 5f, 4f, 0.8f, 1f, 5f, 14f, 6f, 5f, 5f, 5f, 3f, 4f, 4f, 6f, 6f, 8f, 11f, 5f, 5f, 5f, 10f, 16f, 12f, 13f, 14f, 7f, 1.5f, 6f, 6f, 4f, 8f, 6f, 6f, 15f, 7f, 7f, 13f, 10f, 6f)
+        private val HAIR_SL = floatArrayOf(3f, 2.5f, 9f, 5f, 4f, 4f, 12f, 6f, 1.5f, 4f, 3f, 3f, 2.5f, 0.5f, 0.5f, 3.5f, 12f, 4f, 3f, 3f, 3f, 1.5f, 2f, 2f, 4f, 5f, 6f, 3f, 3f, 4f, 3f, 6f, 12f, 10f, 10f, 10f, 5f, 1f, 6f, 4f, 3f, 8f, 4f, 4f, 11f, 5f, 5f, 9f, 8f, 4f)
+        private val HAIR_BG = intArrayOf(1, 5, 3, 2, 1, 2, 3, 2, 7, 4, 5, 1, 5, 0, 0, 6, 3, 2, 2, 2, 2, 1, 4, 1, 2, 0, 3, 1, 1, 6, 0, 5, 3, 2, 2, 2, 4, 0, 3, 2, 4, 4, 1, 0, 3, 4, 2, 2, 2, 2)
+        private val HAIR_TP = floatArrayOf(0f, 0f, 0f, 0f, 0f, 0f, 0f, 1f, 1f, 0f, 1f, 2f, 2f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0.5f, 0f, 3f, 2f, 4f, 0f, 0f, 0f, 0f, 1f, 1f, 0f, 0f, 1f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 1f, 0f)
+        private val HAIR_EXT = intArrayOf(0, 1, 0, 2, 3, 4, 0, 5, 0, 0, 1, 6, 23, 0, 7, 0, 0, 8, 9, 10, 11, 0, 0, 6, 12, 13, 14, 0, 15, 0, 0, 1, 0, 5, 12, 14, 0, 0, 0, 16, 0, 0, 3, 4, 12, 18, 19, 20, 12, 22)
+   // 1 pixel do Minecraft em blocos (1,8 / 32)
+    }
+
+    /** root = origem nos pés. handOut = matriz da mão direita (pra segurar item). */
+    fun draw(boxIn: BoxFn, root: FloatArray, an: Anim, handOut: FloatArray?) {
+        var zf = 0
+        bx = { m, px, py, pz, rx, ry, sx, sy, sz, oy, col, a, rz ->
+            val k = 1f + min(zf, 300) * 0.00002f; zf++   // cada caixa nova fica um tiquinho maior: acaba o z-fighting de faces coplanares
+            boxIn(m, px, py, pz, rx, ry, sx * k, sy * k, sz * k, oy, col, a, rz)
+        }
+        val t = an.t
+        val L = Look.v
+        val girl = L[Look.GENDER] == 1
+        val skin = Look.skin(); val skinD = shadeC(skin, 0.9f)
+        val tc = Look.pal(Look.TOPC); val top = L[Look.TOP]
+        val bc = Look.pal(Look.BOTTOMC); val bot = L[Look.BOTTOM]
+        val white = 0xF4F4F4
+        val full = top == 2 || top == 10 || top == 11 || top == 15   // roupas longas (cobrem as pernas)
+        val overalls = top == 6
+        val skirtBot = (bot == 2 || bot == 5) && !full && !overalls
+        val wide = bot == 4 && !full && !overalls   // hakama: perna larga
+        val bw = if (girl) 0.44f else 0.48f
+        val gold = 0xFFD060
+        val trim = lite(tc, 0.35f); val dark = shadeC(tc, 0.78f)
+
+        // ================= ANIMAÇÃO =================
+        val mv = an.move.coerceIn(0f, 1f); val li = an.lie.coerceIn(0f, 1f); val rn = an.run.coerceIn(0f, 1f) * (1f - li); val ph = an.phase   // rastejando não usa o modo corrida
+        val swimming = an.swim > 0.2f
+        val fl = if (swimming) 0f else an.fly.coerceIn(0f, 1f); val fm = an.flySpd.coerceIn(0f, 1f)
+        val ab = if (swimming) 0f else an.airA.coerceIn(0f, 1f) * (1f - fl)
+        val chg = an.charge.coerceIn(0f, 1f)
+        val vk = (an.vy / 7f).coerceIn(-1f, 1f)
+        val air = ab > 0.02f
+        val fs = (1f - vk) * 0.5f          // 0 subindo .. 1 caindo (contínuo, sem trancos)
+        val dv = an.dive.coerceIn(0f, 1f)
+        val land = an.landT.coerceIn(0f, 1f)
+        val dashW = max(an.dash.coerceIn(0f, 1f), an.imp.coerceIn(0f, 1f)) * (1f - swim01(an))
+        val uImp = 1f - an.imp.coerceIn(0f, 1f)
+        val wind = if (an.imp <= 0f) 0f else if (uImp < 0.4f) uImp / 0.4f else max(0f, 1f - (uImp - 0.4f) / 0.25f)
+        val atk = an.atk; val atking = atk < 1f
+        val stride = if (swimming) 0f else min(1f, mv * 3f) * (1f - ab) * (1f - fl)
+        var sw = sin(ph) * (26f + 30f * rn) * stride
+        var hipL = sw; var hipR = -sw
+        var kneeL = max(0f, -cos(ph)) * (12f + 50f * rn) * stride
+        var kneeR = max(0f, cos(ph)) * (12f + 50f * rn) * stride
+        if (swimming) {
+            val sa = sin(t * 8f); val sb = sin(t * 4.6f); val cb = cos(t * 4.6f)
+            // na superfície: pedalada; mergulhado: batida de perna reta (crawl)
+            hipL = lp(sb * 26f, sa * 30f, dv); hipR = lp(-sb * 26f, -sa * 30f, dv)
+            kneeL = lp(30f + cb * 24f, 8f + sa * 10f, dv); kneeR = lp(30f - cb * 24f, 8f - sa * 10f, dv)
+        }
+        if (ab > 0.01f) {
+            val pL = lp(-38f, -12f + sin(t * 10f) * 3f, fs); val pKL = lp(62f, 20f, fs)
+            val pR = lp(8f, 16f, fs); val pKR = lp(28f, 34f, fs)
+            hipL = lp(hipL, pL, ab); kneeL = lp(kneeL, pKL, ab); hipR = lp(hipR, pR, ab); kneeR = lp(kneeR, pKR, ab)
+        }
+        if (fl > 0.01f) {
+            val fk = sin(t * 7f) * 1.2f * fm   // sem passada: as duas pernas juntas, só um tremidinho de vento
+            val fh = -5f - 16f * fm + sin(t * 1.6f) * 3f * (1f - fm) + sin(t * 5f) * 2.5f * fm   // voando: pernas esticadas pra trás, juntas   // pairando: as duas pernas iguais (nada de passo), só uma balançadinha junto com o corpo
+            hipL = lp(hipL, fh + fk, fl); hipR = lp(hipR, fh + fk, fl)
+            kneeL = lp(kneeL, 12f + 6f * fm, fl); kneeR = lp(kneeR, 12f + 6f * fm, fl)
+        }
+        if (dashW > 0.001f && fl > 0.01f) {
+            val fk2 = sin(t * 14f) * 1.5f
+            hipL = lp(hipL, 8f + fk2 + 20f * wind, dashW); hipR = lp(hipR, 8f + fk2 + 20f * wind, dashW)
+            kneeL = lp(kneeL, 8f + 55f * wind, dashW); kneeR = lp(kneeR, 8f + 55f * wind, dashW)
+        }
+        if (land > 0f) {
+            hipL += (-42f - hipL) * land; hipR += (-42f - hipR) * land
+            kneeL += (80f - kneeL) * land; kneeR += (80f - kneeR) * land
+        }
+        if (full || wide || overalls.not() && skirtBot) {   // roupa longa/saia: pernas não atravessam o tecido
+            val kk = if (full) 0.5f else if (wide) 0.6f else 0.85f   // a saia agora acompanha as coxas, então pode balançar bem mais
+            val cap = if (full) 13f else if (wide) 17f else 26f
+            hipL = (hipL * kk).coerceIn(-cap, cap); hipR = (hipR * kk).coerceIn(-cap, cap)
+            kneeL = (kneeL * kk).coerceIn(0f, if (full) 24f else if (wide) 36f else 60f); kneeR = (kneeR * kk).coerceIn(0f, if (full) 24f else if (wide) 36f else 60f)
+        }
+        // posturas: agachar (pernas dobradas, tronco inclinado), sentar (pernas à frente, no chão), deitar (de costas)
+        val cr = an.crouch.coerceIn(0f, 1f); val si = an.sit.coerceIn(0f, 1f)
+        var qLegL = 0f; var qLegR = 0f
+        if (cr > 0f) { hipL = lp(hipL, -62f + sw * 0.4f, cr); hipR = lp(hipR, -62f - sw * 0.4f, cr); kneeL = lp(kneeL, 72f + kneeL * 0.3f, cr); kneeR = lp(kneeR, 72f + kneeR * 0.3f, cr) }
+        if (si > 0f) { val br = sin(t * 1.6f) * 2f; hipL = lp(hipL, -87f + br, si); hipR = lp(hipR, -87f + br, si); kneeL = lp(kneeL, 4f, si); kneeR = lp(kneeR, 4f, si) }
+        val bt = an.bent.coerceIn(0f, 1f)
+        if (bt > 0f) { hipL = lp(hipL, -72f, bt); hipR = lp(hipR, -72f, bt); kneeL = lp(kneeL, 62f, bt); kneeR = lp(kneeR, 62f, bt) }
+        if (li > 0f) { val mc = min(1f, mv * 3f); qLegL = (0.5f + 0.5f * sin(ph + 3.1416f)) * mc; qLegR = (0.5f + 0.5f * sin(ph)) * mc
+            hipL = lp(hipL, 2f + 7f * qLegL, li); hipR = lp(hipR, 2f + 7f * qLegR, li)
+            kneeL = lp(kneeL, 4f + 26f * qLegL, li); kneeR = lp(kneeR, 4f + 26f * qLegR, li) }
+        val drop = 0.1f * land + 0.12f * cr + 0.545f * si
+        val bob = sin(t * 2f) * 0.012f * (1f - stride) + abs(sin(ph)) * (0.035f + 0.04f * rn) * stride * (1f - 0.85f * li) + fl * (1f - fm) * sin(t * 1.6f) * 0.09f   // pairando: sobe e desce devagar
+        val move = stride * (1f + rn * 0.6f) + ab * lp(0.4f, 1.2f, fs)
+
+        System.arraycopy(root, 0, r2, 0, 16)
+        Matrix.translateM(r2, 0, 0f, bob - drop, 0f)
+        if (li > 0.001f) {   // deitado de costas: gira o corpo todo em volta do centro
+            Matrix.translateM(r2, 0, 0f, 0.2f * li, -0.7f * li)   // rastejando, de frente (barriga no chão)
+            Matrix.rotateM(r2, 0, 90f * li, 1f, 0f, 0f)
+        }
+
+        val lean = 30f * an.dash.coerceIn(0f, 1f) * fl - 30f * wind * dashW + 18f * cr + 6f * si + 3f * stride * (1f - li) - 7f * li + 12f * rn * stride + ab * lp(-5f, 7f, fs) + 16f * land + fl * (8f + 52f * fm) - 10f * chg +
+            (if (atking) 9f * sin(atk * 3.1416f) else 0f)
+        val twist = sin(ph) * (5f + 9f * rn) * stride * (1f - li) + 14f * chg + (if (atking) 18f * sin(atk * 6.2832f) else 0f)
+        val roll = sin(ph) * 2.2f * stride * (1f - rn) + 8f * li * min(1f, mv * 3f) * sin(ph) + (if (air) 0f else sin(t * 0.9f) * 1.3f * (1f - stride))
+
+        // ================= ESQUELETO: quadril em 0,675 (12 px), pescoço em 1,35 (24 px), topo da cabeça em 1,8 =================
+        val hipY = 12f * U
+        System.arraycopy(r2, 0, bm, 0, 16)
+        Matrix.translateM(bm, 0, 0f, hipY, 0f)
+        if (roll != 0f) Matrix.rotateM(bm, 0, roll, 0f, 0f, 1f)
+        if (twist != 0f) Matrix.rotateM(bm, 0, twist, 0f, 1f, 0f)
+        if (lean != 0f) Matrix.rotateM(bm, 0, lean, 1f, 0f, 0f)
+        if (land > 0f) Matrix.scaleM(bm, 0, 1f + 0.06f * land, 1f - 0.08f * land, 1f + 0.06f * land)
+        Matrix.translateM(bm, 0, 0f, -hipY, 0f)
+
+        val look = sin(t * 0.55f) * sin(t * 0.23f)
+        val hy = if (stride > 0.1f) -twist * 0.7f else look * 16f * (1f - stride)
+        val hnod = -lean * 0.55f + sin(ph * 2f) * 1.8f * stride + sin(t * 1.3f) * 1.4f * (1f - stride) + ab * lp(5f, -8f, fs) - an.tilt * lp(0.9f, 0.5f, dv) - 70f * li
+        val htilt = sin(t * 0.8f) * 2f * (1f - stride)
+        System.arraycopy(bm, 0, hm, 0, 16)
+        Matrix.translateM(hm, 0, 0f, 24f * U, 0f)
+        if (htilt != 0f) Matrix.rotateM(hm, 0, htilt, 0f, 0f, 1f)
+        if (hy != 0f) Matrix.rotateM(hm, 0, hy, 0f, 1f, 0f)
+        if (hnod != 0f) Matrix.rotateM(hm, 0, hnod, 1f, 0f, 0f)
+        val blink = (t % 3.7f) > 3.58f || (t % 6.1f) > 6.0f
+
+        // ================= POSE DOS BRAÇOS (mesma lógica do boneco antigo) =================
+        val toolArm = an.hasTool
+        val asw = sw * (0.95f + 0.5f * rn)
+        var rxL = asw - 4f; var rxR = -asw - 4f   // braço direito (sd<0) balança contra a perna direita
+        var elL = -(8f + 6f * stride + 58f * rn * stride); var elR = elL
+        var rzL = -(4f + sin(t * 2f) * 1.5f * (1f - stride)); var rzR = -rzL
+        val aa = an.atkArm
+        val ikL = FloatArray(2); val ikR = FloatArray(2)
+        val atkRx = if (an.poseOn) -an.pP * 0.95f else aa
+        var ryR = 0f; var ryL = 0f
+        if (toolArm) { rxR = -22f + atkRx - sw * 0.25f * (1f - rn * 0.5f); elR = -6f - 6f * rn * stride; rzR = 20f
+            if (an.poseOn) { ryR = an.pY * 0.9f; elR = (elR + an.pW * 0.5f).coerceIn(-70f, 10f) } }
+        else if (atking || chg > 0.01f) { rxR += atkRx; if (an.poseOn) ryR = an.pY * 0.9f }
+        var swimToolA = 0f
+        if (swimming) {
+            // cabeça fora: braçada alternada e calma (alcança, puxa pra baixo, volta com o cotovelo dobrado). Mergulhado: braçada de peito (V à frente, abre, puxa pros lados e volta).
+            val fa = an.swimFast.coerceIn(0f, 1f); val sa = an.swimPh; val pi = 3.1416f   // fa: só acelerando os braços batem
+            val sl2 = sin(t * 2.3f)
+            // sem acelerar: na superfície os bracinhos batem leve pra boiar (parado ou andando); mergulhado os dois braços ficam inclinados pra trás, nas diagonais
+            val lSurfX = -25f + sl2 * 14f; val lSurfZ = -(38f + sin(t * 2.3f + 1.2f) * 16f); val lSurfE = -20f + sl2 * 8f
+            val diagX = 14f + sin(t * 2.5f) * 3f; val diagZ = 30f + sin(t * 2.5f + 1f) * 3f; val diagE = -6f
+            val recL = max(0f, cos(sa)); val recR = max(0f, cos(sa + pi))
+            val sXL = lp(lSurfX, -67f - 55f * sin(sa), fa); val sXR = lp(lSurfX, -67f - 55f * sin(sa + pi), fa) + atkRx
+            val sZL = lp(lSurfZ, -8f, fa); val sZR = lp(-lSurfZ, 8f, fa)
+            val sEL = lp(lSurfE, -(7f + 30f * recL), fa); val sER = lp(lSurfE, -(7f + 30f * recR), fa)
+            val sYL = (16f + 10f * recL) * fa; val sYR = -(16f + 10f * recR) * fa
+            var e = (sa / 6.2832f) % 1f; if (e < 0f) e += 1f
+            var ki = 0; while (ki < 4 && e >= STROKE_T[ki + 1]) ki++
+            val ue = (e - STROKE_T[ki]) / (STROKE_T[ki + 1] - STROKE_T[ki]); val u = ue * ue * (3f - 2f * ue)
+            val ka = STROKE_KF[ki]; val kb = STROKE_KF[ki + 1]
+            val yw = lp(ka[0], kb[0], u); val ev = lp(ka[1], kb[1], u); val dE0 = lp(ka[2], kb[2], u)
+            armIk(yw, ev, 1f, ikL); armIk(yw, ev, -1f, ikR)
+            val dXL = lp(diagX, ikL[0], fa); val dZL = lp(-diagZ, -ikL[1], fa); val dEL = lp(diagE, dE0, fa)
+            val dXR = lp(diagX, ikR[0], fa) + atkRx; val dZR = lp(diagZ, -ikR[1], fa)
+            rxL = lp(sXL, dXL, dv); rzL = lp(sZL, dZL, dv); elL = lp(sEL, dEL, dv); ryL = lp(sYL, 0f, dv)
+            rxR = lp(sXR, dXR, dv); rzR = lp(sZR, dZR, dv); elR = lp(sER, dEL, dv); ryR = lp(sYR, 0f, dv)
+            if (an.poseOn && toolArm) ryR += an.pY * 0.9f
+            swimToolA = 0.5f * (-(an.tilt - 14f) - (rxR - atkRx + elR))   // o item segue a mão (metade da compensação): sem atravessar cabeça nem tronco
+        }
+        if (ab > 0.01f) {
+            val flapA = sin(t * 12f) * 6f * (1f - abs(vk))
+            val pxL = lp(-35f, -10f, fs) + flapA; val pzL = lp(-150f, -75f, fs); val pelL = lp(-10f, -8f, fs)
+            rxL = lp(rxL, pxL, ab); rzL = lp(rzL, pzL, ab); elL = lp(elL, pelL, ab)
+            // no pulo os dois braços sobem igual (o do item também), com o golpe somado por cima
+            rxR = lp(rxR, lp(-35f, -10f, fs) - flapA + atkRx, ab); rzR = lp(rzR, lp(150f, 75f, fs), ab); elR = lp(elR, pelL, ab)
+        }
+        if (fl > 0.01f) {
+            // os dois braços ficam pra baixo, iguais ao do item: só um balanço leve
+            val fw = sin(t * 3f) * 4f * (1f - fm)
+            val dn = lp(-14f, -26f, fm)
+            rxL = lp(rxL, dn + sin(t * 2.6f) * 3f, fl); rzL = lp(rzL, -(16f + fw), fl); elL = lp(elL, -8f, fl)
+            if (toolArm) { rxR = lp(rxR, lp(-24f, -40f, fm) + atkRx, fl); rzR = lp(rzR, 20f, fl) }
+            else { rxR = lp(rxR, dn - sin(t * 2.6f) * 3f, fl); rzR = lp(rzR, 16f + fw, fl); elR = lp(elR, -8f, fl) }
+        }
+        var dashToolA = 0f
+        if (dashW > 0.001f && fl > 0.01f) {   // voo rápido: braços pra trás, rentes ao corpo (puxa mais no impulso)
+            val ax = lp(14f, 36f, wind); val fl2 = sin(t * 9f) * 3f
+            rxL = lp(rxL, ax + fl2, dashW); rxR = lp(rxR, ax - fl2, dashW)
+            rzL = lp(rzL, -9f, dashW); rzR = lp(rzR, 9f, dashW); elL = lp(elL, -5f, dashW); elR = lp(elR, -5f, dashW)
+            dashToolA = dashW * (-lean + 180f - (rxR + elR))   // item fica pra trás, longe da cabeça
+        }
+        an.armFwdR = 0f
+        an.toolA = if (swimming) swimToolA else dashToolA
+        if (land > 0f) { rzL -= 25f * land; if (!toolArm) rzR += 25f * land }
+        var elbowSpin = 0f
+        if (li > 0.001f) {   // rastejar: cada braço alcança pra frente no plano do chão (levantado), apoia e puxa com o cotovelo dobrado no plano
+            val mc = min(1f, mv * 3f); val pl = (0.5f + 0.5f * sin(ph)) * mc; val pr = (0.5f + 0.5f * sin(ph + 3.1416f)) * mc
+            val fwdL = max(0f, cos(ph)) * mc; val fwdR = max(0f, cos(ph + 3.1416f)) * mc
+            rxL = lp(rxL, 3f + 17f * fwdL, li); rxR = lp(rxR, 3f + 17f * fwdR, li)
+            rzL = lp(rzL, -(32f + 68f * pl), li); rzR = lp(rzR, 32f + 68f * pr, li)
+            elL = lp(elL, -(14f + 36f * (1f - pl)), li); elR = lp(elR, -(14f + 36f * (1f - pr)), li)
+            ryR = lp(ryR, 0f, li); ryL = lp(ryL, 0f, li); elbowSpin = 90f * li
+        }
+        val rd = an.ride.coerceIn(0f, 1f)
+        if (rd > 0.001f) { rxL = lp(rxL, -62f, rd); rxR = lp(rxR, -62f, rd); elL = lp(elL, -14f, rd); elR = lp(elR, -14f, rd); rzL = lp(rzL, -5f, rd); rzR = lp(rzR, 5f, rd) }
+
+        // ================= ajudantes: tudo em PIXELS do Minecraft, relativo ao centro de cada parte =================
+        fun hb(x: Float, y: Float, z: Float, w: Float, h: Float, d: Float, col: Int, a: Float = 1f, rx: Float = 0f, ry: Float = 0f, rz: Float = 0f) =
+            bx(hm, x * U, 4f * U + y * U, z * U, rx, ry, w * U, h * U, d * U, 0f, col, a, rz)          // cabeça (centro da cabeça)
+        fun tb(x: Float, y: Float, z: Float, w: Float, h: Float, d: Float, col: Int, a: Float = 1f, rx: Float = 0f, ry: Float = 0f, rz: Float = 0f) =
+            bx(bm, x * U, (18f + y) * U, z * U, rx, ry, w * U, h * U, d * U, 0f, col, a, rz)            // tronco (centro do tronco)
+        fun lb(m: FloatArray, x: Float, y: Float, z: Float, w: Float, h: Float, d: Float, col: Int) =
+            bx(m, x * U, (-6f + y) * U, z * U, 0f, 0f, w * U, h * U, d * U, 0f, col, 1f, 0f)             // perna (centro da perna)
+        fun ab(m: FloatArray, x: Float, y: Float, z: Float, w: Float, h: Float, d: Float, col: Int) =
+            bx(m, x * U, (-4f + y) * U, z * U, 0f, 0f, w * U, h * U, d * U, 0f, col, 1f, 0f)             // braço (centro do braço)
+
+        val hairC = Look.hair(); val hairD = shadeC(hairC, 0.8f); val hairL = lite(hairC, 0.25f)
+        val eyeC = Look.EYE_COLORS[L[Look.EYEC].coerceIn(0, Look.EYE_COLORS.size - 1)]
+        val shoeC = Look.pal(Look.SHOEC); val hatC = Look.pal(Look.HATC); val backC = Look.pal(Look.BACKC); val neckC = Look.pal(Look.NECKC)
+        val leather = 0x6B4A2A; val steel = 0xC5CEDA
+        val aw = if (girl) 3f else 4f   // Alex (menina): braços de 3 px
+
+        // ================= PERNAS =================
+        val pantPx = when { overalls -> 12f; full -> 0f; else -> when (bot) { 0 -> 12f; 1 -> 5f; 3 -> 8.5f; 4 -> 12f; 6 -> 12f; 7 -> 12f; else -> 0f } }
+        val pantC = if (overalls) tc else if (bot == 6) shadeC(bc, 0.78f) else bc
+        val pantW = if (bot == 4 && !full && !overalls) 6.4f else 4.6f
+        var skirtLen = 0f; var skirtC = bc; var hemC = lite(bc, 0.35f)
+        if (full) { skirtLen = when (top) { 2 -> 8.5f; 10 -> 11f; 11 -> 11.5f; else -> 8f }; skirtC = if (top == 15) shadeC(tc, 0.4f) else tc; hemC = if (top == 11) gold else if (top == 15) white else lite(tc, 0.4f) }
+        else if (!overalls && (bot == 2 || bot == 5)) { skirtLen = if (bot == 2) 6f else 6.5f; skirtC = bc }
+        else if (top == 4 && !overalls) { skirtLen = 3.5f; skirtC = tc; hemC = lite(tc, 0.4f) }
+        else if (top == 17) { skirtLen = 8f; skirtC = tc; hemC = shadeC(tc, 0.7f) }
+        val shoe = L[Look.SHOES]
+        for (sd in intArrayOf(-1, 1)) {
+            val s = sd.toFloat(); val li2 = if (sd < 0) 0 else 1
+            val hip = if (sd < 0) hipL else hipR; val kn = if (sd < 0) kneeL else kneeR
+            var ang = hip - kn * 0.4f   // perna rígida (sem joelho): o joelho só puxa um pouco o ângulo
+            if (cr > 0f) ang = lp(ang, (if (sd < 0) 1f else -1f) * sw * 0.4f - 4f, cr)   // agachar do Minecraft: pernas quase retas, tronco inclinado
+            if (land > 0f) ang = lp(ang, -22f, land)
+            if (bt > 0f) ang = lp(ang, -62f, bt)   // moto: pernas dobradas nas pedaleiras
+            piv(legM[li2], r2, s * 2f * U, hipY, 0f, rx = ang + lean * fl, rz = s * (5f + 7f * (if (sd < 0) qLegL else qLegR)) * li)
+            val lm = legM[li2]
+            lb(lm, 0f, 0f, 0f, 4f, 12f, 4f, skin)
+            if (pantPx > 0f) {
+                lb(lm, 0f, 6f - pantPx / 2f, 0f, pantW, pantPx, pantW, pantC)
+                if (pantPx >= 8f) lb(lm, 0f, 6f - pantPx + 0.5f, 0f, pantW + 0.2f, 1f, pantW + 0.2f, shadeC(pantC, 0.8f))
+                if (bot == 7 && !full && !overalls) lb(lm, s * 2.45f, 1.5f, 0.3f, 0.7f, 3.4f, 2.8f, shadeC(pantC, 0.85f))
+                if (bot == 1) lb(lm, 0f, 6f - 5f + 0.4f, 0f, 4.8f, 0.8f, 4.8f, lite(pantC, 0.25f))
+            }
+            if (skirtLen > 0f) {
+                lb(lm, 0f, 6f - skirtLen / 2f, 0f, 5.1f, skirtLen, 5.3f, skirtC)
+                lb(lm, 0f, 6f - skirtLen + 0.4f, 0f, 5.3f, 0.8f, 5.5f, hemC)
+                if (bot == 5 && !full) lb(lm, 0.9f, 6f - skirtLen / 2f, 2.7f, 0.7f, skirtLen - 1f, 0.3f, shadeC(skirtC, 0.78f))
+            }
+            when (shoe) {
+                0 -> { lb(lm, 0f, -4f, 0f, 4.7f, 4f, 4.7f, shoeC); lb(lm, 0f, -5f, 0.9f, 4.3f, 2f, 5.4f, shoeC); lb(lm, 0f, -2.2f, 0f, 5f, 0.8f, 5f, lite(shoeC, 0.3f)) }
+                1 -> { lb(lm, 0f, -5.6f, 0.4f, 4.9f, 0.8f, 5.5f, white); lb(lm, 0f, -4.4f, 0.35f, 4.6f, 2.4f, 5.2f, shoeC); lb(lm, 0f, -3.3f, 0.9f, 3f, 0.4f, 1.4f, white) }
+                2 -> { lb(lm, 0f, -5.3f, 0.3f, 4.5f, 1.4f, 5.1f, shoeC); lb(lm, 0f, -4.6f, 1.6f, 1.2f, 0.7f, 0.5f, lite(shoeC, 0.4f)) }
+                4 -> { lb(lm, 0f, -2f, 0f, 4.7f, 8f, 4.7f, shoeC); lb(lm, 0f, -5f, 0.9f, 4.3f, 2f, 5.4f, shoeC); lb(lm, 0f, 1.8f, 0f, 5f, 0.8f, 5f, lite(shoeC, 0.3f)) }
+                5 -> { lb(lm, 0f, -5.4f, 1.6f, 4.8f, 1.2f, 1.2f, 0x8A5A3A); lb(lm, 0f, -5.4f, -1.6f, 4.8f, 1.2f, 1.2f, 0x8A5A3A); lb(lm, 0f, -4.3f, 0.2f, 4.8f, 0.8f, 5.2f, 0xC8935A); lb(lm, 0f, -3.6f, 0.9f, 4.3f, 0.7f, 1.2f, shoeC) }
+                6 -> { lb(lm, 0f, -5.4f, 0.3f, 4.7f, 1.2f, 5.3f, lite(shoeC, 0.2f)); lb(lm, 0f, -4.3f, 0.3f, 4.6f, 1.6f, 5.1f, shoeC) }
+                7 -> { for (k in 0..5) lb(lm, 0f, -5.5f + k.toFloat(), 0f, 4.6f, 1f, 4.6f, if (k % 2 == 0) shoeC else white); lb(lm, 0f, -5.7f, 0.5f, 4.7f, 0.7f, 5.4f, shadeC(shoeC, 0.6f)) }
+            }
+        }
+
+        // ================= TRONCO + ROUPA =================
+        tb(0f, 0f, 0f, 8f, 12f, 4f, skin)
+        var sleeve = 4f; var sCol = tc; var tCol = tc
+        when (top) {
+            1, 3, 7, 14, 17 -> sleeve = 12f
+            2 -> sleeve = 3f
+            4 -> sleeve = 8f
+            5 -> { sleeve = 0f; tCol = mixC(steel, tc, 0.3f) }
+            8 -> { tCol = white; sCol = white }
+            9 -> { sleeve = 12f; tCol = shadeC(tc, 0.85f); sCol = tCol }
+            10, 11 -> sleeve = 12f
+            12 -> { sleeve = 12f; tCol = shadeC(tc, 0.7f); sCol = tCol }
+            13 -> sleeve = 0f
+            15 -> { sleeve = 3.5f; tCol = shadeC(tc, 0.4f); sCol = white }
+            16 -> { tCol = white; sCol = white }
+            6 -> { tCol = white; sCol = white }
+        }
+        tb(0f, 0f, 0f, 8.7f, 12.2f, 4.7f, tCol)
+        tb(0f, -5.7f, 0f, 8.8f, 0.7f, 4.8f, shadeC(tCol, 0.8f))
+        when (top) {
+            0 -> tb(0f, 5.6f, 0f, 8.8f, 0.8f, 4.8f, shadeC(tc, 0.78f))
+            1 -> { tb(0f, 5.2f, -1.4f, 8.8f, 1.8f, 2f, shadeC(tc, 0.75f)); tb(0f, -3f, 2.4f, 5.5f, 3.2f, 0.4f, lite(tc, 0.1f)); tb(0f, -5.4f, 0f, 8.9f, 1.3f, 4.9f, shadeC(tc, 0.75f)) }
+            2 -> { tb(0f, 5.4f, 0f, 8.8f, 1f, 4.8f, white); tb(0f, -2f, 0f, 8.9f, 1.2f, 4.9f, lite(tc, 0.4f)) }
+            3 -> { tb(0f, 0f, 2.4f, 0.5f, 12f, 0.35f, lite(tc, 0.6f)); tb(0f, 5.2f, 0f, 8.9f, 1.5f, 4.9f, lite(tc, 0.35f)); tb(-2.6f, -3f, 2.4f, 2f, 0.4f, 0.35f, shadeC(tc, 0.7f)); tb(2.6f, -3f, 2.4f, 2f, 0.4f, 0.35f, shadeC(tc, 0.7f)) }
+            4 -> { tb(0f, -3f, 0f, 8.9f, 1.5f, 4.9f, leather); tb(0f, -3f, 2.5f, 1.4f, 1.4f, 0.3f, gold); tb(0f, 5.4f, 0f, 8.8f, 1f, 4.8f, lite(tc, 0.4f)) }
+            5 -> { tb(0f, 1f, 2.5f, 8.2f, 6.5f, 0.5f, lite(tCol, 0.25f)); tb(0f, 5f, 2.55f, 8.4f, 0.8f, 0.4f, gold); tb(0f, -4.5f, 0f, 8.9f, 1.3f, 4.9f, gold); tb(0f, -1.5f, 2.55f, 1.6f, 1.6f, 0.4f, gold) }
+            6 -> { tb(0f, -2f, 0f, 8.9f, 8.2f, 4.9f, tc); tb(-2.6f, 4f, 0f, 1.8f, 4.2f, 4.9f, tc); tb(2.6f, 4f, 0f, 1.8f, 4.2f, 4.9f, tc); tb(-2.6f, 1.5f, 2.55f, 1.2f, 1.2f, 0.3f, gold); tb(2.6f, 1.5f, 2.55f, 1.2f, 1.2f, 0.3f, gold); tb(0f, -1f, 2.55f, 4f, 3f, 0.3f, shadeC(tc, 0.85f)) }
+            7 -> { tb(0f, 5.4f, 0f, 5.4f, 1.3f, 4.9f, white); tb(0f, 0f, 2.4f, 0.5f, 12f, 0.35f, lite(tc, 0.45f)); for (k in 0..2) tb(0f, 2f - 3.2f * k.toFloat(), 2.55f, 0.7f, 0.7f, 0.3f, white) }
+            8 -> { tb(0f, 3.6f, -2.5f, 8.9f, 5f, 0.45f, tc); tb(-2.6f, 4.4f, 2.5f, 3.2f, 3f, 0.4f, tc); tb(2.6f, 4.4f, 2.5f, 3.2f, 3f, 0.4f, tc); tb(0f, 3f, 2.55f, 1.8f, 2.6f, 0.4f, 0xE05555); tb(-2.6f, 3.2f, 2.58f, 2.6f, 0.4f, 0.3f, white); tb(2.6f, 3.2f, 2.58f, 2.6f, 0.4f, 0.3f, white) }
+            9 -> { tb(0f, 5.6f, 0f, 8.9f, 1.4f, 4.9f, shadeC(tc, 0.8f)); for (k in 0..4) tb(0f, 3.6f - 2.4f * k.toFloat(), 2.55f, 0.8f, 0.8f, 0.3f, gold) }
+            10 -> { tb(-1.3f, 3.2f, 2.5f, 1.2f, 6.5f, 0.35f, white, rz = 18f); tb(1.3f, 3.2f, 2.5f, 1.2f, 6.5f, 0.35f, white, rz = -18f); tb(0f, -2.5f, 0f, 9f, 3.6f, 5f, lite(tc, 0.35f)); tb(0f, -2.5f, -3.2f, 5.5f, 4.4f, 1.6f, lite(tc, 0.35f)) }
+            11 -> { tb(0f, 5.2f, 0f, 8.9f, 1f, 4.9f, gold); tb(0f, -3f, 0f, 8.9f, 1.2f, 4.9f, gold); tb(-2f, 1.5f, 2.55f, 0.9f, 0.9f, 0.3f, gold); tb(2f, -0.5f, 2.55f, 0.9f, 0.9f, 0.3f, gold); tb(0f, 3f, 2.55f, 0.9f, 0.9f, 0.3f, gold) }
+            12 -> { tb(0f, 2.2f, 2.45f, 2.6f, 6.4f, 0.4f, white); tb(-2.4f, 3f, 2.5f, 2.4f, 5f, 0.4f, shadeC(tCol, 0.8f), rz = 14f); tb(2.4f, 3f, 2.5f, 2.4f, 5f, 0.4f, shadeC(tCol, 0.8f), rz = -14f); tb(0f, -2f, 2.55f, 0.8f, 0.8f, 0.3f, gold) }
+            14 -> { tb(0f, 0f, 2.4f, 0.5f, 12f, 0.35f, shadeC(tc, 0.7f)); tb(2.4f, 3f, 2.55f, 1.9f, 1.9f, 0.3f, white); tb(0f, -5.4f, 0f, 8.9f, 1.2f, 4.9f, lite(tc, 0.4f)) }
+            15 -> { tb(0f, 5.4f, 0f, 8.8f, 1.2f, 4.8f, white); tb(0f, -1.5f, 2.45f, 6.2f, 9f, 0.4f, white); tb(0f, 4f, 2.5f, 3.2f, 3f, 0.4f, white) }
+            16 -> { tb(-2.5f, 0f, 0f, 3.4f, 11.5f, 4.9f, tc); tb(2.5f, 0f, 0f, 3.4f, 11.5f, 4.9f, tc); tb(0f, 0f, -2.45f, 8.9f, 11.5f, 0.4f, tc); tb(0f, -4.5f, 0f, 8.95f, 1.3f, 4.95f, leather); tb(0f, -4.5f, 2.5f, 1.4f, 1.4f, 0.3f, gold) }
+            17 -> { tb(-2.9f, 3f, 2.5f, 2.4f, 6f, 0.35f, lite(tc, 0.3f), rz = 8f); tb(2.9f, 3f, 2.5f, 2.4f, 6f, 0.35f, lite(tc, 0.3f), rz = -8f); for (k in 0..2) { tb(-1.6f, 1f - 3f * k.toFloat(), 2.55f, 0.8f, 0.8f, 0.3f, gold); tb(1.6f, 1f - 3f * k.toFloat(), 2.55f, 0.8f, 0.8f, 0.3f, gold) } }
+        }
+
+        // ================= BRAÇOS =================
+        for (sd in intArrayOf(-1, 1)) {
+            val s = sd.toFloat(); val ai = if (sd < 0) 0 else 1
+            val rx = if (sd < 0) rxR else rxL; val rz = if (sd < 0) -rzR else -rzL; val el = if (sd < 0) elR else elL   // +x é a ESQUERDA do boneco: o item vai na direita (sd<0)
+            val ry = if (sd < 0) ryR else ryL
+            piv(armM[ai], bm, s * (4f + aw / 2f) * U, 22f * U, 0f, rx = rx + el * 0.55f, ry = ry, rz = rz)
+            val am = armM[ai]
+            ab(am, 0f, 0f, 0f, aw, 12f, 4f, skin)
+            if (sleeve > 0f) {
+                ab(am, 0f, 6f - sleeve / 2f, 0f, aw + 0.7f, sleeve, 4.7f, sCol)
+                val cuff = when (top) { 1, 3 -> shadeC(tc, 0.7f); 7 -> lite(tc, 0.55f); 12 -> white; 9 -> gold; 17 -> shadeC(tc, 0.7f); else -> shadeC(sCol, 0.82f) }
+                if (sleeve >= 11f) ab(am, 0f, -6f + 0.7f, 0f, aw + 0.9f, 1.4f, 4.9f, cuff) else ab(am, 0f, 6f - sleeve + 0.35f, 0f, aw + 0.8f, 0.7f, 4.8f, cuff)
+            }
+            when (top) {
+                2 -> ab(am, 0f, 4.2f, 0f, aw + 1.6f, 3.6f, 5.4f, tc)
+                15 -> { ab(am, 0f, 4.2f, 0f, aw + 1.8f, 3.8f, 5.5f, white); ab(am, 0f, 2.2f, 0f, aw + 2f, 0.6f, 5.7f, lite(0xE8D5B0, 0.2f)) }
+                10, 11, 14 -> { ab(am, s * 0.8f, -1.5f, 0f, aw + 3.4f, 9f, 5.2f, sCol); ab(am, s * 0.8f, -6f + 0.5f, 0f, aw + 3.6f, 1f, 5.4f, if (top == 11) gold else lite(sCol, 0.5f)) }
+                5 -> { ab(am, s * 0.5f, 5.2f, 0f, aw + 2.4f, 3.4f, 5.8f, tCol); ab(am, s * 0.5f, 6.9f, 0f, aw + 2.6f, 0.6f, 6f, gold); ab(am, 0f, -4.2f, 0f, aw + 0.9f, 3.6f, 4.9f, steel); ab(am, 0f, -2.2f, 0f, aw + 1f, 0.5f, 5f, gold) }
+                8 -> ab(am, 0f, 6f - 3.2f, 0f, aw + 0.85f, 0.7f, 4.85f, tc)
+            }
+            if (sd < 0 && handOut != null) {
+                System.arraycopy(am, 0, handOut, 0, 16)
+                Matrix.translateM(handOut, 0, 0f, -0.50f, 0.02f)
+            }
+        }
+
+        // ================= CABEÇA: rosto =================
+        hb(0f, 0f, 0f, 8f, 8f, 8f, skin)
+        hb(0f, -1.5f, 4.06f, 1f, 1f, 0.2f, shadeC(skin, 0.9f))   // nariz
+        val ez = 4.1f
+        val eyeY = -0.5f
+        val lid = shadeC(skin, 0.55f)
+        val es = L[Look.EYES]
+        for (sg in intArrayOf(-1, 1)) {
+            val g = sg.toFloat()
+            if (blink && es != 2) { hb(g * 2f, eyeY - 0.4f, ez, 2f, 0.5f, 0.25f, lid); continue }
+            when (es) {
+                0 -> { hb(g * 2.5f, eyeY - 0.5f, ez, 1f, 2f, 0.25f, white); hb(g * 1.5f, eyeY - 0.5f, ez + 0.02f, 1f, 2f, 0.25f, eyeC); hb(g * 1.7f, eyeY + 0.1f, ez + 0.05f, 0.5f, 0.5f, 0.25f, white) }
+                1 -> { hb(g * 2f, eyeY + 0.1f, ez, 2f, 0.55f, 0.25f, 0x2C2C3A); hb(g * 2.9f, eyeY - 0.4f, ez, 0.6f, 0.6f, 0.25f, 0x2C2C3A); hb(g * 1.1f, eyeY - 0.4f, ez, 0.6f, 0.6f, 0.25f, 0x2C2C3A) }
+                2 -> { hb(g * 2f, eyeY, ez, 1.2f, 1.2f, 0.25f, 0x2C2C3A) }
+                3 -> { hb(g * 2.5f, eyeY - 0.5f, ez, 1f, 1f, 0.25f, white); hb(g * 1.5f, eyeY - 0.5f, ez + 0.02f, 1f, 1f, 0.25f, eyeC); hb(g * 2f, eyeY + 0.25f, ez + 0.04f, 2f, 0.6f, 0.25f, lid) }
+                4 -> { hb(g * 2.5f, eyeY - 0.5f, ez, 1f, 2f, 0.25f, eyeC); hb(g * 1.5f, eyeY - 0.5f, ez, 1f, 2f, 0.25f, lite(eyeC, 0.3f)); hb(g * 2.3f, eyeY + 0.2f, ez + 0.05f, 0.55f, 0.55f, 0.25f, white); hb(g * 1.7f, eyeY - 0.9f, ez + 0.05f, 0.4f, 0.4f, 0.25f, white) }
+                5 -> { hb(g * 2.5f, eyeY - 0.5f, ez, 1f, 1f, 0.25f, white); hb(g * 1.5f, eyeY - 0.5f, ez + 0.02f, 1f, 1f, 0.25f, 0x2C2C3A); hb(g * 2f, eyeY + 0.55f, ez, 2.4f, 0.5f, 0.25f, shadeC(hairC, 0.7f), rz = g * -8f) }
+                6 -> { hb(g * 2.5f, eyeY - 0.5f, ez, 1f, 2f, 0.25f, lite(eyeC, 0.2f)); hb(g * 1.5f, eyeY - 0.5f, ez, 1f, 2f, 0.25f, eyeC); hb(g * 2f, eyeY - 0.5f, ez + 0.05f, 0.6f, 1.6f, 0.25f, 0xFFF1A0); hb(g * 2f, eyeY - 0.5f, ez + 0.06f, 1.6f, 0.6f, 0.25f, 0xFFF1A0) }
+                7 -> { hb(g * 2.5f, eyeY - 0.5f, ez, 1f, 1.4f, 0.25f, lite(eyeC, 0.4f)); hb(g * 1.5f, eyeY - 0.5f, ez, 1f, 1.4f, 0.25f, eyeC); hb(g * 2f, eyeY - 0.5f, ez + 0.05f, 0.4f, 1.5f, 0.25f, 0x2C2C3A) }
+                else -> { hb(g * 2.5f, eyeY - 0.5f, ez, 1f, 1f, 0.25f, white); hb(g * 1.5f, eyeY - 0.5f, ez + 0.02f, 1f, 1f, 0.25f, eyeC); hb(g * 2f, eyeY - 1.4f, ez, 2f, 0.5f, 0.25f, shadeC(skin, 0.75f)) }
+            }
+        }
+        val mouthC = mixC(skin, 0x8A2A2A, 0.65f)
+        when (L[Look.MOUTH]) {
+            0 -> { hb(0f, -2.7f, ez, 2f, 0.7f, 0.25f, mouthC); hb(-1.4f, -2.3f, ez, 0.7f, 0.6f, 0.25f, mouthC); hb(1.4f, -2.3f, ez, 0.7f, 0.6f, 0.25f, mouthC) }
+            1 -> hb(0f, -2.6f, ez, 2.4f, 0.7f, 0.25f, mouthC)
+            2 -> hb(0f, -2.6f, ez, 1f, 1f, 0.25f, mixC(skin, 0xD05060, 0.7f))
+            3 -> { hb(0f, -2.8f, ez, 2f, 1.5f, 0.25f, 0x7A2030); hb(0f, -3.3f, ez + 0.03f, 1f, 0.5f, 0.25f, 0xE06A80) }
+            4 -> { hb(0f, -2.7f, ez, 2f, 0.7f, 0.25f, mouthC); hb(-1.4f, -2.3f, ez, 0.7f, 0.6f, 0.25f, mouthC); hb(1.4f, -2.3f, ez, 0.7f, 0.6f, 0.25f, mouthC); hb(-0.5f, -3.2f, ez, 0.8f, 0.5f, 0.25f, white) }
+            else -> { hb(-0.7f, -2.8f, ez, 1.1f, 0.6f, 0.25f, mouthC); hb(0.7f, -2.8f, ez, 1.1f, 0.6f, 0.25f, mouthC); hb(0f, -2.3f, ez, 0.5f, 0.7f, 0.25f, mouthC); hb(-1.5f, -2.3f, ez, 0.6f, 0.6f, 0.25f, mouthC); hb(1.5f, -2.3f, ez, 0.6f, 0.6f, 0.25f, mouthC) }
+        }
+        if (L[Look.BLUSH] == 1) { val bl = mixC(skin, 0xFF6F90, 0.5f); hb(2.9f, -1.7f, ez - 0.02f, 1.6f, 0.9f, 0.25f, bl); hb(-2.9f, -1.7f, ez - 0.02f, 1.6f, 0.9f, 0.25f, bl) }
+
+        // ================= CABELO (50 estilos do menu viram formas de bloco) =================
+        val hatId = L[Look.HAT]
+        val hatCovers = hatId == 2 || hatId == 3 || hatId == 8 || hatId == 16 || hatId == 19 || hatId == 21 || hatId == 22 || hatId == 23
+        val hs = L[Look.HAIR].coerceIn(0, 49)
+        val bk = HAIR_BK[hs]; val sl = HAIR_SL[hs]; val bg = HAIR_BG[hs]; val tp = HAIR_TP[hs]; val ext = HAIR_EXT[hs]
+        val tie = hatC
+        val sway = sin(t * 2.6f) * 2f + sin(ph) * 7f * stride
+        val mohawk = ext == 7; val afro = ext == 13
+        val hl = if (hatCovers) 0f else tp
+        if (!mohawk) {
+            if (hatCovers) hb(0f, 3.6f, 0f, 8.6f, 1.2f, 8.6f, hairC)
+            else { hb(0f, 4.2f + tp / 2f, 0f, 8.8f, 1.4f + tp, 8.8f, hairC); hb(0f, 4.95f + tp, -0.6f, 6.4f, 0.3f, 5.6f, hairL) }
+            val hbk = min(bk, 8f)
+            hb(0f, 4.4f - hbk / 2f, -4.2f, 8.8f, hbk, 1.4f, hairC)
+            val hsl = min(sl, 8f)
+            hb(4.2f, 4.4f - hsl / 2f, 0f, 1.4f, hsl, 8.8f, hairC); hb(-4.2f, 4.4f - hsl / 2f, 0f, 1.4f, hsl, 8.8f, hairC)
+            when (bg) {
+                1 -> hb(0f, 3.5f, 4.2f, 8.8f, 1.6f, 1.2f, hairC)
+                2 -> hb(0f, 3.0f, 4.2f, 8.8f, 2.6f, 1.2f, hairC)
+                3 -> hb(0f, 2.6f, 4.2f, 8.8f, 3.4f, 1.2f, hairC)
+                4 -> { hb(0f, 3.5f, 4.2f, 8.8f, 1.6f, 1.2f, hairC); hb(-1.2f, 2.4f, 4.2f, 6.4f, 1.2f, 1.2f, hairC); hb(-2.6f, 1.4f, 4.2f, 3.6f, 1.0f, 1.2f, hairC) }
+                5 -> { for (k in 0..3) { val xk = -3.3f + 2.2f * k.toFloat(); hb(xk, 3.4f - (if (k % 2 == 0) 0.6f else 0f), 4.2f, 1.9f, 2.4f + (if (k % 2 == 0) 1f else 0f), 1.2f, hairC) } }
+                6 -> { hb(-2.3f, 2.9f, 4.2f, 4.2f, 2.6f, 1.2f, hairC); hb(2.3f, 3.1f, 4.2f, 4.2f, 2.2f, 1.2f, hairC); hb(-3.9f, 1.6f, 4.2f, 1.0f, 1.2f, 1.2f, hairC); hb(3.9f, 1.6f, 4.2f, 1.0f, 1.2f, 1.2f, hairC) }
+            }
+            if (bk > 8f) {
+                val len = bk - 8f
+                tb(0f, 6f - len / 2f, -3f, 8.6f, len, 1.3f, hairC)
+                tb(-1.8f, 6f - len * 0.45f, -3.7f, 2.2f, len * 0.9f, 0.5f, hairD); tb(2.4f, 6f - len * 0.45f, -3.7f, 2.6f, len * 0.9f, 0.5f, hairD)
+            }
+            if (sl > 8f) {
+                val len2 = sl - 8f
+                tb(-3.4f, 6f - len2 / 2f + 0.2f, 2.7f, 1.8f, len2, 1f, hairC); tb(3.4f, 6f - len2 / 2f + 0.2f, 2.7f, 1.8f, len2, 1f, hairC)
+            }
+        }
+        when (ext) {
+            1 -> if (!hatCovers) { val ls = if (hs == 31) 3.2f else 2.6f; for (k in 0..5) { val xk = floatArrayOf(0f, -2.4f, 2.4f, -2.4f, 2.4f, 0f)[k]; val zk = floatArrayOf(0.5f, -1.8f, -1.8f, 1.6f, 1.6f, -3f)[k]; hb(xk, 5f + ls / 2f + tp, zk, 1.7f, ls + (k % 2).toFloat(), 1.7f, hairC, rz = xk * 3f) } }
+            23 -> if (!hatCovers) { for (k in 0..6) { val xk = -3.6f + 1.2f * k.toFloat(); val ls = 4f + (k % 3).toFloat() * 1.4f; hb(xk, 5f + ls / 2f, -0.5f + (k % 2).toFloat() * 1.4f, 1.5f, ls, 1.7f, hairC, rz = xk * 4f) } }
+            2 -> for (g in intArrayOf(-1, 1)) { val gf = g.toFloat(); hb(gf * 5f, 0.2f, -1f, 2.1f, 1f, 2.1f, tie); hb(gf * 5f, -3.4f, -1f, 1.9f, 6.8f, 1.9f, hairC, rz = gf * sway * 0.5f) }
+            3 -> { hb(0f, 3.4f, -4.6f, 2.2f, 2.2f, 1.4f, tie); hb(0f, -1.2f + 0.0f, -5.4f, 2.8f, 9f, 2f, hairC, rx = 6f + sway); hb(0f, -4.8f, -5.6f, 2.4f, 1.5f, 1.6f, hairD, rx = 6f + sway) }
+            4 -> if (!hatCovers) { hb(0f, 4.6f + hl, -0.5f, 8.6f, 0.9f, 8.6f, tie); hb(0f, 6.4f + hl, -0.5f, 4.2f, 3.4f, 4.2f, hairC); hb(0f, 8.0f + hl, -0.5f, 2.4f, 0.8f, 2.4f, hairL) }
+            5 -> { hb(4.9f, 0.5f, -0.5f, 1.5f, 6f, 7f, hairC); hb(-4.9f, 0.5f, -0.5f, 1.5f, 6f, 7f, hairC); hb(0f, 0f, -4.9f, 9.6f, 8f, 1.5f, hairC) }
+            6 -> if (!hatCovers) { hb(0f, 5.2f + tp, 2.2f, 8.4f, 2.2f, 3.6f, hairC); hb(0f, 6.2f + tp, 2.4f, 7f, 0.6f, 2.8f, hairL) }
+            7 -> { hb(0f, 4.8f, 0f, 1.8f, 1.6f, 8.8f, hairC); hb(0f, 6.2f, -0.5f, 1.8f, 1.8f, 7f, hairC); hb(0f, 3.9f, 0f, 1.8f, 0.8f, 8.6f, hairD) }
+            8 -> { for (k in 0..5) tb(0f, 5.5f - 2.3f * k.toFloat(), -3.1f, 2.4f, 2.4f, 1.5f, if (k % 2 == 0) hairC else hairD); tb(0f, 5.5f - 2.3f * 6f, -3.1f, 2.6f, 1.2f, 1.6f, tie) }
+            9 -> if (!hatCovers) { for (g in intArrayOf(-1, 1)) { val gf = g.toFloat(); hb(gf * 3.2f, 4.7f, -0.5f, 3.4f, 0.8f, 3.4f, tie); hb(gf * 3.2f, 6.4f, -0.5f, 3.2f, 3.2f, 3.2f, hairC) } }
+            10 -> if (!hatCovers) { for (g in intArrayOf(-1, 1)) { val gf = g.toFloat(); hb(gf * 4.6f, 3.6f, -1.5f, 2.2f, 1.0f, 2.2f, tie); hb(gf * 5.4f, -3.2f, -1.5f, 2.2f, 11.5f, 2.2f, hairC, rz = gf * (3f + sway * 0.3f)) } }
+            11 -> if (!hatCovers) { hb(0.4f, 5.9f + tp, 1.2f, 0.7f, 3.4f, 0.7f, hairC, rz = -18f); hb(1.6f, 7.8f + tp, 1.2f, 0.7f, 1.4f, 0.7f, hairC, rz = -42f) }
+            12 -> { hb(5f, 1.5f, 0f, 1.9f, 6.4f, 7.2f, hairC); hb(-5f, 1.5f, 0f, 1.9f, 6.4f, 7.2f, hairC); hb(-2.4f, 5.5f + tp, 0f, 3.4f, 2.4f, 3.4f, hairC); hb(2.4f, 5.4f + tp, 0.4f, 3.4f, 2.2f, 3.4f, hairC); hb(0f, 4.4f, -5f, 7.8f, 3f, 1.6f, hairC) }
+            13 -> { hb(0f, 6.2f, -1f, 13f, 5.5f, 12.5f, hairC); hb(5.6f, 2.2f, -1f, 2.6f, 6.5f, 11f, hairC); hb(-5.6f, 2.2f, -1f, 2.6f, 6.5f, 11f, hairC); hb(0f, 2f, -5.8f, 12.6f, 9f, 2.8f, hairC); hb(0f, 8.7f, -1f, 9.5f, 0.6f, 9.5f, hairL) }
+            14 -> { for (k in -3..3) { val kf = k.toFloat(); val lg = 8f + (k and 1).toFloat() * 2f + abs(kf); hb(kf * 1.15f, 0.5f - lg / 2f + 2f, -4.9f, 1.1f, lg, 1.2f, if (k % 2 == 0) hairC else hairD) }; for (g in intArrayOf(-1, 1)) for (k in 0..2) { val gf = g.toFloat(); hb(gf * 4.9f, 0.5f - (k * 1.5f), -3f + k.toFloat() * 1.7f, 1.2f, 6f + k.toFloat(), 1.1f, hairC) } }
+            15 -> if (!hatCovers) { hb(0f, 6.2f, -2.2f, 2.6f, 3f, 2.6f, hairC); hb(0f, 4.7f, -2.2f, 3.2f, 0.8f, 3.2f, tie) }
+            16 -> { hb(0f, -1.6f, -4.8f, 2.2f, 1.4f, 1.4f, tie); hb(0f, -5.6f, -5.2f, 2.4f, 8f, 1.8f, hairC, rx = 4f + sway * 0.7f) }
+            18 -> { for (k in 0..4) tb(-3.6f, 3.5f - 2.2f * k.toFloat(), 2.7f, 2.2f, 2.2f, 1.4f, if (k % 2 == 0) hairC else hairD); tb(-3.6f, 3.5f - 2.2f * 5f, 2.7f, 2.4f, 1.1f, 1.5f, tie) }
+            19 -> { for (g in intArrayOf(-1, 1)) { val gf = g.toFloat(); for (k in 0..4) tb(gf * 3.6f, 3.5f - 2.2f * k.toFloat(), 2.7f, 2.2f, 2.2f, 1.4f, if (k % 2 == 0) hairC else hairD); tb(gf * 3.6f, 3.5f - 2.2f * 5f, 2.7f, 2.4f, 1.1f, 1.5f, tie) } }
+            20 -> if (!hatCovers) { hb(0f, 5.5f, -1.4f, 3.4f, 3f, 3.4f, hairC); hb(0f, 4.4f, -1.4f, 3.8f, 0.8f, 3.8f, tie) }
+            22 -> { for (g in intArrayOf(-1, 1)) { val gf = g.toFloat(); hb(gf * 4.6f, 3.6f, -1.5f, 2.2f, 1.0f, 2.2f, tie); for (k in 0..4) hb(gf * (5.2f + (k % 2).toFloat() * 0.6f), 1.8f - 2.2f * k.toFloat(), -1.5f, 2.5f, 2.4f, 2.5f, if (k % 2 == 0) hairC else hairD) } }
+        }
+
+        // ================= CHAPÉUS E ENFEITES =================
+        when (hatId) {
+            1 -> { hb(0f, 4.45f + hl, 0f, 13f, 0.9f, 13f, hatC); hb(0f, 5.0f + hl, 0f, 8.7f, 0.8f, 8.7f, gold); hb(0f, 6.2f + hl, 0f, 8.4f, 1.8f, 8.4f, hatC); hb(0.3f, 7.9f + hl, 0f, 6.4f, 1.6f, 6.4f, hatC, rz = 4f); hb(0.9f, 9.4f + hl, 0f, 4.4f, 1.6f, 4.4f, hatC, rz = 8f); hb(1.9f, 10.8f + hl, 0f, 2.4f, 1.4f, 2.4f, hatC, rz = 14f) }
+            2 -> { hb(0f, 3.6f, 0f, 9.2f, 5f, 9.2f, hatC); hb(0f, 1.7f, 0f, 9.5f, 1.5f, 9.5f, lite(hatC, 0.3f)); hb(0f, 6.9f, 0f, 2.6f, 2.6f, 2.6f, white) }
+            3 -> { hb(0f, 3.5f, 0f, 9f, 3.6f, 9f, hatC); hb(0f, 1.9f, 6.2f, 8f, 0.7f, 4.4f, shadeC(hatC, 0.8f)); hb(0f, 5.5f, 0f, 1.2f, 0.6f, 1.2f, lite(hatC, 0.4f)) }
+            4 -> { hb(0f, 4.6f + hl, 0f, 8.8f, 1.4f, 8.8f, gold); val cx = floatArrayOf(-3.4f, 3.4f, -3.4f, 3.4f, 0f, 0f); val cz = floatArrayOf(-3.4f, -3.4f, 3.4f, 3.4f, 3.6f, -3.6f); for (k in 0..5) hb(cx[k], 6.2f + hl, cz[k], 1.6f, 2.4f, 1.6f, gold); hb(0f, 4.6f + hl, 4.5f, 1f, 1f, 0.3f, 0xE05555) }
+            5 -> for (g in intArrayOf(-1, 1)) { val gf = g.toFloat(); hb(gf * 2.8f, 5.6f + hl, -0.5f, 2.6f, 2.2f, 1.2f, hairC); hb(gf * 2.8f, 7.1f + hl, -0.5f, 1.4f, 1.2f, 1f, hairC); hb(gf * 2.8f, 5.6f + hl, 0.2f, 1.4f, 1.2f, 0.3f, 0xF0A0B0) }
+            6 -> for (g in intArrayOf(-1, 1)) { val gf = g.toFloat(); hb(gf * 2f, 8.6f + hl, -0.5f, 2f, 7f, 1f, hairC, rz = gf * -8f); hb(gf * 2f, 8.6f + hl, 0.1f, 1f, 5.2f, 0.3f, 0xF0A0B0, rz = gf * -8f) }
+            7 -> { hb(0f, 5.3f + hl, 2f, 1.8f, 1.8f, 1.4f, hatC); hb(-2.6f, 5.6f + hl, 2f, 3.2f, 3f, 1f, hatC, rz = 14f); hb(2.6f, 5.6f + hl, 2f, 3.2f, 3f, 1f, hatC, rz = -14f) }
+            8 -> { hb(0f, 3.8f, 0f, 9.4f, 3f, 9.4f, steel); hb(4.6f, 0.2f, 0f, 1.2f, 6f, 9f, steel); hb(-4.6f, 0.2f, 0f, 1.2f, 6f, 9f, steel); hb(0f, 0.2f, -4.6f, 9.4f, 6f, 1.2f, steel); hb(0f, 2.4f, 4.6f, 9.4f, 1f, 1.2f, lite(steel, 0.3f)); hb(0f, 5.8f, 0f, 1.6f, 1.6f, 8f, hatC) }
+            9 -> { hb(0f, 3.6f + hl, 0f, 14f, 0.8f, 14f, 0xE8C86A); hb(0f, 5.2f + hl, 0f, 7.6f, 2.6f, 7.6f, 0xE8C86A); hb(0f, 4.4f + hl, 0f, 7.9f, 0.8f, 7.9f, hatC) }
+            10 -> { hb(3.2f, 4.9f + hl, 1.5f, 1f, 1f, 1f, 0xFFD35C); hb(3.2f, 4.9f + hl, 2.6f, 1.3f, 1f, 1.3f, hatC); hb(3.2f, 4.9f + hl, 0.4f, 1.3f, 1f, 1.3f, hatC); hb(4.3f, 4.9f + hl, 1.5f, 1.3f, 1f, 1.3f, hatC); hb(2.1f, 4.9f + hl, 1.5f, 1.3f, 1f, 1.3f, hatC) }
+            11 -> { hb(0f, 2.2f, 0f, 8.9f, 1.6f, 8.9f, hatC); hb(0f, 2.2f, 4.5f, 3.4f, 1.6f, 0.3f, steel); hb(1.2f, 2.2f, -5.2f, 1.2f, 3.5f, 0.8f, hatC, rz = -15f); hb(-1.2f, 1.5f, -5.4f, 1.2f, 3.5f, 0.8f, hatC, rz = 15f) }
+            12 -> { hb(0f, 8f + hl, 3.2f, 7f, 0.5f, 0.8f, gold); hb(0f, 8f + hl, -3.2f, 7f, 0.5f, 0.8f, gold); hb(3.2f, 8f + hl, 0f, 0.8f, 0.5f, 7f, gold); hb(-3.2f, 8f + hl, 0f, 0.8f, 0.5f, 7f, gold) }
+            13 -> for (g in intArrayOf(-1, 1)) { val gf = g.toFloat(); hb(gf * 2.6f, 5.2f + hl, 0.5f, 1.4f, 2f, 1.4f, hatC); hb(gf * 3.1f, 6.7f + hl, 0.5f, 1f, 1.4f, 1f, hatC, rz = gf * -15f) }
+            14 -> for (g in intArrayOf(-1, 1)) { val gf = g.toFloat(); hb(gf * 3f, 6.2f + hl, -0.5f, 2.8f, 3.4f, 1.2f, hairC); hb(gf * 3f, 8.4f + hl, -0.5f, 1.4f, 1.4f, 1f, shadeC(hairC, 0.4f)); hb(gf * 3f, 6.2f + hl, 0.2f, 1.5f, 2f, 0.3f, 0xF4D0C0) }
+            15 -> { hb(0f, 4.6f + hl, 0f, 8.7f, 0.6f, 8.7f, gold); hb(0f, 5.4f + hl, 4.1f, 2f, 1.4f, 0.5f, gold); hb(0f, 5.4f + hl, 4.4f, 0.8f, 0.8f, 0.3f, 0x6AA8F0) }
+            16 -> { hb(0.6f, 4.4f, 0f, 10f, 1.8f, 9.6f, hatC); hb(0.6f, 5.6f, 0f, 1f, 1f, 1f, shadeC(hatC, 0.7f)) }
+            17 -> { hb(0f, 4.6f + hl, 0f, 14f, 0.8f, 14f, 0xD8B070); hb(0f, 5.4f + hl, 0f, 10.4f, 0.8f, 10.4f, 0xD8B070); hb(0f, 6.2f + hl, 0f, 6.8f, 0.8f, 6.8f, 0xD8B070); hb(0f, 6.9f + hl, 0f, 3.2f, 0.8f, 3.2f, hatC) }
+            18 -> { hb(0f, 5.0f + hl, 0f, 9.6f, 0.9f, 1.4f, hatC); for (g in intArrayOf(-1, 1)) { val gf = g.toFloat(); hb(gf * 4.8f, 3.3f + hl, 0f, 0.9f, 3.2f, 1.4f, hatC); hb(gf * 5.0f, 0.8f, 0f, 1.6f, 3.2f, 3.4f, hatC); hb(gf * 5.9f, 0.8f, 0f, 0.4f, 2.4f, 2.6f, lite(hatC, 0.4f)) } }
+            19 -> { hb(0f, 4.1f, 0f, 9.8f, 2.2f, 9.8f, hatC); hb(0f, 0.4f, -4.7f, 9.8f, 7.5f, 1.8f, hatC); hb(4.7f, 1f, -0.3f, 1.8f, 6.5f, 8.4f, hatC); hb(-4.7f, 1f, -0.3f, 1.8f, 6.5f, 8.4f, hatC); hb(0f, 3.3f, 4.7f, 9.6f, 1.2f, 0.9f, shadeC(hatC, 0.8f)); tb(0f, 5.7f, -1.8f, 9.6f, 2.6f, 2.2f, hatC) }
+            20 -> { hb(0f, 4.4f + hl, 0f, 9f, 1.2f, 9f, white); hb(0f, 5.1f + hl, 4.2f, 8f, 1f, 1.2f, white); hb(0f, 5.0f + hl, 0f, 7.6f, 1.6f, 7.6f, white); hb(0f, 4.2f + hl, -4.8f, 3f, 2.2f, 0.8f, white) }
+            21 -> { hb(0f, 4.3f, 0f, 11f, 0.8f, 11f, hatC); hb(0f, 8.2f, 0f, 7.6f, 7.6f, 7.6f, hatC); hb(0f, 5.6f, 0f, 7.9f, 1.2f, 7.9f, shadeC(hatC, 0.5f)) }
+            22 -> { hb(0f, 4.6f, 0f, 8.8f, 1.6f, 8.8f, white); hb(0f, 7.4f, 0f, 10f, 4.6f, 10f, white); hb(0f, 10f, 0f, 8.4f, 1f, 8.4f, white) }
+            23 -> { hb(0f, 4.2f, 0f, 9.6f, 2.4f, 9.6f, steel); hb(4.8f, 1.6f, 0f, 0.9f, 3.2f, 8.4f, steel); hb(-4.8f, 1.6f, 0f, 0.9f, 3.2f, 8.4f, steel); hb(0f, 2.4f, 4.9f, 1f, 4f, 0.8f, steel); for (g in intArrayOf(-1, 1)) { val gf = g.toFloat(); hb(gf * 5.6f, 4.6f, 0f, 1.6f, 1.6f, 1.6f, 0xF0E8D0); hb(gf * 6.6f, 6f, 0f, 1.4f, 2.2f, 1.4f, 0xF0E8D0, rz = gf * -20f); hb(gf * 7.3f, 7.8f, 0f, 1f, 1.4f, 1f, 0xF0E8D0, rz = gf * -35f) } }
+        }
+
+        // ================= ROSTO: óculos e marcas =================
+        val gz = 4.3f
+        val blk = 0x1E1E26
+        fun frame(cx: Float, w: Float, h: Float, c: Int, lens: Int, la: Float) {
+            hb(cx, eyeY - 0.2f, gz, w - 0.4f, h - 0.4f, 0.2f, lens, la)
+            hb(cx, eyeY - 0.2f + h / 2f, gz + 0.05f, w, 0.4f, 0.3f, c); hb(cx, eyeY - 0.2f - h / 2f, gz + 0.05f, w, 0.4f, 0.3f, c)
+            hb(cx - w / 2f, eyeY - 0.2f, gz + 0.05f, 0.4f, h, 0.3f, c); hb(cx + w / 2f, eyeY - 0.2f, gz + 0.05f, 0.4f, h, 0.3f, c)
+        }
+        fun temples(c: Int) { for (g in intArrayOf(-1, 1)) hb(g.toFloat() * 4.1f, eyeY + 0.2f, 1.9f, 0.3f, 0.4f, 4.4f, c) }
+        when (L[Look.FACE]) {
+            1 -> { frame(2f, 3f, 2.8f, blk, 0x9AD8F0, 0.3f); frame(-2f, 3f, 2.8f, blk, 0x9AD8F0, 0.3f); hb(0f, eyeY + 0.3f, gz + 0.05f, 1f, 0.4f, 0.3f, blk); temples(blk) }
+            2 -> { frame(2f, 3.4f, 2.2f, blk, blk, 0.92f); frame(-2f, 3.4f, 2.2f, blk, blk, 0.92f); hb(0f, eyeY + 0.3f, gz + 0.05f, 0.8f, 0.4f, 0.3f, blk); temples(blk) }
+            3 -> { val fx = floatArrayOf(2.4f, 3.3f, 1.7f, -2.4f, -3.3f, -1.7f); val fy = floatArrayOf(-1.4f, -1.9f, -2.0f, -1.4f, -1.9f, -2.0f); for (k in 0..5) hb(fx[k], fy[k], 4.08f, 0.5f, 0.5f, 0.2f, shadeC(skin, 0.7f)) }
+            4 -> { hb(-2f, eyeY - 0.2f, gz, 3.2f, 2.6f, 0.4f, blk); hb(0f, eyeY + 2.4f, gz - 0.1f, 8.4f, 0.5f, 0.3f, blk, rz = -8f) }
+            5 -> { val sx = floatArrayOf(2.7f, 2.1f, 1.5f, 0.9f); val sy = floatArrayOf(eyeY + 2.2f, eyeY + 1.2f, eyeY + 0.2f, eyeY - 0.8f); for (k in 0..3) hb(sx[k], sy[k], 4.1f, 0.65f, 0.65f, 0.25f, 0xC45A5A) }
+            6 -> { hb(2.8f, -1.9f, 4.1f, 2.6f, 1.1f, 0.3f, 0xF0D7B0); hb(2.2f, -1.9f, 4.25f, 0.3f, 0.3f, 0.2f, 0xC9A97E); hb(3.4f, -1.9f, 4.25f, 0.3f, 0.3f, 0.2f, 0xC9A97E) }
+            7 -> { for (g in intArrayOf(-1, 1)) { val gf = g.toFloat(); hb(gf * 3.3f, -1.4f, 4.15f, 2f, 0.25f, 0.2f, blk, rz = gf * 10f); hb(gf * 3.4f, -2.1f, 4.15f, 2f, 0.25f, 0.2f, blk); hb(gf * 3.3f, -2.8f, 4.15f, 2f, 0.25f, 0.2f, blk, rz = gf * -10f) } }
+            8 -> { hb(0f, -2.4f, 4.2f, 8.4f, 3.4f, 0.5f, 0xF2F2F2); hb(0f, -2.4f, 4.5f, 8f, 0.25f, 0.2f, 0xD0D6DE); hb(0f, -3.2f, 4.5f, 8f, 0.25f, 0.2f, 0xD0D6DE); for (g in intArrayOf(-1, 1)) hb(g.toFloat() * 4.25f, -1.8f, 1.2f, 0.3f, 0.6f, 5.2f, white) }
+            9 -> { frame(2f, 3.2f, 2.4f, blk, 0x9AD8F0, 0.28f); frame(-2f, 3.2f, 2.4f, blk, 0x9AD8F0, 0.28f); hb(0f, eyeY + 0.3f, gz + 0.05f, 0.8f, 0.4f, 0.3f, blk); temples(blk) }
+            10 -> hb(2.5f, eyeY - 1.6f, 4.15f, 0.7f, 1.2f, 0.3f, 0x6AB8F0)
+            11 -> { frame(2f, 3.2f, 3.2f, gold, 0xFFFFFF, 0.15f); hb(4.2f, -3f, 3.8f, 0.3f, 3.5f, 0.3f, gold) }
+            12 -> { frame(2f, 3.8f, 3f, gold, 0xE8A030, 0.5f); frame(-2f, 3.8f, 3f, gold, 0xE8A030, 0.5f); hb(0f, eyeY + 0.8f, gz + 0.05f, 0.8f, 0.4f, 0.3f, gold); temples(gold) }
+        }
+
+        // ================= PESCOÇO =================
+        when (L[Look.NECK]) {
+            1 -> { tb(0f, 5.2f, 0f, 9.2f, 2.2f, 5.2f, neckC); tb(2.5f, 2.2f, 2.8f, 2f, 6.5f, 0.7f, neckC); tb(2.5f, 0.5f, 2.85f, 2.05f, 0.8f, 0.5f, lite(neckC, 0.5f)) }
+            2 -> { tb(0f, 5.2f, 2.55f, 1.4f, 1.4f, 0.6f, neckC); tb(-1.6f, 5.2f, 2.5f, 2f, 2.4f, 0.5f, neckC, rz = 15f); tb(1.6f, 5.2f, 2.5f, 2f, 2.4f, 0.5f, neckC, rz = -15f) }
+            3 -> { tb(0f, 5.1f, 2.45f, 5.6f, 0.4f, 0.3f, gold); tb(0f, 4f, 2.55f, 1.3f, 1.3f, 0.3f, neckC) }
+            4 -> { tb(0f, 5f, 2.55f, 1.8f, 1.4f, 0.5f, neckC); tb(0f, 1.4f, 2.55f, 1.8f, 6.4f, 0.4f, neckC); tb(0f, -1.9f, 2.55f, 1.8f, 0.8f, 0.4f, shadeC(neckC, 0.8f)) }
+            5 -> { tb(0f, 5.2f, 2.55f, 1.2f, 1.2f, 0.5f, neckC); tb(-1.7f, 5.2f, 2.5f, 2.2f, 2f, 0.4f, neckC); tb(1.7f, 5.2f, 2.5f, 2.2f, 2f, 0.4f, neckC) }
+            6 -> { tb(0f, 5.4f, 0f, 8.5f, 1f, 4.5f, neckC); tb(0f, 4.6f, 2.45f, 1f, 1f, 0.5f, gold) }
+            7 -> { tb(0f, 5.3f, 0f, 8.9f, 1.4f, 4.9f, neckC); tb(0f, 3.6f, 2.5f, 3.2f, 1.2f, 0.4f, neckC); tb(0f, 2.6f, 2.52f, 1.8f, 1f, 0.4f, neckC); tb(0f, 1.8f, 2.54f, 0.8f, 0.8f, 0.4f, neckC) }
+            8 -> tb(0f, 5.4f, 0f, 8.4f, 0.6f, 4.4f, neckC)
+            9 -> { tb(-1.4f, 4.5f, 2.45f, 0.4f, 2.6f, 0.3f, gold, rz = -25f); tb(1.4f, 4.5f, 2.45f, 0.4f, 2.6f, 0.3f, gold, rz = 25f); tb(0f, 2.6f, 2.55f, 1.8f, 1.8f, 0.4f, gold) }
+        }
+
+        // ================= COSTAS =================
+        val flap = sin(t * 9f) * (10f + 14f * mv)
+        when (L[Look.BACK]) {
+            1 -> {
+                piv(t3, bm, 0f, 23f * U, -2.6f * U, rx = 6f + move * 14f + sin(t * 2f) * 2f)
+                bx(t3, 0f, -7.5f * U, -0.4f * U, 0f, 0f, 9.4f * U, 15f * U, 0.7f * U, 0f, backC, 1f, 0f)
+                piv(t4, t3, 0f, -15f * U, 0f, rx = 4f + move * 10f + sin(t * 3f) * 4f)
+                bx(t4, 0f, -2f * U, -0.4f * U, 0f, 0f, 9.6f * U, 4f * U, 0.7f * U, 0f, shadeC(backC, 0.9f), 1f, 0f)
+                bx(t4, 0f, -3.8f * U, -0.4f * U, 0f, 0f, 9.8f * U, 0.7f * U, 0.8f * U, 0f, lite(backC, 0.5f), 1f, 0f)
+                tb(0f, 5.4f, -1.2f, 9.4f, 1.4f, 2.8f, backC); tb(-2.6f, 5.2f, 2.5f, 1.2f, 1.2f, 0.4f, gold); tb(2.6f, 5.2f, 2.5f, 1.2f, 1.2f, 0.4f, gold)
+            }
+            2 -> { tb(0f, 0.5f, -3.4f, 6f, 8f, 2.8f, backC); tb(0f, 3.2f, -3.5f, 6.2f, 2.6f, 3f, lite(backC, 0.2f)); tb(-2.6f, 1.5f, 2.45f, 1.1f, 7f, 0.4f, shadeC(backC, 0.8f)); tb(2.6f, 1.5f, 2.45f, 1.1f, 7f, 0.4f, shadeC(backC, 0.8f)) }
+            3 -> for (g in intArrayOf(-1, 1)) { val gf = g.toFloat(); tb(gf * 3.4f, 3f, -3f, 0.8f, 5.5f, 3.2f, backC, rz = gf * (-(20f + flap * 0.5f))); tb(gf * 4.8f, 1.6f, -3f, 0.8f, 3.2f, 2.4f, lite(backC, 0.3f), rz = gf * (-(36f + flap * 0.6f))) }
+            4 -> { for (k in 0..2) { val kf = k.toFloat(); tb(sin(t * 3f - kf) * 0.7f * (0.4f + mv), -4.2f + kf * 0.8f, -3f - kf * 1.8f, 1.7f - kf * 0.2f, 1.7f - kf * 0.2f, 1.9f, if (k == 2) lite(backC, 0.4f) else backC) } }
+            5 -> { tb(0.6f, 0.5f, -3.1f, 1f, 13f, 0.6f, steel, rz = 30f); tb(0.6f, 0.5f, -3.1f, 0.4f, 12.4f, 0.7f, lite(steel, 0.4f), rz = 30f); tb(-3.9f, 6.8f, -3.1f, 3.2f, 0.9f, 1f, gold, rz = 30f); tb(-4.6f, 8.2f, -3.1f, 1f, 3.6f, 1f, leather, rz = 30f); tb(-5f, 10f, -3.1f, 1.6f, 1.6f, 1.2f, gold) }
+            6 -> for (g in intArrayOf(-1, 1)) { val gf = g.toFloat(); tb(gf * 5.2f, 3.8f, -3.3f, 0.8f, 9.5f, 0.8f, shadeC(backC, 0.7f), rz = gf * (-(28f + flap * 0.6f))); tb(gf * 8.0f, 2.2f, -3.3f, 5f, 6.5f, 0.4f, backC, rz = gf * (-(28f + flap * 0.6f))); tb(gf * 5.4f, -1.2f, -3.3f, 2.6f, 2.4f, 0.4f, shadeC(backC, 0.8f), rz = gf * (-(24f + flap * 0.4f))) }
+            7 -> { tb(2.2f, 2.5f, -3.4f, 2.8f, 10f, 2.8f, leather, rz = -14f); tb(2.9f, 8.2f, -3.4f, 0.8f, 2.6f, 0.8f, white, rz = -14f); tb(1.6f, 8.0f, -3.4f, 0.8f, 2.4f, 0.8f, 0xE05555, rz = -14f); tb(0f, 3.2f, 2.45f, 0.8f, 9f, 0.3f, leather, rz = -26f) }
+            8 -> { for (k in 0..3) { val kf = k.toFloat(); val sz = 2.6f + (if (k == 3) 0f else kf * 0.5f); tb(sin(t * 3f - kf) * 0.9f * (0.4f + mv), -3.8f + kf * 0.9f, -3.2f - kf * 2.1f, sz, sz, 2.6f, if (k == 3) white else backC) } }
+            9 -> { tb(0f, 0f, -3.7f, 7.4f, 9.5f, 3.4f, backC); tb(0f, -3f, -5.5f, 6f, 3.4f, 0.5f, lite(backC, 0.2f)); tb(0f, 3.8f, -3.8f, 7.6f, 2.4f, 3.6f, shadeC(backC, 0.85f)); tb(-2.8f, 1.5f, 2.45f, 1.1f, 7f, 0.4f, shadeC(backC, 0.8f)); tb(2.8f, 1.5f, 2.45f, 1.1f, 7f, 0.4f, shadeC(backC, 0.8f)) }
+        }
+    }
+
+}

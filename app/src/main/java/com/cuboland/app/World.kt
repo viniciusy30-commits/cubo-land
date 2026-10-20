@@ -157,6 +157,8 @@ class World {
     }
 
     fun solid(x: Int, y: Int, z: Int) = B.solid(get(x, y, z))
+    /** sólido pra quem anda em cima/passa (itens sem colisão do addon não contam) */
+    fun solidCol(x: Int, y: Int, z: Int): Boolean { val id = get(x, y, z); return B.solid(id) && !Deco.noCol(id) }
 
     /** caixa real (coords locais do bloco: x0,y0,z0,x1,y1,z1) dos blocos com formato próprio; null = cubo inteiro */
     fun boxOf(x: Int, y: Int, z: Int): FloatArray? {
@@ -171,6 +173,7 @@ class World {
             val e = Deco.extraBox(this, x, y, z) ?: return false
             return ax1 > x + e[0] && ax0 < x + e[3] && ay1 > y + e[1] && ay0 < y + e[4] && az1 > z + e[2] && az0 < z + e[5]
         }
+        if (Deco.noCol(id)) return false   // cortina, quadro, bandeira...: sem colisão
         val b = Shapes.box(this, id, x, z, y) ?: return true
         return ax1 > x + b[0] && ax0 < x + b[3] && ay1 > y + b[1] && ay0 < y + b[4] && az1 > z + b[2] && az0 < z + b[5]
     }
@@ -1348,7 +1351,9 @@ class World {
                     for ((k, arr) in sts) { bb.putInt(k); for (q in 0 until 8) bb.putInt(arr[q]) }
                 }
             }
-            GZIPOutputStream(f.outputStream()).use { it.write(bb.array()) }
+            val tmp = File(f.path + ".tmp")   // grava num arquivo temporário e só troca no fim: se o app fechar no meio, o mundo antigo continua inteiro
+            GZIPOutputStream(tmp.outputStream()).use { it.write(bb.array()) }
+            if (!tmp.renameTo(f)) { f.delete(); tmp.renameTo(f) }
         } catch (_: Exception) {}
     }
 

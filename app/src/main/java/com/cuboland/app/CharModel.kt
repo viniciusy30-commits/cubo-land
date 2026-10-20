@@ -633,7 +633,13 @@ class CharModel {
     }
 
     /** root = origem nos pés. handOut = matriz da mão direita (pra segurar item). */
-    fun draw(boxIn: BoxFn, root: FloatArray, an: Anim, handOut: FloatArray?) {
+    private val mc = McChar()
+    /** personagem no formato do Minecraft (Steve/Alex): 1,8 de altura, cabeça 8x8x8, corpo 8x12x4, membros 4x12x4 */
+    fun draw(boxIn: BoxFn, root: FloatArray, an: Anim, handOut: FloatArray?) { mc.draw(boxIn, root, an, handOut) }
+
+    /** boneco chibi antigo (não é mais usado) */
+    @Suppress("unused")
+    fun drawChibi(boxIn: BoxFn, root: FloatArray, an: Anim, handOut: FloatArray?) {
         var zf = 0
         bx = { m, px, py, pz, rx, ry, sx, sy, sz, oy, col, a, rz ->
             val k = 1f + min(zf, 400) * 0.00014f; zf++   // cada caixa nova fica um tiquinho maior: acaba o z-fighting de faces coplanares

@@ -1,3 +1,19 @@
+#id 2026-10-20-a
+#titulo Personagem agora é igual ao do Minecraft (nada de chibi)
+- Mesmo formato e tamanho do Minecraft: 1,8 de altura, cabeça 8x8x8, corpo 8x12x4, braços e pernas 4x12x4 (meninas com braço fino 3 px, como a Alex)
+- Todos os cabelos, roupas, sapatos, chapéus, óculos, pescoço e costas do menu foram refeitos em blocos nas proporções do Minecraft
+- Andar, correr, pular, nadar, voar, agachar, sentar, deitar, golpe e item na mão continuam funcionando com o corpo novo
+
+#id 2026-10-19-a
+#titulo Varredura de móveis: colocar certo, girar e salvar com segurança
+- Móveis grandes (camas, armários altos, cortinas...) só são colocados se o móvel inteiro couber: a prévia fica VERMELHA quando tem bloco, outro móvel ou você no caminho
+- Móveis do addon agora ficam virados pra parede atrás ou pra você na hora de colocar, e a direção não muda mais sozinha quando você constrói do lado
+- O botão GIRAR agora funciona nos móveis e decorações do addon (só gira se couber)
+- Salvar o mundo ficou mais seguro: grava num arquivo temporário antes de trocar, então fechar o app no meio não estraga o mundo
+- Cortinas, quadros, bandeiras e tapetes sem colisão no addon agora dá pra atravessar (antes viravam bloco sólido), e ainda dá pra mirar neles
+- Atlas de texturas agora é quadrado (4096x4096) e usa bem menos memória no pico: menos risco de textura quebrada ou do jogo fechar em celular fraco
+- Menos risco de o jogo fechar por falta de memória ao abrir (mais memória liberada e limpeza das texturas depois de montar o atlas)
+
 #id 2026-10-16-b
 #titulo Móveis maiores, portas de verdade e menu novo
 - Portas agora têm 2 blocos de altura e nascem fechadas (toque pra abrir); portões também aparecem fechados

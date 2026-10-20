@@ -105,8 +105,9 @@ object Blk {
 
     private fun tl(kind: Int, c1: Int, c2: Int = c1, c3: Int = c1, c4: Int = 0, seed: Int = 0, par: Int = 0, fl: Int = 0, glow: Boolean = false): Int {
         if (dead) return 1   // bloco removido (só existe pra mundos antigos): não gasta tile
-        val i = nextTile; nextTile++   // brilhantes e normais na mesma fila: sem região reservada
-        if (i >= MAXT) return 1
+        val i = nextTile
+        if (i >= MAXT) return 1   // atlas cheio: não conta mais (senão o atlas dobrava de altura e passava do limite da GPU)
+        nextTile++   // brilhantes e normais na mesma fila: sem região reservada
         val sd = if (seed != 0) seed else i * 13 + 5
         specs[i] = intArrayOf(kind, c1, c2, c3, c4, sd, par or (fl shl 8))
         return i

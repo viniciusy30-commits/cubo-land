@@ -44,7 +44,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         varying vec3 vCol; varying float vFog; varying vec2 vUV; varying vec3 vWP; varying float vTile; varying vec3 vView; varying float vGlass;
         void main() {
             vec4 wp = uModel * vec4(aPos, 1.0);
-            float tile = floor(aUV.x * 32.0) + 32.0 * floor(aUV.y * ${Atlas.ROWS}.0);
+            float tile = floor(aUV.x * ${Atlas.NT}.0) + ${Atlas.NT}.0 * floor(aUV.y * ${Atlas.ROWS}.0);
             if (uWind > 0.5) {
                 float gust = 0.6 + 0.4 * sin(wp.x * 0.12 + wp.z * 0.08 + uTime * 0.7);
                 if (tile >= 16.0 && tile < 20.0) {
@@ -235,11 +235,19 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_WRAP_T, G.GL_CLAMP_TO_EDGE)
         val atlasBmp = Atlas.bmp; val rawPx = Atlas.raw
         if (rawPx != null) {   // sobe os pixels crus (RGBA sem pré-multiplicar): borda transparente mantém o verde e não vira contorno preto no mipmap
-            val bb = java.nio.ByteBuffer.allocateDirect(rawPx.size * 4).order(java.nio.ByteOrder.nativeOrder())
-            for (c in rawPx) { bb.put(((c shr 16) and 255).toByte()); bb.put(((c shr 8) and 255).toByte()); bb.put((c and 255).toByte()); bb.put(((c ushr 24) and 255).toByte()) }
-            bb.position(0)
+            val wT = Atlas.T * Atlas.NT; val hT = Atlas.T * Atlas.ROWS
             G.glPixelStorei(G.GL_UNPACK_ALIGNMENT, 1)
-            G.glTexImage2D(G.GL_TEXTURE_2D, 0, G.GL_RGBA, Atlas.T * Atlas.NT, Atlas.T * Atlas.ROWS, 0, G.GL_RGBA, G.GL_UNSIGNED_BYTE, bb)
+            G.glTexImage2D(G.GL_TEXTURE_2D, 0, G.GL_RGBA, wT, hT, 0, G.GL_RGBA, G.GL_UNSIGNED_BYTE, null)
+            val bb = java.nio.ByteBuffer.allocateDirect(wT * 128 * 4).order(java.nio.ByteOrder.nativeOrder())   // sobe em faixas de 128 linhas (antes: um buffer com o atlas inteiro, ~64 MB a mais no pico)
+            var yy = 0
+            while (yy < hT) {
+                val nrow = Math.min(128, hT - yy)
+                bb.clear()
+                for (k in 0 until wT * nrow) { val c = rawPx[yy * wT + k]; bb.put(((c shr 16) and 255).toByte()); bb.put(((c shr 8) and 255).toByte()); bb.put((c and 255).toByte()); bb.put(((c ushr 24) and 255).toByte()) }
+                bb.position(0)
+                G.glTexSubImage2D(G.GL_TEXTURE_2D, 0, 0, yy, wT, nrow, G.GL_RGBA, G.GL_UNSIGNED_BYTE, bb)
+                yy += nrow
+            }
         } else GLUtils.texImage2D(G.GL_TEXTURE_2D, 0, atlasBmp, 0)
         G.glGenerateMipmap(G.GL_TEXTURE_2D)
         // buffers de chunk
@@ -933,7 +941,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         // passada ligada à velocidade real do chão: o pé não desliza (nem devagar)
         val spdH = sqrt(p.vx * p.vx + p.vz * p.vz)
         val strideA = (26f + 30f * runA) * 0.01745f
-        phaseA += dtp * (if (wa > 0.02f && p.onGround) (spdH / ((0.58f - 0.32f * game.lieA) * strideA)).coerceIn(0f, 30f) else 0f)
+        phaseA += dtp * (if (wa > 0.02f && p.onGround) (spdH / ((0.89f - 0.49f * game.lieA) * strideA)).coerceIn(0f, 30f) else 0f)
         if (wasAirP && p.onGround && lastVyP < -4f) landA = (-lastVyP / 12f).coerceIn(0.35f, 1f)
         landA = max(0f, landA - dtp * 5f)
         wasAirP = airNow; lastVyP = p.vy
@@ -1913,7 +1921,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val ox = bobX + swayX; val oy = bobY + swayY + breath - inv * 0.55f
         val empty = id <= 0
         val isTool = id > 0 && !Items.isBlock(id)
-        val armW = if (empty) 0.2f else 0.17f
+        val armW = if (empty) 0.225f else 0.2f   // braço do Minecraft: 4 px = 0,225
         // punho (centro do punho = onde o cabo passa). Ferramenta: punho mais alto, inteiro na tela; mão vazia/bloco: poses das referências
         val hx = if (empty) 0.589f else if (isTool) 0.66f else 0.752f
         val hy = if (empty) -0.534f else if (isTool) -0.52f else -0.756f

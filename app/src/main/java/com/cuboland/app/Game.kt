@@ -309,7 +309,7 @@ class Game(val world: World) {
     private fun groundBelow(e: Ent): Float {
         val bx = floor(e.x).toInt(); val bz = floor(e.z).toInt()
         var y = floor(e.y + 0.05f).toInt()
-        while (y >= 0) { if (world.solid(bx, y, bz)) return y + (world.boxOf(bx, y, bz)?.get(4) ?: 1f); y-- }
+        while (y >= 0) { if (world.solidCol(bx, y, bz)) return y + (world.boxOf(bx, y, bz)?.get(4) ?: 1f); y-- }
         return 0f
     }
 
@@ -320,7 +320,7 @@ class Game(val world: World) {
         val bx = floor(ax).toInt(); val bz = floor(az).toInt()
         var by = floor(e.y - 0.1f).toInt(); val minD = if (climbT > 0f && !e.onGround) -0.08f else 0.08f   // já subindo: continua até passar do topo
         while (by <= floor(e.y + reach).toInt()) {
-            if (world.solid(bx, by, bz) && !world.solid(bx, by + 1, bz) && !world.solid(bx, by + 2, bz)) {
+            if (world.solidCol(bx, by, bz) && !world.solidCol(bx, by + 1, bz) && !world.solidCol(bx, by + 2, bz)) {
                 val top = by + (world.boxOf(bx, by, bz)?.get(4) ?: 1f)
                 if (top - e.y > minD && top - e.y <= reach) return top
             }
@@ -744,19 +744,35 @@ class Game(val world: World) {
     fun placeCheck(): Int {
         if (!hasHit || driving) return 0
         val id = cur()
-        if (!Items.isBlock(id) || B.cat[id] != Blk.C_FURN) return 0
+        if (!Items.isBlock(id) || (B.cat[id] != Blk.C_FURN && !Deco.isDeco(id))) return 0
         val p = player
         val ddx = px + 0.5f - p.x; val ddy = py + 0.5f - (p.y + 0.9f); val ddz = pz + 0.5f - p.z
         if (ddx * ddx + ddy * ddy + ddz * ddz > 49f) return 0
         val overlap = px + 1 > p.x - p.hw && px < p.x + p.hw && pz + 1 > p.z - p.hw && pz < p.z + p.hw && py + 1 > p.y && py < p.y + p.h
         if (overlap || py < 1 || py >= World.SY - 1 || world.get(px, py, pz) != B.AIR) return 2
+        if (Deco.isDeco(id) && !Deco.fits(world, id, px, py, pz, decoDirAt(px, py, pz), p.x, p.y, p.z, p.hw, p.h)) return 2   // móvel grande (cama, armário alto...) não cabe aqui
         val below = world.get(px, py - 1, pz)
         return if (below == B.AIR || below == B.WATER) 3 else 1
     }
 
-    /** gira um móvel novo (FurnC) 90° pra direita, sobrepondo a direção automática */
+    /** direção da frente de um móvel importado na hora de colocar: encosta as costas na parede se tiver uma; senão fica de frente pra quem colocou */
+    private fun decoDirAt(x: Int, y: Int, z: Int): Int {
+        val ddx = intArrayOf(0, 0, 1, -1); val ddz = intArrayOf(1, -1, 0, 0)
+        for (d in 0..3) { val bk = world.get(x - ddx[d], y, z - ddz[d]); if (B.solid(bk) && B.shape(bk) == 0) return d }
+        return BuildShapes.lookDir(yaw) xor 1
+    }
+
+    /** gira um móvel 90° pra direita, sobrepondo a direção automática (móveis novos e os importados do addon) */
     fun rotateFurn(x: Int, y: Int, z: Int): Boolean {
         val id = world.get(x, y, z)
+        if (Deco.isDeco(id)) {
+            val cd = Furniture.faceOf(world, x, y, z, 0)
+            val nd = (cd + 1) and 3
+            val pl = player
+            if (!Deco.fits(world, id, x, y, z, nd, pl.x, pl.y, pl.z, pl.hw, pl.h)) return false
+            world.setFState(x, y, z, (world.fStateOf(x, y, z) and 15) or 64 or (nd shl 4))
+            return true
+        }
         val s = Furniture.sub(id)
         if (s < 256) return false
         val st = world.fStateOf(x, y, z)
@@ -1401,8 +1417,15 @@ class Game(val world: World) {
         val overlap = px + 1 > p.x - p.hw && px < p.x + p.hw && pz + 1 > p.z - p.hw && pz < p.z + p.hw &&
             py + 1 > p.y && py < p.y + p.h
         if (overlap) return
+        val cid = cur()
+        var ddir = -1
+        if (Deco.isDeco(cid)) {   // móvel importado: direção fixa na hora de colocar e confere se o móvel inteiro cabe
+            ddir = decoDirAt(px, py, pz)
+            if (!Deco.fits(world, cid, px, py, pz, ddir, p.x, p.y, p.z, p.hw, p.h)) return
+        }
         val ceil = world.solid(px, py + 1, pz) && !world.solid(px, py - 1, pz)
-        world.set(px, py, pz, Blk.oriented(cur(), BuildShapes.lookDir(yaw), ceil))   // telhado/escada viram pra onde você olha; laje sobe sob um teto
+        world.set(px, py, pz, Blk.oriented(cid, BuildShapes.lookDir(yaw), ceil))   // telhado/escada viram pra onde você olha; laje sobe sob um teto
+        if (ddir >= 0) world.setFState(px, py, pz, 64 or (ddir shl 4))   // senão a frente mudava sozinha quando um vizinho era colocado/quebrado
         swing = 0.3f
     }
 

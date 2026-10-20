@@ -352,6 +352,17 @@ for key in reg['items']:
         o, s = b['origin'], b['size']
         return [round((o[0]+8)/16, 3), round(o[1]/16, 3), round((o[2]+8)/16, 3), round((o[0]+s[0]+8)/16, 3), round((o[1]+s[1])/16, 3), round((o[2]+s[2]+8)/16, 3)]
     col = c.get('minecraft:collision_box'); col = box(col) if isinstance(col, dict) else (None if col is False else [0,0,0,1,1,1])
+    nocol = col is None   # addon sem colisao (cortina, quadro, bandeira...): no jogo atravessa, mas ainda precisa de caixa pra mirar/quebrar
+    if nocol:
+        qx = [v[0] for _, _, vs, _ in quads for v in vs]; qy = [v[1] for _, _, vs, _ in quads for v in vs]; qz = [v[2] for _, _, vs, _ in quads for v in vs]
+        if qx:
+            lo = [max(0.0, min(qx)), max(0.0, min(qy)), max(0.0, min(qz))]; hi = [min(1.0, max(qx)), min(1.0, max(qy)), min(1.0, max(qz))]
+            for a in range(3):
+                if hi[a] - lo[a] < 0.14:
+                    mid = (hi[a] + lo[a]) / 2; lo[a] = max(0.0, mid - 0.07); hi[a] = min(1.0, mid + 0.07)
+            col = [round(lo[0], 3), round(lo[1], 3), round(lo[2], 3), round(hi[0], 3), round(hi[1], 3), round(hi[2], 3)]
+        else:
+            col = [0, 0, 0, 1, 1, 1]
     base = names.get(key, key.replace('_drz', '').replace('_', ' ').title())
     nm = ptname(key, base)
     if nm in usednames: nm = f'{nm} ({key.replace("_drz","")})'
@@ -361,7 +372,7 @@ for key in reg['items']:
         xs = [o[0] for _, o in asm]; ys = [o[1] for _, o in asm]; zs = [o[2] for _, o in asm]
         fp = [min(xs), max(xs), min(ys), max(ys), min(zs), max(zs)]
     items.append({'k': key, 'n': nm, 'c': 5 if is_furn(folder) else 4, 'g': geo_index[gkey], 'kd': kind, 't': tl, 'b': col,
-                  'l': int(c.get('minecraft:light_emission', 0) or 0), 'f': folder, 'gp': group(folder, 5 if is_furn(folder) else 4), 'sit': 1 if 'md:sit' in c else 0, **({'fp': fp} if fp else {}), **({'ob': openbox} if openbox else {}), **({'sc': scr} if scr else {})})
+                  'l': int(c.get('minecraft:light_emission', 0) or 0), 'f': folder, 'gp': group(folder, 5 if is_furn(folder) else 4), 'sit': 1 if 'md:sit' in c else 0, **({'fp': fp} if fp else {}), **({'nc': 1} if nocol else {}), **({'ob': openbox} if openbox else {}), **({'sc': scr} if scr else {})})
 
 # ---- escreve ----
 with open(OUT + '/geo.bin', 'wb') as fo:

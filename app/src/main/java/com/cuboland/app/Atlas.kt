@@ -13,7 +13,7 @@ import kotlin.math.sqrt
 /** Atlas pastel pintado por código: 64x64 por tile, formas lisas e suaves (estilo fofinho / Maple / Hytale). */
 object Atlas {
     const val T = 64
-    const val NT = 32          // colunas do atlas (potência de 2)
+    const val NT = 64          // colunas do atlas (potência de 2). 64 colunas x 64 linhas = 4096x4096 px: cabe em qualquer GPU (antes eram 32 colunas e o atlas chegava a 2048x8192, acima do limite de 4096 de aparelhos mais fracos)
     /** linhas do atlas: começa em 16 (512 tiles) e dobra sozinho quando faltar espaço (potência de 2 pros mipmaps); 0..23 = tiles originais, depois os blocos novos (Blk) */
     val ROWS: Int by lazy { var r = 16; val n = Blk.tileCount; while (r * NT < n && r < 512) r *= 2; r }
     val bmp: Bitmap by lazy { build() }
@@ -917,7 +917,8 @@ object Atlas {
             }
             bleed(out, w, x0, y0)
         }
-        raw = out.clone()   // cópia com a cor preservada nos pixels transparentes: vai direto pra GPU (o Bitmap do Android zera essa cor)
+        Deco.freeCache()   // libera os ~30 MB de pixels das texturas do addon (já estão no atlas)
+        raw = out   // (sem clone: o setPixels abaixo não altera o array; economiza 64 MB) cor preservada nos pixels transparentes: vai direto pra GPU (o Bitmap do Android zera essa cor)
         val b = Bitmap.createBitmap(w, hh, Bitmap.Config.ARGB_8888)
         b.setPixels(out, 0, w, 0, 0, w, hh)
         return b

@@ -15,6 +15,7 @@ object Deco {
     class Item(val name: String, val cat: Int, val geo: Int, val tex: IntArray, val box: FloatArray?, val light: Int, val sit: Boolean, val group: String, val fp: IntArray?, val kd: Int, val ob: FloatArray?, val sc: FloatArray?, val fd: String, val key: String) {
         var tile: IntArray = IntArray(0)
         var blockId: Int = 0
+        var nc: Boolean = false   // sem colisão no addon (cortina, quadro, bandeira): atravessa, mas a caixa ainda serve pra mirar/quebrar
     }
     class Geo(val nQuad: Int, val slot: IntArray, val shade: FloatArray, val vis: IntArray, val pos: FloatArray, val uv: FloatArray)
 
@@ -123,7 +124,9 @@ object Deco {
             val b = o.optJSONArray("b")
             var box: FloatArray? = null
             if (b != null) { box = FloatArray(6); for (k in 0 until 6) box[k] = b.getDouble(k).toFloat() }
-            out.add(Item(o.getString("n"), o.getInt("c"), o.getInt("g"), tex, box, o.optInt("l", 0), o.optInt("sit", 0) == 1, o.optString("gp", ""), fpOf(o.optJSONArray("fp")), o.optInt("kd", 0), boxOf6(o.optJSONArray("ob")), floatsOf(o.optJSONArray("sc")), o.optString("f", ""), o.optString("k", "").replace("_drz", "")))
+            val itn = Item(o.getString("n"), o.getInt("c"), o.getInt("g"), tex, box, o.optInt("l", 0), o.optInt("sit", 0) == 1, o.optString("gp", ""), fpOf(o.optJSONArray("fp")), o.optInt("kd", 0), boxOf6(o.optJSONArray("ob")), floatsOf(o.optJSONArray("sc")), o.optString("f", ""), o.optString("k", "").replace("_drz", ""))
+            itn.nc = o.optInt("nc", 0) == 1
+            out.add(itn)
         }
         return out
     }
@@ -175,6 +178,7 @@ object Deco {
 
     fun isDeco(id: Int): Boolean { if (id < 0 || id > 16383) return false; return idx[id] >= 0 }
     fun of(id: Int): Item? { if (id < 0 || id > 16383) return null; val i = idx[id]; if (i < 0) return null; return items[i] }
+    fun noCol(id: Int): Boolean { val d = of(id); if (d == null) return false; return d.nc }
     fun sit(id: Int): Boolean { val d = of(id); if (d == null) return false; return d.sit }
 
     // ---- pixels das texturas (Atlas.build chama por pixel) ----
@@ -216,6 +220,34 @@ object Deco {
             }
             o.tri(0, 1, 2); o.tri(0, 2, 3); o.tri(0, 2, 1); o.tri(0, 3, 2); o.vc += 4
         }
+    }
+
+    /**
+     * cabe aqui? confere o móvel inteiro (âncora + blocos extras do footprint) girado pra dir:
+     * tudo dentro do mundo, só ar, sem o jogador dentro e sem pegar o espaço de outro móvel grande.
+     * (a própria âncora (ax,ay,az) é ignorada ao procurar partes extras: serve também pra girar um móvel já colocado)
+     */
+    fun fits(w: World, id: Int, ax: Int, ay: Int, az: Int, dir: Int, plx: Float, ply: Float, plz: Float, phw: Float, ph: Float): Boolean {
+        val d = of(id)
+        if (d == null) return true
+        val fp = d.fp
+        val x0 = if (fp == null) 0 else fp[0]; val x1 = if (fp == null) 0 else fp[1]
+        val y0 = if (fp == null) 0 else fp[2]; val y1 = if (fp == null) 0 else fp[3]
+        val z0 = if (fp == null) 0 else fp[4]; val z1 = if (fp == null) 0 else fp[5]
+        for (i in x0..x1) for (j in z0..z1) for (k in y0..y1) {
+            var dx = i; var dz = j
+            if (dir == 1) { dx = -i; dz = -j } else if (dir == 2) { dx = j; dz = -i } else if (dir == 3) { dx = -j; dz = i }
+            val tx = ax + dx; val ty = ay + k; val tz = az + dz
+            if (tx < 0 || tz < 0 || tx >= World.SX || tz >= World.SZ || ty < 1 || ty >= World.SY - 1) return false
+            if (i != 0 || j != 0 || k != 0) {
+                if (w.get(tx, ty, tz) != B.AIR) return false
+                val pb = tx + 1 > plx - phw && tx < plx + phw && tz + 1 > plz - phw && tz < plz + phw && ty + 1 > ply && ty < ply + ph
+                if (pb) return false
+            }
+            val e = extraFind(w, tx, ty, tz)
+            if (e != null && !(e.ax == ax && e.ay == ay && e.az == az)) return false
+        }
+        return true
     }
 
     /** caixa de colisão/seleção girada pra direção do bloco */
