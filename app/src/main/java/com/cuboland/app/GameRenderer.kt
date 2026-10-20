@@ -959,7 +959,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         flySp += (min(1f, spdH / 10f) - flySp) * min(1f, 5f * dtp)
         dashSm += ((if (flyNow && spdH > 11f) 1f else 0f) - dashSm) * min(1f, 3.5f * dtp)   // transição suave pro voo rápido (e de volta)
         swimFastA += ((if (swm > 0.2f && game.sprint && wa > 0.1f) 1f else 0f) - swimFastA) * min(1f, 7f * dtp)
-        swimPhA += dtp * (2.2f + 1.8f * min(1f, wa * 2f)) * (if (game.sprint) 1.3f else 1f)
+        swimPhA += dtp * (2.2f + 1.8f * min(1f, wa * 2f)) * (if (game.sprint) 1.3f else 1f) * (1f + 0.7f * swimFastA * (1f - diveSm))   // nado rápido na superfície: braçadas mais rápidas
         val surfY = World.WATER_Y + 0.88f
         val diveTarget = ((surfY - (p.y + 1.55f)) / 0.45f).coerceIn(0f, 1f)
         diveSm += (diveTarget - diveSm) * min(1f, 6f * dtp)
@@ -976,7 +976,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             flipAng += (360f - flipAng) * min(1f, 14f * dtp)
             if (flipAng > 358f) flipAng = 0f
         }
-        val tiltTarget = swm * (32f + (((78f - pitchDeg * 0.35f).coerceIn(40f, 110f)) - 32f) * diveSm)
+        val tiltTarget = swm * (32f + 36f * swimFastA * (1f - diveSm) + (((78f - pitchDeg * 0.35f).coerceIn(40f, 110f)) - 32f) * diveSm)   // acelerando na superfície: deita bastante, como nadador de crawl
         tiltSm += (tiltTarget - tiltSm) * min(1f, 9f * dtp)
         an.t = t; an.phase = phaseA; an.move = wa; an.run = runA; an.vy = vyHold; an.air = airNow; an.airA = airSm; an.fly = flySm; an.flySpd = flySp
         val impK = ((1f - game.flyImp) * 3f).coerceIn(0f, 1f)   // o impulso entra em ~0,2s em vez de estalar
@@ -994,6 +994,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         }
         if (swm > 0.01f) {   // nadando: boia na superfície (cabeça fora) ou desliza deitado quando mergulha
             Matrix.translateM(base, 0, 0f, sin(t * 2.2f) * 0.025f * (1f - diveSm) * swm, 0f)
+            Matrix.translateM(base, 0, 0f, 0.3f * swimFastA * (1f - diveSm) * swm, 0f)   // deitado: sobe um pouco pra cabeça não afundar
             Matrix.translateM(base, 0, 0f, 0.9f, 0f)
             Matrix.rotateM(base, 0, tiltSm, 1f, 0f, 0f)
             Matrix.translateM(base, 0, 0f, -0.9f, 0f)

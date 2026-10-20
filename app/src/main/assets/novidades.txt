@@ -1,3 +1,9 @@
+#id 2026-10-20-c
+#titulo Pulo mais natural e nado crawl
+- Pulo: acabou de levantar as pernas pra frente; agora elas ficam quase retas, com um passinho aberto na subida, juntas no topo e esticadas na descida
+- Aterrissagem: sem jogar as pernas pra frente; o corpo amassa (agacha) e levanta suave, com o tronco inclinando um pouco
+- Nado rápido na superfície: o boneco deita bastante, bate as pernas e as braçadas alternadas ficam mais rápidas, com o corpo girando a cada braçada e a cabeça virando pra respirar, como nadador de crawl
+
 #id 2026-10-20-b
 #titulo Pulo novo, SUPER PULO e nado rápido
 - Pulo refeito do zero: o boneco agacha rapidinho antes de sair do chão, estica na subida, recolhe os joelhos no topo e desce com as pernas esticadas pra pisar, com os braços acompanhando cada fase (tudo misturado de forma suave, sem trancos)
