@@ -633,7 +633,7 @@ class CharModel {
     }
 
     /** root = origem nos pés. handOut = matriz da mão direita (pra segurar item). */
-    private val mc = McChar()
+    val mc = McChar()
     /** personagem no formato do Minecraft (Steve/Alex): 1,8 de altura, cabeça 8x8x8, corpo 8x12x4, membros 4x12x4 */
     fun draw(boxIn: BoxFn, root: FloatArray, an: Anim, handOut: FloatArray?) { mc.draw(boxIn, root, an, handOut) }
 

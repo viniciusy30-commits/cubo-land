@@ -22,6 +22,16 @@ class McChar {
     private val legM = arrayOf(FloatArray(16), FloatArray(16))
     private val armM = arrayOf(FloatArray(16), FloatArray(16))
 
+    /**
+     * Camada de profundidade da caixa que está sendo desenhada (0 = pele; roupas e detalhes sobem). O renderer usa isso num polygon offset:
+     * assim o que vem por cima (olho sobre rosto, botão sobre camisa, bainha sobre manga) sempre ganha, em qualquer distância e em qualquer GPU,
+     * sem as faces "brigarem" (z-fighting).
+     */
+    @JvmField var layer = 0
+    private var layerTop = 0
+    @JvmField var layerHook: ((Int) -> Unit)? = null
+    private fun lay(from: Int, to: Int) { layer = from; layerTop = to }
+
     private fun piv(out: FloatArray, parent: FloatArray, px: Float, py: Float, pz: Float, rx: Float = 0f, ry: Float = 0f, rz: Float = 0f) {
         System.arraycopy(parent, 0, out, 0, 16)
         Matrix.translateM(out, 0, px, py, pz)
@@ -57,8 +67,11 @@ class McChar {
     /** root = origem nos pés. handOut = matriz da mão direita (pra segurar item). */
     fun draw(boxIn: BoxFn, root: FloatArray, an: Anim, handOut: FloatArray?) {
         var zf = 0
+        layer = 0; layerTop = 0
         bx = { m, px, py, pz, rx, ry, sx, sy, sz, oy, col, a, rz ->
-            val k = 1f + min(zf, 300) * 0.00002f; zf++   // cada caixa nova fica um tiquinho maior: acaba o z-fighting de faces coplanares
+            val k = 1f + min(zf, 300) * 0.00004f; zf++   // cada caixa nova fica um tiquinho maior
+            layerHook?.invoke(layer)
+            if (layer < layerTop) layer++   // dentro de uma seção, cada caixa nova fica por cima da anterior
             boxIn(m, px, py, pz, rx, ry, sx * k, sy * k, sz * k, oy, col, a, rz)
         }
         val t = an.t
@@ -277,6 +290,11 @@ class McChar {
         else if (top == 4 && !overalls) { skirtLen = 3.5f; skirtC = tc; hemC = lite(tc, 0.4f) }
         else if (top == 17) { skirtLen = 8f; skirtC = tc; hemC = shadeC(tc, 0.7f) }
         val shoe = L[Look.SHOES]
+        // a perna base já é pintada com a cor da roupa/sapato onde elas cobrem: se a perna girar e abrir uma fresta (quadril, entre as pernas, pé),
+        // aparece tecido e não pele
+        val covTop = if (pantPx > 0f) pantPx else skirtLen
+        val covC = if (pantPx > 0f) pantC else shadeC(skirtC, 0.7f)
+        val shoeH = when (shoe) { 0 -> 4f; 1 -> 2.4f; 4 -> 8f; 5 -> 2f; 6 -> 2f; 7 -> 6f; else -> 0f }
         for (sd in intArrayOf(-1, 1)) {
             val s = sd.toFloat(); val li2 = if (sd < 0) 0 else 1
             val hip = if (sd < 0) hipL else hipR; val kn = if (sd < 0) kneeL else kneeR
@@ -286,7 +304,14 @@ class McChar {
             if (bt > 0f) ang = lp(ang, -62f, bt)   // moto: pernas dobradas nas pedaleiras
             piv(legM[li2], r2, s * 2f * U, hipY, 0f, rx = ang + lean * fl, rz = s * (5f + 7f * (if (sd < 0) qLegL else qLegR)) * li)
             val lm = legM[li2]
-            lb(lm, 0f, 0f, 0f, 4f, 12f, 4f, skin)
+            lay(0, 0)
+            var topH = min(covTop, 12f); val botH = shoeH
+            if (topH + botH > 12f) topH = 12f - botH
+            val midH = 12f - topH - botH
+            if (topH > 0.01f) lb(lm, 0f, 6f - topH / 2f, 0f, 4f, topH, 4f, covC)
+            if (midH > 0.01f) lb(lm, 0f, 6f - topH - midH / 2f, 0f, 4f, midH, 4f, skin)
+            if (botH > 0.01f) lb(lm, 0f, -6f + botH / 2f, 0f, 4f, botH, 4f, shoeC)
+            lay(1, 5)
             if (pantPx > 0f) {
                 lb(lm, 0f, 6f - pantPx / 2f, 0f, pantW, pantPx, pantW, pantC)
                 if (pantPx >= 8f) lb(lm, 0f, 6f - pantPx + 0.5f, 0f, pantW + 0.2f, 1f, pantW + 0.2f, shadeC(pantC, 0.8f))
@@ -309,24 +334,31 @@ class McChar {
             }
         }
 
+        // quadril: um bloco por baixo do tronco (cor da roupa de baixo) que tapa a fresta que se abre quando as pernas balançam
+        lay(0, 0)
+        tb(0f, -7f, 0f, 7.9f, 2.8f, 3.9f, covC)
+
         // ================= TRONCO + ROUPA =================
+        lay(0, 0)
         tb(0f, 0f, 0f, 8f, 12f, 4f, skin)
         var sleeve = 4f; var sCol = tc; var tCol = tc
         when (top) {
-            1, 3, 7, 14, 17 -> sleeve = 12f
+            1, 3, 7, 14, 17 -> sleeve = 10.5f
             2 -> sleeve = 3f
             4 -> sleeve = 8f
             5 -> { sleeve = 0f; tCol = mixC(steel, tc, 0.3f) }
             8 -> { tCol = white; sCol = white }
-            9 -> { sleeve = 12f; tCol = shadeC(tc, 0.85f); sCol = tCol }
-            10, 11 -> sleeve = 12f
-            12 -> { sleeve = 12f; tCol = shadeC(tc, 0.7f); sCol = tCol }
+            9 -> { sleeve = 10.5f; tCol = shadeC(tc, 0.85f); sCol = tCol }
+            10, 11 -> sleeve = 10.5f
+            12 -> { sleeve = 10.5f; tCol = shadeC(tc, 0.7f); sCol = tCol }
             13 -> sleeve = 0f
             15 -> { sleeve = 3.5f; tCol = shadeC(tc, 0.4f); sCol = white }
             16 -> { tCol = white; sCol = white }
             6 -> { tCol = white; sCol = white }
         }
+        lay(1, 1)
         tb(0f, 0f, 0f, 8.7f, 12.2f, 4.7f, tCol)
+        lay(2, 8)
         tb(0f, -5.7f, 0f, 8.8f, 0.7f, 4.8f, shadeC(tCol, 0.8f))
         when (top) {
             0 -> tb(0f, 5.6f, 0f, 8.8f, 0.8f, 4.8f, shadeC(tc, 0.78f))
@@ -355,16 +387,20 @@ class McChar {
             val ry = if (sd < 0) ryR else ryL
             piv(armM[ai], bm, s * (4f + aw / 2f) * U, 22f * U, 0f, rx = rx + el * 0.55f, ry = ry, rz = rz)
             val am = armM[ai]
-            ab(am, 0f, 0f, 0f, aw, 12f, 4f, skin)
+            lay(0, 0)
+            val slvH = min(sleeve, 12f)
+            if (slvH > 0.01f) ab(am, 0f, 6f - slvH / 2f, 0f, aw, slvH, 4f, sCol)
+            if (12f - slvH > 0.01f) ab(am, 0f, -6f + (12f - slvH) / 2f, 0f, aw, 12f - slvH, 4f, skin)
+            lay(1, 5)
             if (sleeve > 0f) {
                 ab(am, 0f, 6f - sleeve / 2f, 0f, aw + 0.7f, sleeve, 4.7f, sCol)
                 val cuff = when (top) { 1, 3 -> shadeC(tc, 0.7f); 7 -> lite(tc, 0.55f); 12 -> white; 9 -> gold; 17 -> shadeC(tc, 0.7f); else -> shadeC(sCol, 0.82f) }
-                if (sleeve >= 11f) ab(am, 0f, -6f + 0.7f, 0f, aw + 0.9f, 1.4f, 4.9f, cuff) else ab(am, 0f, 6f - sleeve + 0.35f, 0f, aw + 0.8f, 0.7f, 4.8f, cuff)
+                if (sleeve >= 10f) ab(am, 0f, 6f - sleeve + 0.7f, 0f, aw + 0.9f, 1.4f, 4.9f, cuff) else ab(am, 0f, 6f - sleeve + 0.35f, 0f, aw + 0.8f, 0.7f, 4.8f, cuff)
             }
             when (top) {
                 2 -> ab(am, 0f, 4.2f, 0f, aw + 1.6f, 3.6f, 5.4f, tc)
                 15 -> { ab(am, 0f, 4.2f, 0f, aw + 1.8f, 3.8f, 5.5f, white); ab(am, 0f, 2.2f, 0f, aw + 2f, 0.6f, 5.7f, lite(0xE8D5B0, 0.2f)) }
-                10, 11, 14 -> { ab(am, s * 0.8f, -1.5f, 0f, aw + 3.4f, 9f, 5.2f, sCol); ab(am, s * 0.8f, -6f + 0.5f, 0f, aw + 3.6f, 1f, 5.4f, if (top == 11) gold else lite(sCol, 0.5f)) }
+                10, 11, 14 -> { ab(am, s * 0.8f, 0.2f, 0f, aw + 3.4f, 8.6f, 5.2f, sCol); ab(am, s * 0.8f, -3.9f, 0f, aw + 3.6f, 1f, 5.4f, if (top == 11) gold else lite(sCol, 0.5f)) }
                 5 -> { ab(am, s * 0.5f, 5.2f, 0f, aw + 2.4f, 3.4f, 5.8f, tCol); ab(am, s * 0.5f, 6.9f, 0f, aw + 2.6f, 0.6f, 6f, gold); ab(am, 0f, -4.2f, 0f, aw + 0.9f, 3.6f, 4.9f, steel); ab(am, 0f, -2.2f, 0f, aw + 1f, 0.5f, 5f, gold) }
                 8 -> ab(am, 0f, 6f - 3.2f, 0f, aw + 0.85f, 0.7f, 4.85f, tc)
             }
@@ -375,7 +411,9 @@ class McChar {
         }
 
         // ================= CABEÇA: rosto =================
+        lay(0, 0)
         hb(0f, 0f, 0f, 8f, 8f, 8f, skin)
+        lay(1, 7)
         hb(0f, -1.5f, 4.06f, 1f, 1f, 0.2f, shadeC(skin, 0.9f))   // nariz
         val ez = 4.1f
         val eyeY = -0.5f
@@ -410,6 +448,7 @@ class McChar {
         // ================= CABELO (50 estilos do menu viram formas de bloco) =================
         val hatId = L[Look.HAT]
         val hatCovers = hatId == 2 || hatId == 3 || hatId == 8 || hatId == 16 || hatId == 19 || hatId == 21 || hatId == 22 || hatId == 23
+        lay(8, 14)
         val hs = L[Look.HAIR].coerceIn(0, 49)
         val bk = HAIR_BK[hs]; val sl = HAIR_SL[hs]; val bg = HAIR_BG[hs]; val tp = HAIR_TP[hs]; val ext = HAIR_EXT[hs]
         val tie = hatC
@@ -466,6 +505,7 @@ class McChar {
         }
 
         // ================= CHAPÉUS E ENFEITES =================
+        lay(13, 19)
         when (hatId) {
             1 -> { hb(0f, 4.45f + hl, 0f, 13f, 0.9f, 13f, hatC); hb(0f, 5.0f + hl, 0f, 8.7f, 0.8f, 8.7f, gold); hb(0f, 6.2f + hl, 0f, 8.4f, 1.8f, 8.4f, hatC); hb(0.3f, 7.9f + hl, 0f, 6.4f, 1.6f, 6.4f, hatC, rz = 4f); hb(0.9f, 9.4f + hl, 0f, 4.4f, 1.6f, 4.4f, hatC, rz = 8f); hb(1.9f, 10.8f + hl, 0f, 2.4f, 1.4f, 2.4f, hatC, rz = 14f) }
             2 -> { hb(0f, 3.6f, 0f, 9.2f, 5f, 9.2f, hatC); hb(0f, 1.7f, 0f, 9.5f, 1.5f, 9.5f, lite(hatC, 0.3f)); hb(0f, 6.9f, 0f, 2.6f, 2.6f, 2.6f, white) }
@@ -493,6 +533,7 @@ class McChar {
         }
 
         // ================= ROSTO: óculos e marcas =================
+        lay(7, 12)
         val gz = 4.3f
         val blk = 0x1E1E26
         fun frame(cx: Float, w: Float, h: Float, c: Int, lens: Int, la: Float) {
@@ -517,6 +558,7 @@ class McChar {
         }
 
         // ================= PESCOÇO =================
+        lay(9, 12)
         when (L[Look.NECK]) {
             1 -> { tb(0f, 5.2f, 0f, 9.2f, 2.2f, 5.2f, neckC); tb(2.5f, 2.2f, 2.8f, 2f, 6.5f, 0.7f, neckC); tb(2.5f, 0.5f, 2.85f, 2.05f, 0.8f, 0.5f, lite(neckC, 0.5f)) }
             2 -> { tb(0f, 5.2f, 2.55f, 1.4f, 1.4f, 0.6f, neckC); tb(-1.6f, 5.2f, 2.5f, 2f, 2.4f, 0.5f, neckC, rz = 15f); tb(1.6f, 5.2f, 2.5f, 2f, 2.4f, 0.5f, neckC, rz = -15f) }
@@ -530,6 +572,7 @@ class McChar {
         }
 
         // ================= COSTAS =================
+        lay(2, 6)
         val flap = sin(t * 9f) * (10f + 14f * mv)
         when (L[Look.BACK]) {
             1 -> {

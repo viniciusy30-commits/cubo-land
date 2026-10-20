@@ -13,6 +13,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.FileProvider
 import androidx.core.content.pm.PackageInfoCompat
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
@@ -35,30 +36,61 @@ object Updater {
         check(a, false)
     }
 
+    private fun toastL(a: Activity, s: String) = Toast.makeText(a, s, Toast.LENGTH_LONG).show()
+
+    /**
+     * Procura a versão mais nova entre as últimas versões publicadas (não só a marcada como "latest": ela pode atrasar ou apontar pra outra).
+     * Usa o token do GitHub se você já colou um (limite 5000/h e funciona em repositório privado); sem token o GitHub limita a 60/h por rede,
+     * e na internet do celular isso estoura fácil (aparecia "sem internet" mesmo online).
+     */
     fun check(a: Activity, manual: Boolean) {
         if (manual) toast(a, "Procurando atualização…")
+        val tok = a.getSharedPreferences("updater", 0).getString("gh_token", null)
         Thread {
+            var msg: String? = null
+            var bestNum = -1
+            var bestUrl: String? = null
             try {
-                val c = URL("https://api.github.com/repos/$REPO/releases/latest").openConnection() as HttpURLConnection
-                c.connectTimeout = 10000; c.readTimeout = 10000
+                val c = URL("https://api.github.com/repos/$REPO/releases?per_page=15&t=${System.currentTimeMillis()}").openConnection() as HttpURLConnection
+                c.connectTimeout = 10000; c.readTimeout = 10000; c.useCaches = false
                 c.setRequestProperty("Accept", "application/vnd.github+json")
-                if (c.responseCode != 200) throw java.io.IOException("http ${c.responseCode}")
-                val j = JSONObject(c.inputStream.bufferedReader().readText())
-                val remote = j.getString("tag_name").removePrefix("v").toIntOrNull() ?: 0
-                var url: String? = null
-                val assets = j.getJSONArray("assets")
-                for (i in 0 until assets.length()) {
-                    val o = assets.getJSONObject(i)
-                    if (o.getString("name").endsWith(".apk")) { url = o.getString("browser_download_url"); break }
-                }
-                val cur = installed(a)
-                a.runOnUiThread {
-                    if (a.isFinishing) return@runOnUiThread
-                    if (remote > cur && url != null) offer(a, remote, cur, url)
-                    else if (manual) toast(a, "Você já está na versão mais nova 🎉")
+                c.setRequestProperty("Cache-Control", "no-cache")
+                c.setRequestProperty("User-Agent", "CuboLand-Updater")
+                if (!tok.isNullOrBlank()) c.setRequestProperty("Authorization", "Bearer $tok")
+                val code = c.responseCode
+                if (code != 200) {
+                    msg = when (code) {
+                        403, 429 -> "O GitHub limitou as consultas (erro $code). Espere uns minutos e tente de novo."
+                        404 -> "Não achei o repositório (erro 404). Se ele for privado, cole o token em Reverter atualização."
+                        401 -> "O GitHub recusou o token (erro 401). Cole um token novo em Reverter atualização."
+                        else -> "O GitHub respondeu com erro $code. Tente de novo daqui a pouco."
+                    }
+                } else {
+                    val arr = JSONArray(c.inputStream.bufferedReader().readText())
+                    for (i in 0 until arr.length()) {
+                        val j = arr.getJSONObject(i)
+                        if (j.optBoolean("draft")) continue
+                        val num = j.getString("tag_name").removePrefix("v").toIntOrNull()
+                        if (num == null) continue
+                        val assets = j.getJSONArray("assets")
+                        var web: String? = null
+                        for (k in 0 until assets.length()) {
+                            val o = assets.getJSONObject(k)
+                            if (o.getString("name").endsWith(".apk")) { web = o.getString("browser_download_url"); break }
+                        }
+                        if (web != null && num > bestNum) { bestNum = num; bestUrl = web }
+                    }
                 }
             } catch (e: Exception) {
-                if (manual) a.runOnUiThread { toast(a, "Sem internet ou servidor indisponível") }
+                msg = "Sem internet ou servidor indisponível (" + e.javaClass.simpleName + ")."
+            }
+            val m = msg; val fn = bestNum; val fu = bestUrl
+            val cur = installed(a)
+            a.runOnUiThread {
+                if (a.isFinishing) return@runOnUiThread
+                if (m != null) { if (manual) toastL(a, m) }
+                else if (fn > cur && fu != null) offer(a, fn, cur, fu)
+                else if (manual) toastL(a, "Você já está na versão mais nova 🎉 (instalada: v$cur, última publicada: " + (if (fn > 0) "v$fn" else "nenhuma") + ")")
             }
         }.start()
     }

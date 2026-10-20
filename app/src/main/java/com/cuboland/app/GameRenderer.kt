@@ -981,7 +981,11 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             Matrix.rotateM(base, 0, tiltSm, 1f, 0f, 0f)
             Matrix.translateM(base, 0, 0f, -0.9f, 0f)
         }
+        G.glEnable(G.GL_POLYGON_OFFSET_FILL)   // camadas do boneco: o que está por cima ganha na profundidade (acaba o z-fighting nas dobras)
+        cm.mc.layerHook = { l -> G.glPolygonOffset(0f, -l.toFloat()) }
         cm.draw(charBox, base, an, handM)
+        cm.mc.layerHook = null
+        G.glPolygonOffset(0f, 0f); G.glDisable(G.GL_POLYGON_OFFSET_FILL)
         if (id > 0) {   // mesmo modelo 3D da 1ª pessoa e dos ícones: cabo pra cima, fio pra frente
             System.arraycopy(handM, 0, base2, 0, 16)
             if (an.toolA != 0f) Matrix.rotateM(base2, 0, an.toolA, 1f, 0f, 0f)   // nado e voo rápido: o item acompanha o corpo e não fura a cabeça

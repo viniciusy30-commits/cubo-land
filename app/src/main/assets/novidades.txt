@@ -1,5 +1,8 @@
 #id 2026-10-20-a
 #titulo Personagem agora é igual ao do Minecraft (nada de chibi)
+- Boneco: acabou a pele aparecendo na fresta entre as pernas e o tronco (quadril) e nos pés; pernas e braços agora são pintados com a cor da roupa/sapato por dentro, e as mangas compridas deixam a mão aparecer
+- Acabou o "piscar"/manchas nas texturas do boneco (olhos, colarinho, mangas, dobras): cada camada de roupa e detalhe agora ganha prioridade na profundidade
+- Verificar atualização ficou mais confiável: olha as últimas versões publicadas, usa o token do GitHub se você já colou um e, se falhar, diz o motivo (limite do GitHub, repositório não achado...) e mostra a versão instalada e a última publicada
 - Mesmo formato e tamanho do Minecraft: 1,8 de altura, cabeça 8x8x8, corpo 8x12x4, braços e pernas 4x12x4 (meninas com braço fino 3 px, como a Alex)
 - Todos os cabelos, roupas, sapatos, chapéus, óculos, pescoço e costas do menu foram refeitos em blocos nas proporções do Minecraft
 - Andar, correr, pular, nadar, voar, agachar, sentar, deitar, golpe e item na mão continuam funcionando com o corpo novo
