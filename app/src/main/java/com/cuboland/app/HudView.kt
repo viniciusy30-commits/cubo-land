@@ -271,8 +271,12 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         val dz = 0.14f
         val ax = if (abs(skSx) < dz) 0f else (skSx - dz * (if (skSx > 0f) 1f else -1f)) / (1f - dz)
         game.skSteer = ax.coerceIn(-1f, 1f)
-        game.skGas = ((-skSy - 0.2f) / 0.55f).coerceIn(0f, 1f)
-        game.skBrake = ((skSy - 0.2f) / 0.55f).coerceIn(0f, 1f)
+        // Usa quase todo o curso vertical do analógico, com uma zona morta central
+        // para evitar aceleração/frenagem involuntária quando o dedo está parado.
+        val ay = if (abs(skSy) < 0.12f) 0f
+                 else (kotlin.math.sign(skSy) * (abs(skSy) - 0.12f) / 0.88f).coerceIn(-1f, 1f)
+        game.skGas = (-ay).coerceIn(0f, 1f)
+        game.skBrake = ay.coerceIn(0f, 1f)
         game.skSpin = (if (v.contains(9)) 1f else 0f) - (if (v.contains(8)) 1f else 0f)
         game.skOllie = v.contains(4)
         game.skGrab = v.contains(6)
