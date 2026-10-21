@@ -681,6 +681,14 @@ class CharModel {
         val fs = (1f - vk) * 0.5f          // 0 subindo .. 1 caindo (contínuo, sem trancos)
         val dv = an.dive.coerceIn(0f, 1f)
         val land = an.landT.coerceIn(0f, 1f)
+        // manobra no ar: preparação (recuo), grupado/abertura durante o giro e abertura na saída (tudo suave, sem trancos)
+        val tkW = if (swimming) 0f else an.trk.coerceIn(0f, 1f); val tkK = an.trkK.toInt(); val tkP = an.trkP
+        fun sstep(x: Float): Float { val q = x.coerceIn(0f, 1f); return q * q * (3f - 2f * q) }
+        val tkFlip = tkK == 1 || tkK == 2 || tkK >= 10          // mortal/looping/espirais: encolhe o corpo
+        val tkAnt = tkW * sin(3.1416f * (tkP / 0.13f).coerceIn(0f, 1f))                                  // preparação: tronco recua, braços vão pra trás
+        val tkHold = tkW * sstep((tkP - 0.07f) / 0.16f) * (1f - sstep((tkP - 0.70f) / 0.16f))             // corpo na posição da manobra
+        val tkOpen = tkW * sin(3.1416f * ((tkP - 0.80f) / 0.20f).coerceIn(0f, 1f))                        // saída: abre braços e pernas
+        val tkTuck = if (tkFlip) tkHold else 0f; val tkRoll = if (tkFlip) 0f else tkHold
         val dashW = max(an.dash.coerceIn(0f, 1f), an.imp.coerceIn(0f, 1f)) * (1f - swim01(an))
         val uImp = 1f - an.imp.coerceIn(0f, 1f)
         val wind = if (an.imp <= 0f) 0f else if (uImp < 0.4f) uImp / 0.4f else max(0f, 1f - (uImp - 0.4f) / 0.25f)
@@ -711,6 +719,13 @@ class CharModel {
             val fk2 = sin(t * 14f) * 1.5f
             hipL = lp(hipL, 8f + fk2 + 20f * wind, dashW); hipR = lp(hipR, 8f + fk2 + 20f * wind, dashW)
             kneeL = lp(kneeL, 8f + 55f * wind, dashW); kneeR = lp(kneeR, 8f + 55f * wind, dashW)
+        }
+        if (tkW > 0.001f) {   // pernas na manobra: grupadas no mortal, juntas e retas no tonel, esticadas na abertura
+            val wA = tkAnt * 0.6f
+            hipL = lp(hipL, -22f, wA); hipR = lp(hipR, -22f, wA); kneeL = lp(kneeL, 34f, wA); kneeR = lp(kneeR, 34f, wA)
+            hipL = lp(hipL, -92f, tkTuck); hipR = lp(hipR, -92f, tkTuck); kneeL = lp(kneeL, 108f, tkTuck); kneeR = lp(kneeR, 108f, tkTuck)
+            hipL = lp(hipL, 7f, tkRoll); hipR = lp(hipR, 7f, tkRoll); kneeL = lp(kneeL, 5f, tkRoll); kneeR = lp(kneeR, 5f, tkRoll)
+            hipL = lp(hipL, 10f, tkOpen); hipR = lp(hipR, 6f, tkOpen); kneeL = lp(kneeL, 8f, tkOpen); kneeR = lp(kneeR, 14f, tkOpen)
         }
         if (land > 0f) {
             hipL += (-42f - hipL) * land; hipR += (-42f - hipR) * land
@@ -743,7 +758,7 @@ class CharModel {
             Matrix.rotateM(r2, 0, 90f * li, 1f, 0f, 0f)
         }
 
-        val lean = 30f * an.dash.coerceIn(0f, 1f) * fl - 30f * wind * dashW + 18f * cr + 6f * si + 3f * stride * (1f - li) - 7f * li + 12f * rn * stride + ab * lp(-5f, 7f, fs) + 16f * land + fl * (8f + 52f * fm) - 10f * chg +
+        val lean = 30f * an.dash.coerceIn(0f, 1f) * fl - 30f * wind * dashW + 18f * cr + 6f * si + 3f * stride * (1f - li) - 7f * li + 12f * rn * stride + ab * lp(-5f, 7f, fs) + 16f * land + fl * (8f + 52f * fm) - 10f * chg + 34f * tkTuck - 12f * tkRoll - 12f * tkAnt - 8f * tkOpen +
             (if (atking) 9f * sin(atk * 3.1416f) else 0f)
         val twist = sin(ph) * (5f + 9f * rn) * stride * (1f - li) + 14f * chg + (if (atking) 18f * sin(atk * 6.2832f) else 0f)
         val roll = sin(ph) * 2.2f * stride * (1f - rn) + 8f * li * min(1f, mv * 3f) * sin(ph) + (if (air) 0f else sin(t * 0.9f) * 1.3f * (1f - stride))
@@ -1313,6 +1328,15 @@ class CharModel {
             rxL = lp(rxL, ax + fl2, dashW); rxR = lp(rxR, ax - fl2, dashW)
             rzL = lp(rzL, -9f, dashW); rzR = lp(rzR, 9f, dashW); elL = lp(elL, -5f, dashW); elR = lp(elR, -5f, dashW)
             dashToolA = dashW * (-lean + 180f - (rxR + elR))   // item fica pra trás, longe da cabeça
+        }
+        if (tkW > 0.001f) {   // braços na manobra
+            rxL = lp(rxL, 30f, tkAnt); rxR = lp(rxR, 30f, tkAnt); rzL = lp(rzL, -12f, tkAnt); rzR = lp(rzR, 12f, tkAnt)   // balanço pra trás antes de sair
+            rxL = lp(rxL, -82f, tkTuck); rxR = lp(rxR, -82f, tkTuck); rzL = lp(rzL, -9f, tkTuck); rzR = lp(rzR, 9f, tkTuck)   // abraça os joelhos
+            elL = lp(elL, -62f, tkTuck); elR = lp(elR, -62f, tkTuck)
+            rxL = lp(rxL, -8f, tkRoll); rxR = lp(rxR, -8f, tkRoll); rzL = lp(rzL, -74f, tkRoll); rzR = lp(rzR, 74f, tkRoll)   // braços abertos, tipo avião
+            elL = lp(elL, -4f, tkRoll); elR = lp(elR, -4f, tkRoll)
+            rxL = lp(rxL, -18f, tkOpen); rxR = lp(rxR, -18f, tkOpen); rzL = lp(rzL, -62f, tkOpen); rzR = lp(rzR, 62f, tkOpen)   // saída: abre os braços
+            elL = lp(elL, -6f, tkOpen); elR = lp(elR, -6f, tkOpen)
         }
         an.armFwdR = 0f
         an.toolA = if (swimming) swimToolA else dashToolA

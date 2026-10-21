@@ -575,7 +575,7 @@ class Game(val world: World) {
     @Volatile var trickDx = 0f; @Volatile var trickDy = 0f   // analógico ao soltar (x: lados, y: cima = pra frente)
     @Volatile var trickPitch = 0f; @Volatile var trickRoll = 0f; @Volatile var trickYaw = 0f   // total de graus em cada eixo do corpo (múltiplos de 360)
     @Volatile var trickFast = false   // a manobra começou no voo rápido
-    private var trickLeft = 0f; private var trickDur = 0.65f; private var trickFxT = 0f
+    private var trickLeft = 0f; private var trickDur = 0.65f
     fun trickOk(): Boolean = !player.onGround && !player.inWater && !driving && !seated && posture == 0 && trickLeft <= 0f
     fun trickFastNow(): Boolean = flying && (airDashT > 0.02f || hypot(player.vx, player.vz) > 11f)
     /** direção do analógico (dx: lados, dy: cima) -> tipo da manobra */
@@ -592,27 +592,22 @@ class Game(val world: World) {
         1 -> "Looping"; 2 -> "Looping de costas"; 3 -> "Tonel duplo esquerda"; 4 -> "Tonel duplo direita"; 5 -> "Tonel triplo"
         10 -> "Espiral esquerda"; 11 -> "Espiral direita"; 12 -> "Espiral invertida esquerda"; else -> "Espiral invertida direita"
     }
-    /** curva do giro: recuo de preparação (0..0,12), giro só entre 0,10 e 0,90 com pico de velocidade no meio, resto = impulso/queda */
+    /** curva do giro: recuo de preparação (0..0,12), giro suave (acelera e freia) entre 0,10 e 0,90, passa um tiquinho do ponto e assenta no final */
     fun trickEase(a: Float): Float {
+        val ant = -0.04f * sin(3.1416f * (a / 0.13f).coerceIn(0f, 1f))
         val w = ((a - 0.10f) / 0.80f).coerceIn(0f, 1f)
-        val sm = w * w * (3f - 2f * w)
-        val ant = -0.03f * sin(3.1416f * (a / 0.12f).coerceIn(0f, 1f))
-        return 0.7f * sm + 0.3f * w + ant
+        val sm = w * w * w * (w * (w * 6f - 15f) + 10f)          // smootherstep: sem tranco na saída nem na chegada
+        val main = 1.03f * (0.88f * sm + 0.12f * w)              // passa ~3% do giro...
+        val s = ((a - 0.90f) / 0.10f).coerceIn(0f, 1f)
+        val settle = main - 0.03f * (s * s * (3f - 2f * s))      // ...e assenta exatamente no ângulo final
+        return settle + ant
     }
-    /** subida visual do corpo durante a manobra (arco do pulo) */
-    fun trickHop(a: Float): Float = (if (trickFast) 0.22f else 0.34f) * sin(3.1416f * ((a - 0.06f) / 0.88f).coerceIn(0f, 1f))
-    private val trkTmp = FloatArray(3)
-    /** ponto do corpo (relativo ao centro, em coordenadas do boneco) -> deslocamento no mundo, com a mesma rotação da manobra */
-    private fun trickWorld(lx: Float, ly: Float, lz: Float, e: Float) {
-        val r = 0.017453f
-        var a = trickRoll * e * r
-        val x = lx * cos(a) - ly * sin(a); val y = lx * sin(a) + ly * cos(a)
-        a = trickPitch * e * r
-        val y2 = y * cos(a) - lz * sin(a); val z2 = y * sin(a) + lz * cos(a)
-        a = trickYaw * e * r
-        val x3 = x * cos(a) + z2 * sin(a); val z3 = -x * sin(a) + z2 * cos(a)
-        val c = cos(bodyYaw); val sn = sin(bodyYaw)
-        trkTmp[0] = x3 * c + z3 * sn; trkTmp[1] = y2; trkTmp[2] = -x3 * sn + z3 * c
+    /** subida visual do corpo durante a manobra (arco do pulo, com um agachadinho de preparação) */
+    fun trickHop(a: Float): Float {
+        val u = ((a - 0.05f) / 0.90f).coerceIn(0f, 1f)
+        val arc = (if (trickFast) 0.24f else 0.36f) * sin(3.1416f * u)
+        val dip = 0.05f * sin(3.1416f * (a / 0.11f).coerceIn(0f, 1f))
+        return arc - dip
     }
     private var trickQ = false; private var trickQDx = 0f; private var trickQDy = 0f; private var trickCombo = 0   // próxima manobra emendada (aperta na 2ª metade da atual)
     fun trickCanQueue(): Boolean = trickLeft > 0f && trickA > 0.5f && !trickQ && !player.onGround && !player.inWater && !driving
@@ -646,12 +641,10 @@ class Game(val world: World) {
             }
         }
         trickKind = k; trickFast = fast; trickPitch = pt; trickRoll = rl; trickYaw = yw
-        trickDur = du; trickLeft = du; trickA = 0f; trickFxT = 0f
-        shake = max(shake, if (fast) 0.07f else 0.03f)
+        trickDur = du; trickLeft = du; trickA = 0f
+        shake = max(shake, if (fast) 0.035f else 0.012f)
         pickMsg = (if (trickCombo >= 2) "COMBO x" + trickCombo + "  " else "") + trickName(k, fast); pickT = 1.3f
         if (flying && !fast) p.vy = max(p.vy, 2.4f)   // voo normal: um pulinho de estilo pra cima
-        if (fast) windBurst(p, 0.8f)   // voo rápido: estouro de vento na largada
-        else windAdd(WindP(2, p.x, p.y + 0.85f, p.z, 0f, 1f, 0f, 0xFFFFFF, 0.45f, 0f, 2.2f, 0f), 0.8f)
     }
     val dashActive: Boolean get() = airDashT > 0.02f
     private var airDashT = 0f; private var windAmt = 0f   // airDashT: tempo restante do impulso (a velocidade extra se dissipa devagar); windAmt: intensidade suave do vento (0..1)
@@ -1712,30 +1705,7 @@ class Game(val world: World) {
             if (p.onGround && !flying || p.inWater || driving || seated) trickLeft = min(trickLeft, 0.08f)   // pousou no meio: termina a volta rapidinho
             trickLeft = max(0f, trickLeft - dt)
             trickA = (1f - trickLeft / trickDur).coerceIn(0f, 1f)
-            trickFxT -= dt
-            if (parts.size < 430 && trickA > 0.10f && trickA < 0.92f) {   // fita de luz: a cabeça e os pés desenham o giro no ar
-                val e = trickEase(trickA); val hp = trickHop(trickA)
-                for (n in 0 until 2) {
-                    val ly = if (n == 0) 0.74f else -0.72f
-                    trickWorld(0f, ly, 0f, e)
-                    val col = if (n == 0) (if (trickFast) 0xFFFFFF else 0xFFF2B0) else (if (trickFast) 0x7FDFFF else 0xFFC46B)
-                    val rb = Particle(p.x + trkTmp[0], p.y + 0.9f + hp + trkTmp[1], p.z + trkTmp[2], 0f, 0f, 0f, col, if (trickFast) 0.09f else 0.075f, 0.42f)
-                    rb.grav = 0f
-                    parts.add(rb)
-                }
-            }
-            if (trickFxT <= 0f && trickA > 0.05f && trickA < 0.95f) {   // anel de vento no eixo principal + faíscas girando em volta do corpo
-                trickFxT = if (trickFast) 0.045f else 0.07f
-                val pitchMain = abs(trickPitch) >= abs(trickRoll) && trickPitch != 0f
-                val ax = if (pitchMain) cos(bodyYaw) else if (trickRoll != 0f) sin(bodyYaw) else 0f
-                val ay = if (!pitchMain && trickRoll == 0f) 1f else 0f
-                val az = if (pitchMain) -sin(bodyYaw) else if (trickRoll != 0f) cos(bodyYaw) else 0f
-                windAdd(WindP(2, p.x, p.y + 0.85f, p.z, ax, ay, az, if (rnd.nextBoolean()) 0xFFFFFF else 0x9FE6FF, if (trickFast) 0.5f else 0.42f, 0f, if (trickFast) 2.0f else 1.4f, 0f), if (trickFast) 1f else 0.8f)
-            }
             if (trickLeft <= 0f) {
-                if (trickA > 0.9f) {   // acabou a manobra inteira: anel de acabamento
-                    windAdd(WindP(2, p.x, p.y + 0.85f, p.z, 0f, 1f, 0f, 0xFFFFFF, 0.5f, 0f, if (trickFast) 3.4f else 2.4f, 0f), 0.9f)
-                }
                 trickKind = 0; trickA = 0f
                 if (trickQ) {
                     trickQ = false
@@ -1743,7 +1713,7 @@ class Game(val world: World) {
                 } else trickCombo = 0
             }
         } else if (trickKind != 0) { trickKind = 0; trickA = 0f; trickQ = false; trickCombo = 0 }
-        if (flying && airDashT <= 0f && abs(p.vy) > 3f) {   // subindo/descendo no voo: riscos de vento verticais passando pelo corpo
+        if (flying && airDashT <= 0f && trickLeft <= 0f && abs(p.vy) > 3f) {   // subindo/descendo no voo: riscos de vento verticais passando pelo corpo
             vertFxT -= dt
             if (vertFxT <= 0f) {
                 vertFxT = 0.06f
@@ -1755,7 +1725,7 @@ class Game(val world: World) {
                 }
             }
         }
-        if (airDashT > 0f && parts.size < 500) {   // faíscas e vento soltos atrás durante o impulso
+        if (airDashT > 0f && trickLeft <= 0f && parts.size < 500) {   // faíscas e vento soltos atrás durante o impulso
             trailFxT -= dt
             if (trailFxT <= 0f) {
                 trailFxT = 0.03f
@@ -2213,7 +2183,7 @@ class Game(val world: World) {
     private fun updateWind(dt: Float, p: Ent, fast: Boolean) {
         val it = wind.iterator()
         while (it.hasNext()) { val w = it.next(); w.age += dt; if (w.age >= w.life) it.remove() }
-        if (!fast) return
+        if (!fast || trickLeft > 0f) return   // durante a manobra não nasce rastro nenhum
         val sp = max(0.1f, sqrt(p.vx * p.vx + p.vy * p.vy + p.vz * p.vz)); val dx = p.vx / sp; val dy = p.vy / sp; val dz = p.vz / sp
         val up = abs(dy) < 0.9f   // eixo de referência: cima (ou X se o voo for quase vertical); u = d x ref
         var ux = if (up) -dz else 0f; var uy = if (up) 0f else dz; var uz = if (up) dx else -dy
