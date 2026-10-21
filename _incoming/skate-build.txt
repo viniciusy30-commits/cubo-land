@@ -1,10 +1,1 @@
-Auditoria geral de texturas do CuboLand: corrigidos nomes de texturas dos blocos Carmesim/Distorcido Descascados; adicionado diagnostico para referencias ausentes e dados RGBA corrompidos; carregamento de PNGs de decoracao protegido e normalizado para 64x64. Catalogo auditado: 2736 itens, 1796 IDs de textura, nenhum PNG referenciado ausente.
-Build APK automatico apos PR #3 — 21/10/2026.
-Build APK automatico apos PR #4 — correção da impulsão do skate e inspetor de blocos (21/10/2026).
-Build APK automatico — reformulação do Estúdio de Skin, paletas, estampas voxel e mechas (21/10/2026).
-Build APK automatico apos PR #6 — reforma individual de roupas, saias, calcas, mangas e calcados (21/10/2026).
-Build APK apos correcao de compilacao da reforma de roupas PR #7 — 21/10/2026.
-Build APK apos correcao final de escopo da roupa PR #8 — 21/10/2026.
-character-materials-rework 2026-10-21 13:10
-character-skin-studio-detail-pass 2026-10-21 13:20
-character-face-accessory-detail-pass 2026-10-21 13:25
+character-customization-live-renderer 2026-10-21 13:43
