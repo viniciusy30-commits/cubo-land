@@ -988,6 +988,51 @@ class McChar {
             8 -> { for (k in 0..3) { val kf = k.toFloat(); val sz = 2.6f + (if (k == 3) 0f else kf * 0.5f); tb(sin(t * 3f - kf) * 0.9f * (0.4f + mv), -3.8f + kf * 0.9f, -3.2f - kf * 2.1f, sz, sz, 2.6f, if (k == 3) white else backC) } }
             9 -> { tb(0f, 0f, -3.7f, 7.4f, 9.5f, 3.4f, backC); tb(0f, -3f, -5.5f, 6f, 3.4f, 0.5f, lite(backC, 0.2f)); tb(0f, 3.8f, -3.8f, 7.6f, 2.4f, 3.6f, shadeC(backC, 0.85f)); tb(-2.8f, 1.5f, 2.45f, 1.1f, 7f, 0.4f, shadeC(backC, 0.8f)); tb(2.8f, 1.5f, 2.45f, 1.1f, 7f, 0.4f, shadeC(backC, 0.8f)) }
         }
+        // ================= ACESSÓRIOS DE COSTAS: REFORÇO DE MATERIAIS =================
+        // Cada tipo ganha componentes de construção, posicionados no dorso e em suas cores.
+        lay(4,9)
+        when(L[Look.BACK]) {
+            1 -> { // capa: bainha dourada dupla e brasão traseiro
+                tb(0f,-5.15f,-3.05f,9.1f,0.2f,0.12f,gold)
+                tb(0f,-4.85f,-3.06f,8.7f,0.08f,0.1f,lite(backC,0.35f))
+                tb(0f,2.5f,-3.12f,1.55f,1.55f,0.12f,shadeC(backC,0.62f),rz=45f)
+                tb(0f,2.5f,-3.22f,0.95f,0.95f,0.08f,accentTop,rz=45f)
+            }
+            2,9 -> { // mochila: bolsos externos, costura, fechos e tiras
+                tb(0f,-1.0f,-5.0f,4.3f,2.7f,0.2f,shadeC(backC,0.68f))
+                tb(0f,-0.9f,-5.14f,3.75f,2.18f,0.12f,lite(backC,0.1f))
+                tb(0f,0.4f,-5.22f,3.6f,0.12f,0.08f,accentTop)
+                tb(0f,-1.45f,-5.24f,0.12f,1.65f,0.08f,metalHi)
+                for(x in intArrayOf(-2,2)) {
+                    tb(x.toFloat(),2.4f,-4.55f,0.24f,4.0f,0.14f,leather)
+                    tb(x.toFloat(),2.35f,-4.66f,0.66f,0.62f,0.12f,gold)
+                    tb(x.toFloat(),2.35f,-4.74f,0.34f,0.28f,0.08f,accentBottom)
+                }
+            }
+            3,6 -> { // asas: nervuras e filetes das penas
+                val wingFlap=sin(t*9f)*(10f+14f*mv)
+                for(x in intArrayOf(-1,1)) {
+                    tb(x*4f,2.2f,-3.55f,0.18f,7.2f,0.12f,lite(backC,0.35f),rz=x*(-18f-wingFlap*0.45f))
+                    for(k in 0..3) tb(x*(2.8f+k*0.4f),3.4f-k*1.5f,-3.68f,1.05f,0.13f,0.1f,shadeC(backC,0.68f),rz=x*(-24f-wingFlap*0.55f))
+                }
+            }
+            5 -> { // espada: abraçadeiras, botão do pomo e acabamento do coldre
+                tb(0.6f,3.3f,-3.85f,1.4f,0.26f,0.18f,gold,rz=30f)
+                tb(0.6f,0.0f,-3.88f,1.4f,0.26f,0.18f,gold,rz=30f)
+                tb(0.6f,5.5f,-3.9f,0.62f,0.62f,0.18f,accentTop,rz=45f)
+            }
+            7 -> { // aljava: penas coloridas e anéis de fixação
+                for(k in 0..2) {
+                    tb(2.2f,4.0f-k*2.5f,-5.02f,2.5f,0.16f,0.1f,gold,rz=-14f)
+                    tb(2.75f,8.8f-k*0.3f,-4.8f,0.65f,0.7f,0.12f,if(k%2==0) accentTop else accentBottom,rz=-14f)
+                }
+            }
+            8 -> { // cauda: faixas volumétricas e ponta clara
+                tb(0f,-4.6f,-7.8f,2.65f,0.45f,1.8f,lite(backC,0.25f))
+                tb(0f,-5.0f,-8.15f,2.4f,0.42f,1.4f,white)
+            }
+        }
+
     }
 
 }
