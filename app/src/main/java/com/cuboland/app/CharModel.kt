@@ -915,6 +915,17 @@ class CharModel {
                                 b(t1, k * 0.055f, -0.075f, frontZ + 0.009f, 0.012f, 0.012f, 0.01f, lite(accent, 0.45f))
                             }
                         }
+                    // Segundo passe de modelagem: costuras e bolsos que diferenciam cada corte.
+                    val fabricHi = lite(legCol, 0.22f)
+                    val fabricLo = shadeC(legCol, 0.62f)
+                    when (bot) {
+                        0 -> { b(t1,0f,-0.12f,frontZ+0.003f,0.008f,0.16f,0.008f,fabricHi); b(t1,-0.055f,-0.07f,frontZ+0.006f,0.06f,0.012f,0.009f,fabricLo); b(t1,-0.075f,-0.085f,frontZ+0.01f,0.012f,0.012f,0.009f,gold); if(sn>0.08f)b(t2,0f,-sn*0.56f,frontZ,0.008f,sn*0.72f,0.009f,fabricHi) }
+                        1 -> { b(t1,0f,-seg+0.024f,frontZ+0.006f,legW*0.78f,0.008f,0.009f,fabricLo); b(t1,s*0.065f,-0.11f,frontZ+0.006f,0.045f,0.04f,0.009f,accent); b(t1,s*0.065f,-0.11f,frontZ+0.012f,0.018f,0.018f,0.008f,lite(accent,0.4f)) }
+                        3 -> { b(t1,s*0.065f,-0.13f,frontZ+0.004f,0.075f,0.09f,0.012f,fabricLo); b(t1,s*0.065f,-0.13f,frontZ+0.012f,0.058f,0.07f,0.012f,legCol); b(t1,s*0.065f,-0.09f,frontZ+0.02f,0.036f,0.012f,0.01f,gold) }
+                        4 -> { for(px in intArrayOf(-1,1)){ b(t1,px*0.052f,-0.105f,frontZ+0.004f,0.008f,0.18f,0.008f,fabricLo); b(t2,px*0.052f,-sn*0.5f,frontZ+0.004f,0.008f,max(0.02f,sn*0.82f),0.008f,fabricHi) }; b(t1,0f,-0.03f,frontZ+0.01f,0.1f,0.018f,0.012f,gold) }
+                        6 -> { b(t1,s*0.06f,-0.1f,frontZ+0.003f,0.025f,0.18f,0.01f,fabricLo); b(t1,s*0.06f,-0.1f,frontZ+0.009f,0.008f,0.16f,0.008f,0xD5D9E0); b(t2,0f,-0.04f,frontZ+0.004f,0.13f,0.012f,0.009f,fabricHi) }
+                        7 -> { b(t1,s*0.065f,-0.12f,frontZ+0.006f,0.07f,0.1f,0.016f,fabricLo); b(t1,s*0.065f,-0.105f,frontZ+0.016f,0.055f,0.07f,0.012f,legCol); b(t1,s*0.065f,-0.065f,frontZ+0.025f,0.045f,0.012f,0.01f,fabricHi); b(t1,s*0.065f,-0.085f,frontZ+0.03f,0.012f,0.02f,0.01f,gold) }
+                        else -> { }
                     }
                 }
             }
@@ -1289,6 +1300,120 @@ class CharModel {
                 b(base, 0f, 0.465f, 0f, bw + 0.07f, 0.05f, 0.37f, dark)
             }
         }
+        // ================= ALTA COSTURA VOXEL: REFORMA INDIVIDUAL DAS ROUPAS =================
+        // Cada tipo tem recortes, reforços e motivos próprios construídos em relevo 3D.
+        val garmentA = Look.pal(Look.TOP_ACCENT)
+        val garmentHi = lite(garmentA, 0.42f)
+        val garmentLo = shadeC(garmentA, 0.62f)
+        val stitch = lite(tc, 0.34f)
+        when (top) {
+            0 -> { // camiseta streetwear: painéis de ombro, etiqueta e patch bordado
+                F(-0.12f,0.86f,0.13f,0.022f,shadeC(tc,0.65f),0.022f,-12f); F(0.12f,0.86f,0.13f,0.022f,shadeC(tc,0.65f),0.022f,12f)
+                F(-0.145f,0.72f,0.06f,0.07f,garmentLo,0.026f); F(-0.145f,0.72f,0.04f,0.05f,garmentA,0.036f)
+                F(-0.145f,0.74f,0.02f,0.02f,garmentHi,0.042f)
+                for(i in 0..3) F(0.12f+i*0.016f,0.535f,0.008f,0.016f,stitch,0.022f)
+                K(0f,0.63f,0.18f,0.012f,shadeC(tc,0.62f),0.02f)
+            }
+            1 -> { // moletom: painéis diagonais, ilhós de metal, bolso reforçado
+                F(-0.14f,0.81f,0.05f,0.14f,shadeC(tc,0.65f),0.024f,-25f); F(0.14f,0.81f,0.05f,0.14f,shadeC(tc,0.65f),0.024f,25f)
+                F(-0.13f,0.81f,0.018f,0.12f,stitch,0.034f,-25f); F(0.13f,0.81f,0.018f,0.12f,stitch,0.034f,25f)
+                F(-0.135f,0.58f,0.025f,0.02f,0xD5D9E0,0.043f); F(0.135f,0.58f,0.025f,0.02f,0xD5D9E0,0.043f)
+                F(0.14f,0.75f,0.055f,0.07f,garmentLo,0.025f); F(0.14f,0.75f,0.035f,0.045f,garmentA,0.036f)
+                K(-0.14f,0.71f,0.025f,0.12f,stitch,0.022f,-8f); K(0.14f,0.71f,0.025f,0.12f,stitch,0.022f,8f)
+            }
+            2 -> { // vestido de gala: barbatanas de corset, pérolas e bordado floral
+                F(-0.105f,0.78f,0.014f,0.24f,garmentLo,0.026f); F(0.105f,0.78f,0.014f,0.24f,garmentLo,0.026f)
+                for(i in 0..4) { F(-0.025f,0.84f-i*0.045f,0.02f,0.02f,0xF0D9A1,0.036f); F(0.025f,0.82f-i*0.045f,0.02f,0.02f,garmentHi,0.036f) }
+                F(-0.13f,0.69f,0.05f,0.05f,garmentLo,0.026f,45f); F(-0.13f,0.69f,0.03f,0.03f,garmentHi,0.04f,45f)
+                F(0.13f,0.69f,0.05f,0.05f,garmentLo,0.026f,45f); F(0.13f,0.69f,0.03f,0.03f,garmentHi,0.04f,45f)
+                sk(0.31f,0.66f,0.018f,0.49f,garmentLo); sk(0.19f,0.7f,0.018f,0.55f,garmentHi)
+            }
+            3 -> { // jaqueta técnica: pala em camadas, bolsos 3D, badge e filetes
+                band(0.86f,0.024f,shadeC(tc,0.62f),0.018f); band(0.842f,0.008f,stitch,0.02f)
+                for(s in intArrayOf(-1,1)) { val x=s*0.15f; F(x,0.68f,0.08f,0.11f,shadeC(tc,0.62f),0.027f); F(x,0.70f,0.06f,0.065f,tc,0.038f); F(x,0.635f,0.045f,0.01f,stitch,0.042f) }
+                F(0.14f,0.79f,0.075f,0.075f,garmentLo,0.03f,45f); F(0.14f,0.79f,0.045f,0.045f,garmentA,0.04f,45f)
+                for(i in 0..3) F(-0.16f+i*0.02f,0.56f,0.008f,0.012f,stitch,0.04f)
+            }
+            4 -> { // túnica: galão bordado, medalhão e barra geométrica
+                F(-0.14f,0.69f,0.022f,0.42f,garmentLo,0.023f); F(0.14f,0.69f,0.022f,0.42f,garmentLo,0.023f)
+                F(0f,0.82f,0.14f,0.14f,garmentLo,0.028f,45f); F(0f,0.82f,0.085f,0.085f,garmentA,0.04f,45f)
+                F(0f,0.82f,0.027f,0.06f,0xF0D9A1,0.048f)
+                for(i in 0..5) F(-0.12f+i*0.048f,0.49f,0.022f,0.022f,if(i%2==0) garmentHi else 0xF0D9A1,0.038f,45f)
+            }
+            5 -> { // armadura: placas sobrepostas, rebites, nervuras e brasão
+                for(s in intArrayOf(-1,1)) { val x=s*0.145f; F(x,0.79f,0.08f,0.18f,shadeC(steel,0.62f),0.027f,s*-8f); F(x,0.80f,0.06f,0.14f,steel,0.039f,s*-8f); F(x,0.85f,0.018f,0.06f,lite(steel,0.45f),0.05f); F(x,0.73f,0.018f,0.06f,gold,0.05f) }
+                F(0f,0.71f,0.16f,0.17f,shadeC(steel,0.62f),0.032f,45f); F(0f,0.71f,0.11f,0.12f,gold,0.043f,45f); F(0f,0.71f,0.04f,0.07f,tc,0.05f)
+                for(i in -1..1) F(i*0.13f,0.45f,0.014f,0.06f,lite(steel,0.4f),0.035f)
+            }
+            6 -> { // jardineira: pesponto, ferragens, etiqueta e bolso-ferramenta
+                F(-0.11f,0.83f,0.024f,0.16f,shadeC(tc,0.62f),0.03f,-18f); F(0.11f,0.83f,0.024f,0.16f,shadeC(tc,0.62f),0.03f,18f)
+                for(s in intArrayOf(-1,1)) { F(s*0.12f,0.87f,0.045f,0.045f,gold,0.045f); F(s*0.12f,0.87f,0.018f,0.018f,leatherD,0.055f) }
+                F(0.12f,0.63f,0.075f,0.085f,shadeC(tc,0.62f),0.032f); F(0.12f,0.63f,0.052f,0.06f,garmentA,0.043f)
+                K(-0.12f,0.65f,0.08f,0.08f,shadeC(tc,0.62f),0.026f); K(0.12f,0.65f,0.08f,0.08f,shadeC(tc,0.62f),0.026f)
+            }
+            7 -> { // camisa social: risca de giz, monograma e casas de botão
+                for(x in floatArrayOf(-0.16f,-0.12f,0.12f,0.16f)) F(x,0.69f,0.006f,0.39f,stitch,0.02f)
+                F(0.12f,0.78f,0.09f,0.10f,shadeC(tc,0.68f),0.024f); F(0.12f,0.79f,0.064f,0.065f,tc,0.035f); F(0.12f,0.79f,0.023f,0.034f,garmentHi,0.044f)
+                for(i in 0..3) F(0.06f,0.65f-i*0.045f,0.012f,0.012f,gold,0.035f)
+            }
+            8 -> { // marinheiro: âncora voxel, galão de gola e insígnia
+                F(0f,0.68f,0.018f,0.14f,0x263B62,0.034f); F(0f,0.62f,0.1f,0.018f,0x263B62,0.036f)
+                F(-0.05f,0.65f,0.018f,0.065f,0x263B62,0.036f,-25f); F(0.05f,0.65f,0.018f,0.065f,0x263B62,0.036f,25f)
+                F(-0.13f,0.85f,0.018f,0.11f,garmentHi,0.034f,24f); F(0.13f,0.85f,0.018f,0.11f,garmentHi,0.034f,-24f)
+                K(0f,0.72f,0.18f,0.018f,garmentHi,0.024f); K(0f,0.68f,0.13f,0.008f,white,0.03f)
+            }
+            9 -> { // gakuran: galões militares, filete e botões metálicos
+                F(-0.17f,0.83f,0.018f,0.15f,gold,0.03f,-12f); F(0.17f,0.83f,0.018f,0.15f,gold,0.03f,12f)
+                for(i in 0..3) { F(-0.035f,0.84f-i*0.085f,0.018f,0.018f,gold,0.04f); F(0.035f,0.84f-i*0.085f,0.018f,0.018f,gold,0.04f) }
+                F(-0.14f,0.65f,0.065f,0.06f,garmentLo,0.03f,45f); F(-0.14f,0.65f,0.04f,0.04f,gold,0.04f,45f)
+            }
+            10 -> { // kimono: flores sakura, faixa texturizada e bainha de seda
+                for(s in intArrayOf(-1,1)) { val x=s*0.14f; F(x,0.79f,0.06f,0.06f,garmentLo,0.03f,45f); F(x-s*0.025f,0.79f,0.022f,0.045f,garmentHi,0.04f,s*25f); F(x+s*0.025f,0.79f,0.022f,0.045f,garmentHi,0.04f,-s*25f); F(x,0.75f,0.018f,0.035f,0xF0D9A1,0.045f) }
+                for(i in 0..5) F(-0.13f+i*0.052f,0.53f,0.018f,0.06f,if(i%2==0) gold else garmentHi,0.04f)
+                sk(0.29f,0.72f,0.014f,0.5f,garmentLo); sk(0.18f,0.76f,0.014f,0.53f,garmentHi)
+            }
+            11 -> { // robe arcana: runas, estrelas em camadas e borda ritual
+                F(-0.15f,0.68f,0.02f,0.42f,gold,0.026f); F(0.15f,0.68f,0.02f,0.42f,gold,0.026f)
+                for(i in 0..4) { val yy=0.78f-i*0.06f; F(-0.11f,yy,0.035f,0.035f,garmentLo,0.028f,45f); F(-0.11f,yy,0.017f,0.017f,garmentHi,0.04f) }
+                F(0.1f,0.72f,0.05f,0.05f,garmentLo,0.028f,45f); F(0.1f,0.72f,0.022f,0.032f,0xF0D9A1,0.042f)
+                for(i in 0..4) F(-0.12f+i*0.06f,0.47f,0.018f,0.024f,gold,0.04f)
+            }
+            12 -> { // terno: alfaiataria pinstripe, lapela contrastante e alfinete
+                for(x in floatArrayOf(-0.17f,-0.13f,0.13f,0.17f)) F(x,0.7f,0.006f,0.39f,stitch,0.02f)
+                F(-0.13f,0.84f,0.012f,0.18f,stitch,0.032f,30f); F(0.13f,0.84f,0.012f,0.18f,stitch,0.032f,-30f)
+                F(0.14f,0.84f,0.05f,0.022f,white,0.04f,16f); F(0.14f,0.86f,0.02f,0.016f,garmentA,0.048f)
+                F(0.06f,0.63f,0.012f,0.012f,gold,0.04f); F(0.06f,0.58f,0.012f,0.012f,gold,0.04f)
+            }
+            13 -> { // regata: recorte esportivo, ribana lateral e logo 3D
+                F(-0.17f,0.68f,0.025f,0.42f,shadeC(tc,0.62f),0.025f); F(0.17f,0.68f,0.025f,0.42f,shadeC(tc,0.62f),0.025f)
+                F(-0.17f,0.68f,0.01f,0.39f,garmentHi,0.035f); F(0.17f,0.68f,0.01f,0.39f,garmentHi,0.035f)
+                F(0f,0.77f,0.13f,0.13f,garmentLo,0.028f,45f); F(0f,0.77f,0.09f,0.09f,garmentA,0.04f,45f)
+                F(0f,0.77f,0.025f,0.05f,garmentHi,0.05f)
+            }
+            14 -> { // haori: bordado botânico, galão de barra e forro
+                for(s in intArrayOf(-1,1)) { val x=s*0.13f; F(x,0.74f,0.05f,0.10f,garmentLo,0.028f,s*30f); F(x-s*0.02f,0.76f,0.02f,0.055f,garmentHi,0.04f,s*30f); F(x+s*0.02f,0.72f,0.02f,0.05f,0xF0D9A1,0.044f,-s*20f) }
+                for(i in -3..3) F(i*0.04f,0.485f,0.022f,0.022f,if(i%2==0) gold else garmentHi,0.042f,45f)
+                K(0f,0.67f,0.18f,0.018f,garmentLo,0.025f); K(0f,0.645f,0.13f,0.008f,garmentHi,0.032f)
+                sk(0.29f,0.72f,0.016f,0.49f,garmentLo); sk(0.19f,0.76f,0.016f,0.52f,garmentHi)
+            }
+            15 -> { // maid: renda em degraus, bolso com bordado e friso de avental
+                for(i in -4..4) { F(i*0.035f,0.49f,0.023f,0.023f,white,0.036f,if(i%2==0)45f else -45f); F(i*0.035f,0.91f,0.02f,0.018f,white,0.037f) }
+                F(-0.13f,0.64f,0.075f,0.08f,white,0.03f); F(-0.13f,0.64f,0.052f,0.057f,lite(tc,0.1f),0.04f); F(-0.13f,0.665f,0.018f,0.018f,garmentHi,0.048f)
+                F(0.13f,0.64f,0.075f,0.08f,white,0.03f); F(0.13f,0.64f,0.052f,0.057f,lite(tc,0.1f),0.04f)
+            }
+            16 -> { // colete de aventureiro: tiras de couro, bolsos em camadas e mosquetões
+                for(s in intArrayOf(-1,1)) { val x=s*0.15f; F(x,0.7f,0.045f,0.36f,leatherD,0.032f); F(x,0.7f,0.018f,0.33f,leather,0.043f); F(x,0.59f,0.09f,0.10f,shadeC(tc,0.62f),0.047f); F(x,0.615f,0.06f,0.06f,tc,0.056f); F(x,0.65f,0.03f,0.016f,gold,0.06f) }
+                F(0f,0.79f,0.055f,0.055f,garmentLo,0.03f,45f); F(0f,0.79f,0.035f,0.035f,garmentHi,0.044f,45f)
+                K(-0.15f,0.66f,0.018f,0.25f,leather,0.028f); K(0.15f,0.66f,0.018f,0.25f,leather,0.028f)
+            }
+            else -> { // puffer: gomos acolchoados, quilting e puxadores
+                for(y in floatArrayOf(0.84f,0.73f,0.62f,0.51f)) { F(-0.17f,y,0.022f,0.034f,shadeC(tc,0.62f),0.038f); F(0.17f,y,0.022f,0.034f,shadeC(tc,0.62f),0.038f); F(0f,y+0.035f,0.22f,0.008f,stitch,0.032f) }
+                F(-0.13f,0.58f,0.075f,0.07f,shadeC(tc,0.62f),0.037f,-12f); F(0.13f,0.58f,0.075f,0.07f,shadeC(tc,0.62f),0.037f,12f)
+                for(i in 0..4) F(0f,0.84f-i*0.075f,0.018f,0.018f,if(i%2==0)gold else 0xD5D9E0,0.047f)
+                K(0f,0.8f,0.2f,0.018f,stitch,0.026f)
+            }
+        }
+
         if (skirtBot) {
             if (bot == 2) {
                 sk(0.45f, bw + 0.06f, 0.1f, 0.36f, bc)
@@ -1303,6 +1428,18 @@ class CharModel {
             }
         }
 
+        // Acabamento individual das saias: pregas profundas, vivo duplo e aplicações frontais.
+        if (skirtBot) {
+            val skirtHi = lite(bc, 0.34f); val skirtLo = shadeC(bc, 0.64f); val skirtAccent = Look.pal(Look.BOTTOM_ACCENT)
+            val countPleats = if (bot == 2) 5 else 7
+            for (i in 0 until countPleats) {
+                val x = (i - (countPleats - 1) / 2f) * 0.09f
+                skRows.add(SkR(x,0.29f,0.286f,0.012f,0.18f,0.012f,skirtLo,false))
+                skRows.add(SkR(x+0.012f,0.29f,0.294f,0.006f,0.16f,0.008f,skirtHi,false))
+            }
+            if(bot==2) { skRows.add(SkR(0f,0.34f,0.303f,0.11f,0.045f,0.016f,skirtAccent,false)); skRows.add(SkR(0f,0.34f,0.314f,0.045f,0.025f,0.009f,gold,false)) }
+            else for(i in -2..2) { val x=i*0.1f; skRows.add(SkR(x,0.29f,0.304f,0.025f,0.025f,0.01f,skirtAccent,false)); skRows.add(SkR(x,0.29f,0.312f,0.01f,0.01f,0.008f,skirtHi,false)) }
+        }
         if (full || skirtBot) skRows.add(SkR(0f, 0.415f, 0f, bw + 0.05f, 0.1f, 0.34f, if (full) tc else bc, true))   // tampa da saia: acompanha o giro e fecha o vão com a cintura
         if (skirtBot) {
             if (bot == 2) { sk(0.265f, 0.7f, 0.03f, 0.52f, lite(bc, 0.7f)); b(base, 0f, 0.468f, 0.168f, 0.09f, 0.05f, 0.02f, lite(bc, 0.5f)); b(base, 0f, 0.468f, 0.175f, 0.03f, 0.03f, 0.02f, gold) }
@@ -1516,6 +1653,29 @@ class CharModel {
                 12 -> { b(t2, 0f, -0.19f, 0f, 0.192f, 0.04f, 0.212f, white); b(t2, 0f, -0.15f, 0.108f, 0.02f, 0.02f, 0.012f, gold) }
                 13 -> {}
                 16 -> { b(t2, 0f, -0.1f, 0f, 0.17f, 0.12f, 0.19f, leather); b(t2, 0f, -0.04f, 0f, 0.174f, 0.014f, 0.194f, gold) }
+            }
+            // Acabamento exclusivo de mangas: reforços e emblemas presos aos membros animados.
+            val sleeveSigil = Look.pal(Look.TOP_ACCENT)
+            val sleeveLite = lite(slCol, 0.35f)
+            when (top) {
+                0 -> { if(sl>0.06f) { b(t1,0f,-su+0.025f,0.108f,0.17f,0.012f,0.012f,sleeveLite); b(t1,0f,-su+0.044f,0.109f,0.17f,0.006f,0.01f,shadeC(slCol,0.6f)) }; b(t1,0f,0.045f,0.12f,0.05f,0.05f,0.018f,sleeveSigil,rz=45f) }
+                1 -> { b(t1,0f,-0.08f,0.11f,0.14f,0.05f,0.018f,shadeC(slCol,0.6f),rz=8f); for(i in -1..1) b(t2,i*0.045f,-0.17f,0.12f,0.014f,0.014f,0.012f,0xD5D9E0) }
+                2 -> { b(t1,0f,-0.015f,0.11f,0.19f,0.055f,0.02f,lite(tc,0.18f)); for(i in -2..2) b(t1,i*0.035f,-0.055f,0.125f,0.016f,0.016f,0.012f,0xF0D9A1) }
+                3 -> { b(t1,0f,0.045f,0.12f,0.19f,0.03f,0.02f,shadeC(tc,0.6f)); b(t2,0f,-0.08f,0.11f,0.145f,0.085f,0.02f,shadeC(tc,0.62f)); for(i in -2..2) b(t2,i*0.025f,-0.08f,0.125f,0.008f,0.07f,0.009f,sleeveLite) }
+                4 -> { if(sl>0.1f) { b(t2,0f,-rnd(sl),0.11f,0.19f,0.024f,0.016f,gold); b(t2,0f,-rnd(sl)+0.02f,0.12f,0.15f,0.008f,0.01f,0xF0D9A1) }; b(t1,0f,0.035f,0.12f,0.075f,0.05f,0.018f,sleeveSigil,rz=45f) }
+                5 -> { b(t1,0f,0.025f,0.125f,0.19f,0.06f,0.03f,steel); b(t1,0f,0.005f,0.145f,0.16f,0.018f,0.012f,lite(steel,0.4f)); for(i in -1..1) b(t1,i*0.06f,0.018f,0.15f,0.018f,0.018f,0.012f,gold) }
+                6 -> { b(t1,0f,0.035f,0.115f,0.17f,0.018f,0.014f,sleeveLite); b(t1,0.04f,-0.045f,0.125f,0.038f,0.038f,0.012f,sleeveSigil) }
+                7 -> { b(t2,0f,-0.18f,0.11f,0.19f,0.045f,0.018f,lite(tc,0.55f)); b(t2,0.04f,-0.18f,0.13f,0.02f,0.02f,0.012f,gold) }
+                8 -> { b(t1,0f,-0.03f,0.112f,0.18f,0.018f,0.014f,tc); b(t1,0f,-0.055f,0.115f,0.18f,0.01f,0.01f,white); b(t2,0f,-0.16f,0.11f,0.18f,0.018f,0.014f,tc) }
+                9 -> { b(t2,0f,-rnd(sl),0.113f,0.19f,0.026f,0.016f,gold); for(i in -1..1) b(t1,i*0.045f,0.035f,0.124f,0.018f,0.028f,0.012f,gold) }
+                10 -> { b(t2,0f,-0.1f,0.115f,0.19f,0.22f,0.018f,shadeC(tc,0.7f)); b(t2,0f,-0.19f,0.128f,0.19f,0.025f,0.014f,sleeveLite); b(t1,0f,-0.04f,0.136f,0.045f,0.045f,0.012f,sleeveSigil,rz=45f) }
+                11 -> { b(t2,0f,-0.18f,0.116f,0.2f,0.035f,0.02f,gold); b(t1,0f,0.03f,0.13f,0.06f,0.06f,0.014f,gold,rz=45f); b(t1,0f,0.03f,0.14f,0.03f,0.03f,0.012f,sleeveSigil,rz=45f) }
+                12 -> { b(t2,0f,-0.18f,0.11f,0.19f,0.05f,0.02f,white); b(t2,0.045f,-0.175f,0.13f,0.02f,0.02f,0.012f,gold) }
+                13 -> { /* braços expostos por desenho */ }
+                14 -> { b(t2,0f,-0.18f,0.114f,0.2f,0.03f,0.018f,sleeveSigil); b(t1,0f,-0.04f,0.126f,0.04f,0.07f,0.014f,sleeveSigil,rz=28f); b(t1,0.03f,-0.04f,0.136f,0.018f,0.045f,0.01f,0xF0D9A1,rz=-28f) }
+                15 -> { b(t1,0f,-0.03f,0.114f,0.2f,0.04f,0.024f,white); for(i in -2..2) b(t1,i*0.035f,-0.055f,0.13f,0.016f,0.016f,0.012f,sleeveLite); b(t2,0f,-0.18f,0.113f,0.19f,0.035f,0.022f,white) }
+                16 -> { b(t1,s*0.06f,-0.03f,0.118f,0.03f,0.12f,0.02f,leather); b(t1,s*0.06f,0.015f,0.132f,0.04f,0.024f,0.012f,gold); b(t2,0f,-0.08f,0.111f,0.15f,0.08f,0.018f,shadeC(slCol,0.62f)) }
+                else -> { for(i in 0..2) { b(t1,0f,0.015f-i*0.045f,0.114f,0.17f,0.008f,0.012f,shadeC(slCol,0.62f)); b(t2,0f,-0.06f-i*0.04f,0.114f,0.17f,0.008f,0.012f,shadeC(slCol,0.62f)) }; b(t2,0f,-0.17f,0.125f,0.17f,0.025f,0.016f,0xD5D9E0) }
             }
             // A estampa da camisa também aparece nas mangas; o relevo acompanha ombro e cotovelo.
             if (sl > 0.12f) {
