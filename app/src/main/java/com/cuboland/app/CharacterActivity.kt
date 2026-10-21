@@ -22,8 +22,8 @@ class CharacterActivity : CozyActivity() {
     private lateinit var cv: CharView
     private val refreshers = ArrayList<() -> Unit>()
     private val tabViews = ArrayList<TextView>()
-    private val TABS = arrayOf("Looks", "Corpo", "Cabelo", "Rosto", "Roupas", "Acessórios")
-    private val TAB_COL = intArrayOf(Cz.RED, Cz.ORANGE, Cz.GREEN, Cz.SKY, Cz.LILAC, Cz.TEAL)
+    private val TABS = arrayOf("Looks", "Corpo", "Cabelo", "Rosto", "Roupas", "Acessórios", "Acabamento")
+    private val TAB_COL = intArrayOf(Cz.RED, Cz.ORANGE, Cz.GREEN, Cz.SKY, Cz.LILAC, Cz.TEAL, Cz.GOLD)
     private val ANIMS = arrayOf("Parado", "Andando", "Correndo", "Pulando", "Atacando", "Agachado", "Sentado", "Deitado", "Rastejando", "Voando", "Voo rápido", "Nadando", "Mergulho")
     private var current = -1
     private val MATCH = ViewGroup.LayoutParams.MATCH_PARENT
@@ -125,7 +125,11 @@ class CharacterActivity : CozyActivity() {
                 val c = cCard("Corpo"); grid(c, "Tipo", Look.GENDER, Look.GENDER_NAMES, 2); swatch(c, "Pele", Look.SKIN, Look.SKINS, Look.SKIN_NAMES, 6); add(c)
             }
             2 -> {
-                val c = cCard(if (Look.v[Look.GENDER] == 1) "Cabelo feminino" else "Cabelo masculino"); hairGrid(c); swatch(c, "Cor", Look.HAIRC, Look.HAIRS, Look.HAIR_NAMES); add(c)
+                val c = cCard(if (Look.v[Look.GENDER] == 1) "Ateliê de cabelo feminino" else "Ateliê de cabelo masculino", "50 cortes com volume, mechas e movimento. Gire o personagem para conferir o resultado.")
+                hairGrid(c)
+                swatch(c, "Cor base", Look.HAIRC, Look.HAIRS, Look.HAIR_NAMES, 8)
+                swatch(c, "Mechas / reflexos", Look.HAIR_ACCENT, Look.PAL, Look.PAL_NAMES, 8)
+                add(c)
             }
             3 -> {
                 val c1 = cCard("Olhos"); grid(c1, "Estilo", Look.EYES, Look.EYE_STYLES, 3); swatch(c1, "Cor dos olhos", Look.EYEC, Look.EYE_COLORS, Look.EYE_COLOR_NAMES, 10); add(c1)
@@ -133,14 +137,47 @@ class CharacterActivity : CozyActivity() {
                 val c3 = cCard("Detalhes do rosto"); grid(c3, "Detalhe", Look.FACE, Look.FACES, 3); add(c3)
             }
             4 -> {
-                val c1 = cCard("Blusa"); grid(c1, "Modelo", Look.TOP, Look.TOPS, 3); swatch(c1, "Cor", Look.TOPC, Look.PAL, Look.PAL_NAMES); add(c1)
-                val c2 = cCard("Parte de baixo"); grid(c2, "Modelo", Look.BOTTOM, Look.BOTTOMS, 3); swatch(c2, "Cor", Look.BOTTOMC, Look.PAL, Look.PAL_NAMES); add(c2)
-                val c3 = cCard("Calçados"); grid(c3, "Modelo", Look.SHOES, Look.SHOE_STYLES, 3); swatch(c3, "Cor", Look.SHOEC, Look.PAL, Look.PAL_NAMES); add(c3)
+                val c1 = cCard("Parte de cima", "Acabamentos em camadas para camisetas, jaquetas, armaduras, túnicas e vestidos.")
+                grid(c1, "Modelo", Look.TOP, Look.TOPS, 3)
+                swatch(c1, "Cor principal", Look.TOPC, Look.PAL, Look.PAL_NAMES, 8)
+                grid(c1, "Estampa / acabamento", Look.TOP_PATTERN, Look.TOP_PATTERNS, 2)
+                swatch(c1, "Cor dos detalhes", Look.TOP_ACCENT, Look.PAL, Look.PAL_NAMES, 8)
+                add(c1)
+                val c2 = cCard("Parte de baixo", "Costuras, patches, faixas e detalhes coordenados nas duas pernas.")
+                grid(c2, "Modelo", Look.BOTTOM, Look.BOTTOMS, 3)
+                swatch(c2, "Cor principal", Look.BOTTOMC, Look.PAL, Look.PAL_NAMES, 8)
+                grid(c2, "Detalhes", Look.BOTTOM_PATTERN, Look.BOTTOM_PATTERNS, 2)
+                swatch(c2, "Cor dos detalhes", Look.BOTTOM_ACCENT, Look.PAL, Look.PAL_NAMES, 8)
+                add(c2)
+                val c3 = cCard("Calçados", "Escolha a silhueta e combine a cor da sola, cabedal e detalhes.")
+                grid(c3, "Modelo", Look.SHOES, Look.SHOE_STYLES, 3)
+                swatch(c3, "Cor", Look.SHOEC, Look.PAL, Look.PAL_NAMES, 8)
+                add(c3)
+            }
+            5 -> {
+                val c1 = cCard("Cabeça", "Chapéus, capacetes, coroas, orelhas e acessórios de cabelo.")
+                grid(c1, "Item", Look.HAT, Look.HATS, 3); swatch(c1, "Cor / metal / fita", Look.HATC, Look.PAL, Look.PAL_NAMES, 8); add(c1)
+                val c2 = cCard("Pescoço", "Camadas independentes para cachecóis, laços, colares e medalhas.")
+                grid(c2, "Item", Look.NECK, Look.NECKS, 3); swatch(c2, "Cor", Look.NECKC, Look.PAL, Look.PAL_NAMES, 8); add(c2)
+                val c3 = cCard("Costas", "Capas, mochilas, asas e itens grandes com cor própria.")
+                grid(c3, "Item", Look.BACK, Look.BACKS, 3); swatch(c3, "Cor", Look.BACKC, Look.PAL, Look.PAL_NAMES, 8); add(c3)
             }
             else -> {
-                val c1 = cCard("Cabeça"); grid(c1, "Item", Look.HAT, Look.HATS, 3); swatch(c1, "Cor", Look.HATC, Look.PAL, Look.PAL_NAMES); add(c1)
-                val c2 = cCard("Pescoço"); grid(c2, "Item", Look.NECK, Look.NECKS, 3); swatch(c2, "Cor", Look.NECKC, Look.PAL, Look.PAL_NAMES); add(c2)
-                val c3 = cCard("Costas"); grid(c3, "Item", Look.BACK, Look.BACKS, 3); swatch(c3, "Cor", Look.BACKC, Look.PAL, Look.PAL_NAMES); add(c3)
+                val c1 = cCard("Acabamento de roupa", "Combine estampas com uma cor de destaque diferente da cor principal.")
+                grid(c1, "Estampa superior", Look.TOP_PATTERN, Look.TOP_PATTERNS, 2)
+                swatch(c1, "Destaque superior", Look.TOP_ACCENT, Look.PAL, Look.PAL_NAMES, 8)
+                grid(c1, "Detalhes inferiores", Look.BOTTOM_PATTERN, Look.BOTTOM_PATTERNS, 2)
+                swatch(c1, "Destaque inferior", Look.BOTTOM_ACCENT, Look.PAL, Look.PAL_NAMES, 8)
+                add(c1)
+                val c2 = cCard("Mechas de cabelo", "Crie contraste, pontas coloridas ou reflexos neon sem mudar a cor base.")
+                grid(c2, "Distribuição", Look.HAIR_ACCENT, Look.HAIR_ACCENTS, 3)
+                swatch(c2, "Cor das mechas", Look.HAIR_ACCENT, Look.PAL, Look.PAL_NAMES, 8)
+                add(c2)
+                val c3 = cCard("Combinações rápidas", "Gere uma skin completa e refine cada peça sem perder as alterações salvas.")
+                val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+                row.addView(cBtn("Skin aleatória", Cz.LILAC, 14f) { Look.randomize(); changed() }, lpW(0, WRAP, 1f).apply { rightMargin = dp(5) })
+                row.addView(cBtn("Voltar ao padrão", Cz.STONE, 14f) { Look.v = Look.DEF.copyOf(); changed() }, lpW(0, WRAP, 1f).apply { leftMargin = dp(5) })
+                c3.addView(row); add(c3)
             }
         }
         refreshers.forEach { it() }
@@ -152,10 +189,12 @@ class CharacterActivity : CozyActivity() {
         Look.load(this)
         val root = FrameLayout(this)
         root.addView(SceneBg(this, 0.1f))
-        val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(28), dp(18), dp(28), dp(14)) }
+        val narrow = resources.configuration.screenWidthDp < 720
+        val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(if (narrow) 12 else 28), dp(if (narrow) 8 else 18), dp(if (narrow) 12 else 28), dp(if (narrow) 8 else 14)) }
         val head = cHeader("Meu personagem", "Tudo é salvo automaticamente") { finish() }
         col.addView(head, lpW(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(8) })
-        val body = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val wideLayout = resources.configuration.screenWidthDp >= 720
+        val body = LinearLayout(this).apply { orientation = if (wideLayout) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL }
 
         // ESQUERDA: pré-visualização 3D + animações
         val leftCol = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
@@ -186,7 +225,7 @@ class CharacterActivity : CozyActivity() {
         }
         animChips[0].styleChip(true)
         leftCol.addView(HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; addView(animRow) }, lpW(MATCH, WRAP))
-        body.addView(leftCol, lpW(0, MATCH, 0.8f))
+        body.addView(leftCol, if (wideLayout) lpW(0, MATCH, 0.8f) else lpW(MATCH, dp(300)))
 
         // DIREITA: abas + conteúdo
         val rightCol = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(14), 0, 0, 0) }
@@ -201,7 +240,7 @@ class CharacterActivity : CozyActivity() {
         content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, dp(10), dp(4), dp(10)) }
         scroll = ScrollView(this).apply { isVerticalScrollBarEnabled = false; addView(content) }
         rightCol.addView(scroll, lpW(MATCH, 0, 1f))
-        body.addView(rightCol, lpW(0, MATCH, 1.2f))
+        body.addView(rightCol, if (wideLayout) lpW(0, MATCH, 1.2f) else lpW(MATCH, 0, 1f))
 
         col.addView(body, lpW(MATCH, 0, 1f).apply { topMargin = dp(10) })
         root.addView(col)
