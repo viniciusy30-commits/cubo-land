@@ -981,7 +981,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         an.t = t; an.phase = phaseA; an.move = wa; an.run = runA; an.vy = vyHold; an.air = airNow; an.airA = airSm; an.fly = flySm; an.flySpd = flySp
         val impK = ((1f - game.flyImp) * 3f).coerceIn(0f, 1f)   // o impulso entra em ~0,2s em vez de estalar
         an.dash = dashSm; an.imp = game.flyImp * impK * impK * (3f - 2f * impK); an.swimFast = swimFastA; an.swimPh = swimPhA; an.crouch = game.crouchA; an.sit = game.sitA; an.lie = game.lieA; an.ride = if (game.driving) 1f else 0f; an.bent = if (game.driving && game.car.kind == 1) 1f else 0f; an.landT = landSm; an.swim = swm; an.dive = diveSm; an.tilt = tiltSm
-        an.jch = jchSm; an.sj = sjSm; an.flip = flipAng
+        an.jch = jchSm; an.sj = sjSm; an.flip = flipAng; an.launch = game.flyLaunch; an.dch = game.airDashCharge
         an.atk = game.swing; an.atkArm = swingDelta(id, game.swing); an.hasTool = id > 0
         // mesmos keyframes de golpe/carga da 1ª pessoa, aplicados no braço do boneco
         if (game.charging) { chargePose(tpP, id, game.charge, t); an.charge = min(1f, game.charge) }
@@ -994,7 +994,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         }
         if (swm > 0.01f) {   // nadando: boia na superfície (cabeça fora) ou desliza deitado quando mergulha
             Matrix.translateM(base, 0, 0f, sin(t * 2.2f) * 0.025f * (1f - diveSm) * swm, 0f)
-            Matrix.translateM(base, 0, 0f, 0.3f * swimFastA * (1f - diveSm) * swm, 0f)   // deitado: sobe um pouco pra cabeça não afundar
+            Matrix.translateM(base, 0, 0f, 0.12f * swimFastA * (1f - diveSm) * swm, 0f)   // deitado: sobe só um pouquinho (antes 0.3: ficava muito levantado)
             Matrix.translateM(base, 0, 0f, 0.9f, 0f)
             Matrix.rotateM(base, 0, tiltSm, 1f, 0f, 0f)
             Matrix.translateM(base, 0, 0f, -0.9f, 0f)
@@ -1042,7 +1042,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                 0 -> {   // risco fino, esticado na direção do voo
                     val grow = min(1f, 0.4f + w.age * 8f)
                     setBase(w.x, w.y, w.z, yawOf(w.dx, w.dz))
-                    box(base, 0f, 0f, 0f, pitchOf(w.dy), 0f, 0.028f, 0.028f, w.len * grow, 0f, w.color, min(0.85f, fade * 1.7f) * min(1f, w.age * 14f), 1.1f)
+                    box(base, 0f, 0f, 0f, pitchOf(w.dy), 0f, 0.028f, 0.028f, w.len * grow, 0f, w.color, min(0.85f, fade * 1.7f) * min(1f, w.age * 14f) * w.amp, 1.1f)
                 }
                 1 -> {   // ponto da hélice: gira em volta do eixo do voo e vai abrindo
                     windAxes(w)
@@ -1050,14 +1050,14 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
                     val c = cos(ang) * r; val s = sin(ang) * r
                     setBase(w.x + wu[0] * c + wv[0] * s, w.y + wu[1] * c + wv[1] * s, w.z + wu[2] * c + wv[2] * s, yawOf(w.dx, w.dz))
                     val ps = 0.075f * (1f - 0.5f * k)
-                    box(base, 0f, 0f, 0f, pitchOf(w.dy), 0f, ps, ps, ps * 3f, 0f, w.color, min(0.9f, fade * 1.8f) * min(1f, w.age * 20f), 1.1f)
+                    box(base, 0f, 0f, 0f, pitchOf(w.dy), 0f, ps, ps, ps * 3f, 0f, w.color, min(0.9f, fade * 1.8f) * min(1f, w.age * 20f) * w.amp, 1.1f)
                 }
                 else -> {   // anel de vento: segmentos finos ao redor do eixo, raio abrindo com desaceleração
                     windAxes(w)
                     val e = 1f - (1f - k) * (1f - k); val r = w.rad * (0.22f + 0.78f * e)
                     val n = (10 + w.rad * 5f).toInt().coerceAtMost(34)
                     val seg = 6.2832f * r / n * 0.85f; val th = 0.05f + 0.03f * min(1f, w.rad / 3f) * fade
-                    val al = min(0.75f, fade * 1.3f) * min(1f, w.age * 16f)
+                    val al = min(0.75f, fade * 1.3f) * min(1f, w.age * 16f) * w.amp
                     for (i in 0 until n) {
                         val a = 6.2832f * i / n; val ca = cos(a); val sa = sin(a)
                         val tx = -wu[0] * sa + wv[0] * ca; val ty = -wu[1] * sa + wv[1] * ca; val tz = -wu[2] * sa + wv[2] * ca

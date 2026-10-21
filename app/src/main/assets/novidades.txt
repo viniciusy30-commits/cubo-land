@@ -1,3 +1,11 @@
+#id 2026-10-21-a
+#titulo Voo mais fluido e dash no ar
+- Nado rápido: o corpo afunda um pouquinho, menos levantado fora da água
+- Super pulo: apertar pular de novo no ar já voa (sem toque duplo), com animação de decolagem e anéis de vento
+- Voando: uma perna fica meio dobrada e a outra esticada (parado ou andando devagar)
+- Voo rápido: o vento agora entra e sai aos poucos, sem aparecer de repente
+- Dash aéreo: no voo, segure o botão de correr e solte pra pegar um impulso bem maior (toque rápido continua ligando/desligando a corrida)
+
 #id 2026-10-20-c
 #titulo Pulo mais natural e nado crawl
 - Pulo: acabou de levantar as pernas pra frente; agora elas ficam quase retas, com um passinho aberto na subida, juntas no topo e esticadas na descida

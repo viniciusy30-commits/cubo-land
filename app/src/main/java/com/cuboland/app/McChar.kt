@@ -139,15 +139,26 @@ class McChar {
             hipR = lp(hipR, lp(hLd, hTr, leadL), ab); kneeR = lp(kneeR, lp(kLd, kTr, leadL), ab)
         }
         if (fl > 0.01f) {
-            val fk = sin(t * 7f) * 1.2f * fm   // sem passada: as duas pernas juntas, só um tremidinho de vento
-            val fh = -5f - 16f * fm + sin(t * 1.6f) * 3f * (1f - fm) + sin(t * 5f) * 2.5f * fm   // voando: pernas esticadas pra trás, juntas   // pairando: as duas pernas iguais (nada de passo), só uma balançadinha junto com o corpo
-            hipL = lp(hipL, fh + fk, fl); hipR = lp(hipR, fh + fk, fl)
-            kneeL = lp(kneeL, 12f + 6f * fm, fl); kneeR = lp(kneeR, 12f + 6f * fm, fl)
+            // voando: uma perna meio dobrada (coxa à frente, canela pra trás) e a outra esticada; parado ou andando devagar
+            val fk = sin(t * 7f) * 1.2f * fm
+            val fh = -5f - 16f * fm + sin(t * 1.6f) * 3f * (1f - fm) + sin(t * 5f) * 2.5f * fm
+            val bwg = sin(t * 1.9f) * (3f + 2f * fm)   // balançadinha lenta da perna dobrada
+            hipL = lp(hipL, fh - 22f + bwg, fl); hipR = lp(hipR, fh + 5f - bwg * 0.4f + fk, fl)
+            kneeL = lp(kneeL, 56f + 10f * fm + bwg, fl); kneeR = lp(kneeR, 5f + 3f * fm, fl)
         }
         if (dashW > 0.001f && fl > 0.01f) {
             val fk2 = sin(t * 14f) * 1.5f
             hipL = lp(hipL, 8f + fk2 + 20f * wind, dashW); hipR = lp(hipR, 8f + fk2 + 20f * wind, dashW)
             kneeL = lp(kneeL, 8f + 55f * wind, dashW); kneeR = lp(kneeR, 8f + 55f * wind, dashW)
+        }
+        val dch = an.dch.coerceIn(0f, 1f); val lw0 = an.launch.coerceIn(0f, 1f); val lwE = lw0 * lw0 * (3f - 2f * lw0)
+        if (dch > 0.001f) {   // carregando o dash aéreo: pernas encolhidas, tomando impulso
+            hipL = lp(hipL, -18f, dch); hipR = lp(hipR, -4f, dch)
+            kneeL = lp(kneeL, 74f, dch); kneeR = lp(kneeR, 58f, dch)
+        }
+        if (lwE > 0.001f) {   // decolagem do super pulo: pernas juntinhas e esticadas, relaxando pra pose de voo
+            hipL = lp(hipL, 4f, lwE * 0.7f); hipR = lp(hipR, 4f, lwE * 0.7f)
+            kneeL = lp(kneeL, 8f, lwE * 0.7f); kneeR = lp(kneeR, 6f, lwE * 0.7f)
         }
         if (land > 0f) {
             hipL += (-8f - hipL) * land; hipR += (4f - hipR) * land
@@ -183,7 +194,7 @@ class McChar {
             Matrix.rotateM(r2, 0, 90f * li, 1f, 0f, 0f)
         }
 
-        val lean = 30f * an.dash.coerceIn(0f, 1f) * fl - 30f * wind * dashW + 18f * cr + 6f * si + 3f * stride * (1f - li) - 7f * li + 12f * rn * stride + ab * (rs * lp(-4f, 14f, sj) + ap * lp(0f, 30f, sj) + fa2 * lp(7f, 12f, sj)) + 10f * land + 30f * jch + 6f * landBig + fl * (8f + 52f * fm) - 10f * chg +
+        val lean = 30f * an.dash.coerceIn(0f, 1f) * fl - 30f * wind * dashW + 18f * cr + 6f * si + 3f * stride * (1f - li) - 7f * li + 12f * rn * stride + ab * (rs * lp(-4f, 14f, sj) + ap * lp(0f, 30f, sj) + fa2 * lp(7f, 12f, sj)) + 10f * land + 30f * jch + 6f * landBig + fl * (8f + 52f * fm) - 10f * chg - 34f * dch - 24f * lwE +
             (if (atking) 9f * sin(atk * 3.1416f) else 0f)
         val swimK = if (swimming) an.swimFast.coerceIn(0f, 1f) * (1f - dv) else 0f
         val twist = sin(an.swimPh) * 34f * swimK + sin(ph) * (5f + 9f * rn) * stride * (1f - li) + 14f * chg + (if (atking) 18f * sin(atk * 6.2832f) else 0f)
@@ -275,6 +286,15 @@ class McChar {
             rxL = lp(rxL, dn + sin(t * 2.6f) * 3f, fl); rzL = lp(rzL, -(16f + fw), fl); elL = lp(elL, -8f, fl)
             if (toolArm) { rxR = lp(rxR, lp(-24f, -40f, fm) + atkRx, fl); rzR = lp(rzR, 20f, fl) }
             else { rxR = lp(rxR, dn - sin(t * 2.6f) * 3f, fl); rzR = lp(rzR, 16f + fw, fl); elR = lp(elR, -8f, fl) }
+        }
+        if (dch > 0.001f) {   // dash aéreo carregando: braços puxados pra trás
+            val k = min(1f, dch * 3f)
+            rxL = lp(rxL, 62f * dch, k); rzL = lp(rzL, -(12f + 8f * dch), k); elL = lp(elL, -(14f + 26f * dch), k)
+            if (!toolArm) { rxR = lp(rxR, 62f * dch, k); rzR = lp(rzR, 12f + 8f * dch, k); elR = lp(elR, -(14f + 26f * dch), k) }
+        }
+        if (lwE > 0.001f) {   // decolagem: os dois braços sobem acima da cabeça e vão relaxando
+            rxL = lp(rxL, -168f, lwE); rzL = lp(rzL, -10f, lwE); elL = lp(elL, -4f, lwE)
+            if (!toolArm) { rxR = lp(rxR, -168f, lwE); rzR = lp(rzR, 10f, lwE); elR = lp(elR, -4f, lwE) }
         }
         var dashToolA = 0f
         if (dashW > 0.001f && fl > 0.01f) {   // voo rápido: braços pra trás, rentes ao corpo (puxa mais no impulso)

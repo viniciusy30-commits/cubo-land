@@ -44,6 +44,8 @@ class Anim {
     @JvmField var jch = 0f        // 0..1 carregando o pulo (agacha, inclina e treme); a batidinha rápida do pulo normal chega a ~0,35
     @JvmField var sj = 0f         // 0..1 (suavizado) no ar de um SUPER PULO
     @JvmField var flip = 0f       // graus da cambalhota do super pulo (0..360)
+    @JvmField var launch = 0f     // 1 -> 0: acabou de decolar do super pulo pro voo (braços pra cima, relaxando)
+    @JvmField var dch = 0f        // 0..1 carregando o dash aéreo (segurando o botão de correr no voo)
 }
 
 /** Modelo chibi do personagem, montado só com caixas. Usado no jogo (OpenGL) e na tela de personagem (preview). */

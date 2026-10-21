@@ -283,7 +283,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
 
     private fun clearInput() {
         stickId = -1; lookId = -1; sx = 0f; sy = 0f; lookHold = false
-        game.stickX = 0f; game.stickY = 0f; game.jumpHeld = false; game.downHeld = false; game.attackHeld = false; game.aimOn = false; btnId.clear(); carPtr.clear(); carSync()
+        game.stickX = 0f; game.stickY = 0f; game.jumpHeld = false; game.downHeld = false; game.dashHeld = false; game.attackHeld = false; game.aimOn = false; btnId.clear(); carPtr.clear(); carSync()
     }
 
     /** solta joystick/botões (usado quando o painel da galeria abre por cima) */
@@ -328,6 +328,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         game.aimOn = true
     }
 
+    private var dashDownT = 0L
     private fun down(id: Int, x: Float, y: Float) {
         if (paused) { pauseDown(x, y); return }
         if (!invOpen && !game.driving && hypot(x - bx(5), y - byy(5)) < br(5) * 1.2f) { toggleInv(); return }
@@ -344,7 +345,8 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
             when (i) {
                 1 -> { game.jumpHeld = true; game.jumpLatch = true; game.jumpTap() }
                 6 -> { game.downHeld = true; game.downTap() }
-                7 -> game.sprint = !game.sprint      // toque liga/desliga; parar de andar desliga sozinho
+                7 -> if (game.flying) { dashDownT = System.currentTimeMillis(); game.dashHeld = true }   // no voo: segurar carrega o dash, soltar dispara; toque rápido = liga/desliga a corrida
+                     else game.sprint = !game.sprint      // toque liga/desliga; parar de andar desliga sozinho
                 8 -> { poseDownT = System.currentTimeMillis(); poseFired = false }
                 3 -> game.wantCam = true
                 4 -> togglePause()
@@ -388,6 +390,10 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         val b = btnId.remove(id)
         if (b == 1) game.jumpHeld = false
         if (b == 6) game.downHeld = false
+        if (b == 7 && game.dashHeld) {   // botão de correr no voo: toque curto alterna a corrida; segurou e soltou = dash
+            game.dashHeld = false
+            if (System.currentTimeMillis() - dashDownT < 220L) game.sprint = !game.sprint else game.dashFire = true
+        }
         if (b == 8 && !poseFired) {   // toque: 1x agacha, 2x senta (espera um pouco pra ver se vem o 2º toque)
             val now = System.currentTimeMillis()
             if (poseTapT > 0L && now - poseTapT < 320) { poseTapT = 0L; game.requestPosture(2) } else poseTapT = now
@@ -914,10 +920,10 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
             if (game.driving && i != 4) continue
             if (i == 6 && !wet()) continue
             if (i == 8 && wet()) continue
-            val active = btnId.containsValue(i) || (i == 5 && invOpen) || (i == 7 && game.sprint) || (i == 8 && game.posture != 0)
+            val active = btnId.containsValue(i) || (i == 5 && invOpen) || (i == 7 && (game.sprint || game.airDashCharge > 0f)) || (i == 8 && game.posture != 0)
             press[i] += ((if (active) 1f else 0f) - press[i]) * 0.5f
             val on = press[i] > 0.5f
-            val base = if ((i == 7 && game.sprint) || (i == 8 && game.posture != 0)) Cz.GREEN else accent(i)
+            val base = if ((i == 7 && (game.sprint || game.airDashCharge > 0f)) || (i == 8 && game.posture != 0)) Cz.GREEN else accent(i)
             val R = max(4, (br(i) / u).roundToInt())
             val cx = bx(i); val cy = byy(i) + (if (on) u else 0f)
             pxRound(c, cx, byy(i), R, base, on)
