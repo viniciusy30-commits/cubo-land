@@ -163,6 +163,11 @@ class McChar {
             hipL = lp(hipL, -74f, tuck); hipR = lp(hipR, -66f, tuck)
             kneeL = lp(kneeL, 108f, tuck); kneeR = lp(kneeR, 100f, tuck)
         }
+        val tkw = an.trk.coerceIn(0f, 1f); val tkFlip = an.trkK in 0.5f..2.5f
+        if (tkw > 0.001f) {   // manobra: cambalhota = corpo encolhido; parafuso/giro = corpo esticado e pernas juntas
+            if (tkFlip) { hipL = lp(hipL, -68f, tkw); hipR = lp(hipR, -60f, tkw); kneeL = lp(kneeL, 104f, tkw); kneeR = lp(kneeR, 96f, tkw) }
+            else { hipL = lp(hipL, 3f, tkw); hipR = lp(hipR, 3f, tkw); kneeL = lp(kneeL, 4f, tkw); kneeR = lp(kneeR, 4f, tkw) }
+        }
         if (dst > 0.001f) {   // pisada no ar: a perna direita estica de uma vez pra trás (empurra o ar), a esquerda continua dobrada
             hipR = lp(hipR, 14f, dst); kneeR = lp(kneeR, 2f, dst)
             hipL = lp(hipL, -34f, dst * 0.85f); kneeL = lp(kneeL, 70f, dst * 0.85f)
@@ -298,13 +303,23 @@ class McChar {
             if (toolArm) { rxR = lp(rxR, lp(-24f, -40f, fm) + atkRx, fl); rzR = lp(rzR, 20f, fl) }
             else { rxR = lp(rxR, dn - sin(t * 2.6f) * 3f, fl); rzR = lp(rzR, 16f + fw, fl); elR = lp(elR, -8f, fl) }
         }
-        if (fu > 0.001f || fd > 0.001f) {   // subir: braços em V pra cima batendo de leve; descer: braços abertos planando
-            val fl3 = sin(t * 6.5f) * 6f; val gl = sin(t * 4f) * 4f
-            rxL = lp(rxL, -22f + fl3 * 0.5f, fu); rzL = lp(rzL, -(112f + fl3), fu); elL = lp(elL, -14f, fu)
-            rxL = lp(rxL, 12f, fd); rzL = lp(rzL, -(84f + gl), fd); elL = lp(elL, -6f, fd)
+        if (fu > 0.001f || fd > 0.001f) {   // braços só reagem ao ar, bem de leve: subindo ficam levemente atrás/abertos (arrastados); descendo o ar os levanta um pouquinho
+            val sw1 = sin(t * 2.6f) * 3f; val sw2 = sin(t * 2.1f + 1f) * 3f
+            rxL = lp(rxL, 16f + sw1, fu * 0.8f); rzL = lp(rzL, -(24f + sw2), fu * 0.8f); elL = lp(elL, -10f, fu * 0.8f)
+            rxL = lp(rxL, -10f + sw2, fd * 0.8f); rzL = lp(rzL, -(42f + sw1), fd * 0.8f); elL = lp(elL, -8f, fd * 0.8f)
             if (!toolArm) {
-                rxR = lp(rxR, -22f - fl3 * 0.5f, fu); rzR = lp(rzR, 112f - fl3, fu); elR = lp(elR, -14f, fu)
-                rxR = lp(rxR, 12f, fd); rzR = lp(rzR, 84f - gl, fd); elR = lp(elR, -6f, fd)
+                rxR = lp(rxR, 16f - sw1, fu * 0.8f); rzR = lp(rzR, 24f - sw2, fu * 0.8f); elR = lp(elR, -10f, fu * 0.8f)
+                rxR = lp(rxR, -10f - sw2, fd * 0.8f); rzR = lp(rzR, 42f - sw1, fd * 0.8f); elR = lp(elR, -8f, fd * 0.8f)
+            }
+        }
+        if (tkw > 0.001f) {
+            val kk = min(1f, tkw * 2.5f)
+            if (tkFlip) {
+                rxL = lp(rxL, -55f, kk); rzL = lp(rzL, -12f, kk); elL = lp(elL, -78f, kk)
+                if (!toolArm) { rxR = lp(rxR, -55f, kk); rzR = lp(rzR, 12f, kk); elR = lp(elR, -78f, kk) }
+            } else {
+                rxL = lp(rxL, 0f, kk); rzL = lp(rzL, -76f, kk); elL = lp(elL, -4f, kk)
+                if (!toolArm) { rxR = lp(rxR, 0f, kk); rzR = lp(rzR, 76f, kk); elR = lp(elR, -4f, kk) }
             }
         }
         if (tuck > 0.001f) {   // dash aéreo carregando: braços fechados na frente do corpo, em guarda
@@ -382,7 +397,8 @@ class McChar {
         for (sd in intArrayOf(-1, 1)) {
             val s = sd.toFloat(); val li2 = if (sd < 0) 0 else 1
             val hip = if (sd < 0) hipL else hipR; val kn = if (sd < 0) kneeL else kneeR
-            var ang = lp(hip - kn * 0.4f, hip, fl)   // perna rígida (sem joelho): o joelho só puxa um pouco o ângulo; no voo o joelho dobra de verdade (kbend)
+            val kr = max(fl, tkw)
+            var ang = lp(hip - kn * 0.4f, hip, kr)   // perna rígida (sem joelho): o joelho só puxa um pouco o ângulo; no voo o joelho dobra de verdade (kbend)
             if (cr > 0f) ang = lp(ang, (if (sd < 0) 1f else -1f) * sw * 0.4f - 4f, cr)   // agachar do Minecraft: pernas quase retas, tronco inclinado
             if (jch > 0f) ang = lp(ang, -6f * jch, min(1f, jch * 3f))   // carregando: joelhos um pouco à frente
             if (bt > 0f) ang = lp(ang, -62f, bt)   // moto: pernas dobradas nas pedaleiras
@@ -392,7 +408,7 @@ class McChar {
             piv(legM[li2], r2, s * 2f * U, hipY, 0f, rx = ang + lean * fl, ry = -s * splay * sin(legT), rz = s * (5f + 7f * (if (sd < 0) qLegL else qLegR)) * li + s * splay * cos(legT))
             if (legSq > 0f) Matrix.scaleM(legM[li2], 0, 1f + 0.4f * legSq, 1f - legSq, 1f + 0.4f * legSq)   // perna amassa e alarga
             val lm = legM[li2]
-            kbend = if (fl > 0.01f) max(0f, kn) * fl else 0f; curLeg = lm
+            kbend = if (kr > 0.01f) max(0f, kn) * kr else 0f; curLeg = lm
             if (kbend > 0.5f) piv(lkM, lm, 0f, -6f * U, 0f, rx = kbend)
             lay(0, 0)
             var topH = min(covTop, 12f); val botH = shoeH

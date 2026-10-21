@@ -1007,6 +1007,14 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             Matrix.rotateM(base, 0, tiltSm, 1f, 0f, 0f)
             Matrix.translateM(base, 0, 0f, -0.9f, 0f)
         }
+        val tk = game.trickKind; val tA = game.trickA
+        if (tk > 0 && tA > 0f && tA < 1f) {   // manobra: gira o corpo todo em volta do centro (uma volta completa, começa e termina devagar)
+            val ang = 360f * (tA * tA * (3f - 2f * tA))
+            Matrix.translateM(base, 0, 0f, 0.9f, 0f)
+            when (tk) { 1 -> Matrix.rotateM(base, 0, ang, 1f, 0f, 0f); 2 -> Matrix.rotateM(base, 0, -ang, 1f, 0f, 0f); 3 -> Matrix.rotateM(base, 0, -ang, 0f, 0f, 1f); 4 -> Matrix.rotateM(base, 0, ang, 0f, 0f, 1f); else -> Matrix.rotateM(base, 0, ang, 0f, 1f, 0f) }
+            Matrix.translateM(base, 0, 0f, -0.9f, 0f)
+            an.trk = sin(3.1416f * tA); an.trkK = tk.toFloat()
+        } else { an.trk = 0f; an.trkK = 0f }
         G.glEnable(G.GL_POLYGON_OFFSET_FILL)   // camadas do boneco: o que está por cima ganha na profundidade (acaba o z-fighting nas dobras)
         cm.mc.layerHook = { l -> G.glPolygonOffset(0f, -l.toFloat()) }
         cm.draw(charBox, base, an, handM)

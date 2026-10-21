@@ -1,7 +1,11 @@
+#id 2026-10-21-d
+#titulo Manobras no ar
+- No ar (voando ou pulando) o botão de postura vira MANOBRA: stick pra frente = cambalhota, pra trás = cambalhota de costas, pros lados = parafuso, parado = giro, com anel de vento
+
 #id 2026-10-21-c
 #titulo Subir e descer no voo e na água
 - Voando parado: as duas pernas retas e um pouco abertas (sem perna ajoelhada)
-- Voo: animação de subir (corpo reto, braços em V, pés batendo, riscos de vento) e de descer (braços e pernas abertos, planando)
+- Voo: animação de subir (corpo reto, braços soltos e suaves, pés batendo, riscos de vento) e de descer (braços e pernas levemente abertos, planando)
 - Água: ao afundar o corpo aponta pra baixo e ao subir aponta pra cima, com a mesma braçada do nado e mais bolhas
 
 #id 2026-10-21-b

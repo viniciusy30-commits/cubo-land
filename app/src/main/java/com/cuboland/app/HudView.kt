@@ -340,14 +340,14 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         if (tvPromptDown(x, y)) return
         if (fPromptDown(x, y)) return
         if (elevDown(x, y)) return
-        for (i in intArrayOf(1, 3, 4, 6, 7, 8)) if ((!game.driving || i == 4) && (i != 6 || wet()) && (i != 8 || !wet()) && hypot(x - bx(i), y - byy(i)) < br(i) * 1.15f) {
+        for (i in intArrayOf(1, 3, 4, 6, 7, 8)) if ((!game.driving || i == 4) && (i != 6 || wet()) && (i != 8 || !game.player.inWater) && hypot(x - bx(i), y - byy(i)) < br(i) * 1.15f) {
             btnId[id] = i
             when (i) {
                 1 -> { game.jumpHeld = true; game.jumpLatch = true; game.jumpTap() }
                 6 -> { game.downHeld = true; game.downTap() }
                 7 -> if (game.flying) { dashDownT = System.currentTimeMillis(); game.dashHeld = true }   // no voo: segurar carrega o dash, soltar dispara; toque rápido = liga/desliga a corrida
                      else game.sprint = !game.sprint      // toque liga/desliga; parar de andar desliga sozinho
-                8 -> { poseDownT = System.currentTimeMillis(); poseFired = false }
+                8 -> { poseDownT = System.currentTimeMillis(); poseFired = false; if (game.trickOk()) { game.trickReq = true; poseFired = true } }   // no ar o botão de postura vira MANOBRA
                 3 -> game.wantCam = true
                 4 -> togglePause()
             }
@@ -919,7 +919,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
             if (invOpen) continue
             if (game.driving && i != 4) continue
             if (i == 6 && !wet()) continue
-            if (i == 8 && wet()) continue
+            if (i == 8 && game.player.inWater) continue
             val active = btnId.containsValue(i) || (i == 5 && invOpen) || (i == 7 && (game.sprint || game.airDashCharge > 0f)) || (i == 8 && game.posture != 0)
             press[i] += ((if (active) 1f else 0f) - press[i]) * 0.5f
             val on = press[i] > 0.5f

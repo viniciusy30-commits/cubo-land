@@ -569,6 +569,10 @@ class Game(val world: World) {
     @Volatile var flyLaunch = 0f; @Volatile private var launchReq = false   // decolagem: super pulo + botão de pular no ar -> voa (1 -> 0 em ~0,8s, pra animação)
     @Volatile var dashHeld = false; @Volatile var dashFire = false; @Volatile var airDashCharge = 0f   // dash aéreo: segura o botão de correr no voo (carrega) e solta (dispara)
     @Volatile var airDashStomp = 0f; @Volatile var dashDirPitch = 0f; private var dashPre = 0f; private var dashCh = 0f; private var chargeFxT = 0f; private var trailFxT = 0f; private var vertFxT = 0f
+    // manobras no ar (botão de postura no ar): 1 cambalhota frente, 2 cambalhota trás, 3 parafuso esquerda, 4 parafuso direita, 5 giro (piruetas)
+    @Volatile var trickReq = false; @Volatile var trickKind = 0; @Volatile var trickA = 0f   // trickA: progresso 0..1
+    private var trickLeft = 0f; private var trickDur = 0.65f; private var trickFxT = 0f
+    fun trickOk(): Boolean = !player.onGround && !player.inWater && !driving && !seated && posture == 0 && trickLeft <= 0f
     val dashActive: Boolean get() = airDashT > 0.02f
     private var airDashT = 0f; private var windAmt = 0f   // airDashT: tempo restante do impulso (a velocidade extra se dissipa devagar); windAmt: intensidade suave do vento (0..1)
     // postura: 0 em pé, 1 agachado, 2 sentado, 3 deitado (valores suavizados pra animação/câmera)
@@ -1618,6 +1622,31 @@ class Game(val world: World) {
             }
         }
         airDashT = max(0f, airDashT - dt)
+        // manobras: o stick escolhe (frente/trás = cambalhota, lados = parafuso, parado = giro)
+        if (trickReq) {
+            trickReq = false
+            if (trickOk()) {
+                val sy = stickY; val sx = stickX
+                trickKind = if (abs(sy) > 0.45f && abs(sy) >= abs(sx)) (if (sy > 0f) 1 else 2) else if (abs(sx) > 0.45f) (if (sx < 0f) 3 else 4) else 5
+                trickDur = if (trickKind <= 2) 0.72f else if (trickKind == 5) 0.58f else 0.62f
+                trickLeft = trickDur; trickA = 0f; trickFxT = 0f
+                shake = max(shake, 0.03f)
+            }
+        }
+        if (trickLeft > 0f) {
+            if (p.onGround && !flying || p.inWater || driving || seated) trickLeft = min(trickLeft, 0.08f)   // pousou no meio: termina a volta rapidinho
+            trickLeft = max(0f, trickLeft - dt)
+            trickA = (1f - trickLeft / trickDur).coerceIn(0f, 1f)
+            trickFxT -= dt
+            if (trickFxT <= 0f && trickA > 0.05f && trickA < 0.95f) {   // anel de vento girando em volta do eixo da manobra
+                trickFxT = 0.07f
+                val ax = if (trickKind <= 2) cos(bodyYaw) else if (trickKind == 5) 0f else sin(bodyYaw)
+                val ay = if (trickKind == 5) 1f else 0f
+                val az = if (trickKind <= 2) -sin(bodyYaw) else if (trickKind == 5) 0f else cos(bodyYaw)
+                windAdd(WindP(2, p.x, p.y + 0.85f, p.z, ax, ay, az, if (rnd.nextBoolean()) 0xFFFFFF else 0x9FE6FF, 0.42f, 0f, 1.4f, 0f), 0.8f)
+            }
+            if (trickLeft <= 0f) { trickKind = 0; trickA = 0f }
+        } else if (trickKind != 0) { trickKind = 0; trickA = 0f }
         if (flying && airDashT <= 0f && abs(p.vy) > 3f) {   // subindo/descendo no voo: riscos de vento verticais passando pelo corpo
             vertFxT -= dt
             if (vertFxT <= 0f) {
