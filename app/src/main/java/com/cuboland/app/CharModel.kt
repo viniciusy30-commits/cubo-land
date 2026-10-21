@@ -2381,6 +2381,27 @@ class CharModel {
         }
         if (hatLift != 0f) Matrix.translateM(hm, 0, 0f, -hatLift, 0f)
         // ---------- rosto: acessórios por cima (lentes translúcidas por último) ----------
+        // ===== ACABAMENTO DE ÓCULOS, MÁSCARAS E DETALHES FACIAIS =====
+        // Camadas de aro, lentes e costuras em volumes separados para dar profundidade.
+        val faceAccent = Look.pal(Look.HATC)
+        if (fc == 1 || fc == 2 || fc == 3 || fc == 4 || fc == 7 || fc == 9) {
+            for (sd in intArrayOf(-1, 1)) {
+                hb(sd * 0.19f, 1.29f, 0.43f, 0.025f, 0.035f, 0.02f, lite(faceAccent, 0.28f))
+                hb(sd * 0.19f, 1.31f, 0.444f, 0.012f, 0.012f, 0.01f, 0xFFFFFF)
+            }
+            hb(0f, 1.3f, 0.43f, 0.09f, 0.018f, 0.018f, shadeC(faceAccent, 0.7f))
+        }
+        if (fc == 8) { // máscara: painéis laterais, costura central e respiradores
+            hb(0f, 1.04f, 0.452f, 0.045f, 0.22f, 0.018f, shadeC(faceAccent, 0.72f))
+            for (sd in intArrayOf(-1, 1)) {
+                hb(sd * 0.22f, 1.04f, 0.455f, 0.08f, 0.09f, 0.018f, lite(faceAccent, 0.24f))
+                hb(sd * 0.29f, 1.04f, 0.47f, 0.035f, 0.05f, 0.012f, 0xDDE4EE)
+            }
+        }
+        if (fc == 11 || fc == 12) { // marcas faciais e pequenos brilhos
+            hb(-0.24f, 1.27f, 0.425f, 0.06f, 0.025f, 0.018f, lite(faceAccent, 0.32f), rz = -16f)
+            hb(-0.2f, 1.24f, 0.43f, 0.025f, 0.012f, 0.01f, 0xFFFFFF)
+        }
         if (fc == 4) {
             hb(-0.2f, 1.25f, 0.415f, 0.26f, 0.22f, 0.03f, 0x1E1E28)
             hb(-0.2f, 1.25f, 0.432f, 0.18f, 0.02f, 0.01f, 0x3A3A48)
