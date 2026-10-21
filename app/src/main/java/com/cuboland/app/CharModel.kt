@@ -1517,6 +1517,39 @@ class CharModel {
                 13 -> {}
                 16 -> { b(t2, 0f, -0.1f, 0f, 0.17f, 0.12f, 0.19f, leather); b(t2, 0f, -0.04f, 0f, 0.174f, 0.014f, 0.194f, gold) }
             }
+            // A estampa da camisa também aparece nas mangas; o relevo acompanha ombro e cotovelo.
+            if (sl > 0.12f) {
+                val ac = Look.pal(Look.TOP_ACCENT)
+                when (L[Look.TOP_PATTERN]) {
+                    1 -> {
+                        b(t1, 0f, -0.04f, 0.111f, 0.075f, 0.075f, 0.018f, shadeC(ac, 0.7f), rz = 45f)
+                        b(t1, 0f, -0.04f, 0.123f, 0.045f, 0.045f, 0.012f, ac, rz = 45f)
+                    }
+                    2 -> {
+                        b(t1, 0f, -0.1f, 0.108f, 0.17f, 0.018f, 0.018f, ac)
+                        b(t2, 0f, -0.15f, 0.108f, 0.17f, 0.018f, 0.018f, ac)
+                    }
+                    3 -> for (k in 0..2) b(t1, -0.045f + k * 0.045f, -0.08f, 0.111f, 0.038f, 0.038f, 0.018f, if (k % 2 == 0) ac else lite(ac, 0.35f))
+                    4 -> {
+                        b(t1, 0f, -0.04f, 0.111f, 0.035f, 0.07f, 0.018f, ac, rz = -25f)
+                        b(t1, 0.025f, -0.09f, 0.123f, 0.03f, 0.06f, 0.012f, lite(ac, 0.35f), rz = -25f)
+                    }
+                    5 -> {
+                        b(t1, -0.035f, -0.045f, 0.111f, 0.04f, 0.04f, 0.018f, ac)
+                        b(t1, 0.035f, -0.045f, 0.111f, 0.04f, 0.04f, 0.018f, ac)
+                        b(t1, 0f, -0.08f, 0.123f, 0.035f, 0.035f, 0.012f, shadeC(ac, 0.72f))
+                    }
+                    6 -> {
+                        b(t1, 0f, -0.045f, 0.111f, 0.045f, 0.045f, 0.018f, ac, rz = 45f)
+                        b(t1, 0f, -0.045f, 0.123f, 0.018f, 0.018f, 0.012f, lite(ac, 0.4f))
+                    }
+                    7 -> {
+                        b(t1, 0f, -0.04f, 0.111f, 0.08f, 0.085f, 0.018f, shadeC(ac, 0.7f))
+                        b(t1, 0f, -0.04f, 0.123f, 0.055f, 0.06f, 0.012f, ac)
+                        b(t1, 0f, -0.04f, 0.133f, 0.018f, 0.045f, 0.01f, lite(ac, 0.35f))
+                    }
+                }
+            }
             if (sd < 0 && handOut != null) {
                 piv(handOut, t1, 0f, -0.21f, 0f, rx = el, ry = elbowSpin * s)
                 Matrix.translateM(handOut, 0, 0f, -0.16f, 0.02f)
