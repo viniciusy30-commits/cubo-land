@@ -171,7 +171,7 @@ class CharacterActivity : CozyActivity() {
                 add(c1)
                 val c2 = cCard("Mechas de cabelo", "Crie contraste, pontas coloridas ou reflexos neon sem mudar a cor base.")
                 grid(c2, "Distribuição", Look.HAIR_ACCENT, Look.HAIR_ACCENTS, 3)
-                swatch(c2, "Cor das mechas", Look.HAIR_ACCENT, Look.PAL, Look.PAL_NAMES, 8)
+                swatch(c2, "Cor das mechas", Look.HAIR_ACCENT_COLOR, Look.PAL, Look.PAL_NAMES, 8)
                 add(c2)
                 val c3 = cCard("Combinações rápidas", "Gere uma skin completa e refine cada peça sem perder as alterações salvas.")
                 val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
