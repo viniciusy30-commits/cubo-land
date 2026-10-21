@@ -916,7 +916,6 @@ class CharModel {
                             }
                         }
                     }
-                    }
                     // Segundo passe de modelagem: costuras e bolsos que diferenciam cada corte.
                     val fabricHi = lite(legCol, 0.22f)
                     val fabricLo = shadeC(legCol, 0.62f)
