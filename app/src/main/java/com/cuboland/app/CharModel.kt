@@ -2383,7 +2383,7 @@ class CharModel {
         // ---------- rosto: acessórios por cima (lentes translúcidas por último) ----------
         // ===== ACABAMENTO DE ÓCULOS, MÁSCARAS E DETALHES FACIAIS =====
         // Camadas de aro, lentes e costuras em volumes separados para dar profundidade.
-        val faceAccent = Look.pal(Look.FACEC)
+        val faceAccent = Look.pal(Look.HATC)
         if (fc == 1 || fc == 2 || fc == 3 || fc == 4 || fc == 7 || fc == 9) {
             for (sd in intArrayOf(-1, 1)) {
                 hb(sd * 0.19f, 1.29f, 0.43f, 0.025f, 0.035f, 0.02f, lite(faceAccent, 0.28f))
