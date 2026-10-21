@@ -943,6 +943,65 @@ class McChar {
             12 -> { frame(2f, 3.8f, 3f, gold, 0xE8A030, 0.5f); frame(-2f, 3.8f, 3f, gold, 0xE8A030, 0.5f); hb(0f, eyeY + 0.8f, gz + 0.05f, 0.8f, 0.4f, 0.3f, gold); temples(gold) }
         }
 
+
+        // ================= ACABAMENTO 3D DOS ACESSÓRIOS FACIAIS =================
+        // Reflexos de lente, reforço de armação, pontos de costura e detalhes de máscara.
+        lay(8,12)
+        when(L[Look.FACE]) {
+            1,9 -> { // óculos redondos/quadrados
+                for(x in intArrayOf(-2,2)) {
+                    hb(x.toFloat()-0.4f,eyeY+0.55f,gz+0.16f,0.72f,0.16f,0.07f,0xFFFFFF,0.72f)
+                    hb(x.toFloat(),eyeY+1.2f,gz+0.15f,0.18f,0.18f,0.06f,lite(blk,0.5f))
+                }
+                hb(0f,eyeY+0.25f,gz+0.17f,0.7f,0.14f,0.08f,metalHi)
+            }
+            2 -> { // lentes escuras com reflexo
+                for(x in intArrayOf(-2,2)) {
+                    hb(x.toFloat()-0.45f,eyeY+0.5f,gz+0.16f,1.05f,0.18f,0.08f,0xD5ECFF,0.72f)
+                    hb(x.toFloat(),eyeY-0.8f,gz+0.16f,2.25f,0.1f,0.07f,lite(blk,0.3f))
+                }
+            }
+            3 -> { // sardas com dois tons para não parecerem pontos chapados
+                for(x in intArrayOf(-3,-2,2,3)) hb(x.toFloat(),-1.55f,4.2f,0.18f,0.18f,0.08f,lite(skin,0.18f))
+            }
+            4 -> { // tapa-olho: costura e fivela lateral
+                hb(-2f,eyeY-0.2f,4.25f,2.65f,0.12f,0.08f,shadeC(blk,0.72f))
+                hb(-3.8f,eyeY-0.2f,4.28f,0.25f,0.55f,0.12f,metalHi)
+            }
+            5 -> { // cicatriz em camadas
+                for(k in 0..3) hb(2.7f-k*0.55f,eyeY+1.8f-k*0.9f,4.28f,0.72f,0.12f,0.08f,shadeC(0xC45A5A,0.72f),rz=-42f)
+                for(k in 0..2) hb(2.5f-k*0.55f,eyeY+1.55f-k*0.9f,4.34f,0.35f,0.08f,0.06f,lite(0xC45A5A,0.22f),rz=-42f)
+            }
+            6 -> { // curativo com costuras visíveis
+                hb(2.8f,-1.9f,4.34f,1.8f,0.12f,0.06f,shadeC(0xC9A97E,0.7f))
+                for(k in 0..3) hb(2.2f+k*0.4f,-1.9f,4.38f,0.12f,0.34f,0.06f,0xA58B68)
+            }
+            7 -> { // bigodes de gato e nariz em volume
+                hb(0f,eyeY-1.35f,4.4f,0.45f,0.32f,0.18f,0x5A3345)
+                for(x in intArrayOf(-1,1)) hb(x*0.7f,eyeY-1.25f,4.51f,0.2f,0.12f,0.08f,lite(0xE59AAA,0.3f))
+            }
+            8 -> { // máscara: costura central e filtros laterais
+                hb(0f,-2.45f,4.55f,0.12f,2.8f,0.08f,0xB8C0CC)
+                for(x in intArrayOf(-3,3)) {
+                    hb(x.toFloat(),-2.4f,4.58f,0.52f,0.52f,0.1f,shadeC(0xD0D6DE,0.7f))
+                    hb(x.toFloat(),-2.4f,4.66f,0.3f,0.3f,0.06f,metalHi)
+                }
+                for(x in intArrayOf(-2,2)) hb(x.toFloat(),-1.6f,4.58f,0.14f,0.14f,0.07f,0x8893A3)
+            }
+            10 -> { // lágrima com ponto especular
+                hb(2.35f,eyeY-1.15f,4.34f,0.22f,0.28f,0.08f,0xB8F1FF,0.85f)
+            }
+            11 -> { // monóculo: reflexo e corrente
+                hb(1.35f,eyeY+0.55f,4.52f,0.7f,0.16f,0.08f,0xFFFFFF,0.82f)
+                for(k in 0..3) hb(4.2f+k*0.18f,eyeY-0.8f-k*0.65f,4.12f,0.16f,0.16f,0.07f,gold)
+            }
+            12 -> { // aviador: ponte metálica e brilhos quentes no vidro
+                for(x in intArrayOf(-2,2)) hb(x.toFloat(),eyeY+0.65f,4.54f,1.15f,0.18f,0.08f,0xFFF0BC,0.72f)
+                hb(0f,eyeY+0.3f,4.5f,0.85f,0.2f,0.12f,gold)
+                for(x in intArrayOf(-4,4)) hb(x.toFloat(),eyeY+0.1f,4.32f,0.15f,0.4f,0.12f,metalHi)
+            }
+        }
+
         // ================= PESCOÇO =================
         lay(9, 12)
         when (L[Look.NECK]) {
