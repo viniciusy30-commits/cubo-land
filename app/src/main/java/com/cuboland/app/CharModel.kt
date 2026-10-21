@@ -876,6 +876,46 @@ class CharModel {
                             b(t2, 0f, -sn + 0.045f, 0f, legW + 0.016f, 0.02f, legD + 0.016f, thC)
                         }
                     }
+                    // Camada de acabamento selecionável: detalhes voxel ficam presos à perna e acompanham a animação.
+                    val pat = Look.v[Look.BOTTOM_PATTERN]
+                    val accent = Look.pal(Look.BOTTOM_ACCENT)
+                    val frontZ = ed + 0.014f
+                    when (pat) {
+                        1 -> {
+                            b(t1, s * (ew + 0.006f), -0.1f, 0f, 0.024f, 0.19f, legD + 0.014f, accent)
+                            b(t2, s * (ew + 0.006f), -sn * 0.5f, 0f, 0.024f, max(0.02f, sn * 0.86f), legD + 0.014f, accent)
+                            b(t1, s * (ew + 0.009f), -0.1f, frontZ, 0.01f, 0.18f, 0.012f, lite(accent, 0.35f))
+                        }
+                        2 -> {
+                            b(t1, 0f, -0.075f, frontZ, 0.105f, 0.09f, 0.018f, shadeC(accent, 0.72f))
+                            b(t1, 0f, -0.055f, frontZ + 0.012f, 0.075f, 0.045f, 0.012f, accent)
+                            b(t1, -0.018f, -0.045f, frontZ + 0.02f, 0.018f, 0.018f, 0.01f, lite(accent, 0.4f))
+                            b(t1, 0.02f, -0.068f, frontZ + 0.02f, 0.018f, 0.018f, 0.01f, shadeC(accent, 0.7f))
+                        }
+                        3 -> {
+                            b(t2, 0f, -0.035f, frontZ, 0.145f, 0.075f, 0.02f, shadeC(accent, 0.65f))
+                            b(t2, 0f, -0.035f, frontZ + 0.012f, 0.12f, 0.052f, 0.012f, accent)
+                            for (sx in intArrayOf(-1, 1)) b(t2, sx * 0.047f, -0.035f, frontZ + 0.02f, 0.012f, 0.012f, 0.01f, lite(accent, 0.45f))
+                        }
+                        4 -> {
+                            b(t1, s * (ew + 0.008f), -0.11f, 0.02f, 0.022f, 0.14f, 0.15f, shadeC(accent, 0.68f))
+                            b(t1, s * (ew + 0.012f), -0.08f, 0.02f, 0.025f, 0.07f, 0.16f, accent)
+                            b(t1, s * (ew + 0.016f), -0.05f, 0.02f, 0.014f, 0.012f, 0.02f, lite(accent, 0.45f))
+                        }
+                        5 -> {
+                            for (k in 0..2) {
+                                val y = -0.055f - k * 0.045f
+                                b(t1, 0f, y, frontZ, legW * 0.72f, 0.012f, 0.014f, if (k == 1) shadeC(accent, 0.75f) else accent)
+                                if (sn > 0.08f) b(t2, 0f, -sn * 0.45f + k * 0.025f, frontZ, legW * 0.62f, 0.01f, 0.014f, accent)
+                            }
+                        }
+                        6 -> {
+                            for (k in -1..1) {
+                                b(t1, k * 0.055f, -0.075f, frontZ, 0.035f, 0.035f, 0.014f, accent, rz = 45f)
+                                b(t1, k * 0.055f, -0.075f, frontZ + 0.009f, 0.012f, 0.012f, 0.01f, lite(accent, 0.45f))
+                            }
+                        }
+                    }
                 }
             }
             fun ya(y: Float) = y + 0.22f   // converte pra o referencial da canela
@@ -1274,6 +1314,75 @@ class CharModel {
             else b(sm, r.x, r.py - 0.5f, r.z, r.sx, r.sy, r.sz + (if (full) 0.05f else 0f), r.col)   // vestido longo: um pouco mais fundo, o pé não fura na frente
         }
 
+        // ================= CAMADAS DE ESTAMPA PERSONALIZÁVEIS =================
+        // Cada motivo é construído com pequenos volumes, como uma skin voxel, não como um adesivo plano.
+        val printCol = Look.pal(Look.TOP_ACCENT)
+        val printDark = shadeC(printCol, 0.68f)
+        val printLight = lite(printCol, 0.36f)
+        when (Look.v[Look.TOP_PATTERN]) {
+            1 -> { // brasão bordado em camadas
+                F(0f, 0.73f, 0.17f, 0.17f, printDark, 0.028f, 45f)
+                F(0f, 0.73f, 0.125f, 0.125f, printCol, 0.034f, 45f)
+                F(0f, 0.73f, 0.045f, 0.075f, printLight, 0.04f)
+                F(-0.045f, 0.72f, 0.025f, 0.06f, printLight, 0.04f, -22f)
+                F(0.045f, 0.72f, 0.025f, 0.06f, printDark, 0.04f, 22f)
+                F(0f, 0.63f, 0.11f, 0.018f, printCol, 0.026f)
+                K(0f, 0.73f, 0.14f, 0.14f, printDark, 0.02f, 45f)
+                K(0f, 0.73f, 0.08f, 0.08f, printCol, 0.026f, 45f)
+            }
+            2 -> { // faixas esportivas duplas
+                for (y in floatArrayOf(0.77f, 0.72f, 0.57f)) {
+                    F(0f, y, bw * 0.86f, 0.025f, printDark, 0.022f)
+                    F(0f, y + 0.014f, bw * 0.86f, 0.009f, printLight, 0.028f)
+                }
+                K(0f, 0.76f, bw * 0.76f, 0.022f, printCol, 0.02f)
+            }
+            3 -> { // mosaico xadrez 3x3 com contorno
+                F(0f, 0.72f, 0.19f, 0.19f, printDark, 0.02f)
+                for (yy in 0..2) for (xx in 0..2) {
+                    val col = if ((xx + yy) % 2 == 0) printCol else printLight
+                    F(-0.055f + xx * 0.055f, 0.775f - yy * 0.055f, 0.048f, 0.048f, col, 0.03f)
+                }
+                F(0f, 0.61f, 0.11f, 0.012f, printCol, 0.02f)
+            }
+            4 -> { // raio pixelado
+                F(-0.025f, 0.81f, 0.075f, 0.035f, printDark, 0.024f, -12f)
+                F(0.025f, 0.765f, 0.07f, 0.04f, printCol, 0.03f, -30f)
+                F(-0.005f, 0.72f, 0.055f, 0.045f, printLight, 0.032f, -30f)
+                F(-0.045f, 0.675f, 0.055f, 0.035f, printCol, 0.03f, -12f)
+                F(0.015f, 0.635f, 0.045f, 0.035f, printDark, 0.026f, -12f)
+            }
+            5 -> { // corações em pixel art
+                for (x in floatArrayOf(-0.105f, 0.105f)) {
+                    F(x - 0.025f, 0.76f, 0.05f, 0.05f, printCol, 0.024f)
+                    F(x + 0.025f, 0.76f, 0.05f, 0.05f, printCol, 0.024f)
+                    F(x, 0.72f, 0.085f, 0.045f, printCol, 0.026f)
+                    F(x, 0.685f, 0.045f, 0.03f, printDark, 0.024f)
+                    F(x - 0.018f, 0.77f, 0.018f, 0.018f, printLight, 0.03f)
+                }
+            }
+            6 -> { // constelação de estrelas e pontos
+                val pts = arrayOf(floatArrayOf(-0.13f, 0.79f), floatArrayOf(0.02f, 0.82f), floatArrayOf(0.13f, 0.73f), floatArrayOf(-0.055f, 0.67f))
+                for ((i, pt) in pts.withIndex()) {
+                    val size = if (i % 2 == 0) 0.055f else 0.035f
+                    F(pt[0], pt[1], size, size, printCol, 0.024f, 45f)
+                    F(pt[0], pt[1], size * 0.35f, size * 0.35f, printLight, 0.032f)
+                }
+                F(0.075f, 0.64f, 0.025f, 0.025f, printLight, 0.022f)
+                F(-0.15f, 0.72f, 0.018f, 0.018f, printLight, 0.022f)
+            }
+            7 -> { // painel tecnológico com linhas, placas e pixels de status
+                F(0.095f, 0.72f, 0.07f, 0.24f, printDark, 0.026f)
+                F(0.095f, 0.72f, 0.045f, 0.19f, printCol, 0.034f)
+                for (k in 0..3) F(0.095f, 0.65f + k * 0.045f, 0.03f, 0.012f, printLight, 0.04f)
+                F(-0.095f, 0.77f, 0.07f, 0.07f, printDark, 0.026f)
+                F(-0.095f, 0.77f, 0.04f, 0.04f, printCol, 0.034f)
+                F(-0.095f, 0.67f, 0.06f, 0.012f, printLight, 0.026f)
+                K(0f, 0.7f, 0.16f, 0.12f, printDark, 0.02f)
+                K(0f, 0.7f, 0.09f, 0.05f, printCol, 0.026f)
+            }
+        }
+
         // ================= BRAÇOS (ombro + cotovelo) =================
         val toolArm = an.hasTool
         val sl = when (top) { 0 -> 0.16f; 1 -> 0.36f; 2 -> 0.13f; 3 -> 0.36f; 4 -> 0.30f; 5 -> 0.2f; 6 -> 0.16f; 7 -> 0.32f; 8 -> 0.18f; 9 -> 0.36f; 10 -> 0.34f; 11 -> 0.36f; 12 -> 0.36f; 13 -> 0f; 14 -> 0.30f; 15 -> 0.14f; 16 -> 0.16f; else -> 0.36f }
@@ -1407,6 +1516,39 @@ class CharModel {
                 12 -> { b(t2, 0f, -0.19f, 0f, 0.192f, 0.04f, 0.212f, white); b(t2, 0f, -0.15f, 0.108f, 0.02f, 0.02f, 0.012f, gold) }
                 13 -> {}
                 16 -> { b(t2, 0f, -0.1f, 0f, 0.17f, 0.12f, 0.19f, leather); b(t2, 0f, -0.04f, 0f, 0.174f, 0.014f, 0.194f, gold) }
+            }
+            // A estampa da camisa também aparece nas mangas; o relevo acompanha ombro e cotovelo.
+            if (sl > 0.12f) {
+                val ac = Look.pal(Look.TOP_ACCENT)
+                when (L[Look.TOP_PATTERN]) {
+                    1 -> {
+                        b(t1, 0f, -0.04f, 0.111f, 0.075f, 0.075f, 0.018f, shadeC(ac, 0.7f), rz = 45f)
+                        b(t1, 0f, -0.04f, 0.123f, 0.045f, 0.045f, 0.012f, ac, rz = 45f)
+                    }
+                    2 -> {
+                        b(t1, 0f, -0.1f, 0.108f, 0.17f, 0.018f, 0.018f, ac)
+                        b(t2, 0f, -0.15f, 0.108f, 0.17f, 0.018f, 0.018f, ac)
+                    }
+                    3 -> for (k in 0..2) b(t1, -0.045f + k * 0.045f, -0.08f, 0.111f, 0.038f, 0.038f, 0.018f, if (k % 2 == 0) ac else lite(ac, 0.35f))
+                    4 -> {
+                        b(t1, 0f, -0.04f, 0.111f, 0.035f, 0.07f, 0.018f, ac, rz = -25f)
+                        b(t1, 0.025f, -0.09f, 0.123f, 0.03f, 0.06f, 0.012f, lite(ac, 0.35f), rz = -25f)
+                    }
+                    5 -> {
+                        b(t1, -0.035f, -0.045f, 0.111f, 0.04f, 0.04f, 0.018f, ac)
+                        b(t1, 0.035f, -0.045f, 0.111f, 0.04f, 0.04f, 0.018f, ac)
+                        b(t1, 0f, -0.08f, 0.123f, 0.035f, 0.035f, 0.012f, shadeC(ac, 0.72f))
+                    }
+                    6 -> {
+                        b(t1, 0f, -0.045f, 0.111f, 0.045f, 0.045f, 0.018f, ac, rz = 45f)
+                        b(t1, 0f, -0.045f, 0.123f, 0.018f, 0.018f, 0.012f, lite(ac, 0.4f))
+                    }
+                    7 -> {
+                        b(t1, 0f, -0.04f, 0.111f, 0.08f, 0.085f, 0.018f, shadeC(ac, 0.7f))
+                        b(t1, 0f, -0.04f, 0.123f, 0.055f, 0.06f, 0.012f, ac)
+                        b(t1, 0f, -0.04f, 0.133f, 0.018f, 0.045f, 0.01f, lite(ac, 0.35f))
+                    }
+                }
             }
             if (sd < 0 && handOut != null) {
                 piv(handOut, t1, 0f, -0.21f, 0f, rx = el, ry = elbowSpin * s)
@@ -1680,6 +1822,19 @@ class CharModel {
         val hatId = L[Look.HAT]
         val hatCovers = hatId == 1 || hatId == 2 || hatId == 3 || hatId == 8 || hatId == 9 || hatId == 16 || hatId == 17 || hatId == 19 || hatId == 20 || hatId == 21 || hatId == 22 || hatId == 23
         drawHair(L[Look.HAIR], hatCovers, Look.hair(), Look.pal(Look.HATC), skin, t, move, sw)
+        // Mechas selecionáveis em camadas voxel, mantendo a cor base do penteado.
+        val hairAccent = Look.pal(Look.HAIR_ACCENT_COLOR)
+        val hairAccentDark = shadeC(hairAccent, 0.72f)
+        when (L[Look.HAIR_ACCENT]) {
+            1 -> { hb(0f, 1.78f, 0.43f, 0.075f, 0.2f, 0.018f, hairAccent); hb(0f, 1.69f, 0.432f, 0.045f, 0.11f, 0.018f, lite(hairAccent, 0.3f)) }
+            2 -> for (sd in intArrayOf(-1, 1)) { val x = sd * 0.17f; hb(x, 1.76f, 0.43f, 0.055f, 0.18f, 0.018f, hairAccent, rz = -sd * 8f); hb(x, 1.68f, 0.432f, 0.028f, 0.1f, 0.018f, lite(hairAccent, 0.25f)) }
+            3 -> for (sd in intArrayOf(-1, 1)) { val x = sd * 0.31f; hb(x, 1.49f, 0.405f, 0.07f, 0.09f, 0.018f, hairAccent); hb(x * 0.92f, 1.44f, 0.405f, 0.05f, 0.035f, 0.018f, hairAccentDark) }
+            4 -> { for (k in 0..4) hb(-0.22f + k * 0.11f, 1.72f - (k % 2) * 0.035f, 0.432f, 0.035f, 0.13f, 0.018f, if (k % 2 == 0) hairAccent else hairAccentDark, rz = (k - 2) * 7f) }
+            5 -> { hb(-0.1f, 1.83f, 0.19f, 0.3f, 0.045f, 0.23f, hairAccent, rz = -8f); hb(0.1f, 1.84f, 0.19f, 0.25f, 0.035f, 0.19f, lite(hairAccent, 0.28f), rz = 8f) }
+            6 -> { hb(0.34f, 1.61f, 0.36f, 0.05f, 0.22f, 0.02f, hairAccent, rz = -12f); hb(0.35f, 1.52f, 0.36f, 0.03f, 0.1f, 0.02f, lite(hairAccent, 0.3f), rz = -12f) }
+            7 -> for (k in 0..5) hb(-0.25f + k * 0.1f, 1.78f - (k % 2) * 0.035f, 0.435f, 0.028f, 0.16f, 0.02f, if (k % 2 == 0) hairAccent else hairAccentDark, rz = (k - 2) * 5f)
+            8 -> { hb(-0.09f, 1.79f, 0.435f, 0.025f, 0.13f, 0.018f, hairAccent); hb(0.09f, 1.79f, 0.435f, 0.025f, 0.13f, 0.018f, hairAccent) }
+        }
         // cabelo volumoso empurra o chapéu pra cima (sem atravessar)
         val hatLift = if (hatId == 0 || hatCovers) 0f else hairLift(L[Look.HAIR])
         if (hatLift != 0f) Matrix.translateM(hm, 0, 0f, hatLift, 0f)
