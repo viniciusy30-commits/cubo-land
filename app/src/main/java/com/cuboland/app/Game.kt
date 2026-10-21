@@ -243,7 +243,9 @@ class Game(val world: World) {
             if (s.bailT > 0f) { bodyYaw = s.h; if (posture != 3) { posture = 3; p.h = postH[3] } }
             else {
                 if (posture != 0) { posture = 0; p.h = 1.8f }
-                bodyYaw = s.h - s.stance * (PI / 2.0).toFloat() + spinRad
+                // Na primeira impulsão, o tronco aponta para a frente; ao ganhar velocidade, assume a postura lateral.
+                val side = 1f - s.faceForward.coerceIn(0f, 1f)
+                bodyYaw = s.h - s.stance * (PI / 2.0).toFloat() * side + spinRad
             }
             skateCrouch = s.crouch
         }
