@@ -1181,7 +1181,6 @@ class McChar {
                     for(x in intArrayOf(-2,0,2)) hb(x.toFloat(),3.4f,4.58f,1.35f,1.35f,0.16f,hairC,rz=x*3f)
                     hb(0.2f,5.3f,0.1f,0.45f,1.5f,0.45f,hairC,rz=-16f)
                 }
-                26,35 -> { /* os dreads/tranças já têm os locks próprios no modelo */ }
             }
         }
         // ================= CHAPÉUS E ENFEITES =================
