@@ -594,6 +594,7 @@ class McChar {
 
 
             // Material pixelado de pantalones: sombra de costura, desgaste y reflejos por tipo de tecido.
+            val pantY=6f-max(0.4f,pantPx)/2f
             if(pantPx>1f) {
                 val legFront=if(pantW>5f) 3.28f else 2.42f
                 val legShade=shadeC(pantC,0.72f)
@@ -616,7 +617,6 @@ class McChar {
                 }
             }
             lay(5,10)
-            val pantY=6f-max(0.4f,pantPx)/2f
             if(pantPx>1f) {
                 lb(lm,s*2.18f,pantY,0f,0.24f,max(0.6f,pantPx-0.25f),4.72f,shadeC(pantC,0.7f))
                 lb(lm,s*1.68f,pantY,2.18f,0.08f,max(0.6f,pantPx-0.5f),0.08f,lite(pantC,0.25f))
