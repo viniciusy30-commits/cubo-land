@@ -408,6 +408,9 @@ class SkateState {
         if (pushing) {
             // Um ciclo completo por passada: prepara, empurra e recolhe o pé.
             pushPh = (pushPh + dt * (0.82f + 0.16f * min(1f, abs(vf) / 8f))) % 1f
+        } else {
+            // Na próxima acelerada, a passada recomeça de forma previsível.
+            pushPh = 0f
         }
         val pushEnvelope = if (!pushing) 0f else when {
             pushPh < 0.08f -> pushPh / 0.08f
