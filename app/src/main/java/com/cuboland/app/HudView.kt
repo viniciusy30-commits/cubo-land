@@ -774,6 +774,20 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
     }
 
     private fun icon(c: Canvas, cx: Float, cy: Float, size: Float, id: Int) {
+        if (Deco.isDeco(id) || (Items.isBlock(id) && B.shape(id) != 0 && !B.thin(id))) {
+            // móveis/decoração: ícone feito do modelo real do item (enquanto não fica pronto, não desenha nada)
+            val db = ToolIcons.deco(id)
+            if (db != null) {
+                val s2 = size * 1.02f
+                rf.set(cx - s2 / 2, cy - s2 / 2, cx + s2 / 2, cy + s2 / 2)
+                val o = max(1.5f, size * 0.03f)
+                ip.colorFilter = shadowF; ip.alpha = 150
+                c.save(); c.translate(0f, o); c.drawBitmap(db, null, rf, ip); c.restore()
+                ip.colorFilter = null; ip.alpha = 255
+                c.drawBitmap(db, null, rf, ip)
+            }
+            return
+        }
         val bm = ToolIcons.get(id)
         if (bm != null) {
             val s2 = size * 0.98f

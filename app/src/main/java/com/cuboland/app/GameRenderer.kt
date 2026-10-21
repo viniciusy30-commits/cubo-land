@@ -781,6 +781,103 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         G.glDeleteFramebuffers(1, fbo, 0); G.glDeleteRenderbuffers(1, rb, 0); G.glDeleteTextures(1, tx, 0)
     }
 
+
+    /** gera (aos poucos, alguns por quadro) os ícones dos itens de decoração a partir do modelo real, em vista isométrica */
+    private var scratchW: World? = null
+    private fun bakeDecoIcons() {
+        val S = 128
+        val fbo = IntArray(1); val tx = IntArray(1); val rb = IntArray(1)
+        G.glGenFramebuffers(1, fbo, 0); G.glGenTextures(1, tx, 0); G.glGenRenderbuffers(1, rb, 0)
+        G.glBindTexture(G.GL_TEXTURE_2D, tx[0])
+        G.glTexImage2D(G.GL_TEXTURE_2D, 0, G.GL_RGBA, S, S, 0, G.GL_RGBA, G.GL_UNSIGNED_BYTE, null as java.nio.Buffer?)
+        G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_MIN_FILTER, G.GL_LINEAR); G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_MAG_FILTER, G.GL_LINEAR)
+        G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_WRAP_S, G.GL_CLAMP_TO_EDGE); G.glTexParameteri(G.GL_TEXTURE_2D, G.GL_TEXTURE_WRAP_T, G.GL_CLAMP_TO_EDGE)
+        G.glBindRenderbuffer(G.GL_RENDERBUFFER, rb[0]); G.glRenderbufferStorage(G.GL_RENDERBUFFER, G.GL_DEPTH_COMPONENT16, S, S)
+        G.glBindFramebuffer(G.GL_FRAMEBUFFER, fbo[0])
+        G.glFramebufferTexture2D(G.GL_FRAMEBUFFER, G.GL_COLOR_ATTACHMENT0, G.GL_TEXTURE_2D, tx[0], 0)
+        G.glFramebufferRenderbuffer(G.GL_FRAMEBUFFER, G.GL_DEPTH_ATTACHMENT, G.GL_RENDERBUFFER, rb[0])
+        if (G.glCheckFramebufferStatus(G.GL_FRAMEBUFFER) == G.GL_FRAMEBUFFER_COMPLETE) {
+            G.glUseProgram(prog)
+            G.glActiveTexture(G.GL_TEXTURE0); G.glBindTexture(G.GL_TEXTURE_2D, atlasTex); G.glUniform1i(uTex, 0)
+            G.glViewport(0, 0, S, S)
+            G.glEnable(G.GL_DEPTH_TEST); G.glEnable(G.GL_CULL_FACE); G.glEnable(G.GL_BLEND)
+            G.glBlendFuncSeparate(G.GL_SRC_ALPHA, G.GL_ONE_MINUS_SRC_ALPHA, G.GL_ONE, G.GL_ONE_MINUS_SRC_ALPHA)
+            val ipj = FloatArray(16)
+            Matrix.orthoM(ipj, 0, -1f, 1f, -1f, 1f, -8f, 8f)
+            G.glUniformMatrix4fv(uVP, 1, false, ipj, 0)
+            G.glUniform3f(uCam, 0f, 0f, 0f); G.glUniform3f(uFog, 1f, 1f, 1f)
+            G.glUniform1f(uTime, 0f); G.glUniform1f(uWind, 0f); G.glUniform1f(uUnder, 0f)
+            tint(0xFFFFFF, 1f)
+            val px = ByteBuffer.allocateDirect(S * S * 4).order(ByteOrder.nativeOrder())
+            val mb = MeshBuf()
+            val bufs = IntArray(2); G.glGenBuffers(2, bufs, 0)
+            val rot = FloatArray(16); val mm = FloatArray(16); val cin = FloatArray(4); val cout = FloatArray(4)
+            Matrix.setIdentityM(rot, 0); Matrix.rotateM(rot, 0, 30f, 1f, 0f, 0f); Matrix.rotateM(rot, 0, -35f, 0f, 1f, 0f)
+            var done = 0
+            while (done < 6) {
+                val id = ToolIcons.nextPending()
+                if (id < 0) break
+                done++
+                mb.clear()
+                var bb: FloatArray? = null
+                if (Deco.isDeco(id)) bb = Deco.emitIcon(mb, id, 1.12f)
+                else if (B.shape(id) != 0) {
+                    // blocos de formato próprio (escada, laje, cerca, cadeira...): emite num mundo vazio, sem vizinhos
+                    var sw = scratchW
+                    if (sw == null) { sw = World(); scratchW = sw }
+                    Shapes.emit(mb, sw, 8, 8, 8, id, B.shape(id), 1.12f)
+                    if (mb.vn >= 8) {
+                        val r = floatArrayOf(1e9f, 1e9f, 1e9f, -1e9f, -1e9f, -1e9f)
+                        var q = 0
+                        while (q + 8 <= mb.vn) {
+                            for (a in 0 until 3) { val vv = mb.v[q + a]; if (vv < r[a]) r[a] = vv; if (vv > r[a + 3]) r[a + 3] = vv }
+                            q += 8
+                        }
+                        bb = r
+                    }
+                }
+                if (bb == null) { ToolIcons.putDeco(id, Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)); continue }
+                val ccx = (bb[0] + bb[3]) / 2f; val ccy = (bb[1] + bb[4]) / 2f; val ccz = (bb[2] + bb[5]) / 2f
+                // projeta os 8 cantos da caixa na vista pra enquadrar o item inteiro (itens grandes não cortam)
+                var mnx = 1e9f; var mxx = -1e9f; var mny = 1e9f; var mxy = -1e9f
+                for (k in 0 until 8) {
+                    cin[0] = (if ((k and 1) != 0) bb[3] else bb[0]) - ccx
+                    cin[1] = (if ((k and 2) != 0) bb[4] else bb[1]) - ccy
+                    cin[2] = (if ((k and 4) != 0) bb[5] else bb[2]) - ccz
+                    cin[3] = 1f
+                    Matrix.multiplyMV(cout, 0, rot, 0, cin, 0)
+                    if (cout[0] < mnx) mnx = cout[0]; if (cout[0] > mxx) mxx = cout[0]
+                    if (cout[1] < mny) mny = cout[1]; if (cout[1] > mxy) mxy = cout[1]
+                }
+                val half = max(max(mxx - mnx, mxy - mny) / 2f, 0.05f)
+                val sc = 0.92f / half
+                Matrix.setIdentityM(mm, 0)
+                Matrix.translateM(mm, 0, -(mnx + mxx) / 2f * sc, -(mny + mxy) / 2f * sc, 0f)
+                Matrix.rotateM(mm, 0, 30f, 1f, 0f, 0f); Matrix.rotateM(mm, 0, -35f, 0f, 1f, 0f)
+                Matrix.scaleM(mm, 0, sc, sc, sc)
+                Matrix.translateM(mm, 0, -ccx, -ccy, -ccz)
+                G.glUniformMatrix4fv(uModel, 1, false, mm, 0)
+                val n = upload(mb, bufs[0], bufs[1])
+                bindMesh(bufs[0], bufs[1])
+                G.glClearColor(0f, 0f, 0f, 0f); G.glClear(G.GL_COLOR_BUFFER_BIT or G.GL_DEPTH_BUFFER_BIT)
+                G.glDrawElements(G.GL_TRIANGLES, n, G.GL_UNSIGNED_INT, 0)
+                px.clear(); G.glReadPixels(0, 0, S, S, G.GL_RGBA, G.GL_UNSIGNED_BYTE, px); px.position(0)
+                val raw = Bitmap.createBitmap(S, S, Bitmap.Config.ARGB_8888); raw.copyPixelsFromBuffer(px)
+                val fm = android.graphics.Matrix(); fm.preScale(1f, -1f)
+                ToolIcons.putDeco(id, Bitmap.createBitmap(raw, 0, 0, S, S, fm, true))
+                raw.recycle()
+            }
+            G.glDeleteBuffers(2, bufs, 0)
+        }
+        G.glBindFramebuffer(G.GL_FRAMEBUFFER, 0)
+        G.glBlendFunc(G.GL_SRC_ALPHA, G.GL_ONE_MINUS_SRC_ALPHA)
+        G.glClearColor(fogR, fogG, fogB, 1f)
+        G.glBindTexture(G.GL_TEXTURE_2D, atlasTex)
+        G.glViewport(0, 0, vw, vh)
+        G.glDeleteFramebuffers(1, fbo, 0); G.glDeleteRenderbuffers(1, rb, 0); G.glDeleteTextures(1, tx, 0)
+        bindMesh(cubeVb, cubeIb)
+    }
+
     private fun groundY(x: Float, y: Float, z: Float): Float {
         var yy = floor(y + 0.5f).toInt()
         while (yy > 0 && !world.solid(floor(x).toInt(), yy, floor(z).toInt())) yy--
@@ -2151,6 +2248,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
 
     override fun onDrawFrame(gl: GL10?) {
         if (!iconsBaked) bakeIcons()
+        if (ToolIcons.hasPending()) bakeDecoIcons()
         val now = System.nanoTime()
         val dt = ((now - last) / 1e9f).coerceIn(0.001f, 0.05f); last = now
         game.update(dt)

@@ -1,3 +1,11 @@
+#id 2026-10-21-camas
+#titulo CAMAS e moveis de varios blocos montados do jeito certo
+- Camas, beliches, berços, armarios altos, paredes de papel, outdoors e outros moveis de varios blocos estavam com os segmentos espelhados (a tampa dos pes ficava no meio da cama e a cabeceira ao lado). Agora cabeceira e pes ficam nas pontas e o colchao fica continuo. Ocupam os mesmos blocos de antes
+
+#id 2026-10-21-icones
+#titulo ICONES dos itens refeitos: agora mostram o modelo de verdade
+- Mobilia, decoracao e blocos de formato (escada, laje, cerca...) (sofa, cama, mesa, luminaria, planta...) deixaram de ser um cubo com textura colada: cada icone e renderizado do proprio modelo 3D do item, em vista isometrica, enquadrado inteiro (itens grandes nao ficam mais cortados). Aparecem na mochila, na barra de itens e na mao ao arrastar
+
 #id 2026-10-21-skate2
 #titulo SKATE v2: controles novos, prancha linda e animacao de verdade
 - CONTROLES: analogico flutuante na esquerda (cima = PUSH, baixo = FREIO, lados = direcao e escolhe a manobra). Botoes a direita: OLLIE grande (segure = pulo alto, tem barra de carga), FLIP, GRAB, GRIND e GIRAR < >. Cada botao mostra o NOME da manobra que vai sair conforme a direcao do analogico

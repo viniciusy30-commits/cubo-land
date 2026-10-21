@@ -222,6 +222,35 @@ object Deco {
         }
     }
 
+
+    /** malha do item sozinho (sem mundo), na direção padrão, só para gerar o ícone; devolve a caixa [minx,miny,minz,maxx,maxy,maxz] ou null se vazio */
+    fun emitIcon(o: MeshBuf, id: Int, vr: Float): FloatArray? {
+        val item = of(id)
+        if (item == null) return null
+        if (item.geo < 0 || item.geo >= geos.size) return null
+        val g = geos[item.geo]
+        val bb = floatArrayOf(1e9f, 1e9f, 1e9f, -1e9f, -1e9f, -1e9f)
+        var n = 0
+        for (q in 0 until g.nQuad) {
+            if ((g.vis[q] and 1) == 0) continue
+            val sl = g.slot[q]
+            val tile = if (sl < item.tile.size) item.tile[sl] else -1
+            if (tile < 0) continue
+            val sh = (0.55f + 0.45f * g.shade[q]) * vr
+            for (v in 0 until 4) {
+                val px = g.pos[q * 12 + v * 3]; val py = g.pos[q * 12 + v * 3 + 1]; val pz = g.pos[q * 12 + v * 3 + 2]
+                val u = Atlas.u(tile, g.uv[q * 8 + v * 2].coerceIn(0f, 1f))
+                val vv = Atlas.v(tile, g.uv[q * 8 + v * 2 + 1].coerceIn(0f, 1f))
+                o.vert(px, py, pz, sh, sh, sh, u, vv)
+                if (px < bb[0]) bb[0] = px; if (py < bb[1]) bb[1] = py; if (pz < bb[2]) bb[2] = pz
+                if (px > bb[3]) bb[3] = px; if (py > bb[4]) bb[4] = py; if (pz > bb[5]) bb[5] = pz
+            }
+            o.tri(0, 1, 2); o.tri(0, 2, 3); o.tri(0, 2, 1); o.tri(0, 3, 2); o.vc += 4
+            n++
+        }
+        return if (n == 0) null else bb
+    }
+
     /**
      * cabe aqui? confere o móvel inteiro (âncora + blocos extras do footprint) girado pra dir:
      * tudo dentro do mundo, só ar, sem o jogador dentro e sem pegar o espaço de outro móvel grande.

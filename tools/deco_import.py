@@ -192,10 +192,14 @@ def assemble(d, c):
         order = {'x': ['left', 'mid', 'right'], 'y': ['bottom', 'mid', 'top'], 'z': ['front', 'mid', 'back']}[a]
         present = [o for o in order if o in ax[a]]
         return present.index(v) if v in present else 0
+    # CORRIGIDO: esquerda = x menor e frente = z menor (confere com as tampas/cabeceiras dentro de cada segmento e com o
+    # modelo de item do addon). A area ocupada (footprint) continua a mesma de antes: so a ordem dos segmentos dentro dela
+    # foi espelhada (esq. na ponta -x, direita em 0; frente na ponta -z, fundo em 0).
+    def nmx(a): return len([o for o in {'x': ['left', 'mid', 'right'], 'z': ['front', 'mid', 'back']}[a] if o in ax[a]]) - 1
     out = []
     for n, gid in segs.items():
         r = parsed[n]
-        out.append((gid, (-idx('x', r['x']) if 'x' in r else 0, idx('y', r['y']) if 'y' in r else 0, -idx('z', r['z']) if 'z' in r else 0)))
+        out.append((gid, (idx('x', r['x']) - nmx('x') if 'x' in r else 0, idx('y', r['y']) if 'y' in r else 0, idx('z', r['z']) - nmx('z') if 'z' in r else 0)))
     return out
 
 SCREEN_RX = re.compile(r'^(tv|tv_vertical|laptop|pc_setup|pc_potato|teleprompter|touchscreen_menu|tablet_display|smartphone_display)(_\d+[a-z]?)*$')
