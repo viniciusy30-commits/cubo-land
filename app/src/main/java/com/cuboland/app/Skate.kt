@@ -315,9 +315,10 @@ class SkateState {
         var turn = 0f
         if (ctl && onGround) {
             val sp = abs(vf)
-            val auth = min(1f, 0.35f + sp / 4f) / (1f + sp / 22f)
+            // Direção progressiva: fácil manobrar devagar, menos nervosa em alta velocidade.
+            val auth = min(1f, 0.42f + sp / 5.5f) / (1f + sp / 28f)
             val dir = if (vf >= -0.3f) 1f else -1f
-            turn = -steer * 2.7f * auth * dir * dt * (1f + 0.75f * drift)
+            turn = -steer * 2.35f * auth * dir * dt * (1f + 0.85f * drift)
         }
         vx = vf * sh + vl * (-ch)
         vz = vf * ch + vl * sh
@@ -408,8 +409,9 @@ class SkateState {
         wheel += vf * dt / 0.085f * 57.3f
         if (wheel > 36000f || wheel < -36000f) wheel = 0f
         // inclinação
-        val leanT = if (grinding) bal * 15f else steer * min(1f, abs(vf) / 8f) * 16f
-        lean += (leanT - lean) * min(1f, 8f * dt)
+        // A prancha responde à curva com atraso curto, sem tremer quando o dedo muda de lado.
+        val leanT = if (grinding) bal * 15f else steer * min(1f, abs(vf) / 8f) * 18f
+        lean += (leanT - lean) * min(1f, 7f * dt)
         // bico: sobe no ollie, acompanha a subida/descida
         val pT = if (popT > 0f) 20f else if (!onGround) (vy * 1.2f).coerceIn(-12f, 14f) else if (manual) 17f + bal * 9f else 0f
         pitchA += (pT - pitchA) * min(1f, 14f * dt)
