@@ -35,6 +35,8 @@ class GalleryPanel(
     private val backBtn: Button
     private val closeBtn: Button
     private val body = LinearLayout(act)
+    private lateinit var inspector: BlockInspector
+    private var preferInspector = false
     private val gold = Color.rgb(255, 214, 120)
 
     private val catColors = intArrayOf(Color.rgb(90, 200, 90), Color.rgb(224, 84, 72), Color.rgb(240, 120, 180), Color.rgb(84, 144, 232), Color.rgb(150, 150, 160))
@@ -67,6 +69,15 @@ class GalleryPanel(
         val sv = ScrollView(act); sv.addView(body); sv.isVerticalScrollBarEnabled = false
         col.addView(sv, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
 
+        inspector = BlockInspector(act, menu,
+            onBack = { showCats() },
+            onClose = { close() },
+            onTest = { id -> pick(-1, id, World.GAL_BLOCK, "Teste do bloco: ${B.names.getOrNull(id).orEmpty()} (#$id)") }
+        )
+        inspector.hide()
+        // Sobrepõe a tela da galeria sem sair do jogo; lista e prévias têm rolagem própria.
+        view.addView(inspector.view, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+
         fab = small("CATEGORIAS", Color.rgb(255, 170, 60)) { open() }
         fab.textSize = 13f
     }
@@ -85,7 +96,7 @@ class GalleryPanel(
         isOpen = true; busy = false
         view.visibility = View.VISIBLE; fab.visibility = View.GONE
         onOpen()
-        showCats()
+        if (preferInspector) showInspector() else showCats()
     }
 
     /** botão voltar do aparelho: fecha o painel, menos enquanto monta o mapa */
@@ -95,6 +106,7 @@ class GalleryPanel(
         if (!isOpen) return
         isOpen = false; busy = false
         view.visibility = View.GONE; fab.visibility = View.VISIBLE
+        inspector.hide()
         onClose()
     }
 
@@ -156,6 +168,7 @@ class GalleryPanel(
     private fun pick(cat: Int, sec: Int, extra: Int, what: String) {
         if (busy) return
         busy = true
+        inspector.hide()
         body.removeAllViews(); backBtn.visibility = View.INVISIBLE; closeBtn.visibility = View.INVISIBLE
         title.text = "Montando a sala..."; sub.text = what
         val t = label("Carregando os blocos no mapa, só um instante", 15f, Color.WHITE); t.gravity = Gravity.CENTER
@@ -166,6 +179,8 @@ class GalleryPanel(
 
     /** passo 1: categorias e vitrines */
     private fun showCats() {
+        preferInspector = false
+        inspector.hide()
         busy = false
         body.removeAllViews(); backBtn.visibility = View.INVISIBLE; closeBtn.visibility = View.VISIBLE
         title.text = "GALERIA DE BLOCOS"; sub.text = "Escolha uma categoria, depois um tipo de bloco"
@@ -184,6 +199,16 @@ class GalleryPanel(
         ex.add(card("ÁRVORES", "todas as árvores plantadas", Color.rgb(90, 200, 90), "A") { pick(-1, -1, World.GAL_TREES, "Galeria de árvores") })
         ex.add(card("VEÍCULOS", "pista para testar os carros", Color.rgb(212, 60, 60), "V") { pick(-1, -1, World.GAL_CAR, "Teste de veículos") })
         addGrid(ex, cols())
+        heading("FERRAMENTAS DE TESTE")
+        val tools = listOf(card("INSPETOR DE BLOCOS", "Busca por nome/ID, prévias das texturas e teste individual", Color.rgb(255, 190, 80), "🔎") { showInspector() })
+        addGrid(tools, cols())
+    }
+
+    /** Abre o inspetor de texturas sem sair da galeria. Ao fechar um teste, ele reabre na mesma ferramenta. */
+    private fun showInspector() {
+        preferInspector = true
+        busy = false
+        inspector.show()
     }
 
     /** passo 2: tipos de bloco da categoria (cada um vira uma sala de exposição) */
