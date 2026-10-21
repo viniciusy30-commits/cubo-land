@@ -99,7 +99,7 @@ class World {
         const val WATER_Y = 9
         /** modos extras da galeria de blocos (além das categorias de blocos) */
         const val GAL_PAGE = 100   // extra >= GAL_PAGE: página (extra - GAL_PAGE) da seção escolhida
-        const val GAL_FURN = 1; const val GAL_HOUSE = 2; const val GAL_TREES = 3; const val GAL_FURN2 = 4; const val GAL_CAR = 5; const val GAL_APPS = 6; const val GAL_BUILDING = 7
+        const val GAL_FURN = 1; const val GAL_HOUSE = 2; const val GAL_TREES = 3; const val GAL_FURN2 = 4; const val GAL_CAR = 5; const val GAL_APPS = 6; const val GAL_BUILDING = 7; const val GAL_BLOCK = 8
         const val SAVE_MAGIC = 0x434C3402
         const val ST_MAGIC = 0x53543031   // trailer opcional: itens guardados nos móveis
         const val FS_MAGIC = 0x46533031   // trailer opcional depois do das TVs: estado dos móveis (aberto/ligado)
@@ -362,6 +362,7 @@ class World {
             extra == GAL_BUILDING -> { DecoBuilding.build(this, top); spawnX = DecoBuilding.spawnX; spawnZ = DecoBuilding.spawnZ }
             extra == GAL_APPS -> { DecoRooms.build(this, top); spawnX = DecoRooms.spawnX; spawnZ = DecoRooms.spawnZ }
             extra == GAL_CAR -> { vehicleTrack(top); spawnX = 10; spawnZ = 6; carSpawnX = 17; carSpawnZ = 9; carSpawnYaw = 0f }
+            extra == GAL_BLOCK -> { layoutSingleBlockTest(secFilter, top, floor, plate); spawnX = 10; spawnZ = 14 }
             catIdx in cats.indices -> layoutCategory(cats[catIdx], secFilter, if (extra >= GAL_PAGE) extra - GAL_PAGE else 0, top, floor, plate)
             else -> {
                 labels.add(Label(spawnX + 0.5f, top + 5f, spawnZ + 7f, "GALERIA DE BLOCOS", true))
@@ -377,6 +378,30 @@ class World {
         locked = lk
         scanElevAnchors()   // a galeria escreve direto em blocks[]: remonta o registro dos elevadores
         java.util.Arrays.fill(dirty, true)
+    }
+
+    /** Sala de teste isolada para um único bloco, com amostra no pedestal e uma suspensa para ver a face inferior. */
+    private fun layoutSingleBlockTest(id: Int, top: Int, floor: Int, plate: Int) {
+        val blockName = B.names.getOrNull(id)?.takeIf { it.isNotBlank() } ?: "Bloco desconhecido"
+        fun at(x: Int, y: Int, z: Int, b: Int) {
+            if (x in 0 until SX && z in 0 until SZ && y in 0 until SY)
+                blocks[(y * SZ + z) * SX + x] = b
+        }
+        val dark = B.byName["Concreto Preto"] ?: floor
+        val accent = B.byName["Concreto Amarelo"] ?: plate
+        for (z in 17..23) for (x in 13..19) setTopB(x, z, floor, top)
+        for (z in 18..22) for (x in 14..18) setTopB(x, z, plate, top)
+        for (x in 14..18) { setTopB(x, 17, accent, top); setTopB(x, 23, accent, top) }
+        for (z in 17..23) { setTopB(13, z, accent, top); setTopB(19, z, accent, top) }
+        at(16, top + 1, 20, id)
+        // A cópia suspensa deixa o jogador olhar a face de baixo e comparar as três faces.
+        at(22, top + 3, 20, id)
+        at(22, top + 2, 20, dark)
+        at(22, top + 1, 20, dark)
+        labels.add(Label(16.5f, top + 7.0f, 20.5f, "INSPETOR DE BLOCOS", true))
+        labels.add(Label(16.5f, top + 5.5f, 20.5f, "$blockName  (#$id)", true))
+        labels.add(Label(22.5f, top + 5.4f, 20.5f, "AMOSTRA SUSPENSA", false))
+        labels.add(Label(16.5f, top + 4.1f, 20.5f, "Veja topo, lados e transparência", false))
     }
 
     /** pista de testes de veículos: chão reto de largada, degraus de 1 bloco, plataformas, slalom e rampas de 1, 2 e 3 blocos */
