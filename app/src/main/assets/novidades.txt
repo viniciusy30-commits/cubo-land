@@ -1,3 +1,7 @@
+#id 2026-10-21-e
+#titulo Corrida nova
+- Corrida refeita: joelhos de verdade dobrando forte na recuperação e absorvendo no apoio, braços com cotovelo bem dobrado, tronco inclinado, torção dos ombros contra o quadril, balanço lateral e quique maior a cada passada
+
 #id 2026-10-21-d
 #titulo Manobras no ar
 - No ar (voando ou pulando) o botão de postura vira MANOBRA: stick pra frente = cambalhota, pra trás = cambalhota de costas, pros lados = parafuso, parado = giro, com anel de vento
