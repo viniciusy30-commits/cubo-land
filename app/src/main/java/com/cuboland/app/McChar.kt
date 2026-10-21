@@ -433,7 +433,16 @@ class McChar {
             val kMan = an.skMan.coerceIn(0f, 1f); val kGd = an.skGrind.coerceIn(0f, 1f); val kFl = an.skFlip.coerceIn(0f, 1f); val kPw = an.skPush.coerceIn(0f, 1f)
             val w1 = sin(an.t * 1.7f); val w2 = sin(an.t * 1.3f + 1.1f)
             var lx = -10f; var rx2 = -4f; var lz = 50f + 6f * w1; var rz2 = 50f + 6f * w2; var lel = -16f; var rel = -16f
-            if (kPw > 0.001f) { val c = sin(an.skPushPh * 6.2832f); lx = lp(lx, -14f + 22f * c, kPw); rx2 = lp(rx2, -14f - 22f * c, kPw) }
+            if (kPw > 0.001f) {
+                // Os braços contrabalançam a perna que empurra, em vez de ficarem rígidos.
+                val c = sin(an.skPushPh * 6.2832f)
+                lx = lp(lx, -14f + 22f * c, kPw)
+                rx2 = lp(rx2, -14f - 22f * c, kPw)
+                lel = lp(lel, -10f + 9f * c, kPw)
+                rel = lp(rel, -10f - 9f * c, kPw)
+                lz = lp(lz, 66f + 10f * c, kPw)
+                rz2 = lp(rz2, 66f - 10f * c, kPw)
+            }
             lz = lp(lz, 118f, kPop); rz2 = lp(rz2, 118f, kPop); lel = lp(lel, -6f, kPop); rel = lp(rel, -6f, kPop)
             lz = lp(lz, 74f, kLand * 0.8f); rz2 = lp(rz2, 74f, kLand * 0.8f)
             lz = lp(lz, 84f, kMan); rz2 = lp(rz2, 84f, kMan)
