@@ -1,0 +1,1 @@
+Atualizacao do skate: controles e animacoes melhorados. Este arquivo dispara o workflow de build do CuboLand; as alteracoes de codigo ja foram incorporadas a main.
