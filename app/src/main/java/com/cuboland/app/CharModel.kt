@@ -1463,6 +1463,56 @@ class CharModel {
             else b(sm, r.x, r.py - 0.5f, r.z, r.sx, r.sy, r.sz + (if (full) 0.05f else 0f), r.col)   // vestido longo: um pouco mais fundo, o pé não fura na frente
         }
 
+        // ================= MICROTEXTURA E RELEVO DE MATERIAIS =================
+        // Camadas geométricas reais no modelo: pespontos, nervuras, painéis e ferragens.
+        // O padrão muda por peça para que a roupa não pareça apenas um cubo pintado.
+        val fabricHi = lite(tc, 0.22f)
+        val fabricMid = mixC(tc, 0xFFFFFF, 0.10f)
+        val fabricShadow = shadeC(tc, 0.72f)
+        val seamCol = mixC(tc, 0xFFFFFF, 0.30f)
+        // Costura dupla nos ombros e laterais, com pequenas marcas de ponto.
+        for (side in intArrayOf(-1, 1)) {
+            val x = side * (bw * 0.37f)
+            F(x, 0.825f, 0.177f, 0.21f, fabricShadow, 0.012f, side * 8f)
+            F(x + side * 0.012f, 0.825f, 0.184f, 0.18f, seamCol, 0.008f, side * 8f)
+            for (j in 0..5) {
+                F(side * (0.12f + j * 0.009f), 0.55f + (j % 2) * 0.014f, 0.177f, 0.009f, seamCol, 0.009f)
+            }
+        }
+        // Textura tecida em pequenos relevos alternados; deixa áreas amplas menos chapadas.
+        if (top == 0 || top == 1 || top == 3 || top == 7 || top == 12 || top == 17) {
+            for (row in 0..4) for (col in 0..4) {
+                val x = -0.16f + col * 0.08f
+                val y = 0.58f + row * 0.065f
+                if ((row + col) % 2 == 0) F(x, y, 0.176f, 0.018f, fabricMid, 0.008f)
+            }
+        }
+        // Painel dorsal e costuras em X nas peças estruturadas, visíveis ao girar o personagem.
+        K(0f, 0.82f, -0.176f, 0.012f, fabricShadow, 0.014f)
+        if (top == 3 || top == 5 || top == 6 || top == 16 || top == 17) {
+            K(-0.12f, 0.7f, -0.178f, 0.17f, fabricShadow, 0.014f, -18f)
+            K(0.12f, 0.7f, -0.178f, 0.17f, fabricShadow, 0.014f, 18f)
+            K(-0.12f, 0.7f, -0.186f, 0.13f, seamCol, 0.009f, -18f)
+            K(0.12f, 0.7f, -0.186f, 0.13f, seamCol, 0.009f, 18f)
+        }
+        // Zíper/fecho tridimensional individual para casacos, moletons e macacões.
+        if (top == 1 || top == 3 || top == 6 || top == 17) {
+            F(0f, 0.69f, 0.184f, 0.31f, fabricShadow, 0.025f)
+            F(0f, 0.69f, 0.199f, 0.27f, seamCol, 0.008f)
+            for (j in 0..5) F(0.012f, 0.81f - j * 0.045f, 0.204f, 0.012f, 0xD5D9E0, 0.018f)
+            F(-0.025f, 0.86f, 0.2f, 0.045f, 0xD5D9E0, 0.022f)
+        }
+        // Etiqueta de marca, rebites e presilhas em relevo; cor acompanha o acabamento escolhido.
+        F(-0.14f, 0.53f, 0.19f, 0.052f, garmentLo, 0.024f)
+        F(-0.14f, 0.53f, 0.205f, 0.032f, garmentA, 0.018f)
+        F(-0.14f, 0.53f, 0.217f, 0.012f, garmentHi, 0.012f)
+        if (top == 5 || top == 16 || top == 17 || top == 18) {
+            for (side in intArrayOf(-1, 1)) {
+                F(side * 0.17f, 0.77f, 0.198f, 0.026f, 0xD5D9E0, 0.025f)
+                F(side * 0.17f, 0.77f, 0.214f, 0.012f, 0xFFFFFF, 0.012f)
+            }
+        }
+
         // ================= CAMADAS DE ESTAMPA PERSONALIZÁVEIS =================
         // Cada motivo é construído com pequenos volumes, como uma skin voxel, não como um adesivo plano.
         val printCol = Look.pal(Look.TOP_ACCENT)
