@@ -592,6 +592,29 @@ class McChar {
                 7 -> { for (k in 0..5) lb(lm, 0f, -5.5f + k.toFloat(), 0f, 4.6f, 1f, 4.6f, if (k % 2 == 0) shoeC else white); lb(lm, 0f, -5.7f, 0.5f, 4.7f, 0.7f, 5.4f, shadeC(shoeC, 0.6f)) }
             }
 
+
+            // Material pixelado de pantalones: sombra de costura, desgaste y reflejos por tipo de tecido.
+            if(pantPx>1f) {
+                val legFront=if(pantW>5f) 3.28f else 2.42f
+                val legShade=shadeC(pantC,0.72f)
+                val legLight=lite(pantC,0.16f)
+                lb(lm,-1.72f, pantY, legFront,0.12f,max(0.8f,pantPx-0.6f),0.06f,legShade)
+                lb(lm,1.72f, pantY, legFront,0.12f,max(0.8f,pantPx-0.6f),0.06f,legLight)
+                for(row in 0..4) {
+                    val yy=6f-1.3f-row*1.65f
+                    if(yy>6f-pantPx+0.4f && yy<5.8f) {
+                        val xx=if((row+sd)%2==0) -0.9f else 0.9f
+                        val cc=when((row+bot)%4) { 0 -> legShade; 1 -> legLight; 2 -> shadeC(accentBottom,0.82f); else -> pantC }
+                        if(bot==0 || bot==4 || bot==7 || row%2==0)
+                            lb(lm,xx,yy,legFront+0.07f,0.48f,0.48f,0.06f,cc)
+                    }
+                }
+                if(bot==4 || bot==7) {
+                    val pocketY=6f-min(pantPx*0.36f,4f)
+                    lb(lm,s*1.15f,pocketY,legFront+0.1f,1.1f,1.4f,0.08f,legShade)
+                    lb(lm,s*1.15f,pocketY+0.42f,legFront+0.16f,0.78f,0.16f,0.06f,accentBottom)
+                }
+            }
             lay(5,10)
             val pantY=6f-max(0.4f,pantPx)/2f
             if(pantPx>1f) {
@@ -866,6 +889,31 @@ class McChar {
                     3 -> for(y in intArrayOf(2,0,-2)) for(x in intArrayOf(-1,1)) ab(am,x.toFloat(),y.toFloat(),2.5f,0.72f,0.72f,0.08f,if((x+y)%2==0) accentTop else lite(accentTop,0.25f))
                     4,5,6 -> ab(am,0f,1.7f,2.52f,0.65f,0.65f,0.1f,accentTop)
                     7 -> { ab(am,0f,1.4f,2.5f,aw+0.5f,2.5f,0.1f,shadeC(accentTop,0.6f)); ab(am,0f,1.4f,2.58f,0.15f,2f,0.07f,0x73E7FF) }
+                }
+            }
+
+            // Microtextura de manga: costuras, cotovelos e pixels de tecido com paleta controlada.
+            if(sleeve>0.1f) {
+                val armFront=2.58f
+                val armShadow=shadeC(sCol,0.72f)
+                val armLight=lite(sCol,0.18f)
+                ab(am,-1.15f,2.2f,armFront,0.12f,6.2f,0.06f,armShadow)
+                ab(am,1.15f,2.2f,armFront,0.12f,6.2f,0.06f,armLight)
+                // pixels curtos alternados; evitam que a manga seja apenas um bloco de cor.
+                for(row in 0..3) for(col in intArrayOf(-1,1)) {
+                    val yy=3.3f-row*1.65f
+                    val cc=when((row+col+top)%4) {
+                        0 -> armShadow
+                        1 -> armLight
+                        2 -> if(top==5) gold else shadeC(accentTop,0.8f)
+                        else -> sCol
+                    }
+                    if(top==5 || top==9 || top==12 || (row+col)%3==0)
+                        ab(am,col*0.65f,yy,armFront+0.05f,0.42f,0.42f,0.06f,cc)
+                }
+                if(top==3 || top==7 || top==9 || top==12 || top==17) {
+                    ab(am,0f,-3.7f,armFront+0.06f,aw+0.5f,0.55f,0.08f,if(top==9) gold else edge)
+                    for(x in intArrayOf(-1,1)) ab(am,x*0.9f,-3.7f,armFront+0.12f,0.16f,0.16f,0.05f,metalHi)
                 }
             }
             if (sd < 0 && handOut != null) {
