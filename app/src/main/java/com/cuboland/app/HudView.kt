@@ -232,16 +232,18 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
     private var skStickId = -1; private var skScx = 0f; private var skScy = 0f; private var skSx = 0f; private var skSy = 0f
     private fun skateRect() = RectF(width - 208 * d, 118 * d, width - 124 * d, 162 * d)
     private fun skBtn(k: Int): RectF {
-        val m = 18 * d; val bot = height - m
-        val ox = width - m - 62 * d; val oy = bot - 64 * d
+        val m = 14 * d; val bot = height - m
+        val right = width - m - 42 * d
+        val bottom = bot - 42 * d
         fun sq(cx: Float, cy: Float, sz: Float) = RectF(cx - sz / 2, cy - sz / 2, cx + sz / 2, cy + sz / 2)
+        // Dois trilhos de botões: manobras no meio, ações rápidas nas extremidades.
         return when (k) {
-            4 -> sq(ox, oy, 100 * d)
-            5 -> sq(ox - 96 * d, oy - 10 * d, 70 * d)
-            6 -> sq(ox - 70 * d, oy - 96 * d, 68 * d)
-            7 -> sq(ox + 12 * d, oy - 112 * d, 68 * d)
-            9 -> sq(ox - 163 * d, oy - 10 * d, 56 * d)
-            else -> sq(ox - 222 * d, oy - 10 * d, 56 * d)
+            4 -> sq(right, bottom, 66 * d)
+            5 -> sq(right - 72 * d, bottom, 56 * d)
+            6 -> sq(right, bottom - 70 * d, 56 * d)
+            7 -> sq(right - 72 * d, bottom - 70 * d, 56 * d)
+            8 -> sq(right - 72 * d, bottom - 140 * d, 48 * d)
+            else -> sq(right, bottom - 140 * d, 48 * d)
         }
     }
     private fun skDown(id: Int, x: Float, y: Float): Boolean {
@@ -259,7 +261,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         return false
     }
     private fun skMove(x: Float, y: Float) {
-        val r = 62 * d
+        val r = 52 * d
         var dx = x - skScx; var dy = y - skScy
         val l = hypot(dx, dy)
         if (l > r) { dx = dx / l * r; dy = dy / l * r }
@@ -290,32 +292,18 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         val s = game.skateV
         val on = skPtr.values
         val m = 18 * d; val bot = h - m
-        // ----- linhas de velocidade nas bordas -----
-        if (s.speedK > 0.4f) {
-            val a = ((s.speedK - 0.4f) / 0.6f * 80f).toInt().coerceIn(0, 255)
-            val sw0 = pt.strokeWidth
-            pt.color = Color.argb(a, 255, 255, 255); pt.strokeWidth = max(2f, 2f * d)
-            val cx0 = w / 2f; val cy0 = h / 2f; val rr = hypot(w, h) / 2f
-            for (i in 0 until 18) {
-                val ang = i * 0.349f + (i % 3) * 0.07f
-                val ph = (game.time * (1.3f + (i % 4) * 0.35f) + i * 0.37f) % 1f
-                val r0 = rr * (0.52f + 0.42f * ph); val r1 = r0 + rr * (0.07f + 0.1f * s.speedK)
-                c.drawLine(cx0 + cos(ang) * r0, cy0 + sin(ang) * r0 * 0.8f, cx0 + cos(ang) * r1, cy0 + sin(ang) * r1 * 0.8f, pt)
-            }
-            pt.strokeWidth = sw0
-        }
-        // ----- analógico -----
-        val R = 62 * d
-        val bx0 = if (skStickId >= 0) skScx else m + 104 * d; val by0 = if (skStickId >= 0) skScy else bot - 104 * d
+        // HUD limpo: sem riscos animados sobre o mundo, mantendo a leitura da velocidade.
+        val R = 52 * d
+        val bx0 = if (skStickId >= 0) skScx else m + 82 * d; val by0 = if (skStickId >= 0) skScy else bot - 82 * d
         pt.color = Color.argb(70, 20, 14, 30); c.drawCircle(bx0, by0, R + 6 * d, pt)
         pt.color = Color.argb(58, 255, 255, 255); c.drawCircle(bx0, by0, R, pt)
         pt.color = Color.argb(40, 20, 14, 30); c.drawCircle(bx0, by0, R * 0.5f, pt)
         val hs = tsc(0.62f)
         val hc = Color.argb(215, 255, 255, 255)
-        pxText(c, "PUSH", bx0, by0 - R + 7 * d, hs, hc, 1)
+        pxText(c, "ACEL.", bx0, by0 - R + 7 * d, hs, hc, 1)
         pxText(c, "FREIO", bx0, by0 + R - 7 * d - 7 * hs, hs, hc, 1)
-        pxText(c, "<", bx0 - R + 11 * d, by0 - 3.5f * hs, hs, hc, 1)
-        pxText(c, ">", bx0 + R - 11 * d, by0 - 3.5f * hs, hs, hc, 1)
+        pxText(c, "<", bx0 - R + 10 * d, by0 - 3.5f * hs, hs, hc, 1)
+        pxText(c, ">", bx0 + R - 10 * d, by0 - 3.5f * hs, hs, hc, 1)
         pt.color = if (skStickId >= 0) Color.argb(235, 255, 212, 99) else Color.argb(120, 255, 212, 99)
         c.drawCircle(bx0 + skSx * R, by0 + skSy * R, 27 * d, pt)
         // ----- botões -----
@@ -333,30 +321,25 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
                 c.drawRect(r.left + 5 * d, r.bottom - 6 * d - hh, r.left + 11 * d, r.bottom - 6 * d, pt)
             }
             val cx = (r.left + r.right) / 2f; val cy = (r.top + r.bottom) / 2f + (if (pressed) u else 0f)
-            val big = tsc(if (k == 4) 1.35f else 1.05f); val sm = tsc(0.62f)
+            val big = tsc(if (k == 4) 1.15f else if (k >= 8) 1.8f else 0.95f)
+            val sm = tsc(0.58f)
             val cap = when (k) {
-                4 -> if (s.charge > 0.01f) "SOLTE!" else "SEGURE=ALTO"
+                4 -> if (s.charge > 0.01f) "SOLTE" else "SEGURE"
                 5 -> flipN
-                6 -> if (s.onGround) "NO CHAO" else grabN
+                6 -> if (s.onGround) "EQUIL." else grabN
                 7 -> grindN
-                else -> "GIRAR"
+                else -> "GIRO"
             }
-            val main = when (k) { 4 -> "OLLIE"; 5 -> "FLIP"; 6 -> if (s.onGround) "MANUAL" else "GRAB"; 7 -> "GRIND"; 9 -> ">"; else -> "<" }
-            if (k >= 8) {
-                val bs = tsc(2.4f)
-                pxText(c, main, cx, cy - 3.5f * bs - 4 * d, bs, Color.WHITE, 1)
-                pxText(c, cap, cx, cy + 12 * d, sm, hc, 1)
-            } else {
-                pxText(c, main, cx, cy - 3.5f * big - 6 * d, big, Color.WHITE, 1)
-                pxText(c, cap, cx, cy + 9 * d, sm, hc, 1)
-            }
+            val main = when (k) { 4 -> "PULO"; 5 -> "FLIP"; 6 -> if (s.onGround) "MANUAL" else "GRAB"; 7 -> "GRIND"; 9 -> ">"; else -> "<" }
+            pxText(c, main, cx, cy - 3.5f * big - 4 * d, big, Color.WHITE, 1)
+            if (k < 8) pxText(c, cap, cx, cy + 8 * d, sm, hc, 1)
         }
         // ----- placar e velocidade -----
-        val sp = RectF(w / 2f - 96 * d, 12 * d, w / 2f + 96 * d, 66 * d)
+        val sp = RectF(w / 2f - 78 * d, 10 * d, w / 2f + 78 * d, 54 * d)
         pxPanel(c, sp.left, sp.top, sp.right, sp.bottom, Cz.INK)
         val s1 = tsc(1.4f); val s2 = tsc(0.95f)
-        pxText(c, "${s.score} PTS", (sp.left + sp.right) / 2f, sp.top + 7 * d, s1, Color.WHITE, 1)
-        pxText(c, "${s.kmh()} KM/H", (sp.left + sp.right) / 2f, sp.top + 7 * d + 7 * s1 + 4 * d, s2, Color.rgb(255, 212, 99), 1)
+        pxText(c, "${s.score} PTS", (sp.left + sp.right) / 2f, sp.top + 5 * d, s1, Color.WHITE, 1)
+        pxText(c, "${s.kmh()} KM/H", (sp.left + sp.right) / 2f, sp.top + 5 * d + 7 * s1 + 1 * d, s2, Color.rgb(255, 212, 99), 1)
         val sbk = (abs(s.speed) / SkateState.MAXF).coerceIn(0f, 1f)
         pt.color = Color.argb(120, 255, 255, 255); c.drawRect(sp.left + 8 * d, sp.bottom - 8 * d, sp.right - 8 * d, sp.bottom - 4 * d, pt)
         pt.color = if (sbk > 0.85f) Color.rgb(255, 120, 80) else Color.rgb(88, 196, 92)
