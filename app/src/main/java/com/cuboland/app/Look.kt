@@ -8,10 +8,10 @@ object Look {
     const val BLUSH = 6; const val TOP = 7; const val TOPC = 8; const val BOTTOM = 9; const val BOTTOMC = 10
     const val SHOES = 11; const val SHOEC = 12; const val HAT = 13; const val HATC = 14; const val FACE = 15
     const val BACK = 16; const val BACKC = 17; const val NECK = 18; const val NECKC = 19; const val MOUTH = 20
-    const val TOP_PATTERN = 21; const val TOP_ACCENT = 22; const val BOTTOM_PATTERN = 23; const val BOTTOM_ACCENT = 24; const val HAIR_ACCENT = 25
-    const val N = 26
+    const val TOP_PATTERN = 21; const val TOP_ACCENT = 22; const val BOTTOM_PATTERN = 23; const val BOTTOM_ACCENT = 24; const val HAIR_ACCENT = 25; const val HAIR_ACCENT_COLOR = 26
+    const val N = 27
 
-    val DEF = intArrayOf(1, 1, 2, 0, 0, 3, 1, 4, 0, 0, 8, 0, 10, 7, 1, 0, 0, 4, 1, 1, 0, 0, 6, 0, 6, 0)
+    val DEF = intArrayOf(1, 1, 2, 0, 0, 3, 1, 4, 0, 0, 8, 0, 10, 7, 1, 0, 0, 4, 1, 1, 0, 0, 6, 0, 6, 0, 6)
     @Volatile var v: IntArray = DEF.copyOf()
 
     val SKINS = intArrayOf(0xFFF0E6, 0xFFE3CF, 0xF2C29B, 0xE7B38B, 0xD9A07A, 0xC88D68, 0xB57A55, 0x8A5A3C, 0x70452F, 0x4B2D20)
@@ -51,7 +51,7 @@ object Look {
     val HAIR_ACCENTS = arrayOf("Sem mechas", "Mecha central", "Duas mechas", "Pontas coloridas", "Franja bicolor", "Reflexos", "Mecha lateral", "Neon alternado", "Duas mechas finas")
 
     // 26 slots persistidos; cores de roupa/acessórios usam a paleta expandida de 32 cores.
-    val COUNTS = intArrayOf(2, 10, 50, 24, 9, 16, 2, 18, 32, 8, 32, 8, 32, 24, 32, 13, 10, 32, 10, 32, 6, 8, 32, 7, 32, 9)
+    val COUNTS = intArrayOf(2, 10, 50, 24, 9, 16, 2, 18, 32, 8, 32, 8, 32, 24, 32, 13, 10, 32, 10, 32, 6, 8, 32, 7, 32, 9, 32)
 
 
     /** looks prontos: 21 valores na ordem dos índices acima */
