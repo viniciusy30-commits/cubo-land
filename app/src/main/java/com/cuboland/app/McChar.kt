@@ -1101,6 +1101,89 @@ class McChar {
                 hb(x,4.83f,0.15f,0.34f,0.08f,0.62f,if((k+hs)%3==0) strandShadow else strandLight)
             }
         }
+
+        // Franja e silhueta frontal específica por família de corte.
+        // As formas são blocos pequenos em degraus, como os pixels de uma skin bem desenhada.
+        if(!hatCovers) {
+            lay(11,15)
+            val fringeShadow=shadeC(hairC,0.66f)
+            val fringeHi=lite(hairC,0.22f)
+            when(hs) {
+                0,24,40 -> { // curto / pixie / cacheado curto
+                    hb(-2.4f,3.15f,4.56f,1.25f,1.25f,0.12f,hairC,rz=8f)
+                    hb(-0.8f,3.55f,4.58f,1.15f,1.65f,0.12f,hairC,rz=-5f)
+                    hb(1.0f,3.25f,4.57f,1.05f,1.25f,0.12f,fringeShadow)
+                    hb(1.0f,3.42f,4.64f,0.48f,0.82f,0.06f,fringeHi)
+                }
+                1,12,14,23,49 -> { // espetado, saiyajin, moicano, pompadour, twin drills
+                    for(k in 0..3) {
+                        val x=-2.7f+k*1.65f
+                        val h=if((k+hs)%2==0) 1.7f else 1.1f
+                        hb(x,3.9f+h*0.38f,4.25f,1.15f,h,1.15f,hairC,rz=(k-1.5f)*-8f)
+                        hb(x-0.12f,3.95f+h*0.38f,4.58f,0.28f,h*0.55f,0.08f,fringeHi,rz=(k-1.5f)*-8f)
+                    }
+                }
+                2,6,16,29,32,44,48 -> { // chanel, longo, hime, cortina, liso, princesa, cachos de princesa
+                    for(k in 0..4) {
+                        val x=-2.6f+k*1.3f
+                        val drop=when(k) { 0,4 -> 0.95f; 1,3 -> 1.45f; else -> 0.7f }
+                        hb(x,3.45f-drop*0.35f,4.58f,0.95f,0.85f+drop,0.12f,hairC,rz=(k-2)*3f)
+                        if(k%2==0) hb(x,3.7f,4.66f,0.22f,0.58f,0.06f,fringeHi)
+                    }
+                }
+                3,18,19,46 -> { // maria-chiquinha, dois coques, twintail alto, tranças duplas
+                    for(x in intArrayOf(-2,0,2)) hb(x.toFloat(),3.35f,4.58f,1.15f,1.15f,0.12f,hairC,rz=x*2f)
+                    for(x in intArrayOf(-2,2)) hb(x.toFloat(),3.8f,4.66f,0.25f,0.48f,0.06f,fringeHi)
+                }
+                4,5,17,39,42,43,45,47 -> { // rabos, coque, tranças e meio preso
+                    hb(-1.8f,3.2f,4.58f,1.2f,1.3f,0.12f,hairC,rz=14f)
+                    hb(-0.7f,3.65f,4.6f,1.1f,1.65f,0.12f,hairC,rz=-8f)
+                    hb(-0.8f,3.7f,4.68f,0.24f,0.8f,0.06f,fringeHi)
+                }
+                8,21,30,37 -> { // undercut, degradê, slick back e militar
+                    hb(1.4f,3.8f,4.55f,2.7f,0.55f,0.12f,hairC,rz=-8f)
+                    hb(0.8f,4.05f,4.62f,1.4f,0.18f,0.06f,fringeHi)
+                }
+                9,15,22,27,36,41 -> { // franja lateral, repartido, social, mullet, emo, bob assimétrico
+                    for(k in 0..3) {
+                        val x=2.2f-k*1.35f
+                        val y=3.7f-k*0.42f
+                        hb(x,y,4.58f,1.35f,0.95f,0.12f,hairC,rz=-18f)
+                    }
+                    hb(0.7f,3.65f,4.66f,0.25f,1.1f,0.06f,fringeHi,rz=-18f)
+                }
+                10,31,33,34 -> { // bagunçado, wolf, ondulado e cacheado longo
+                    for(k in 0..5) {
+                        val x=-3f+k*1.2f
+                        val y=3.35f+((k+hs)%3)*0.38f
+                        hb(x,y,4.6f,1.05f,1.1f+((k+hs)%2)*0.35f,0.14f,if(k%3==0) fringeShadow else hairC,rz=(k-2)*5f)
+                        if(k%2==0) hb(x-0.12f,y+0.18f,4.68f,0.22f,0.45f,0.06f,fringeHi)
+                    }
+                }
+                11,28 -> { // topete e coque samurai
+                    hb(-1.4f,4.0f,4.42f,2.5f,1.45f,1.1f,hairC,rz=14f)
+                    hb(-1.2f,4.35f,4.62f,1.25f,0.35f,0.08f,fringeHi,rz=14f)
+                    hb(1.2f,3.45f,4.58f,1.0f,0.9f,0.12f,hairC)
+                }
+                13 -> { /* raspado: não criar franja falsa */ }
+                25,26,35 -> { // black power, dreads e box braids: locks separados, não um capacete liso
+                    for(k in 0..4) {
+                        val x=-2.4f+k*1.2f
+                        hb(x,3.35f,4.58f,0.72f,1.35f,0.16f,if(k%2==0) hairC else fringeShadow,rz=(k-2)*4f)
+                        hb(x,3.1f,4.68f,0.3f,0.42f,0.07f,fringeHi)
+                    }
+                }
+                38 -> { // cogumelo: franja horizontal característica
+                    hb(0f,3.05f,4.58f,7.3f,1.25f,0.16f,hairC)
+                    for(x in intArrayOf(-2,0,2)) hb(x.toFloat(),3.12f,4.68f,0.3f,0.75f,0.06f,fringeHi)
+                }
+                7,20 -> { // fofo e ahoge
+                    for(x in intArrayOf(-2,0,2)) hb(x.toFloat(),3.4f,4.58f,1.35f,1.35f,0.16f,hairC,rz=x*3f)
+                    hb(0.2f,5.3f,0.1f,0.45f,1.5f,0.45f,hairC,rz=-16f)
+                }
+                26,35 -> { /* os dreads/tranças já têm os locks próprios no modelo */ }
+            }
+        }
         // ================= CHAPÉUS E ENFEITES =================
         lay(13, 19)
         when (hatId) {
