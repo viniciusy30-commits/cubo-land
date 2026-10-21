@@ -128,7 +128,7 @@ class CharacterActivity : CozyActivity() {
                 val c = cCard(if (Look.v[Look.GENDER] == 1) "Ateliê de cabelo feminino" else "Ateliê de cabelo masculino", "50 cortes com volume, mechas e movimento. Gire o personagem para conferir o resultado.")
                 hairGrid(c)
                 swatch(c, "Cor base", Look.HAIRC, Look.HAIRS, Look.HAIR_NAMES, 8)
-                swatch(c, "Mechas / reflexos", Look.HAIR_ACCENT, Look.PAL, Look.PAL_NAMES, 8)
+                swatch(c, "Mechas / reflexos", Look.HAIR_ACCENT_COLOR, Look.PAL, Look.PAL_NAMES, 8)
                 add(c)
             }
             3 -> {
