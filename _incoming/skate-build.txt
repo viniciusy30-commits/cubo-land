@@ -1,2 +1,2 @@
-Atualizacao do skate: controles e animacoes melhorados. Este arquivo dispara o workflow de build do CuboLand; as alteracoes de codigo ja foram incorporadas a main.
-Build acionado após habilitar o evento push.
+Atualizacao geral do skate: passada com pe lateral e extensao para tras, bracos com contrapeso controlado, controles agrupados e HUD limpo. Codigo incorporado a main pelo PR #2. Este marcador em _incoming dispara o build automatico do APK para testar no jogo.
+Build de 21/10/2026 — redesign geral de animacoes e controles.
