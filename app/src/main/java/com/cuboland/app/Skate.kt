@@ -42,6 +42,7 @@ class SkateState {
     // ----- novos (v2) -----
     var pushPh = 0f           // fase do empurrão (0..1): perna de trás raspa no chão
     var pushW = 0f            // 0..1 quanto está empurrando
+    var faceForward = 0f      // 0 postura lateral de rolê; 1 tronco frontal durante a primeira impulsão
     var drift = 0f            // 0..1 derrapando (powerslide)
     var driftYaw = 0f         // graus: a prancha atravessa na derrapagem (visual)
     var lift = 0f             // a prancha se afasta dos pés durante flips (metros)
@@ -406,18 +407,18 @@ class SkateState {
         val pushing = onGround && gas > 0.05f && vf < MAXF * 0.82f && bailT <= 0f &&
             !manual && !grinding && drift < 0.25f && !inWater
         if (pushing) {
-            // Um ciclo completo por passada: prepara, empurra e recolhe o pé.
+            // Ciclo completo: tirar o pé, apoiar no chão, empurrar e recolocar na prancha.
+            // A fase não reinicia a cada frame nem some durante a recuperação do pé.
             pushPh = (pushPh + dt * (0.82f + 0.16f * min(1f, abs(vf) / 8f))) % 1f
-        } else {
-            // Na próxima acelerada, a passada recomeça de forma previsível.
-            pushPh = 0f
         }
-        val pushEnvelope = if (!pushing) 0f else when {
-            pushPh < 0.08f -> pushPh / 0.08f
-            pushPh < 0.76f -> 1f
-            else -> ((1f - pushPh) / 0.24f).coerceIn(0f, 1f)
-        }
-        pushW += (pushEnvelope - pushW) * min(1f, 12f * dt)
+        // O corpo começa de frente enquanto ganha impulso. Só depois de embalar volta à postura lateral.
+        val forwardTarget = if (pushing && abs(vf) < 4.2f) 1f else 0f
+        faceForward += (forwardTarget - faceForward) * min(1f, 6.5f * dt)
+        // Mantém o peso do empurrão ativo durante TODO o ciclo, inclusive ao recolher o pé.
+        // Ao soltar o acelerador, a mistura diminui suavemente e os pés voltam à prancha.
+        val pushEnvelope = if (pushing) 1f else 0f
+        pushW += (pushEnvelope - pushW) * min(1f, 8f * dt)
+        if (!pushing && pushW < 0.015f) pushPh = 0f
         wheel += vf * dt / 0.085f * 57.3f
         if (wheel > 36000f || wheel < -36000f) wheel = 0f
         // inclinação
