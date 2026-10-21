@@ -45,6 +45,8 @@ class Anim {
     @JvmField var sj = 0f         // 0..1 (suavizado) no ar de um SUPER PULO
     @JvmField var flip = 0f       // graus da cambalhota do super pulo (0..360)
     @JvmField var launch = 0f     // 1 -> 0: acabou de decolar do super pulo pro voo (braços pra cima, relaxando)
+    @JvmField var dst = 0f        // 0..1 pisada no ar do dash (perna estica pra trás empurrando o ar); decai depois do disparo
+    @JvmField var vp = 0f         // graus da direção do voo acima da horizontal (o corpo acompanha no dash)
     @JvmField var dch = 0f        // 0..1 carregando o dash aéreo (segurando o botão de correr no voo)
 }
 

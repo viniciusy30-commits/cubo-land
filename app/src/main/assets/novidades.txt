@@ -1,3 +1,9 @@
+#id 2026-10-21-b
+#titulo Dash aéreo com pisada no ar
+- Voando: agora a perna realmente dobra no joelho (uma meio dobrada, outra esticada)
+- Voo rápido: acabou a balançada do corpo quando o vento aparece
+- Dash aéreo refeito: segure o botão de correr (o personagem encolhe as pernas e o ar é sugado), solte e ele pisa no próprio ar pra trás e dispara com ondas de choque, raios, túnel de anéis e faíscas; vai bem mais longe
+
 #id 2026-10-21-a
 #titulo Voo mais fluido e dash no ar
 - Nado rápido: o corpo afunda um pouquinho, menos levantado fora da água

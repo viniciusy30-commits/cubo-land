@@ -479,8 +479,9 @@ class Game(val world: World) {
     private fun physics(e: Ent, dt: Float) {
         if (flying && e === player) {
             val tv = (if (jumpHeld) 7f else 0f) - (if (downHeld) 7f else 0f) + (if (freeFly) flyVy else 0f)
-            e.vy += (tv - e.vy) * min(1f, 8f * dt * (1f - 0.8f * min(1f, airDashT / 0.45f)))
-            move(e, e.vx * dt, e.vy * dt, e.vz * dt)
+            e.vy += (tv - e.vy) * min(1f, 8f * dt * (1f - 0.85f * min(1f, airDashT / 0.7f)))
+            val nSub = ceil(sqrt(e.vx * e.vx + e.vy * e.vy + e.vz * e.vz) * dt / 0.35f).toInt().coerceIn(1, 14)   // dash rápido: passos curtos pra não atravessar parede
+            for (i in 0 until nSub) move(e, e.vx * dt / nSub, e.vy * dt / nSub, e.vz * dt / nSub)
             return
         }
         if (e === player && (e.inWater || climbT > 0f)) {   // nado (ou saindo da água num degrau): flutua com a cabeça fora, mergulha olhando pra baixo e nadando, sobe olhando pra cima
@@ -567,6 +568,8 @@ class Game(val world: World) {
     @Volatile var flyImp = 0f; private var wasFast = false; private var trailT = 0f   // impulso de herói ao disparar no voo + rastro
     @Volatile var flyLaunch = 0f; @Volatile private var launchReq = false   // decolagem: super pulo + botão de pular no ar -> voa (1 -> 0 em ~0,8s, pra animação)
     @Volatile var dashHeld = false; @Volatile var dashFire = false; @Volatile var airDashCharge = 0f   // dash aéreo: segura o botão de correr no voo (carrega) e solta (dispara)
+    @Volatile var airDashStomp = 0f; @Volatile var dashDirPitch = 0f; private var dashPre = 0f; private var dashCh = 0f; private var chargeFxT = 0f; private var trailFxT = 0f
+    val dashActive: Boolean get() = airDashT > 0.02f
     private var airDashT = 0f; private var windAmt = 0f   // airDashT: tempo restante do impulso (a velocidade extra se dissipa devagar); windAmt: intensidade suave do vento (0..1)
     // postura: 0 em pé, 1 agachado, 2 sentado, 3 deitado (valores suavizados pra animação/câmera)
     @Volatile var posture = 0
@@ -1600,11 +1603,34 @@ class Game(val world: World) {
         if (launchReq) { launchReq = false; if (flying) flyLaunchFx(p) }
         flyLaunch = max(0f, flyLaunch - dt / 0.85f)
         // dash aéreo: segurar carrega, soltar dispara
-        if (!flying) { dashHeld = false; dashFire = false; airDashCharge = 0f }
-        else if (dashFire) { dashFire = false; val ch = airDashCharge; airDashCharge = 0f; if (ch > 0.1f) airDash(p, ch) }
-        else if (dashHeld) airDashCharge = min(1f, airDashCharge + dt / 0.6f)
-        else airDashCharge = max(0f, airDashCharge - dt / 0.15f)
+        dashDirPitch = if (freeFly) Math.toDegrees(pitch.toDouble()).toFloat() else 0f
+        if (!flying) { dashHeld = false; dashFire = false; airDashCharge = 0f; dashPre = 0f; airDashStomp = 0f }
+        else {
+            if (dashFire) { dashFire = false; if (airDashCharge > 0.1f && dashPre <= 0f) { dashPre = 0.17f; dashCh = airDashCharge } else airDashCharge = 0f }
+            if (dashPre > 0f) {   // soltou: encolhido, ele pisa no ar (perna estica pra trás) e só então sai o impulso
+                dashPre -= dt; airDashStomp = min(1f, airDashStomp + dt / 0.17f)
+                val dk = min(1f, 9f * dt); p.vx -= p.vx * dk; p.vy -= p.vy * dk; p.vz -= p.vz * dk   // segura no ar durante a pisada
+                if (dashPre <= 0f) { dashPre = 0f; airDash(p, dashCh); airDashCharge = 0f }
+            } else {
+                if (dashHeld) { airDashCharge = min(1f, airDashCharge + dt / 0.6f); dashChargeFx(p, airDashCharge, dt) }
+                else airDashCharge = max(0f, airDashCharge - dt / 0.15f)
+                airDashStomp = max(0f, airDashStomp - dt / 0.75f)
+            }
+        }
         airDashT = max(0f, airDashT - dt)
+        if (airDashT > 0f && parts.size < 500) {   // faíscas e vento soltos atrás durante o impulso
+            trailFxT -= dt
+            if (trailFxT <= 0f) {
+                trailFxT = 0.03f
+                val l = max(0.1f, sqrt(p.vx * p.vx + p.vy * p.vy + p.vz * p.vz)); val tbx = -p.vx / l; val tby = -p.vy / l; val tbz = -p.vz / l
+                for (i in 0 until 3) {
+                    val pr = Particle(p.x + (rnd.nextFloat() - 0.5f) * 0.6f, p.y + 0.8f + (rnd.nextFloat() - 0.5f) * 0.8f, p.z + (rnd.nextFloat() - 0.5f) * 0.6f,
+                        tbx * (2f + rnd.nextFloat() * 4f), tby * (2f + rnd.nextFloat() * 4f), tbz * (2f + rnd.nextFloat() * 4f),
+                        when (rnd.nextInt(4)) { 0 -> 0xFFF3B0; 1 -> 0x9FE6FF; else -> 0xFFFFFF }, 0.05f + rnd.nextFloat() * 0.07f, 0.35f + rnd.nextFloat() * 0.4f)
+                    pr.grav = 0f; parts.add(pr)
+                }
+            }
+        }
         if (seated) {
             seatT -= dt
             if (!Furniture.sittable(world.get(seatX, seatY, seatZ)) || flying || p.inWater || posture != 2 ||
@@ -1625,7 +1651,7 @@ class Game(val world: World) {
         flyVy = if (ff) sin(pitch) * stickY * sp else 0f
         val mx = (f * stickY * cp + (-c) * stickX) * sp; val mz = (c * stickY * cp + f * stickX) * sp
         wishX = mx; wishZ = mz
-        val dsh = 1f - 0.8f * min(1f, airDashT / 0.45f)   // durante o impulso do dash a velocidade extra se dissipa devagar
+        val dsh = 1f - 0.85f * min(1f, airDashT / 0.7f)   // durante o impulso do dash a velocidade extra se dissipa devagar
         val k = min(1f, (if (p.onGround) 14f else 5f) * dt * dsh)
         p.vx += (mx - p.vx) * k; p.vz += (mz - p.vz) * k
         val mag = hypot(stickX, stickY).coerceAtMost(1f)
@@ -1635,6 +1661,12 @@ class Game(val world: World) {
             while (diff > PI) diff -= (2 * PI).toFloat(); while (diff < -PI) diff += (2 * PI).toFloat()
             bodyYaw += diff * min(1f, 12f * dt)
         } else if (!thirdPerson) bodyYaw = yaw
+        if (flying && thirdPerson && (dashHeld || dashPre > 0f) && (mag <= 0.1f || freeFly)) {   // carregando/pisando: vira o corpo pra direção do dash
+            val tgt = if (freeFly) atan2(fwdX(), fwdZ()) else bodyYaw
+            var df = tgt - bodyYaw
+            while (df > PI) df -= (2 * PI).toFloat(); while (df < -PI) df += (2 * PI).toFloat()
+            bodyYaw += df * min(1f, 14f * dt)
+        }
         if (jumpHeld && !flying && posture == 0 && p.inWater) { if (p.onGround) { p.vy = max(p.vy, 5.5f); p.onGround = false } }   // na água: segurar sobe/sai da margem
         updateJump(p, dt)
         val wasW = p.inWater; val vyPre = p.vy
@@ -1649,9 +1681,9 @@ class Game(val world: World) {
         // voo rápido: impulso de herói no começo e rastro luminoso atrás (sem tremer a tela)
         val spdF = hypot(p.vx, p.vz)
         // o vento entra e sai suave (rampa pela velocidade), em vez de aparecer de uma vez ao passar de 11
-        val wTgt = if (flying) ((spdF - 9.5f) / 5.5f).coerceIn(0f, 1f).let { it * it * (3f - 2f * it) } else 0f
+        val wTgt = if (flying && airDashT > 0f) 1f else if (flying) ((spdF - 9.5f) / 5.5f).coerceIn(0f, 1f).let { it * it * (3f - 2f * it) } else 0f
         windAmt += (wTgt - windAmt) * min(1f, (if (wTgt > windAmt) 2.4f else 3.2f) * dt)
-        if (windAmt > 0.5f && !wasFast) { flyImp = 1f; windBurst(p, 0.8f); wasFast = true }
+        if (windAmt > 0.5f && !wasFast) { windBurst(p, 0.4f); wasFast = true }   // sem flyImp: o pulso de impulso balançava o corpo
         else if (windAmt < 0.25f) wasFast = false
         flyImp = max(0f, flyImp - dt / 0.6f)
         updateWind(dt, p, windAmt > 0.03f)
@@ -1947,7 +1979,7 @@ class Game(val world: World) {
     }
 
     // ---------- rastro de vento do voo rápido ----------
-    private val WIND_MAX = 260
+    private val WIND_MAX = 380
     private fun windAdd(w: WindP, amp: Float = 1f) { if (wind.size < WIND_MAX) { w.amp = amp; wind.add(w) } }
 
     /** decolagem do super pulo: aneis de vento horizontais se abrindo embaixo do boneco + riscos subindo */
@@ -1963,19 +1995,66 @@ class Game(val world: World) {
         shake = max(shake, 0.05f)
     }
 
-    /** dash aéreo: impulso grande na direção do olhar (voo livre) ou do movimento; a velocidade extra se dissipa em ~0,45s */
+    /** dash aéreo (depois da pisada): impulso grande na direção do olhar (voo livre) ou do movimento; ~2x mais longe que antes */
     private fun airDash(p: Ent, ch: Float) {
         val dx: Float; val dy: Float; val dz: Float
         if (freeFly) { dx = fwdX(); dy = fwdY(); dz = fwdZ() }
         else if (hypot(stickX, stickY) > 0.1f) { val l = max(0.001f, hypot(wishX, wishZ)); dx = wishX / l; dy = 0f; dz = wishZ / l }
         else { dx = sin(bodyYaw); dy = 0f; dz = cos(bodyYaw) }
-        val spd = 25f + 17f * ch
+        val spd = 36f + 26f * ch
         p.vx = dx * spd; p.vy = dy * spd; p.vz = dz * spd
-        airDashT = 0.45f
+        airDashT = 0.7f
+        if (hypot(dx, dz) > 0.05f) bodyYaw = atan2(dx, dz)
         if (hypot(stickX, stickY) > 0.1f) sprint = true
-        flyImp = 1f; windAmt = max(windAmt, 0.6f); wasFast = true
+        windAmt = 1f; wasFast = true
         windBurst(p, 1f)
-        shake = max(shake, 0.08f + 0.08f * ch)
+        dashFx(p, dx, dy, dz, ch)
+        shake = max(shake, 0.16f + 0.1f * ch)
+    }
+
+    /** o visual do impulso: onda de choque no pé que pisou o ar (anéis + raios), túnel de anéis atrás, faíscas */
+    private fun dashFx(p: Ent, dx: Float, dy: Float, dz: Float, ch: Float) {
+        val rx = if (abs(dy) < 0.9f) 0f else 1f; val ry = if (abs(dy) < 0.9f) 1f else 0f
+        var ux = -dz * ry; var uy = dz * rx; var uz = dx * ry - dy * rx
+        val ul = max(0.001f, sqrt(ux * ux + uy * uy + uz * uz)); ux /= ul; uy /= ul; uz /= ul
+        val vx = dy * uz - dz * uy; val vy = dz * ux - dx * uz; val vz = dx * uy - dy * ux
+        val fx = p.x - dx * 0.8f; val fy = p.y + 0.7f - dy * 0.8f; val fz = p.z - dz * 0.8f   // onde o pé empurrou o ar (atrás, no eixo do corpo)
+        // 3 anéis concêntricos na pisada, voltados pra direção do dash
+        windAdd(WindP(2, fx, fy, fz, dx, dy, dz, 0xFFFFFF, 0.45f, 0f, 1.5f + 0.5f * ch, 0f), 1f)
+        windAdd(WindP(2, fx, fy, fz, dx, dy, dz, 0x9FE6FF, 0.6f, 0f, 2.5f + 0.7f * ch, 0f), 0.9f)
+        windAdd(WindP(2, fx, fy, fz, dx, dy, dz, 0xDDF6FF, 0.75f, 0f, 3.6f + 0.9f * ch, 0f), 0.75f)
+        // raios radiais saindo do pé (estrela da pisada)
+        for (i in 0 until 18) {
+            val a = i * 0.3491f + rnd.nextFloat() * 0.15f; val ca = cos(a); val sa = sin(a)
+            val rdx = ux * ca + vx * sa; val rdy = uy * ca + vy * sa; val rdz = uz * ca + vz * sa; val r0 = 0.5f + rnd.nextFloat() * 0.5f
+            windAdd(WindP(0, fx + rdx * r0, fy + rdy * r0, fz + rdz * r0, rdx, rdy, rdz, if (i % 3 == 0) 0xFFF3B0 else if (i % 2 == 0) 0xFFFFFF else 0x9FE6FF, 0.35f + rnd.nextFloat() * 0.2f, 1.4f + rnd.nextFloat() * 1.6f, 0f, 0f), 1f)
+        }
+        // túnel de anéis ao longo da trilha atrás do boneco
+        for (i in 0 until 5) windAdd(WindP(2, p.x - dx * (1.4f + 1.5f * i), p.y + 0.8f - dy * (1.4f + 1.5f * i), p.z - dz * (1.4f + 1.5f * i), dx, dy, dz,
+            if (i % 2 == 0) 0xFFFFFF else 0x9FE6FF, 0.55f + 0.08f * i, 0f, 2.3f + 0.55f * i, 0f), 0.85f - 0.1f * i)
+        // faíscas e poeira de ar jogadas pra trás a partir do pé
+        for (i in 0 until 40) {
+            if (parts.size > 560) break
+            val a = rnd.nextFloat() * 6.2832f; val sp = 1f + rnd.nextFloat() * 3.5f; val bk = 5f + rnd.nextFloat() * 11f
+            val pr = Particle(fx + (ux * cos(a) + vx * sin(a)) * 0.2f, fy + (uy * cos(a) + vy * sin(a)) * 0.2f, fz + (uz * cos(a) + vz * sin(a)) * 0.2f,
+                -dx * bk + (ux * cos(a) + vx * sin(a)) * sp, -dy * bk + (uy * cos(a) + vy * sin(a)) * sp, -dz * bk + (uz * cos(a) + vz * sin(a)) * sp,
+                when (rnd.nextInt(4)) { 0 -> 0xFFF3B0; 1 -> 0x9FE6FF; else -> 0xFFFFFF }, 0.05f + rnd.nextFloat() * 0.09f, 0.45f + rnd.nextFloat() * 0.6f)
+            pr.grav = 0f; parts.add(pr)
+        }
+    }
+
+    /** carregando o dash: o ar é sugado pro boneco (partículas vindo de fora) */
+    private fun dashChargeFx(p: Ent, ch: Float, dt: Float) {
+        chargeFxT -= dt
+        if (chargeFxT > 0f || parts.size > 500) return
+        chargeFxT = 0.035f
+        for (i in 0 until 2 + (ch * 3f).toInt()) {
+            val a = rnd.nextFloat() * 6.2832f; val e = (rnd.nextFloat() - 0.5f) * 2.4f; val r = 2.0f + rnd.nextFloat() * 1.4f
+            val ox = cos(a) * cos(e) * r; val oy = sin(e) * r; val oz = sin(a) * cos(e) * r
+            val pr = Particle(p.x + ox, p.y + 0.8f + oy, p.z + oz, -ox * 3.2f, -oy * 3.2f, -oz * 3.2f, if (rnd.nextInt(3) == 0) 0x9FE6FF else 0xFFFFFF, 0.04f + rnd.nextFloat() * 0.05f, 0.3f)
+            pr.grav = 0f; parts.add(pr)
+        }
+        shake = max(shake, 0.006f + 0.02f * ch)
     }
 
     /** anel grande + riscos em volta no instante em que o voo rápido dispara */
@@ -2030,8 +2109,9 @@ class Game(val world: World) {
         // anéis de vento se abrindo atrás do corpo
         ringT -= dt
         if (ringT <= 0f) {
-            ringT = 0.11f / (0.4f + 0.6f * wa)
-            windAdd(WindP(2, p.x - dx * 0.5f, p.y + 0.8f - dy * 0.5f, p.z - dz * 0.5f, dx, dy, dz, 0xDDF6FF, 0.5f, 0f, 1.7f, 0f), wa)
+            val dsh = airDashT > 0f
+            ringT = if (dsh) 0.04f else 0.11f / (0.4f + 0.6f * wa)
+            windAdd(WindP(2, p.x - dx * 0.5f, p.y + 0.8f - dy * 0.5f, p.z - dz * 0.5f, dx, dy, dz, if (dsh && rnd.nextBoolean()) 0x9FE6FF else 0xDDF6FF, if (dsh) 0.6f else 0.5f, 0f, if (dsh) 2.8f else 1.7f, 0f), if (dsh) 1f else wa)
         }
     }
 
