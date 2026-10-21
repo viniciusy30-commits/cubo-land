@@ -1098,7 +1098,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             skFlSm += ((if (on && sv.flipF > 0f && sv.flipF < 1f) 1f else 0f) - skFlSm) * min(1f, 12f * dtp)
             skGdSm += ((if (on && sv.grinding) 1f else 0f) - skGdSm) * min(1f, 9f * dtp)
             an.sk = skSm; an.skMan = skManSm; an.skFlip = skFlSm; an.skGrind = skGdSm
-            an.skPush = if (on) sv.pushW else 0f; an.skPushPh = sv.pushPh
+            an.skPush = if (on) sv.pushW else 0f; an.skPushPh = sv.pushPh; an.skFace = if (on) sv.faceForward else 0f
             an.skGrab = if (on) sv.grabA else 0f; an.skGrabK = sv.grab.toFloat()
             an.skPop = if (on) sv.popK else 0f; an.skLand = if (on) sv.landK else 0f; an.skBal = if (on) sv.bal else 0f
         }
