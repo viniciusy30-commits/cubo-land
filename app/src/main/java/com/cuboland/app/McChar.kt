@@ -176,10 +176,26 @@ class McChar {
         val tkFlip = tkk == 1 || tkk == 2 || (!tkFast && (tkk == 12 || tkk == 13))   // mortal / giro de costas: corpo encolhido
         val tkSpin = tkk == 5 && !tkFast   // pirueta: braços pro alto, bailarino
         val tkSuper = tkFast && !tkFlip   // voo rápido (tonel/espiral): esticado, braços à frente, pose de super-herói
-        if (tkw > 0.001f) {   // manobra: cambalhota = corpo encolhido; parafuso/giro = corpo esticado e pernas juntas
-            if (tkFlip) { hipL = lp(hipL, -68f, tkw); hipR = lp(hipR, -60f, tkw); kneeL = lp(kneeL, 104f, tkw); kneeR = lp(kneeR, 96f, tkw) }
-            else if (tkSpin) { hipL = lp(hipL, 4f, tkw); hipR = lp(hipR, -8f, tkw); kneeL = lp(kneeL, 6f, tkw); kneeR = lp(kneeR, 38f, tkw) }
-            else { hipL = lp(hipL, 3f, tkw); hipR = lp(hipR, 3f, tkw); kneeL = lp(kneeL, 4f, tkw); kneeR = lp(kneeR, 4f, tkw) }
+        val tkP = an.trkP.coerceIn(0f, 1f)
+        // fases da manobra: preparação (agacha, braços atrás) -> impulso (estica, braços pro alto) -> grupado/pose do giro -> abertura (prepara a queda)
+        val wCr = sin(3.1416f * (tkP / 0.17f).coerceIn(0f, 1f)) * tkw * (1f - 0.7f * (if (tkFast) 1f else 0f))
+        val wLa = sin(3.1416f * ((tkP - 0.09f) / 0.24f).coerceIn(0f, 1f)) * tkw
+        val wTu = sm01((tkP - 0.20f) / 0.12f) * (1f - sm01((tkP - 0.68f) / 0.14f)) * tkw
+        val wOp = sm01((tkP - 0.66f) / 0.16f) * (1f - sm01((tkP - 0.94f) / 0.06f)) * tkw
+        val wBd = sm01((tkP - 0.06f) / 0.20f) * (1f - sm01((tkP - 0.84f) / 0.14f)) * tkw
+        if (tkw > 0.001f) {
+            hipL = lp(hipL, -26f, wCr); hipR = lp(hipR, -20f, wCr); kneeL = lp(kneeL, 58f, wCr); kneeR = lp(kneeR, 50f, wCr)
+            hipL = lp(hipL, 4f, wLa); hipR = lp(hipR, 2f, wLa); kneeL = lp(kneeL, 3f, wLa); kneeR = lp(kneeR, 3f, wLa)
+            if (tkFlip) {   // grupado de verdade (joelhos no peito) e depois abre as pernas pra baixo, uma à frente da outra, pra pousar
+                hipL = lp(hipL, -76f, wTu); hipR = lp(hipR, -68f, wTu); kneeL = lp(kneeL, 116f, wTu); kneeR = lp(kneeR, 108f, wTu)
+                hipL = lp(hipL, -16f, wOp); hipR = lp(hipR, 6f, wOp); kneeL = lp(kneeL, 26f, wOp); kneeR = lp(kneeR, 8f, wOp)
+            } else if (tkSpin) {   // pirueta: perna de apoio esticada e a outra em "passé" (pé no joelho)
+                hipL = lp(hipL, 3f, wBd); kneeL = lp(kneeL, 3f, wBd); hipR = lp(hipR, -40f, wBd); kneeR = lp(kneeR, 100f, wBd)
+            } else if (tkSuper) {   // voo rápido: corpo reto como flecha, pernas juntas
+                hipL = lp(hipL, 5f, wBd); hipR = lp(hipR, 5f, wBd); kneeL = lp(kneeL, 4f, wBd); kneeR = lp(kneeR, 4f, wBd)
+            } else {   // parafuso/saca-rolha: corpo em arco (pernas atrás, joelhos dobrados)
+                hipL = lp(hipL, 14f, wBd); hipR = lp(hipR, 10f, wBd); kneeL = lp(kneeL, 34f, wBd); kneeR = lp(kneeR, 28f, wBd)
+            }
         }
         if (dst > 0.001f) {   // pisada no ar: a perna direita estica de uma vez pra trás (empurra o ar), a esquerda continua dobrada
             hipR = lp(hipR, 14f, dst); kneeR = lp(kneeR, 2f, dst)
@@ -332,19 +348,28 @@ class McChar {
             }
         }
         if (tkw > 0.001f) {
-            val kk = min(1f, tkw * 2.5f)
-            if (tkFlip) {
-                rxL = lp(rxL, -55f, kk); rzL = lp(rzL, -12f, kk); elL = lp(elL, -78f, kk)
-                if (!toolArm) { rxR = lp(rxR, -55f, kk); rzR = lp(rzR, 12f, kk); elR = lp(elR, -78f, kk) }
+            rxL = lp(rxL, 38f, wCr); rzL = lp(rzL, -12f, wCr); elL = lp(elL, -8f, wCr)
+            rxL = lp(rxL, -172f, wLa); rzL = lp(rzL, -10f, wLa); elL = lp(elL, -4f, wLa)
+            if (!toolArm) {
+                rxR = lp(rxR, 38f, wCr); rzR = lp(rzR, 12f, wCr); elR = lp(elR, -8f, wCr)
+                rxR = lp(rxR, -172f, wLa); rzR = lp(rzR, 10f, wLa); elR = lp(elR, -4f, wLa)
+            }
+            if (tkFlip) {   // mãos nas canelas no grupado; depois abre os braços pra equilibrar a queda
+                rxL = lp(rxL, -72f, wTu); rzL = lp(rzL, -8f, wTu); elL = lp(elL, -98f, wTu)
+                rxL = lp(rxL, -22f, wOp); rzL = lp(rzL, -66f, wOp); elL = lp(elL, -6f, wOp)
+                if (!toolArm) {
+                    rxR = lp(rxR, -72f, wTu); rzR = lp(rzR, 8f, wTu); elR = lp(elR, -98f, wTu)
+                    rxR = lp(rxR, -22f, wOp); rzR = lp(rzR, 66f, wOp); elR = lp(elR, -6f, wOp)
+                }
             } else if (tkSpin) {
-                rxL = lp(rxL, -172f, kk); rzL = lp(rzL, -8f, kk); elL = lp(elL, -6f, kk)
-                if (!toolArm) { rxR = lp(rxR, -172f, kk); rzR = lp(rzR, 8f, kk); elR = lp(elR, -6f, kk) }
+                rxL = lp(rxL, -172f, wBd); rzL = lp(rzL, -6f, wBd); elL = lp(elL, -6f, wBd)
+                if (!toolArm) { rxR = lp(rxR, -172f, wBd); rzR = lp(rzR, 6f, wBd); elR = lp(elR, -6f, wBd) }
             } else if (tkSuper) {
-                rxL = lp(rxL, -166f, kk); rzL = lp(rzL, -7f, kk); elL = lp(elL, -3f, kk)
-                if (!toolArm) { rxR = lp(rxR, -166f, kk); rzR = lp(rzR, 7f, kk); elR = lp(elR, -3f, kk) }
+                rxL = lp(rxL, -166f, wBd); rzL = lp(rzL, -7f, wBd); elL = lp(elL, -3f, wBd)
+                if (!toolArm) { rxR = lp(rxR, -166f, wBd); rzR = lp(rzR, 7f, wBd); elR = lp(elR, -3f, wBd) }
             } else {
-                rxL = lp(rxL, 0f, kk); rzL = lp(rzL, -76f, kk); elL = lp(elL, -4f, kk)
-                if (!toolArm) { rxR = lp(rxR, 0f, kk); rzR = lp(rzR, 76f, kk); elR = lp(elR, -4f, kk) }
+                rxL = lp(rxL, 0f, wBd); rzL = lp(rzL, -80f, wBd); elL = lp(elL, -4f, wBd)
+                if (!toolArm) { rxR = lp(rxR, 0f, wBd); rzR = lp(rzR, 80f, wBd); elR = lp(elR, -4f, wBd) }
             }
         }
         if (tuck > 0.001f) {   // dash aéreo carregando: braços fechados na frente do corpo, em guarda

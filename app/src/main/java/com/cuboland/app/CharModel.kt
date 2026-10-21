@@ -45,6 +45,7 @@ class Anim {
     @JvmField var sj = 0f         // 0..1 (suavizado) no ar de um SUPER PULO
     @JvmField var flip = 0f       // graus da cambalhota do super pulo (0..360)
     @JvmField var launch = 0f     // 1 -> 0: acabou de decolar do super pulo pro voo (braços pra cima, relaxando)
+    @JvmField var trkP = 0f   // progresso da manobra 0..1 (fases: preparação, impulso, grupado, abertura)
     @JvmField var trkF = 0f   // manobra começou no voo rápido (0/1)
     @JvmField var trk = 0f; @JvmField var trkK = 0f   // manobra no ar: peso 0..1 e tipo (1-2 cambalhota: encolhe; 3-5 parafuso/giro: braços abertos)
     @JvmField var dst = 0f        // 0..1 pisada no ar do dash (perna estica pra trás empurrando o ar); decai depois do disparo

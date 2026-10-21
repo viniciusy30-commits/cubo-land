@@ -1010,17 +1010,18 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             Matrix.translateM(base, 0, 0f, -0.9f, 0f)
         }
         val tk = game.trickKind; val tA = game.trickA
-        if (tk > 0 && tA > 0f && tA < 1f) {   // manobra: gira o corpo todo em volta do centro nos 3 eixos (antecipação, giro com pico de velocidade no meio, acabamento suave)
-            val sm = tA * tA * (3f - 2f * tA)
-            val ant = -0.035f * sin(3.1416f * min(1f, tA / 0.18f))   // um recuo rápido antes de girar
-            val e = 0.62f * sm + 0.38f * tA + ant
+        if (tk > 0 && tA > 0f && tA < 1f) {   // manobra: arco do pulo + giro nos 3 eixos em volta do centro (curva com preparação e acabamento)
+            val e = game.trickEase(tA)
+            Matrix.translateM(base, 0, 0f, game.trickHop(tA), 0f)
             Matrix.translateM(base, 0, 0f, 0.9f, 0f)
             if (game.trickYaw != 0f) Matrix.rotateM(base, 0, game.trickYaw * e, 0f, 1f, 0f)
             if (game.trickPitch != 0f) Matrix.rotateM(base, 0, game.trickPitch * e, 1f, 0f, 0f)
             if (game.trickRoll != 0f) Matrix.rotateM(base, 0, game.trickRoll * e, 0f, 0f, 1f)
             Matrix.translateM(base, 0, 0f, -0.9f, 0f)
-            an.trk = sin(3.1416f * min(1f, tA * 1.15f)).coerceIn(0f, 1f); an.trkK = tk.toFloat(); an.trkF = if (game.trickFast) 1f else 0f
-        } else { an.trk = 0f; an.trkK = 0f; an.trkF = 0f }
+            val r1 = (tA / 0.05f).coerceIn(0f, 1f); val r2 = ((tA - 0.95f) / 0.05f).coerceIn(0f, 1f)
+            an.trk = r1 * r1 * (3f - 2f * r1) * (1f - r2 * r2 * (3f - 2f * r2)); an.trkP = tA
+            an.trkK = tk.toFloat(); an.trkF = if (game.trickFast) 1f else 0f
+        } else { an.trk = 0f; an.trkK = 0f; an.trkF = 0f; an.trkP = 0f }
         G.glEnable(G.GL_POLYGON_OFFSET_FILL)   // camadas do boneco: o que está por cima ganha na profundidade (acaba o z-fighting nas dobras)
         cm.mc.layerHook = { l -> G.glPolygonOffset(0f, -l.toFloat()) }
         cm.draw(charBox, base, an, handM)

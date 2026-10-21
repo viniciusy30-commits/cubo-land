@@ -1,3 +1,11 @@
+#id 2026-10-21-h
+#titulo Manobras com cara de acrobacia de verdade
+- Cada manobra agora tem fases: agacha e joga os braços pra trás, explode pra cima com os braços pro alto, gira com o corpo grupado (joelhos no peito, mãos nas canelas), abre os braços e as pernas pra preparar a queda
+- O corpo sobe num arco (pulo de verdade) enquanto gira, com um recuo antes de começar e desaceleração no fim
+- Parafuso e saca-rolha com o corpo em arco; pirueta com braços pro alto e perna em passé (pé no joelho); voo rápido com corpo reto como flecha
+- Fita de luz saindo da cabeça e dos pés desenhando o giro no ar
+- Manobras mais longas pra dar pra ver cada fase
+
 #id 2026-10-21-g
 #titulo Manobras no ar com analógico
 - Pernas: acabou a travadinha nos primeiros milissegundos do passo (a passada agora começa a rodar no 1º frame e a amplitude entra suave)

@@ -592,6 +592,28 @@ class Game(val world: World) {
         1 -> "Looping"; 2 -> "Looping de costas"; 3 -> "Tonel duplo esquerda"; 4 -> "Tonel duplo direita"; 5 -> "Tonel triplo"
         10 -> "Espiral esquerda"; 11 -> "Espiral direita"; 12 -> "Espiral invertida esquerda"; else -> "Espiral invertida direita"
     }
+    /** curva do giro: recuo de preparação (0..0,12), giro só entre 0,10 e 0,90 com pico de velocidade no meio, resto = impulso/queda */
+    fun trickEase(a: Float): Float {
+        val w = ((a - 0.10f) / 0.80f).coerceIn(0f, 1f)
+        val sm = w * w * (3f - 2f * w)
+        val ant = -0.03f * sin(3.1416f * (a / 0.12f).coerceIn(0f, 1f))
+        return 0.7f * sm + 0.3f * w + ant
+    }
+    /** subida visual do corpo durante a manobra (arco do pulo) */
+    fun trickHop(a: Float): Float = (if (trickFast) 0.22f else 0.34f) * sin(3.1416f * ((a - 0.06f) / 0.88f).coerceIn(0f, 1f))
+    private val trkTmp = FloatArray(3)
+    /** ponto do corpo (relativo ao centro, em coordenadas do boneco) -> deslocamento no mundo, com a mesma rotação da manobra */
+    private fun trickWorld(lx: Float, ly: Float, lz: Float, e: Float) {
+        val r = 0.017453f
+        var a = trickRoll * e * r
+        val x = lx * cos(a) - ly * sin(a); val y = lx * sin(a) + ly * cos(a)
+        a = trickPitch * e * r
+        val y2 = y * cos(a) - lz * sin(a); val z2 = y * sin(a) + lz * cos(a)
+        a = trickYaw * e * r
+        val x3 = x * cos(a) + z2 * sin(a); val z3 = -x * sin(a) + z2 * cos(a)
+        val c = cos(bodyYaw); val sn = sin(bodyYaw)
+        trkTmp[0] = x3 * c + z3 * sn; trkTmp[1] = y2; trkTmp[2] = -x3 * sn + z3 * c
+    }
     private var trickQ = false; private var trickQDx = 0f; private var trickQDy = 0f; private var trickCombo = 0   // próxima manobra emendada (aperta na 2ª metade da atual)
     fun trickCanQueue(): Boolean = trickLeft > 0f && trickA > 0.5f && !trickQ && !player.onGround && !player.inWater && !driving
     private fun trickStart(p: Ent, dx: Float, dy: Float) {
@@ -600,27 +622,27 @@ class Game(val world: World) {
         var pt = 0f; var rl = 0f; var yw = 0f; var du = 0.8f
         if (!fast) {
             when (k) {
-                1 -> { pt = 360f; du = 0.80f }
-                2 -> { pt = -360f; du = 0.80f }
-                3 -> { rl = -360f; du = 0.66f }
-                4 -> { rl = 360f; du = 0.66f }
-                5 -> { yw = 720f; du = 0.74f }
-                10 -> { pt = 360f; rl = -360f; du = 0.95f }
-                11 -> { pt = 360f; rl = 360f; du = 0.95f }
-                12 -> { pt = -360f; yw = 360f; du = 0.92f }
-                else -> { pt = -360f; yw = -360f; du = 0.92f }
+                1 -> { pt = 360f; du = 0.95f }
+                2 -> { pt = -360f; du = 0.95f }
+                3 -> { rl = -360f; du = 0.78f }
+                4 -> { rl = 360f; du = 0.78f }
+                5 -> { yw = 720f; du = 0.90f }
+                10 -> { pt = 360f; rl = -360f; du = 1.10f }
+                11 -> { pt = 360f; rl = 360f; du = 1.10f }
+                12 -> { pt = -360f; yw = 360f; du = 1.05f }
+                else -> { pt = -360f; yw = -360f; du = 1.05f }
             }
         } else {
             when (k) {
-                1 -> { pt = 720f; du = 1.0f }
-                2 -> { pt = -720f; du = 1.0f }
-                3 -> { rl = -720f; du = 0.62f }
-                4 -> { rl = 720f; du = 0.62f }
-                5 -> { rl = 1080f; du = 0.78f }
-                10 -> { pt = 360f; rl = -720f; du = 1.05f }
-                11 -> { pt = 360f; rl = 720f; du = 1.05f }
-                12 -> { pt = -360f; rl = -720f; du = 1.05f }
-                else -> { pt = -360f; rl = 720f; du = 1.05f }
+                1 -> { pt = 720f; du = 1.20f }
+                2 -> { pt = -720f; du = 1.20f }
+                3 -> { rl = -720f; du = 0.72f }
+                4 -> { rl = 720f; du = 0.72f }
+                5 -> { rl = 1080f; du = 0.95f }
+                10 -> { pt = 360f; rl = -720f; du = 1.25f }
+                11 -> { pt = 360f; rl = 720f; du = 1.25f }
+                12 -> { pt = -360f; rl = -720f; du = 1.25f }
+                else -> { pt = -360f; rl = 720f; du = 1.25f }
             }
         }
         trickKind = k; trickFast = fast; trickPitch = pt; trickRoll = rl; trickYaw = yw
@@ -1691,6 +1713,17 @@ class Game(val world: World) {
             trickLeft = max(0f, trickLeft - dt)
             trickA = (1f - trickLeft / trickDur).coerceIn(0f, 1f)
             trickFxT -= dt
+            if (parts.size < 430 && trickA > 0.10f && trickA < 0.92f) {   // fita de luz: a cabeça e os pés desenham o giro no ar
+                val e = trickEase(trickA); val hp = trickHop(trickA)
+                for (n in 0 until 2) {
+                    val ly = if (n == 0) 0.74f else -0.72f
+                    trickWorld(0f, ly, 0f, e)
+                    val col = if (n == 0) (if (trickFast) 0xFFFFFF else 0xFFF2B0) else (if (trickFast) 0x7FDFFF else 0xFFC46B)
+                    val rb = Particle(p.x + trkTmp[0], p.y + 0.9f + hp + trkTmp[1], p.z + trkTmp[2], 0f, 0f, 0f, col, if (trickFast) 0.09f else 0.075f, 0.42f)
+                    rb.grav = 0f
+                    parts.add(rb)
+                }
+            }
             if (trickFxT <= 0f && trickA > 0.05f && trickA < 0.95f) {   // anel de vento no eixo principal + faíscas girando em volta do corpo
                 trickFxT = if (trickFast) 0.045f else 0.07f
                 val pitchMain = abs(trickPitch) >= abs(trickRoll) && trickPitch != 0f
@@ -1698,18 +1731,6 @@ class Game(val world: World) {
                 val ay = if (!pitchMain && trickRoll == 0f) 1f else 0f
                 val az = if (pitchMain) -sin(bodyYaw) else if (trickRoll != 0f) cos(bodyYaw) else 0f
                 windAdd(WindP(2, p.x, p.y + 0.85f, p.z, ax, ay, az, if (rnd.nextBoolean()) 0xFFFFFF else 0x9FE6FF, if (trickFast) 0.5f else 0.42f, 0f, if (trickFast) 2.0f else 1.4f, 0f), if (trickFast) 1f else 0.8f)
-                if (parts.size < 460) for (n in 0 until (if (trickFast) 3 else 2)) {
-                    val a = trickA * 18.85f * (if (trickRoll < 0f || trickPitch < 0f) -1f else 1f) + n * 2.1f
-                    val r = if (trickFast) 0.95f else 0.75f
-                    val sx = cos(bodyYaw); val sz = -sin(bodyYaw); val fx2 = sin(bodyYaw); val fz2 = cos(bodyYaw)
-                    val ox = if (pitchMain) fx2 * cos(a) * r else sx * cos(a) * r
-                    val oz = if (pitchMain) fz2 * cos(a) * r else sz * cos(a) * r
-                    val oy = sin(a) * r
-                    val col = when ((rnd.nextFloat() * 3f).toInt()) { 0 -> 0xFFFFFF; 1 -> 0x9FE6FF; else -> 0xFFD966 }
-                    val pr = Particle(p.x + ox, p.y + 0.9f + oy, p.z + oz, ox * 0.6f, oy * 0.6f, oz * 0.6f, col, 0.04f + rnd.nextFloat() * 0.04f, 0.35f + rnd.nextFloat() * 0.25f)
-                    pr.grav = 1.5f
-                    parts.add(pr)
-                }
             }
             if (trickLeft <= 0f) {
                 if (trickA > 0.9f) {   // acabou a manobra inteira: anel de acabamento
