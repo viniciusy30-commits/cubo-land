@@ -37,7 +37,7 @@ class BlockInspector(
 ) {
     val view = FrameLayout(act)
     private data class Entry(val id: Int, val name: String, val category: String)
-    private data class Holder(val cube: CubePreviewView, val name: TextView, val meta: TextView)
+    private inner class Holder(val cube: CubePreviewView, val name: TextView, val meta: TextView)
 
     private val entries: List<Entry> = menu.flatMap { pair ->
         pair.first.ids.mapNotNull { id ->
@@ -124,7 +124,8 @@ class BlockInspector(
         detailCard.addView(cube, LinearLayout.LayoutParams(act.dp(88), act.dp(88)).apply { rightMargin = act.dp(8) })
         val detailRight = LinearLayout(act).apply { orientation = LinearLayout.VERTICAL }
         nameLine.setTextColor(Color.WHITE); nameLine.textSize = 15f; nameLine.typeface = android.graphics.Typeface.DEFAULT_BOLD
-        detailsLine.setTextColor(Color.rgb(184, 195, 211)); detailsLine.textSize = 11f
+        detailsLine.setTextColor(Color.rgb(184, 195, 211)); detailsLine.textSize = 11f; detailsLine.maxLines = 2
+        detailsLine.ellipsize = android.text.TextUtils.TruncateAt.END
         statusLine.setTextColor(Color.rgb(133, 225, 165)); statusLine.textSize = 11f
         statusLine.setPadding(0, act.dp(3), 0, 0)
         detailRight.addView(nameLine)
