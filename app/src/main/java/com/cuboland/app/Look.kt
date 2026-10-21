@@ -55,7 +55,7 @@ object Look {
 
 
     /** looks prontos: 21 valores na ordem dos índices acima */
-    val PRESET_NAMES = arrayOf("Ninja", "Colegial", "Mago", "Samurai", "Princesa", "Maid", "Príncipe", "Gatinha", "Raposa", "Colegial (menino)")
+    val PRESET_NAMES = arrayOf("Ninja", "Colegial", "Mago", "Samurai", "Princesa", "Maid", "Príncipe", "Gatinha", "Raposa", "Colegial (menino)", "Cyberpunk", "Carmesim Infernal", "Aurora Glacial", "Streetwear", "Sakura", "Cavaleiro Solar", "Gótica Real", "Explorador", "Neon Arcade", "Floresta Mística")
     val PRESETS = arrayOf(
         intArrayOf(0, 1, 8, 4, 5, 5, 0, 1, 3, 0, 3, 0, 3, 11, 4, 8, 5, 3, 7, 4, 1),
         intArrayOf(1, 0, 16, 4, 4, 0, 1, 8, 11, 5, 11, 6, 3, 0, 4, 0, 9, 4, 0, 4, 0),
@@ -66,7 +66,18 @@ object Look {
         intArrayOf(0, 1, 11, 2, 0, 0, 1, 12, 11, 0, 11, 6, 3, 4, 6, 0, 1, 4, 4, 4, 0),
         intArrayOf(1, 0, 41, 8, 7, 6, 1, 1, 2, 1, 3, 1, 2, 5, 2, 7, 4, 2, 6, 4, 5),
         intArrayOf(0, 1, 10, 10, 6, 6, 1, 10, 4, 0, 3, 5, 10, 14, 5, 0, 8, 5, 0, 4, 4),
-        intArrayOf(0, 0, 15, 4, 0, 5, 0, 9, 11, 0, 11, 6, 3, 0, 4, 9, 9, 10, 0, 4, 1))
+        intArrayOf(0, 0, 15, 4, 0, 5, 0, 9, 11, 0, 11, 6, 3, 0, 4, 9, 9, 10, 0, 4, 1),
+        intArrayOf(0, 2, 10, 6, 5, 7, 0, 3, 3, 7, 3, 1, 3, 18, 7, 2, 2, 3, 8, 7, 1, 7, 22, 1, 7, 7, 24),
+        intArrayOf(0, 4, 13, 11, 5, 8, 0, 5, 13, 7, 3, 4, 3, 13, 13, 5, 6, 13, 8, 13, 1, 4, 6, 3, 6, 3, 6),
+        intArrayOf(1, 1, 33, 21, 4, 10, 1, 11, 11, 6, 9, 0, 15, 15, 25, 0, 3, 9, 3, 16, 0, 6, 25, 5, 29, 5, 25),
+        intArrayOf(0, 3, 27, 4, 5, 5, 0, 3, 3, 7, 3, 1, 3, 18, 7, 2, 2, 3, 8, 7, 1, 7, 22, 1, 7, 7, 24),
+        intArrayOf(1, 1, 6, 17, 4, 0, 1, 0, 1, 5, 13, 2, 1, 10, 1, 3, 0, 10, 2, 1, 0, 5, 18, 2, 17, 3, 18),
+        intArrayOf(0, 2, 23, 10, 6, 6, 0, 5, 6, 4, 10, 4, 6, 4, 6, 0, 5, 6, 4, 6, 0, 1, 6, 3, 10, 3, 6),
+        intArrayOf(1, 0, 36, 17, 4, 3, 1, 12, 3, 0, 3, 4, 3, 21, 3, 4, 5, 3, 8, 3, 1, 1, 17, 1, 3, 6, 17),
+        intArrayOf(0, 3, 31, 5, 5, 7, 0, 16, 10, 7, 10, 1, 10, 16, 10, 3, 2, 10, 3, 10, 1, 7, 7, 4, 7, 7, 7),
+        intArrayOf(0, 1, 15, 9, 0, 9, 0, 7, 7, 7, 7, 1, 7, 18, 7, 11, 9, 7, 3, 7, 0, 7, 24, 1, 24, 7, 24),
+        intArrayOf(0, 3, 26, 20, 2, 1, 0, 16, 8, 7, 8, 4, 3, 16, 3, 1, 7, 3, 7, 8, 0, 1, 8, 4, 8, 3, 8),
+        intArrayOf(1, 2, 25, 12, 1, 1, 1, 4, 7, 6, 7, 0, 7, 14, 7, 3, 8, 7, 7, 7, 0, 5, 23, 2, 23, 2, 23))
 
     fun applyPreset(i: Int) {
         val preset = PRESETS[((i % PRESETS.size) + PRESETS.size) % PRESETS.size]
