@@ -1,3 +1,10 @@
+#id 2026-10-21-skate
+#titulo SKATE estilo Tony Hawk!
+- Novo botao SKATE (abaixo de CARRO e MOTO): sobe na prancha e sai andando. PUSH acelera, FREIO para/da re, setas viram
+- OLLIE: toque = pulinho; segure pra agachar e solte = pulo alto. No ar: FLIP (sem direcao = kickflip, seta esquerda = heelflip, seta direita = pop shove-it, PUSH = 360 flip, FREIO = varial flip), GRAB (indy, melon, mute, nosegrab, tailgrab conforme a direcao) e GIRAR < / > (180, 360, 540...)
+- GRIND: aperte GRIND perto da quina de um bloco (ou de uma mureta/bloco fino) pra deslizar. Direcao ao apertar escolhe: nada = 50-50, seta = boardslide, PUSH = nosegrind, FREIO = tailslide. Mantenha o EQUILIBRIO apertando a seta contraria ao lado que a barra pende. OLLIE sai do grind
+- Combo: cada manobra soma pontos e o multiplicador cresce; pouse limpo pra guardar. Pouso torto, queda alta, batida forte ou perder o equilibrio = tombo e perde o combo
+
 #id 2026-10-21-h
 #titulo Manobras com cara de acrobacia de verdade
 - Cada manobra agora tem fases: agacha e joga os braços pra trás, explode pra cima com os braços pro alto, gira com o corpo grupado (joelhos no peito, mãos nas canelas), abre os braços e as pernas pra preparar a queda

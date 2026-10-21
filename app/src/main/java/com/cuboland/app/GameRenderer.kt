@@ -990,7 +990,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         tiltSm += ((tiltTarget + (tiltV - tiltTarget) * vw) - tiltSm) * min(1f, 8f * dtp)
         an.t = t; an.phase = phaseA; an.move = wa; an.run = runA; an.vy = vyHold; an.air = airNow; an.airA = airSm; an.fly = flySm; an.flySpd = flySp
         val impK = ((1f - game.flyImp) * 3f).coerceIn(0f, 1f)   // o impulso entra em ~0,2s em vez de estalar
-        an.dash = max(dashSm, stompSm); an.dst = stompSm; an.vp = vpSm; an.imp = game.flyImp * impK * impK * (3f - 2f * impK); an.swimFast = swimFastA; an.swimPh = swimPhA; an.crouch = game.crouchA; an.sit = game.sitA; an.lie = game.lieA; an.ride = if (game.driving) 1f else 0f; an.bent = if (game.driving && game.car.kind == 1) 1f else 0f; an.landT = landSm; an.swim = swm; an.dive = diveSm; an.tilt = tiltSm
+        an.dash = max(dashSm, stompSm); an.dst = stompSm; an.vp = vpSm; an.imp = game.flyImp * impK * impK * (3f - 2f * impK); an.swimFast = swimFastA; an.swimPh = swimPhA; an.crouch = game.crouchA; an.sit = game.sitA; an.lie = game.lieA; an.ride = if (game.driving && !game.skating) 1f else 0f; an.bent = if (game.driving && game.car.kind == 1) 1f else 0f; an.landT = landSm; an.swim = swm; an.dive = diveSm; an.tilt = tiltSm
         an.jch = jchSm; an.sj = sjSm; an.flip = flipAng; an.launch = game.flyLaunch; an.dch = game.airDashCharge
         an.atk = game.swing; an.atkArm = swingDelta(id, game.swing); an.hasTool = id > 0
         // mesmos keyframes de golpe/carga da 1ª pessoa, aplicados no braço do boneco
@@ -998,6 +998,9 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         else { evalPose(tpP, kfFor(id), game.swing); an.charge = 0f }
         an.poseOn = true; an.pP = tpP[3]; an.pY = tpP[4]; an.pR = tpP[5]; an.pW = tpP[6]
         setBase(p.x, p.y, p.z, Math.toDegrees(game.bodyYaw.toDouble()).toFloat())
+        if (game.skating) {   // skatista inclina com a prancha (eixo X do corpo = frente da prancha)
+            Matrix.rotateM(base, 0, game.skateV.lean, 1f, 0f, 0f)
+        }
         if (game.driving && game.car.kind == 1) {   // piloto acompanha a inclinação da moto e a empinada
             Matrix.rotateM(base, 0, -game.car.roll, 0f, 0f, 1f)
             Matrix.rotateM(base, 0, -game.car.wheelieDeg(), 1f, 0f, 0f)
@@ -1596,6 +1599,42 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         if (c.reversing) b(0f, 0.9f, -1.12f, 0.1f, 0.06f, 0.04f, 0xFFFFFF, 1f, 1.6f)
     }
 
+    // ---------- skate: prancha com rodas; gira/flipa por baixo do boneco ----------
+    private fun drawSkate(s: SkateState) {
+        if (!s.placed) return
+        if (!seen(s.x, s.y + 0.4f, s.z, 70f)) return
+        setBase(s.x, s.y + s.yOff, s.z, Math.toDegrees(s.h.toDouble()).toFloat() + s.spin)
+        if (s.tumble != 0f) {
+            Matrix.rotateM(base, 0, s.tumble, 0f, 0f, 1f)
+            Matrix.rotateM(base, 0, s.tumble * 0.6f, 1f, 0f, 0f)
+        }
+        Matrix.rotateM(base, 0, s.lean, 0f, 0f, 1f)
+        Matrix.translateM(base, 0, 0f, 0.185f + 0.5f * s.grabA, 0f)
+        val pitch = -s.pitchA - s.grabA * 22f + s.gPitch      // + = bico pra baixo
+        if (pitch != 0f) Matrix.rotateM(base, 0, pitch, 1f, 0f, 0f)
+        if (s.flipYaw + s.gYaw != 0f) Matrix.rotateM(base, 0, s.flipYaw + s.gYaw, 0f, 1f, 0f)
+        if (s.flipRoll != 0f) Matrix.rotateM(base, 0, s.flipRoll, 0f, 0f, 1f)
+        val wood = 0xD9A55B; val grip = 0x1B1B20; val metal = 0xB4B9C0; val wheelC = 0xFFB03B
+        fun b(px: Float, py: Float, pz: Float, sx: Float, sy: Float, sz: Float, col: Int, rx: Float = 0f) =
+            box(base, px, py, pz, rx, 0f, sx, sy, sz, 0f, col, 1f, 1f)
+        // deck + bicos levantados
+        b(0f, 0f, 0f, 0.28f, 0.04f, 0.66f, wood)
+        b(0f, 0.04f, 0.43f, 0.28f, 0.04f, 0.24f, wood, -22f)
+        b(0f, 0.04f, -0.43f, 0.28f, 0.04f, 0.24f, wood, 22f)
+        // lixa
+        b(0f, 0.025f, 0f, 0.26f, 0.008f, 0.62f, grip)
+        b(0f, 0.066f, 0.43f, 0.26f, 0.008f, 0.2f, grip, -22f)
+        b(0f, 0.066f, -0.43f, 0.26f, 0.008f, 0.2f, grip, 22f)
+        b(0f, 0.031f, 0.2f, 0.26f, 0.004f, 0.05f, 0xE8505B)
+        // trucks e eixos
+        for (zz in floatArrayOf(0.26f, -0.26f)) {
+            b(0f, -0.05f, zz, 0.2f, 0.03f, 0.05f, metal)
+            b(0f, -0.085f, zz, 0.36f, 0.022f, 0.022f, metal)
+            for (xx in floatArrayOf(0.17f, -0.17f))
+                for (k in 0 until 3) box(base, xx, -0.1f, zz, s.wheel + k * 30f, 0f, 0.07f, 0.17f, 0.17f, 0f, wheelC)
+        }
+    }
+
     private fun drawSlime(s: Slime) {
         val sq = s.squash + sin(s.t * 4f) * 0.04f
         val sy = 1f + sq; val sxz = 1f - sq * 0.5f
@@ -2133,10 +2172,11 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         if (game.thirdPerson && !game.driving) shadow(game.player.x, game.player.y, game.player.z, 0.8f)
         if (game.carV.placed) shadow(game.carV.x, game.carV.y, game.carV.z, 3.2f)
         if (game.bikeV.placed) shadow(game.bikeV.x, game.bikeV.y, game.bikeV.z, 1.6f)
+        if (game.skateV.placed) shadow(game.skateV.x, game.skateV.y, game.skateV.z, 1.0f)
         drawPrints()
         G.glDepthMask(true)
         for (s in game.slimes) drawSlime(s)
-        drawVeh(game.carV); drawVeh(game.bikeV)
+        drawVeh(game.carV); drawVeh(game.bikeV); drawSkate(game.skateV)
         drawElevators()
         drawTvScreen()
         drawDebris(); drawTrees(); drawDrops()

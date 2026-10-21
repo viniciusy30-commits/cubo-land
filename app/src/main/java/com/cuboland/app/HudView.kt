@@ -226,6 +226,98 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         game.carHand = v.contains(4)
         game.carWheelie = v.contains(5)
     }
+    // ----- Skate: ◀ ▶ PUSH FREIO GIRAR◀ GIRAR▶ + losango OLLIE / FLIP / GRAB / GRIND -----
+    private val skPtr = HashMap<Int, Int>()
+    private fun skateRect() = RectF(width - 208 * d, 118 * d, width - 124 * d, 162 * d)
+    private fun skBtn(k: Int): RectF {
+        val m = 18 * d; val bot = height - m
+        val bs = 66 * d; val st = bs + 6 * d
+        val cx = width - m - 120 * d; val cy = bot - 104 * d
+        val rowTop = bot - 92 * d - 8 * d - 48 * d; val rowBot = bot - 92 * d - 8 * d
+        return when (k) {
+            0 -> RectF(m, bot - 92 * d, m + 88 * d, bot)
+            1 -> RectF(m + 98 * d, bot - 92 * d, m + 186 * d, bot)
+            2 -> RectF(m + 214 * d, bot - 92 * d, m + 300 * d, bot)
+            3 -> RectF(m + 310 * d, bot - 92 * d, m + 396 * d, bot)
+            4 -> RectF(cx - bs / 2, cy + st - bs / 2, cx + bs / 2, cy + st + bs / 2)
+            5 -> RectF(cx - st - bs / 2, cy - bs / 2, cx - st + bs / 2, cy + bs / 2)
+            6 -> RectF(cx + st - bs / 2, cy - bs / 2, cx + st + bs / 2, cy + bs / 2)
+            7 -> RectF(cx - bs / 2, cy - st - bs / 2, cx + bs / 2, cy - st + bs / 2)
+            8 -> RectF(m, rowTop, m + 88 * d, rowBot)
+            else -> RectF(m + 98 * d, rowTop, m + 186 * d, rowBot)
+        }
+    }
+    private fun skDown(id: Int, x: Float, y: Float): Boolean {
+        for (k in 0 until 10) if (skBtn(k).contains(x, y)) {
+            skPtr[id] = k
+            if (k == 4) game.skOllieLatch = true
+            if (k == 5) game.skFlipLatch = true
+            if (k == 7) game.skGrindLatch = true
+            skSync(); return true
+        }
+        return false
+    }
+    private fun skSync() {
+        val v = skPtr.values
+        game.skSteer = (if (v.contains(1)) 1f else 0f) - (if (v.contains(0)) 1f else 0f)
+        game.skGas = if (v.contains(2)) 1f else 0f
+        game.skBrake = if (v.contains(3)) 1f else 0f
+        game.skSpin = (if (v.contains(9)) 1f else 0f) - (if (v.contains(8)) 1f else 0f)
+        game.skOllie = v.contains(4)
+        game.skGrab = v.contains(6)
+        game.skGrind = v.contains(7)
+    }
+    private fun drawSkateUi(c: Canvas, w: Float, h: Float) {
+        val s = game.skateV
+        val on = skPtr.values
+        val sc = tsc(1.1f)
+        for (k in 0 until 10) {
+            val r = skBtn(k)
+            val base = when (k) { 0, 1 -> Cz.SKY; 2 -> Cz.GREEN; 3 -> Cz.RED; 4 -> Cz.SKY; 5 -> Cz.LILAC; 6 -> Cz.PINK; 7 -> Cz.ORANGE; else -> Cz.STONE }
+            val pressed = on.contains(k)
+            pxPanel(c, r.left, r.top, r.right, r.bottom, base, false, pressed)
+            val cx = (r.left + r.right) / 2f; val cy = (r.top + r.bottom) / 2f + (if (pressed) u else 0f)
+            when (k) {
+                0 -> pxText(c, "<", cx, cy - 3.5f * tsc(3f), tsc(3f), Color.WHITE, 1)
+                1 -> pxText(c, ">", cx, cy - 3.5f * tsc(3f), tsc(3f), Color.WHITE, 1)
+                2 -> pxText(c, "PUSH", cx, cy - 3.5f * sc, sc, Color.WHITE, 1)
+                3 -> pxText(c, "FREIO", cx, cy - 3.5f * sc, sc, Color.WHITE, 1)
+                4 -> pxText(c, "OLLIE", cx, cy - 3.5f * sc, sc, Color.WHITE, 1)
+                5 -> pxText(c, "FLIP", cx, cy - 3.5f * sc, sc, Color.WHITE, 1)
+                6 -> pxText(c, "GRAB", cx, cy - 3.5f * sc, sc, Color.WHITE, 1)
+                7 -> pxText(c, "GRIND", cx, cy - 3.5f * sc, sc, Color.WHITE, 1)
+                8 -> pxText(c, "GIRAR <", cx, cy - 3.5f * tsc(0.9f), tsc(0.9f), Color.WHITE, 1)
+                else -> pxText(c, "GIRAR >", cx, cy - 3.5f * tsc(0.9f), tsc(0.9f), Color.WHITE, 1)
+            }
+        }
+        // placar e velocidade
+        val sp = RectF(w / 2f - 96 * d, 12 * d, w / 2f + 96 * d, 62 * d)
+        pxPanel(c, sp.left, sp.top, sp.right, sp.bottom, Cz.INK)
+        val s1 = tsc(1.4f); val s2 = tsc(0.95f)
+        pxText(c, "${s.score} PTS", (sp.left + sp.right) / 2f, sp.top + 8 * d, s1, Color.WHITE, 1)
+        pxText(c, "${s.kmh()} KM/H", (sp.left + sp.right) / 2f, sp.top + 8 * d + 7 * s1 + 5 * d, s2, Color.rgb(255, 212, 99), 1)
+        // combo em andamento ou resultado
+        val ns = tsc(1.5f)
+        if (s.comboN > 0) {
+            pxText(c, s.comboText, w / 2f, 70 * d, ns, Color.WHITE, 1, outline = true)
+            pxText(c, "${s.comboPts * s.comboN}  x${s.comboN}", w / 2f, 70 * d + 7 * ns + 4 * d, tsc(1.2f), Color.rgb(255, 212, 99), 1, outline = true)
+        } else if (s.bannerT > 0f) {
+            pxText(c, s.banner, w / 2f, 70 * d, ns, if (s.bannerGood) Color.rgb(255, 212, 99) else Color.rgb(232, 86, 86), 1, outline = true)
+        }
+        // barra de equilíbrio (grind)
+        if (s.grinding) {
+            val bw = 220 * d; val bh = 14 * d
+            val l0 = w / 2f - bw / 2f; val t0 = h * 0.58f
+            pt.color = Color.argb(190, 20, 14, 30); c.drawRect(l0 - 3 * d, t0 - 3 * d, l0 + bw + 3 * d, t0 + bh + 3 * d, pt)
+            pt.color = Color.rgb(150, 60, 60); c.drawRect(l0, t0, l0 + bw, t0 + bh, pt)
+            pt.color = Color.rgb(230, 190, 70); c.drawRect(l0 + bw * 0.18f, t0, l0 + bw * 0.82f, t0 + bh, pt)
+            pt.color = Color.rgb(88, 196, 92); c.drawRect(l0 + bw * 0.36f, t0, l0 + bw * 0.64f, t0 + bh, pt)
+            val mx = l0 + bw / 2f + s.bal.coerceIn(-1f, 1f) * bw / 2f
+            pt.color = Color.WHITE; c.drawRect(mx - 4 * d, t0 - 6 * d, mx + 4 * d, t0 + bh + 6 * d, pt)
+            pxText(c, "EQUILIBRIO", w / 2f, t0 - 7 * d - 7 * tsc(1f), tsc(1f), Color.WHITE, 1, outline = true)
+        }
+    }
+
     private fun drawCarUi(c: Canvas, w: Float, h: Float) {
         if (paused) return
         val r0 = carToggleRect()
@@ -236,8 +328,12 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
             val m0 = motoRect()
             pxPanel(c, m0.left, m0.top, m0.right, m0.bottom, Cz.ORANGE)
             pxText(c, "MOTO", (m0.left + m0.right) / 2f, (m0.top + m0.bottom) / 2f - 3.5f * s0, s0, Color.WHITE, 1)
+            val k0 = skateRect()
+            pxPanel(c, k0.left, k0.top, k0.right, k0.bottom, Cz.LILAC)
+            pxText(c, "SKATE", (k0.left + k0.right) / 2f, (k0.top + k0.bottom) / 2f - 3.5f * s0, s0, Color.WHITE, 1)
             return
         }
+        if (game.skating) { drawSkateUi(c, w, h); return }
         if (game.car.kind == 0) {   // TETO: fecha/abre o teto do carro (o botão fica onde o MOTO ficava)
             val t0 = motoRect(); val cl = game.car.roofOn
             pxPanel(c, t0.left, t0.top, t0.right, t0.bottom, if (cl) Cz.SKY else Cz.GREEN)
@@ -284,7 +380,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
 
     private fun clearInput() {
         stickId = -1; lookId = -1; sx = 0f; sy = 0f; lookHold = false
-        game.stickX = 0f; game.stickY = 0f; game.jumpHeld = false; game.downHeld = false; game.dashHeld = false; game.attackHeld = false; game.aimOn = false; btnId.clear(); carPtr.clear(); trickId = -1; trickAx = 0f; trickAy = 0f; carSync()
+        game.stickX = 0f; game.stickY = 0f; game.jumpHeld = false; game.downHeld = false; game.dashHeld = false; game.attackHeld = false; game.aimOn = false; btnId.clear(); carPtr.clear(); skPtr.clear(); trickId = -1; trickAx = 0f; trickAy = 0f; carSync(); skSync()
     }
 
     /** solta joystick/botões (usado quando o painel da galeria abre por cima) */
@@ -336,8 +432,10 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
         if (invOpen) { invDown(id, x, y); return }
         if (carToggleRect().contains(x, y)) { game.wantVeh = 1; return }
         if (!game.driving && motoRect().contains(x, y)) { game.wantVeh = 2; return }
-        if (game.driving && game.car.kind == 0 && motoRect().contains(x, y)) { game.car.roofOn = !game.car.roofOn; return }   // botão TETO
-        if (game.driving && carDown(id, x, y)) return
+        if (!game.driving && skateRect().contains(x, y)) { game.wantVeh = 3; return }
+        if (game.driving && !game.skating && game.car.kind == 0 && motoRect().contains(x, y)) { game.car.roofOn = !game.car.roofOn; return }   // botão TETO
+        if (game.skating && skDown(id, x, y)) return
+        if (game.driving && !game.skating && carDown(id, x, y)) return
         if (tvPromptDown(x, y)) return
         if (fPromptDown(x, y)) return
         if (elevDown(x, y)) return
@@ -397,6 +495,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
             lookHold = false
         }
         if (carPtr.remove(id) != null) carSync()
+        if (skPtr.remove(id) != null) skSync()
         if (id == trickId) {   // soltou o analógico de manobra: executa na direção escolhida
             trickId = -1
             game.trickDx = trickAx; game.trickDy = trickAy; game.trickReq = true
