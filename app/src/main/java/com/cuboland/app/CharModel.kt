@@ -2057,6 +2057,23 @@ class CharModel {
             7 -> for (k in 0..5) hb(-0.25f + k * 0.1f, 1.78f - (k % 2) * 0.035f, 0.435f, 0.028f, 0.16f, 0.02f, if (k % 2 == 0) hairAccent else hairAccentDark, rz = (k - 2) * 5f)
             8 -> { hb(-0.09f, 1.79f, 0.435f, 0.025f, 0.13f, 0.018f, hairAccent); hb(0.09f, 1.79f, 0.435f, 0.025f, 0.13f, 0.018f, hairAccent) }
         }
+        // Presilhas e micromechas em relevo: detalhes extra acompanham a cabeça e giram com ela.
+        if (L[Look.HAIR] != 13) {
+            val clip = Look.pal(Look.HATC)
+            for (sd in intArrayOf(-1, 1)) {
+                val x = sd * 0.34f
+                hb(x, 1.66f, 0.414f, 0.075f, 0.035f, 0.025f, shadeC(clip, 0.68f), rz = -sd * 18f)
+                hb(x, 1.67f, 0.43f, 0.055f, 0.018f, 0.018f, lite(clip, 0.38f), rz = -sd * 18f)
+                hb(sd * 0.39f, 1.55f, 0.405f, 0.025f, 0.11f, 0.014f, lite(Look.hair(), 0.32f), rz = sd * 8f)
+            }
+        }
+        // Mechas metalizadas finas sobre o topo, com brilho e sombra para volume de material.
+        val crownAccent = Look.pal(Look.HAIR_ACCENT_COLOR)
+        for (i in 0..3) {
+            val x = -0.21f + i * 0.14f
+            hb(x, 1.81f + (i % 2) * 0.025f, 0.29f, 0.028f, 0.012f, 0.16f,
+                if (i % 2 == 0) lite(crownAccent, 0.24f) else shadeC(crownAccent, 0.78f), rz = (i - 1) * 4f)
+        }
         // cabelo volumoso empurra o chapéu pra cima (sem atravessar)
         val hatLift = if (hatId == 0 || hatCovers) 0f else hairLift(L[Look.HAIR])
         if (hatLift != 0f) Matrix.translateM(hm, 0, 0f, hatLift, 0f)
