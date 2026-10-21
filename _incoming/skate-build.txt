@@ -7,3 +7,4 @@ Build APK apos correcao de compilacao da reforma de roupas PR #7 — 21/10/2026.
 Build APK apos correcao final de escopo da roupa PR #8 — 21/10/2026.
 character-materials-rework 2026-10-21 13:10
 character-skin-studio-detail-pass 2026-10-21 13:20
+character-face-accessory-detail-pass 2026-10-21 13:25
