@@ -1869,6 +1869,49 @@ class CharModel {
             }
         }
 
+        // ===== CAMADA DE IDENTIDADE VISUAL PARA ACESSÓRIOS DAS COSTAS =====
+        // Mochilas, capas, asas, armas e caudas recebem acabamento próprio em relevo.
+        val backHi = lite(bcol, 0.32f)
+        val backLo = shadeC(bcol, 0.65f)
+        when (L[Look.BACK]) {
+            1 -> { // capa: borda dupla, fechos e costura em losangos
+                b(base, -0.19f, 0.49f, -0.206f, 0.025f, 0.68f, 0.025f, backLo)
+                b(base, 0.19f, 0.49f, -0.206f, 0.025f, 0.68f, 0.025f, backLo)
+                b(base, 0f, 0.2f, -0.207f, 0.34f, 0.025f, 0.025f, backHi)
+                for (i in -2..2) {
+                    b(base, i * 0.055f, 0.43f + (i % 2) * 0.055f, -0.211f, 0.025f, 0.025f, 0.018f, backHi)
+                }
+                for (sd in intArrayOf(-1, 1)) {
+                    b(base, sd * 0.12f, 0.91f, -0.205f, 0.055f, 0.07f, 0.025f, gold)
+                    b(base, sd * 0.12f, 0.91f, -0.222f, 0.025f, 0.035f, 0.012f, 0xFFF0A0)
+                }
+            }
+            2, 9 -> { // mochila: bolsos, costura, alças e fivelas
+                b(base, 0f, 0.62f, -0.37f, 0.27f, 0.19f, 0.035f, backHi)
+                b(base, 0f, 0.61f, -0.394f, 0.2f, 0.12f, 0.018f, backLo)
+                b(base, 0f, 0.67f, -0.409f, 0.09f, 0.035f, 0.012f, gold)
+                for (sd in intArrayOf(-1, 1)) {
+                    b(base, sd * 0.13f, 0.73f, -0.365f, 0.025f, 0.27f, 0.018f, backHi)
+                    b(base, sd * 0.13f, 0.83f, -0.38f, 0.065f, 0.035f, 0.02f, 0xD9DDE5)
+                    b(base, sd * 0.13f, 0.83f, -0.395f, 0.025f, 0.012f, 0.01f, gold)
+                }
+            }
+            3, 6 -> { // asas: nervuras e contorno reforçado
+                for (sd in intArrayOf(-1, 1)) {
+                    val s = sd.toFloat()
+                    b(base, s * 0.18f, 0.86f, -0.22f, 0.04f, 0.15f, 0.035f, backHi, rz = -s * 18f)
+                    b(base, s * 0.3f, 0.76f, -0.22f, 0.035f, 0.17f, 0.025f, backLo, rz = -s * 30f)
+                    b(base, s * 0.38f, 0.7f, -0.215f, 0.025f, 0.1f, 0.02f, backHi, rz = -s * 38f)
+                }
+            }
+            5 -> { // espada: bainha, runa e rebites do punho
+                b(base, -0.045f, 0.7f, -0.24f, 0.018f, 0.55f, 0.018f, backHi, rz = -38f)
+                b(base, 0.04f, 0.7f, -0.24f, 0.018f, 0.55f, 0.018f, backLo, rz = -38f)
+                b(base, 0f, 0.91f, -0.245f, 0.05f, 0.06f, 0.025f, 0xE8F2FF)
+                b(base, 0f, 0.91f, -0.26f, 0.022f, 0.035f, 0.012f, 0x79CFFF)
+            }
+        }
+
         // ================= PESCOÇO =================
         val ncol = Look.pal(Look.NECKC)
         when (L[Look.NECK]) {
@@ -2285,6 +2328,57 @@ class CharModel {
             }
         }
 
+        // ===== ACABAMENTO INDIVIDUAL DE CHAPÉUS E ACESSÓRIOS DE CABEÇA =====
+        // Filetes, rebites, emblemas e painéis seguem o acessório escolhido.
+        val hatHi = lite(hcl, 0.38f)
+        val hatLo = shadeC(hcl, 0.68f)
+        when (hatId) {
+            1, 2, 3, 16, 17, 21, 22 -> {
+                // Banda em camadas + fivela com sombra e brilho para leitura 3D.
+                hb(0f, 1.82f, 0.365f, 0.52f, 0.055f, 0.025f, hatLo)
+                hb(0f, 1.83f, 0.382f, 0.46f, 0.025f, 0.018f, hatHi)
+                hb(0f, 1.83f, 0.397f, 0.095f, 0.07f, 0.018f, gold)
+                hb(0f, 1.83f, 0.41f, 0.045f, 0.035f, 0.012f, hcl)
+                for (sd in intArrayOf(-1, 1)) {
+                    hb(sd * 0.29f, 1.83f, 0.378f, 0.025f, 0.025f, 0.016f, 0xE7D9B4)
+                }
+            }
+            4, 8, 23 -> {
+                // Armadura/coroa: placas segmentadas, rebites e crista central.
+                for (sd in intArrayOf(-1, 1)) {
+                    hb(sd * 0.29f, 1.82f, 0.43f, 0.12f, 0.1f, 0.035f, hatLo, rz = -sd * 12f)
+                    hb(sd * 0.29f, 1.83f, 0.452f, 0.065f, 0.045f, 0.018f, 0xF5D77B)
+                    hb(sd * 0.42f, 1.72f, 0.39f, 0.045f, 0.045f, 0.025f, 0xD8DEE8)
+                }
+                hb(0f, 1.98f, 0.39f, 0.08f, 0.19f, 0.04f, hatHi)
+                hb(0f, 2.08f, 0.4f, 0.035f, 0.08f, 0.025f, 0xFFFFFF)
+            }
+            5, 6, 14, 15, 20 -> {
+                // Acessórios fofos: costura central, pequenos pingentes e borda contrastante.
+                hb(0f, 1.77f, 0.36f, 0.52f, 0.025f, 0.025f, hatHi)
+                hb(0f, 1.78f, 0.38f, 0.08f, 0.07f, 0.025f, 0xFFF0F5)
+                hb(0f, 1.78f, 0.4f, 0.035f, 0.035f, 0.015f, 0xFF8FB5)
+                for (sd in intArrayOf(-1, 1)) {
+                    hb(sd * 0.36f, 1.76f, 0.34f, 0.035f, 0.035f, 0.025f, 0xFFFFFF)
+                }
+            }
+            10, 12, 13 -> {
+                // Cristal, halo ou chifres: núcleo luminoso e facetas com contraste.
+                hb(0f, 2.02f, 0.13f, 0.045f, 0.15f, 0.04f, hatHi)
+                hb(0f, 2.08f, 0.16f, 0.025f, 0.06f, 0.025f, 0xFFFFFF)
+                for (sd in intArrayOf(-1, 1)) {
+                    hb(sd * 0.25f, 1.88f, 0.12f, 0.04f, 0.09f, 0.035f, hatLo, rz = -sd * 18f)
+                }
+            }
+            18 -> {
+                // Fones: anéis exteriores e núcleo luminoso nos dois earcups.
+                for (sd in intArrayOf(-1, 1)) {
+                    hb(sd * 0.54f, 1.27f, 0.09f, 0.045f, 0.19f, 0.19f, hatHi)
+                    hb(sd * 0.55f, 1.27f, 0.195f, 0.025f, 0.1f, 0.1f, 0x73E7FF)
+                    hb(sd * 0.55f, 1.27f, 0.211f, 0.012f, 0.045f, 0.045f, 0xFFFFFF)
+                }
+            }
+        }
         if (hatLift != 0f) Matrix.translateM(hm, 0, 0f, -hatLift, 0f)
         // ---------- rosto: acessórios por cima (lentes translúcidas por último) ----------
         if (fc == 4) {
