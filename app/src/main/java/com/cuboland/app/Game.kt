@@ -109,6 +109,7 @@ class Game(val world: World) {
     @Volatile var skOllieLatch = false; @Volatile var skFlipLatch = false; @Volatile var skGrindLatch = false
     @Volatile var skateCrouch = 0f
     private var skSparkT = 0f
+    private var skDustT = 0f
     private val collSk: (Float, Float, Float) -> Boolean = { x, y, z -> collides(x, y, z, 0.28f, 1.7f) }
     private val solidSk: (Int, Int, Int) -> Boolean = { a, b, c -> world.solid(a, b, c) }
     val car: CarState get() = if (curKind == 1) bikeV else carV
@@ -201,6 +202,27 @@ class Game(val world: World) {
         if (s.evPop) { s.evPop = false; if (parts.size < 400) burst(s.x, s.y + 0.1f, s.z, 0xDDDDDD, 4, 1.5f) }
         if (s.evLand) { s.evLand = false; if (parts.size < 380) burst(s.x, s.y + 0.1f, s.z, 0xD9D4CC, 5, 2f) }
         if (s.evBail) { s.evBail = false; shake = max(shake, 0.55f); burst(s.x, s.y + 0.6f, s.z, 0xFFFFFF, 12, 3.5f) }
+        skDustT -= dt
+        if (s.evDrift) {   // derrapando: fumaça saindo das rodas
+            s.evDrift = false
+            if (parts.size < 380) {
+                val sh = sin(s.h); val ch = cos(s.h)
+                for (i in 0 until 2) {
+                    val q = Particle(s.x - sh * 0.3f + (rnd.nextFloat() - 0.5f) * 0.5f, s.y + 0.08f, s.z - ch * 0.3f + (rnd.nextFloat() - 0.5f) * 0.5f,
+                        (rnd.nextFloat() - 0.5f) * 1.4f, 0.6f + rnd.nextFloat() * 0.9f, (rnd.nextFloat() - 0.5f) * 1.4f, 0xE6E2DA, 0.3f, 0.6f)
+                    q.grav = 0.5f; q.dust = true; parts.add(q)
+                }
+                shake = max(shake, 0.05f)
+            }
+        }
+        if (drv && s.onGround && !s.grinding && s.speedK > 0.35f && skDustT <= 0f && parts.size < 360) {   // poeirinha atrás das rodas em velocidade
+            skDustT = 0.07f
+            val sh = sin(s.h); val ch = cos(s.h)
+            val q = Particle(s.x - sh * 0.35f, s.y + 0.05f, s.z - ch * 0.35f, (rnd.nextFloat() - 0.5f) * 0.8f, 0.5f + rnd.nextFloat() * 0.6f, (rnd.nextFloat() - 0.5f) * 0.8f, 0xD9D4CC, 0.16f, 0.4f)
+            q.grav = 0.3f; q.dust = true; parts.add(q)
+        }
+        if (s.evSlam) { s.evSlam = false; shake = max(shake, 0.3f); if (parts.size < 360) burst(s.x, s.y + 0.1f, s.z, 0xD9D4CC, 14, 4.2f) }
+        if (s.evPerfect) { s.evPerfect = false; if (parts.size < 380) burst(s.x, s.y + 0.5f, s.z, 0xFFD54A, 12, 3.2f) }
         skSparkT -= dt
         if (s.evGrindSpark) {
             s.evGrindSpark = false
@@ -1097,7 +1119,7 @@ class Game(val world: World) {
         if (!thirdPerson) { camX = ex; camY = ey; camZ = ez; camDist = 0f; return }
         val dx = -fwdX(); val dy = -fwdY(); val dz = -fwdZ()
         var d = 0.3f
-        val maxD = if (driving) (if (curKind == 2) 5.2f else if (curKind == 1) 6.4f else 7.8f) else 4.6f
+        val maxD = if (driving) (if (curKind == 2) 5.0f + 1.4f * skateV.speedK else if (curKind == 1) 6.4f else 7.8f) else 4.6f
         while (d < maxD) {
             val nx = ex + dx * (d + 0.25f); val ny = ey + 0.3f + dy * (d + 0.25f); val nz = ez + dz * (d + 0.25f)
             if (world.solid(floor(nx).toInt(), floor(ny).toInt(), floor(nz).toInt())) break

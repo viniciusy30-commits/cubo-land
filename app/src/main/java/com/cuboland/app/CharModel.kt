@@ -51,6 +51,13 @@ class Anim {
     @JvmField var dst = 0f        // 0..1 pisada no ar do dash (perna estica pra trás empurrando o ar); decai depois do disparo
     @JvmField var vp = 0f         // graus da direção do voo acima da horizontal (o corpo acompanha no dash)
     @JvmField var dch = 0f        // 0..1 carregando o dash aéreo (segurando o botão de correr no voo)
+    // ----- pose de skatista (pés na prancha, de lado; frente da prancha = +X do boneco; perna da frente = sd>0) -----
+    @JvmField var sk = 0f         // 0..1 peso da pose de skate
+    @JvmField var skPush = 0f; @JvmField var skPushPh = 0f   // empurrando: peso e fase 0..1 (perna de trás raspa no chão)
+    @JvmField var skGrab = 0f; @JvmField var skGrabK = 0f    // peso do grab e tipo (1 indy, 2 melon, 3 mute, 4 nose, 5 tail)
+    @JvmField var skPop = 0f; @JvmField var skLand = 0f      // 1 -> 0 depois do ollie (estica) / do pouso (amortece)
+    @JvmField var skMan = 0f; @JvmField var skFlip = 0f; @JvmField var skGrind = 0f   // manual, flip no ar, grind (pesos suaves)
+    @JvmField var skBal = 0f      // -1..1 equilíbrio (manual/grind): os braços compensam
 }
 
 /** Modelo chibi do personagem, montado só com caixas. Usado no jogo (OpenGL) e na tela de personagem (preview). */

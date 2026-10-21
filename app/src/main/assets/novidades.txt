@@ -1,3 +1,11 @@
+#id 2026-10-21-skate2
+#titulo SKATE v2: controles novos, prancha linda e animacao de verdade
+- CONTROLES: analogico flutuante na esquerda (cima = PUSH, baixo = FREIO, lados = direcao e escolhe a manobra). Botoes a direita: OLLIE grande (segure = pulo alto, tem barra de carga), FLIP, GRAB, GRIND e GIRAR < >. Cada botao mostra o NOME da manobra que vai sair conforme a direcao do analogico
+- MANUAL: segure GRAB no chao e equilibre nas rodas de tras (PUSH/FREIO corrigem a barra). Combo de chao e guardado depois de 0,7 s limpo. POWERSLIDE: FREIO + direcao em velocidade derrapa com fumaca e da pontos
+- PRANCHA nova: deck com concavo e dois bicos, lixa com textura, grafico colorido embaixo (aparece nos flips), trucks com borrachas, rodas redondas girando com cubo claro e neon embaixo na velocidade/grind. Durante flips a prancha se afasta dos pes
+- BONECO de skatista: de lado, pes abertos na prancha, joelhos dobrados, bracos abertos pro equilibrio; empurrao de verdade (perna de tras desce no chao e volta), ollie estica o corpo e joga os bracos pro alto, pouso amortece, joelhos no peito e mao na prancha nos grabs (indy/melon/mute/nose/tail), base larga no grind, peso pra tras no manual
+- FEEL: FOV abre com a velocidade, camera se afasta um pouco, linhas de vento nas bordas, poeira atras das rodas, tremida em pouso forte, faiscas douradas no pouso PERFEITO (+50). Letreiro da manobra "pula" na tela e o combo ganha nota (BOA / SICK / FODA / INSANO)
+
 #id 2026-10-21-skate
 #titulo SKATE estilo Tony Hawk!
 - Novo botao SKATE (abaixo de CARRO e MOTO): sobe na prancha e sai andando. PUSH acelera, FREIO para/da re, setas viram

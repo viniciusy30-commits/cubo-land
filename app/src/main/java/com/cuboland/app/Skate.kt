@@ -39,6 +39,23 @@ class SkateState {
     var grinding = false
     var bal = 0f              // -1..1: equilíbrio no grind (1 ou -1 = cai)
     var gKind = 0
+    // ----- novos (v2) -----
+    var pushPh = 0f           // fase do empurrão (0..1): perna de trás raspa no chão
+    var pushW = 0f            // 0..1 quanto está empurrando
+    var drift = 0f            // 0..1 derrapando (powerslide)
+    var driftYaw = 0f         // graus: a prancha atravessa na derrapagem (visual)
+    var lift = 0f             // a prancha se afasta dos pés durante flips (metros)
+    var flipF = 0f            // 0..1 progresso do flip
+    var popK = 0f             // 1 -> 0 logo depois do ollie (corpo estica)
+    var landK = 0f            // 1 -> 0 logo depois do pouso (corpo amortece)
+    var speedK = 0f           // 0..1 velocidade (FOV, linhas de vento)
+    var manual = false        // equilibrando nas rodas de trás
+    var manT = 0f
+    var bannerPop = 0f        // 1 -> 0: letreiro "pula" quando aparece
+    var perfectT = 0f
+    var evDrift = false
+    var evSlam = false
+    var evPerfect = false
 
     // ----- eventos pro jogo (ele lê e zera) -----
     var evPop = false; var evLand = false; var evBail = false
@@ -66,6 +83,10 @@ class SkateState {
     private var popT = 0f
     private var t = 0f
     private var lastVf = 0f
+    private var driftT = 0f
+    private var wasDrifting = false
+    private var manCool = 0f
+    private var groundT = 0f
 
     companion object {
         const val MAXF = 14.5f
@@ -81,21 +102,24 @@ class SkateState {
     private fun addTrick(name: String, pts: Int) {
         comboN++; comboPts += pts
         comboText = if (comboText.isEmpty() || comboText.length > 36) name else "$comboText + $name"
-        banner = comboText; bannerT = 2f; bannerGood = true
+        banner = comboText; bannerT = 2f; bannerGood = true; bannerPop = 1f
     }
+
+    private fun rate(tot: Int): String =
+        if (tot >= 2500) "INSANO! " else if (tot >= 1200) "FODA! " else if (tot >= 600) "SICK! " else if (tot >= 250) "BOA! " else ""
 
     private fun bank() {
         if (comboN > 0) {
             val tot = comboPts * comboN
             score += tot
             if (tot > best) best = tot
-            banner = "$comboText  +$tot"; bannerT = 2.8f; bannerGood = true
+            banner = "${rate(tot)}$comboText  +$tot"; bannerT = 3.0f; bannerGood = true; bannerPop = 1f
         }
         comboPts = 0; comboN = 0; comboText = ""; gAcc = 0f
     }
 
     private fun lose() {
-        if (comboN > 0) { banner = "COMBO PERDIDO"; bannerT = 1.8f; bannerGood = false }
+        if (comboN > 0) { banner = "COMBO PERDIDO"; bannerT = 1.8f; bannerGood = false; bannerPop = 1f }
         comboPts = 0; comboN = 0; comboText = ""; gAcc = 0f
     }
 
@@ -109,7 +133,7 @@ class SkateState {
         bailT = 1.5f; evBail = true; lose()
         flipT = -1f; flipRoll = 0f; flipYaw = 0f; grab = 0; grabTime = 0f
         grinding = false; charging = false; charge = 0f; spin = 0f; gYaw = 0f; gPitch = 0f
-        tumble = 1f
+        tumble = 1f; manual = false; drift = 0f
     }
 
     // ---------------------------------------------------------------- grind
@@ -134,6 +158,7 @@ class SkateState {
 
     private fun startGrind(top: Float, steerIn: Float, gas: Float, brake: Float, vf0: Float) {
         grinding = true; grindCool = 0f; charging = false; charge = 0f
+        manual = false
         val q = (Math.PI / 2.0).toFloat()
         h = Math.round(h / q) * q            // alinha com o eixo da quina
         gv = if (vf0 >= 0f) max(vf0, 4f) else min(vf0, -4f)
@@ -171,7 +196,7 @@ class SkateState {
         if (gAcc >= 10f) { val k = gAcc.toInt(); comboPts += k; gAcc -= k.toFloat() }
         // sai pulando
         if (ollieEdge) {
-            endGrind(); vy = 8.6f; onGround = false; y += 0.05f; evPop = true; popT = 0.18f
+            endGrind(); vy = 8.6f; onGround = false; y += 0.05f; evPop = true; popT = 0.18f; popK = 1f
             return
         }
         gv -= (if (gv > 0f) 1f else -1f) * 0.9f * dt
@@ -190,7 +215,7 @@ class SkateState {
 
     // ---------------------------------------------------------------- aterrissagem
     private fun handleLand(preVy: Float, ctl: Boolean) {
-        evLand = true; landVy = -preVy
+        evLand = true; landVy = -preVy; landK = (-preVy / 16f).coerceIn(0.25f, 1f)
         if (preVy < -21f && ctl) { bail(); return }
         if (!ctl) return
         val m = ((spin % 180f) + 180f) % 180f
@@ -201,6 +226,7 @@ class SkateState {
             addTrick("${abs(n) * 180}", 140 * abs(n))
             if (n % 2 != 0) stance = -stance
         }
+        if (abs(rem) < 14f && comboN > 0 && grab == 0) { comboPts += 50; perfectT = 1.3f; evPerfect = true }
         spin = rem
         if (grab != 0) endGrab()
         if (flipT >= 0f && !flipScored) {
@@ -209,6 +235,7 @@ class SkateState {
         }
         bank()
         if (preVy < -9f) impact = max(impact, -preVy * 0.45f)
+        if (preVy < -13f) evSlam = true
     }
 
     // ---------------------------------------------------------------- atualização
@@ -218,8 +245,9 @@ class SkateState {
                water: (Float, Float, Float) -> Boolean) {
         t += dt
         if (bannerT > 0f) bannerT -= dt
-        grindCool -= dt
+        grindCool -= dt; manCool -= dt
         popT = max(0f, popT - dt)
+        bannerPop = max(0f, bannerPop - dt * 3.2f); popK = max(0f, popK - dt * 3.5f); landK = max(0f, landK - dt * 3.2f); perfectT = max(0f, perfectT - dt)
         if (bailT > 0f) { bailT -= dt; if (bailT <= 0f) { bailT = 0f; tumble = 0f } }
         val ctl = bailT <= 0f
         val ollieEdge = ollieHeld && !prevOllie
@@ -237,18 +265,47 @@ class SkateState {
         var vl = vx * (-ch) + vz * sh
         val wasGround = onGround
 
+        // ----- derrapagem (FREIO + direção em velocidade) e MANUAL (GRAB no chão) -----
+        val drifting = ctl && onGround && !grinding && brake > 0.3f && abs(steerIn) > 0.35f && vf > 5f
+        if (drifting) { driftT += dt; evDrift = true }
+        else if (wasDrifting) {
+            if (driftT > 0.55f && comboN >= 0) addTrick("Powerslide", 70 + (driftT * 55f).toInt())
+            driftT = 0f
+        }
+        wasDrifting = drifting
+        drift += ((if (drifting) 1f else 0f) - drift) * min(1f, 8f * dt)
+
+        val manualOn = ctl && onGround && !grinding && grabHeld && vf > 2.8f && !drifting && manCool <= 0f
+        if (manualOn) {
+            if (!manual) { manual = true; manT = 0f; bal = 0f; balV = 0f; gAcc = 0f; addTrick("Manual", 40) }
+            manT += dt
+            val wob = sin(t * 2.6f + 0.7f) * 0.7f + sin(t * 1.3f) * 0.5f
+            balV += (bal * 2.3f + wob * 0.55f) * dt
+            balV += (brake - gas) * 6.5f * dt           // acelerar empurra o bico pra baixo, freio puxa pra trás
+            balV -= balV * min(1f, 1.7f * dt)
+            bal += balV * dt
+            gAcc += 95f * (1f + manT * 0.5f) * dt
+            if (gAcc >= 10f) { val k = gAcc.toInt(); comboPts += k; gAcc -= k.toFloat() }
+            if (abs(bal) >= 1f) { manual = false; bal = 0f; balV = 0f; manCool = 0.9f; lose() }
+        } else if (manual) { manual = false; bal = 0f; balV = 0f; gAcc = 0f }
+
+        // combo de chão (manual/powerslide) é guardado depois de 0,7 s rodando limpo
+        if (onGround && ctl && !manual && !drifting && !grinding && !charging) groundT += dt else groundT = 0f
+        if (groundT > 0.7f && comboN > 0) bank()
+
         // ----- empurrar / frear / atrito -----
         if (onGround) {
-            if (ctl) {
-                if (gas > 0f) { val k = 1f - max(vf, 0f) / MAXF; vf += 11f * gas * (if (k > 0f) k else 0f) * dt }
+            if (ctl && !manual) {
+                if (gas > 0f) { val k = 1f - max(vf, 0f) / MAXF; vf += 11.5f * gas * (if (k > 0f) k else 0f) * dt }
                 if (brake > 0f) {
-                    if (vf > 0.5f) vf -= 16f * brake * dt
+                    if (drifting) vf -= 4.5f * brake * dt
+                    else if (vf > 0.5f) vf -= 16f * brake * dt
                     else { vf -= 5f * brake * dt; if (vf < -3.5f) vf = -3.5f }
                 }
             }
-            vf -= vf * min(1f, (if (ctl) 0.28f else 3.2f) * dt)
+            vf -= vf * min(1f, (if (!ctl) 3.2f else if (manual) 0.2f else 0.26f) * dt)
             if (inWater) vf -= vf * min(1f, 3f * dt)
-            vl -= vl * min(1f, 16f * dt)
+            vl -= vl * min(1f, (if (drifting) 2.0f else 16f) * dt)
         } else {
             vf -= vf * 0.02f * dt
         }
@@ -260,7 +317,7 @@ class SkateState {
             val sp = abs(vf)
             val auth = min(1f, 0.35f + sp / 4f) / (1f + sp / 22f)
             val dir = if (vf >= -0.3f) 1f else -1f
-            turn = -steer * 2.7f * auth * dir * dt
+            turn = -steer * 2.7f * auth * dir * dt * (1f + 0.75f * drift)
         }
         vx = vf * sh + vl * (-ch)
         vz = vf * ch + vl * sh
@@ -299,7 +356,7 @@ class SkateState {
             if (ollieHeld) { charging = true; charge = min(1f, charge + dt / 0.5f) }
             else if (charging) {
                 vy = 7.8f + 5.0f * charge
-                onGround = false; charging = false; charge = 0f; evPop = true; popT = 0.18f
+                onGround = false; charging = false; charge = 0f; evPop = true; popT = 0.18f; popK = 1f; manual = false; bal = 0f
             }
         } else { charging = false; charge = 0f }
 
@@ -344,18 +401,23 @@ class SkateState {
     }
 
     private fun visuals(dt: Float, steerIn: Float, gas: Float, vf: Float) {
+        speedK += ((abs(vf) - 6f).coerceIn(0f, 9f) / 9f - speedK) * min(1f, 3f * dt)
+        val pushing = onGround && gas > 0f && vf < MAXF * 0.9f && bailT <= 0f && !manual && !grinding && drift < 0.3f
+        pushW += ((if (pushing) 1f else 0f) - pushW) * min(1f, 9f * dt)
+        if (pushW > 0.04f) pushPh = (pushPh + dt * (1.35f + 0.6f * min(1f, abs(vf) / 9f))) % 1f
         wheel += vf * dt / 0.085f * 57.3f
         if (wheel > 36000f || wheel < -36000f) wheel = 0f
         // inclinação
         val leanT = if (grinding) bal * 15f else steer * min(1f, abs(vf) / 8f) * 16f
         lean += (leanT - lean) * min(1f, 8f * dt)
         // bico: sobe no ollie, acompanha a subida/descida
-        val pT = if (popT > 0f) 20f else if (!onGround) (vy * 1.2f).coerceIn(-12f, 14f) else 0f
+        val pT = if (popT > 0f) 20f else if (!onGround) (vy * 1.2f).coerceIn(-12f, 14f) else if (manual) 17f + bal * 9f else 0f
         pitchA += (pT - pitchA) * min(1f, 14f * dt)
         // agachar
         val cT = if (bailT > 0f) 0f else if (charging) 0.2f + 0.8f * charge else if (grinding) 0.55f
         else if (grab != 0) 0.85f else if (flipT >= 0f) 0.45f else if (onGround && gas > 0f) 0.12f else 0f
-        crouch += (cT - crouch) * min(1f, 14f * dt)
+        val cT2 = max(cT, landK * 0.55f)
+        crouch += (cT2 - crouch) * min(1f, 14f * dt)
         grabA += ((if (grab != 0) 1f else 0f) - grabA) * min(1f, 16f * dt)
         // flip animado
         if (flipT >= 0f) {
@@ -368,6 +430,9 @@ class SkateState {
                 else -> { flipRoll = 360f * e; flipYaw = 180f * e }
             }
         } else { flipRoll = 0f; flipYaw = 0f }
+        flipF = if (flipT >= 0f) flipT.coerceIn(0f, 1f) else 0f
+        val liftT = if (flipT >= 0f) sin(Math.PI.toFloat() * flipF) * 0.17f else 0f
+        lift += (liftT - lift) * min(1f, 18f * dt)
         // grind: boardslide gira a prancha 90°, nose/tail inclinam
         val gyT = if (grinding && gKind == 1) 90f * gSign else 0f
         val gpT = if (grinding) (if (gKind == 2) 18f else if (gKind == 3) -18f else 0f) else 0f
@@ -404,6 +469,7 @@ class SkateState {
                 spin = 0f; stance = 1f; flipT = -1f; flipRoll = 0f; flipYaw = 0f; grab = 0; grabA = 0f; grinding = false
                 bailT = 0f; tumble = 0f; charging = false; charge = 0f; crouch = 0f
                 comboPts = 0; comboN = 0; comboText = ""
+                manual = false; drift = 0f; pushW = 0f; speedK = 0f; lift = 0f; popK = 0f; landK = 0f
                 placed = true
                 return true
             }
@@ -415,6 +481,7 @@ class SkateState {
     fun dismount() {
         flipT = -1f; flipRoll = 0f; flipYaw = 0f; grab = 0; grabA = 0f; grinding = false; spin = 0f
         bailT = 0f; tumble = 0f; charging = false; charge = 0f; crouch = 0f; gYaw = 0f; gPitch = 0f
+        manual = false; drift = 0f; pushW = 0f; speedK = 0f; lift = 0f
         bank()
     }
 }

@@ -929,6 +929,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     private val an = Anim()
     private var lastPT = 0f; private var phaseA = 0f; private var runA = 0f; private var landA = 0f
     private var wasAirP = false; private var lastVyP = 0f; private var airSm = 0f; private var landSm = 0f; private var vyHold = 0f; private var flySm = 0f; private var flySp = 0f; private val tpP = FloatArray(10); private var diveSm = 0f; private var tiltSm = 0f; private var dashSm = 0f; private var swimPhA = 0f; private var swimFastA = 0f; private var stompSm = 0f; private var vpSm = 0f; private var svySm = 0f
+    private var skSm = 0f; private var skManSm = 0f; private var skFlSm = 0f; private var skGdSm = 0f; private var fovCur = 70f
     private var airTimeP = 0f; private var jchSm = 0f; private var sjSm = 0f; private var flipAng = 0f; private var landRate = 5f
     private val SUPER_FLIP = true   // cambalhota no super pulo com a carga quase cheia (false = sem cambalhota)
 
@@ -992,6 +993,18 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val impK = ((1f - game.flyImp) * 3f).coerceIn(0f, 1f)   // o impulso entra em ~0,2s em vez de estalar
         an.dash = max(dashSm, stompSm); an.dst = stompSm; an.vp = vpSm; an.imp = game.flyImp * impK * impK * (3f - 2f * impK); an.swimFast = swimFastA; an.swimPh = swimPhA; an.crouch = game.crouchA; an.sit = game.sitA; an.lie = game.lieA; an.ride = if (game.driving && !game.skating) 1f else 0f; an.bent = if (game.driving && game.car.kind == 1) 1f else 0f; an.landT = landSm; an.swim = swm; an.dive = diveSm; an.tilt = tiltSm
         an.jch = jchSm; an.sj = sjSm; an.flip = flipAng; an.launch = game.flyLaunch; an.dch = game.airDashCharge
+        run {   // pose de skatista (pesos suaves pra não estalar entre as fases)
+            val sv = game.skateV
+            val on = game.skating && sv.bailT <= 0f
+            skSm += ((if (on) 1f else 0f) - skSm) * min(1f, 10f * dtp)
+            skManSm += ((if (on && sv.manual) 1f else 0f) - skManSm) * min(1f, 9f * dtp)
+            skFlSm += ((if (on && sv.flipF > 0f && sv.flipF < 1f) 1f else 0f) - skFlSm) * min(1f, 12f * dtp)
+            skGdSm += ((if (on && sv.grinding) 1f else 0f) - skGdSm) * min(1f, 9f * dtp)
+            an.sk = skSm; an.skMan = skManSm; an.skFlip = skFlSm; an.skGrind = skGdSm
+            an.skPush = if (on) sv.pushW else 0f; an.skPushPh = sv.pushPh
+            an.skGrab = if (on) sv.grabA else 0f; an.skGrabK = sv.grab.toFloat()
+            an.skPop = if (on) sv.popK else 0f; an.skLand = if (on) sv.landK else 0f; an.skBal = if (on) sv.bal else 0f
+        }
         an.atk = game.swing; an.atkArm = swingDelta(id, game.swing); an.hasTool = id > 0
         // mesmos keyframes de golpe/carga da 1ª pessoa, aplicados no braço do boneco
         if (game.charging) { chargePose(tpP, id, game.charge, t); an.charge = min(1f, game.charge) }
@@ -1599,7 +1612,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         if (c.reversing) b(0f, 0.9f, -1.12f, 0.1f, 0.06f, 0.04f, 0xFFFFFF, 1f, 1.6f)
     }
 
-    // ---------- skate: prancha com rodas; gira/flipa por baixo do boneco ----------
+    // ---------- skate v2: prancha detalhada (concavidade, bicos, lixa, gráfico embaixo, trucks, rodas redondas); gira/flipa por baixo do boneco ----------
     private fun drawSkate(s: SkateState) {
         if (!s.placed) return
         if (!seen(s.x, s.y + 0.4f, s.z, 70f)) return
@@ -1609,30 +1622,59 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             Matrix.rotateM(base, 0, s.tumble * 0.6f, 1f, 0f, 0f)
         }
         Matrix.rotateM(base, 0, s.lean, 0f, 0f, 1f)
-        Matrix.translateM(base, 0, 0f, 0.185f + 0.5f * s.grabA, 0f)
+        Matrix.translateM(base, 0, 0f, 0.185f + 0.3f * s.grabA - 0.5f * s.lift, 0f)
         val pitch = -s.pitchA - s.grabA * 22f + s.gPitch      // + = bico pra baixo
         if (pitch != 0f) Matrix.rotateM(base, 0, pitch, 1f, 0f, 0f)
         if (s.flipYaw + s.gYaw != 0f) Matrix.rotateM(base, 0, s.flipYaw + s.gYaw, 0f, 1f, 0f)
         if (s.flipRoll != 0f) Matrix.rotateM(base, 0, s.flipRoll, 0f, 0f, 1f)
-        val wood = 0xD9A55B; val grip = 0x1B1B20; val metal = 0xB4B9C0; val wheelC = 0xFFB03B
-        fun b(px: Float, py: Float, pz: Float, sx: Float, sy: Float, sz: Float, col: Int, rx: Float = 0f) =
-            box(base, px, py, pz, rx, 0f, sx, sy, sz, 0f, col, 1f, 1f)
-        // deck + bicos levantados
-        b(0f, 0f, 0f, 0.28f, 0.04f, 0.66f, wood)
-        b(0f, 0.04f, 0.43f, 0.28f, 0.04f, 0.24f, wood, -22f)
-        b(0f, 0.04f, -0.43f, 0.28f, 0.04f, 0.24f, wood, 22f)
-        // lixa
-        b(0f, 0.025f, 0f, 0.26f, 0.008f, 0.62f, grip)
-        b(0f, 0.066f, 0.43f, 0.26f, 0.008f, 0.2f, grip, -22f)
-        b(0f, 0.066f, -0.43f, 0.26f, 0.008f, 0.2f, grip, 22f)
-        b(0f, 0.031f, 0.2f, 0.26f, 0.004f, 0.05f, 0xE8505B)
-        // trucks e eixos
-        for (zz in floatArrayOf(0.26f, -0.26f)) {
-            b(0f, -0.05f, zz, 0.2f, 0.03f, 0.05f, metal)
-            b(0f, -0.085f, zz, 0.36f, 0.022f, 0.022f, metal)
-            for (xx in floatArrayOf(0.17f, -0.17f))
-                for (k in 0 until 3) box(base, xx, -0.1f, zz, s.wheel + k * 30f, 0f, 0.07f, 0.17f, 0.17f, 0f, wheelC)
+        val wood = 0xD9A55B; val woodD = 0xB57F3A; val woodL = 0xEBC987; val grip = 0x1B1B20; val gripL = 0x2C2C35
+        val metal = 0xB9BEC6; val metalD = 0x7C828C; val wheelC = 0xFFB03B; val hubC = 0xFFF2CF; val bush = 0xE8505B
+        val gfxA = 0x23C9B8; val gfxB = 0xFFFFFF; val gfxC = 0xFF4D6D
+        fun b(px: Float, py: Float, pz: Float, sx: Float, sy: Float, sz: Float, col: Int, rx: Float = 0f, mul: Float = 1f, a: Float = 1f) =
+            box(base, px, py, pz, rx, 0f, sx, sy, sz, 0f, col, a, mul)
+        // ---- deck: miolo + bordas levantadas (côncavo) ----
+        b(0f, 0f, 0f, 0.29f, 0.034f, 0.5f, wood)
+        b(0.138f, 0.01f, 0f, 0.028f, 0.02f, 0.5f, woodL); b(-0.138f, 0.01f, 0f, 0.028f, 0.02f, 0.5f, woodL)
+        // lâminas de madeira aparecendo na lateral (camadas)
+        b(0.146f, -0.006f, 0f, 0.006f, 0.008f, 0.5f, woodD); b(-0.146f, -0.006f, 0f, 0.006f, 0.008f, 0.5f, woodD)
+        // ---- bicos (2 segmentos cada: sobe suave e depois mais forte); lixa por cima e gráfico por baixo, deslocados na normal do trecho ----
+        fun seg(sg: Float, cy: Float, cz: Float, w: Float, len: Float, ang: Float) {
+            val r = Math.toRadians(ang.toDouble()).toFloat(); val ca = cos(r); val sa = sin(r)
+            b(0f, cy, cz * sg, w, 0.032f, len, wood, ang)
+            b(0f, cy + 0.0195f * ca, cz * sg + 0.0195f * sa, w - 0.012f, 0.006f, len, grip, ang)
+            b(0f, cy - 0.0195f * ca, cz * sg - 0.0195f * sa, w - 0.012f, 0.006f, len, gfxA, ang)
         }
+        for (sg in floatArrayOf(1f, -1f)) {
+            seg(sg, 0.032f, 0.33f, 0.29f, 0.17f, -24f * sg)
+            seg(sg, 0.093f, 0.44f, 0.27f, 0.09f, -42f * sg)
+        }
+        // ---- lixa no miolo + linhas de textura ----
+        b(0f, 0.02f, 0f, 0.272f, 0.006f, 0.5f, grip)
+        for (k in -3..3) b(0f, 0.0232f, k * 0.068f, 0.27f, 0.002f, 0.012f, gripL)
+        b(0f, 0.0235f, 0f, 0.012f, 0.002f, 0.5f, gripL)
+        // adesivos nos bicos
+        b(0f, 0.0245f, 0.18f, 0.2f, 0.002f, 0.035f, gfxC); b(0f, 0.0245f, -0.18f, 0.2f, 0.002f, 0.035f, gfxA)
+        // ---- gráfico de baixo (aparece nos flips) ----
+        b(0f, -0.02f, 0f, 0.272f, 0.006f, 0.5f, gfxA)
+        b(0f, -0.0235f, 0f, 0.1f, 0.002f, 0.46f, gfxB)
+        b(0f, -0.0245f, 0.1f, 0.2f, 0.002f, 0.06f, gfxC); b(0f, -0.0245f, -0.1f, 0.2f, 0.002f, 0.06f, gfxC)
+        // ---- trucks ----
+        for (zz in floatArrayOf(0.255f, -0.255f)) {
+            b(0f, -0.034f, zz, 0.07f, 0.01f, 0.05f, metalD)                       // riser/pad
+            b(0f, -0.046f, zz, 0.17f, 0.014f, 0.095f, metal)                       // base
+            b(0f, -0.066f, zz, 0.2f, 0.028f, 0.05f, metal)                         // hanger
+            b(0f, -0.1f, zz, 0.36f, 0.016f, 0.016f, metalD)                      // eixo
+            b(0.05f, -0.056f, zz, 0.035f, 0.03f, 0.035f, bush); b(-0.05f, -0.056f, zz, 0.035f, 0.03f, 0.035f, bush)   // borrachas
+            b(0f, -0.038f, zz + 0.035f * (if (zz > 0f) 1f else -1f), 0.03f, 0.03f, 0.03f, 0x4A4F57)   // parafuso rei
+            for (xx in floatArrayOf(0.168f, -0.168f)) {
+                // roda: vários quadrados girados = quase um cilindro redondo
+                for (k in 0 until 6) box(base, xx, -0.1f, zz, s.wheel + k * 15f, 0f, 0.074f, 0.12f, 0.12f, 0f, wheelC, 1f, 1f)
+                for (k in 0 until 3) box(base, xx, -0.1f, zz, s.wheel + k * 30f, 0f, 0.082f, 0.068f, 0.068f, 0f, hubC, 1f, 1f)
+            }
+        }
+        // ---- luz embaixo (neon): acende com a velocidade e no grind ----
+        val glow = max(s.speedK, if (s.grinding) 0.8f else 0f)
+        if (glow > 0.12f) b(0f, -0.14f, 0f, 0.34f, 0.006f, 0.76f, 0x45E9FF, 0f, 2.2f, 0.18f + 0.3f * glow)
     }
 
     private fun drawSlime(s: Slime) {
@@ -2112,6 +2154,14 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         val now = System.nanoTime()
         val dt = ((now - last) / 1e9f).coerceIn(0.001f, 0.05f); last = now
         game.update(dt)
+        run {   // FOV abre com a velocidade do skate (sensação de velocidade)
+            val sv = game.skateV
+            val fovT = if (game.skating) 70f + 16f * sv.speedK + (if (sv.grinding) 3f else 0f) + 5f * sv.drift else 70f
+            if (abs(fovT - fovCur) > 0.04f && vh > 0) {
+                fovCur += (fovT - fovCur) * min(1f, 5f * dt)
+                Matrix.perspectiveM(proj, 0, fovCur, vw.toFloat() / vh, 0.15f, 200f)
+            }
+        }
         var built = 0
         for (cz in 0 until World.CZ) for (cx in 0 until World.CX) {
             val ci = cz * World.CX + cx
