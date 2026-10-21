@@ -1,2 +1,2 @@
-Atualizacao geral do skate: passada com pe lateral e extensao para tras, bracos com contrapeso controlado, controles agrupados e HUD limpo. Codigo incorporado a main pelo PR #2. Este marcador em _incoming dispara o build automatico do APK para testar no jogo.
-Build de 21/10/2026 — redesign geral de animacoes e controles.
+Auditoria geral de texturas do CuboLand: corrigidos nomes de texturas dos blocos Carmesim/Distorcido Descascados; adicionado diagnostico para referencias ausentes e dados RGBA corrompidos; carregamento de PNGs de decoracao protegido e normalizado para 64x64. Catalogo auditado: 2736 itens, 1796 IDs de textura, nenhum PNG referenciado ausente.
+Build APK automatico apos PR #3 — 21/10/2026.
