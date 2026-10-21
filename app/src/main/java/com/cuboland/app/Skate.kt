@@ -403,9 +403,18 @@ class SkateState {
 
     private fun visuals(dt: Float, steerIn: Float, gas: Float, vf: Float) {
         speedK += ((abs(vf) - 6f).coerceIn(0f, 9f) / 9f - speedK) * min(1f, 3f * dt)
-        val pushing = onGround && gas > 0f && vf < MAXF * 0.9f && bailT <= 0f && !manual && !grinding && drift < 0.3f
-        pushW += ((if (pushing) 1f else 0f) - pushW) * min(1f, 9f * dt)
-        if (pushW > 0.04f) pushPh = (pushPh + dt * (1.35f + 0.6f * min(1f, abs(vf) / 9f))) % 1f
+        val pushing = onGround && gas > 0.05f && vf < MAXF * 0.82f && bailT <= 0f &&
+            !manual && !grinding && drift < 0.25f && !inWater
+        if (pushing) {
+            // Um ciclo completo por passada: prepara, empurra e recolhe o pé.
+            pushPh = (pushPh + dt * (0.82f + 0.16f * min(1f, abs(vf) / 8f))) % 1f
+        }
+        val pushEnvelope = if (!pushing) 0f else when {
+            pushPh < 0.08f -> pushPh / 0.08f
+            pushPh < 0.76f -> 1f
+            else -> ((1f - pushPh) / 0.24f).coerceIn(0f, 1f)
+        }
+        pushW += (pushEnvelope - pushW) * min(1f, 12f * dt)
         wheel += vf * dt / 0.085f * 57.3f
         if (wheel > 36000f || wheel < -36000f) wheel = 0f
         // inclinação
