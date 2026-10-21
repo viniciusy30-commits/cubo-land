@@ -238,12 +238,35 @@ class McChar {
             sF = lp(sF, 19f, kGd); sR = lp(sR, 19f, kGd)                                                                                    // grind: base larga
             fH = lp(fH, -34f, kFl * 0.8f); fK = lp(fK, 58f, kFl * 0.8f); rH = lp(rH, -22f, kFl * 0.8f); rK = lp(rK, 70f, kFl * 0.8f)       // flip: pernas recolhidas
             if (kPw > 0.001f) {   // empurrão: a perna de trás desce até o chão, varre pra trás e volta dobrada; a da frente agacha
-                val c = an.skPushPh * 2f
+                val phase = an.skPushPh.coerceIn(0f, 1f)
                 val h2: Float; val k2: Float; val s2: Float
-                if (c < 1f) { val e = c * c * (3f - 2f * c); s2 = 6f + 12f * e; h2 = -4f; k2 = 4f + 6f * e }
-                else { val e = c - 1f; val e2 = e * e * (3f - 2f * e); val sn = sin(e * 3.1416f); s2 = 18f - 10f * e2; h2 = -4f - 40f * sn; k2 = 10f + 60f * sn }
+                when {
+                    phase < 0.18f -> {
+                        val e = phase / 0.18f
+                        val smooth = e * e * (3f - 2f * e)
+                        // O pé sai para o lado da prancha antes de tocar o chão.
+                        s2 = 16f + 15f * smooth
+                        h2 = -5f + 4f * smooth
+                        k2 = 12f + 12f * smooth
+                    }
+                    phase < 0.68f -> {
+                        val e = (phase - 0.18f) / 0.50f
+                        val drive = sin(e * 3.1416f)
+                        // A perna estende para trás durante o impulso, sem cruzar a prancha.
+                        s2 = 31f - 5f * e
+                        h2 = 2f + 30f * drive
+                        k2 = 24f + 42f * drive
+                    }
+                    else -> {
+                        val e = ((phase - 0.68f) / 0.32f).coerceIn(0f, 1f)
+                        val smooth = e * e * (3f - 2f * e)
+                        s2 = 26f - 10f * smooth
+                        h2 = 2f - 7f * smooth
+                        k2 = 24f - 12f * smooth
+                    }
+                }
                 rH = lp(rH, h2, kPw); rK = lp(rK, k2, kPw); sR = lp(sR, s2, kPw)
-                fH = lp(fH, -70f, kPw); fK = lp(fK, 100f, kPw)
+                fH = lp(fH, -32f, kPw); fK = lp(fK, 56f, kPw)
             }
             fH = lp(fH, -105f, kGr); fK = lp(fK, 135f, kGr); rH = lp(rH, -95f, kGr); rK = lp(rK, 130f, kGr); sF = lp(sF, 7f, kGr); sR = lp(sR, 7f, kGr)   // grab: joelhos no peito
             hipR = lp(hipR, fH, skw); kneeR = lp(kneeR, fK, skw); hipL = lp(hipL, rH, skw); kneeL = lp(kneeL, rK, skw)
@@ -252,7 +275,7 @@ class McChar {
         if (li > 0f) { val mc = min(1f, mv * 3f); qLegL = (0.5f + 0.5f * sin(ph + 3.1416f)) * mc; qLegR = (0.5f + 0.5f * sin(ph)) * mc
             hipL = lp(hipL, 2f + 7f * qLegL, li); hipR = lp(hipR, 2f + 7f * qLegR, li)
             kneeL = lp(kneeL, 4f + 26f * qLegL, li); kneeR = lp(kneeR, 4f + 26f * qLegR, li) }
-        val drop = 0.12f * cr + 0.545f * si + 0.675f * legSq + 0.14f * tuck + skw * (0.035f + 0.25f * an.skPush.coerceIn(0f, 1f) + 0.2f * an.skGrab.coerceIn(0f, 1f))
+        val drop = 0.12f * cr + 0.545f * si + 0.675f * legSq + 0.14f * tuck + skw * (0.035f + 0.09f * an.skPush.coerceIn(0f, 1f) + 0.2f * an.skGrab.coerceIn(0f, 1f))
         val bob = sin(t * 2f) * 0.012f * (1f - stride) + abs(sin(ph)) * (0.035f + 0.075f * rn) * stride * (1f - 0.85f * li) + fl * (1f - fm) * sin(t * 1.6f) * 0.09f   // pairando: sobe e desce devagar
         val move = stride * (1f + rn * 0.6f) + ab * lp(0.4f, 1.2f, fs)
 
@@ -431,17 +454,17 @@ class McChar {
         if (skw > 0.001f) {   // braços de skatista: abertos pro equilíbrio, balançam no empurrão, sobem no ollie, um pega a prancha no grab
             val kPop = an.skPop.coerceIn(0f, 1f); val kLand = an.skLand.coerceIn(0f, 1f); val kGr = an.skGrab.coerceIn(0f, 1f)
             val kMan = an.skMan.coerceIn(0f, 1f); val kGd = an.skGrind.coerceIn(0f, 1f); val kFl = an.skFlip.coerceIn(0f, 1f); val kPw = an.skPush.coerceIn(0f, 1f)
-            val w1 = sin(an.t * 1.7f); val w2 = sin(an.t * 1.3f + 1.1f)
-            var lx = -10f; var rx2 = -4f; var lz = 50f + 6f * w1; var rz2 = 50f + 6f * w2; var lel = -16f; var rel = -16f
+            val w1 = sin(an.t * 0.9f); val w2 = sin(an.t * 0.9f + 0.35f)
+            var lx = -7f; var rx2 = -7f; var lz = 58f + 2f * w1; var rz2 = 58f + 2f * w2; var lel = -13f; var rel = -13f
             if (kPw > 0.001f) {
-                // Os braços contrabalançam a perna que empurra, em vez de ficarem rígidos.
+                // Contrapeso curto e controlado: tronco estável, sem braços chicoteando.
                 val c = sin(an.skPushPh * 6.2832f)
-                lx = lp(lx, -14f + 22f * c, kPw)
-                rx2 = lp(rx2, -14f - 22f * c, kPw)
-                lel = lp(lel, -10f + 9f * c, kPw)
-                rel = lp(rel, -10f - 9f * c, kPw)
-                lz = lp(lz, 66f + 10f * c, kPw)
-                rz2 = lp(rz2, 66f - 10f * c, kPw)
+                lx = lp(lx, -9f + 7f * c, kPw)
+                rx2 = lp(rx2, -9f - 7f * c, kPw)
+                lel = lp(lel, -12f + 3f * c, kPw)
+                rel = lp(rel, -12f - 3f * c, kPw)
+                lz = lp(lz, 62f + 4f * c, kPw)
+                rz2 = lp(rz2, 62f - 4f * c, kPw)
             }
             lz = lp(lz, 118f, kPop); rz2 = lp(rz2, 118f, kPop); lel = lp(lel, -6f, kPop); rel = lp(rel, -6f, kPop)
             lz = lp(lz, 74f, kLand * 0.8f); rz2 = lp(rz2, 74f, kLand * 0.8f)
