@@ -191,7 +191,7 @@ class CharacterActivity : CozyActivity() {
         root.addView(SceneBg(this, 0.1f))
         val narrow = resources.configuration.screenWidthDp < 720
         val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(if (narrow) 12 else 28), dp(if (narrow) 8 else 18), dp(if (narrow) 12 else 28), dp(if (narrow) 8 else 14)) }
-        val head = cHeader("Meu personagem", "Tudo é salvo automaticamente") { finish() }
+        val head = cHeader("Estúdio de Skin", "Customização voxel avançada • tudo salvo automaticamente") { finish() }
         col.addView(head, lpW(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(8) })
         val wideLayout = resources.configuration.screenWidthDp >= 720
         val body = LinearLayout(this).apply { orientation = if (wideLayout) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL }
@@ -201,7 +201,7 @@ class CharacterActivity : CozyActivity() {
         val pv = FrameLayout(this).apply { background = CozyBox(this@CharacterActivity, Cz.GOLD, 22f, false); setPadding(dp(6), dp(6), dp(6), dp(6)) }
         cv = CharView(this); cv.scenic = true
         pv.addView(cv, FrameLayout.LayoutParams(-1, -1))
-        pv.addView(cTxtL("Arraste para girar", 11f, Color.WHITE, true), FrameLayout.LayoutParams(-2, -2, Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = dp(6) })
+        pv.addView(cTxtL("⟳  ARRASTE PARA GIRAR  ⟳", 11f, Color.WHITE, true), FrameLayout.LayoutParams(-2, -2, Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = dp(6) })
         leftCol.addView(pv, lpW(MATCH, 0, 1f))
         val nameBox = EditText(this).apply {
             setText(Look.name(this@CharacterActivity)); hint = "Nome do personagem"
