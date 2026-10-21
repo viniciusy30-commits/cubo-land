@@ -568,7 +568,7 @@ class Game(val world: World) {
     @Volatile var flyImp = 0f; private var wasFast = false; private var trailT = 0f   // impulso de herói ao disparar no voo + rastro
     @Volatile var flyLaunch = 0f; @Volatile private var launchReq = false   // decolagem: super pulo + botão de pular no ar -> voa (1 -> 0 em ~0,8s, pra animação)
     @Volatile var dashHeld = false; @Volatile var dashFire = false; @Volatile var airDashCharge = 0f   // dash aéreo: segura o botão de correr no voo (carrega) e solta (dispara)
-    @Volatile var airDashStomp = 0f; @Volatile var dashDirPitch = 0f; private var dashPre = 0f; private var dashCh = 0f; private var chargeFxT = 0f; private var trailFxT = 0f
+    @Volatile var airDashStomp = 0f; @Volatile var dashDirPitch = 0f; private var dashPre = 0f; private var dashCh = 0f; private var chargeFxT = 0f; private var trailFxT = 0f; private var vertFxT = 0f
     val dashActive: Boolean get() = airDashT > 0.02f
     private var airDashT = 0f; private var windAmt = 0f   // airDashT: tempo restante do impulso (a velocidade extra se dissipa devagar); windAmt: intensidade suave do vento (0..1)
     // postura: 0 em pé, 1 agachado, 2 sentado, 3 deitado (valores suavizados pra animação/câmera)
@@ -1618,6 +1618,18 @@ class Game(val world: World) {
             }
         }
         airDashT = max(0f, airDashT - dt)
+        if (flying && airDashT <= 0f && abs(p.vy) > 3f) {   // subindo/descendo no voo: riscos de vento verticais passando pelo corpo
+            vertFxT -= dt
+            if (vertFxT <= 0f) {
+                vertFxT = 0.06f
+                val up = p.vy > 0f; val k = min(1f, (abs(p.vy) - 3f) / 3f)
+                for (i in 0 until 2) {
+                    val a = rnd.nextFloat() * 6.2832f; val r = 0.5f + rnd.nextFloat() * 0.8f
+                    windAdd(WindP(0, p.x + cos(a) * r, p.y + (if (up) 0.1f else 1.5f) + rnd.nextFloat() * 1.0f, p.z + sin(a) * r, 0f, 1f, 0f,
+                        if (rnd.nextBoolean()) 0xFFFFFF else 0xBFEFFF, 0.35f + rnd.nextFloat() * 0.2f, 0.9f + rnd.nextFloat() * 1.0f, 0f, 0f), 0.55f * k)
+                }
+            }
+        }
         if (airDashT > 0f && parts.size < 500) {   // faíscas e vento soltos atrás durante o impulso
             trailFxT -= dt
             if (trailFxT <= 0f) {
@@ -1954,7 +1966,7 @@ class Game(val world: World) {
             val headUnder = headWas
             bubbleT -= dt
             if (headUnder && bubbleT <= 0f) {
-                bubbleT = 0.35f + rnd.nextFloat() * 0.5f
+                bubbleT = (0.35f + rnd.nextFloat() * 0.5f) * (if (abs(p.vy) > 1.5f) 0.3f else 1f)   // subindo/afundando solta mais bolhas
                 val b = Particle(p.x + (rnd.nextFloat() - 0.5f) * 0.3f, p.y + 1.5f, p.z + (rnd.nextFloat() - 0.5f) * 0.3f, 0f, 0.6f, 0f, 0xDDF4FF, 0.05f + rnd.nextFloat() * 0.04f, 2.4f)
                 b.grav = -3f; parts.add(b)
             }

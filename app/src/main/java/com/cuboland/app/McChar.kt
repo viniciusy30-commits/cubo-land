@@ -110,6 +110,10 @@ class McChar {
         val dashW = max(an.dash.coerceIn(0f, 1f), an.imp.coerceIn(0f, 1f)) * (1f - swim01(an))
         val uImp = 1f - an.imp.coerceIn(0f, 1f)
         val wind = if (an.imp <= 0f) 0f else if (uImp < 0.4f) uImp / 0.4f else max(0f, 1f - (uImp - 0.4f) / 0.25f)
+        // subindo / descendo no voo (suave, pela velocidade vertical): subir = corpo reto, braços em V pra cima, pernas juntas e soltas; descer = braços abertos, pernas abertas planando
+        val fvy = an.vy / 5f
+        val fu = if (swimming) 0f else sm01((fvy - 0.12f) / 0.7f) * fl * (1f - dashW)
+        val fd = if (swimming) 0f else sm01((-fvy - 0.12f) / 0.7f) * fl * (1f - dashW)
         val atk = an.atk; val atking = atk < 1f
         val stride = if (swimming) 0f else min(1f, mv * 3f) * (1f - ab) * (1f - fl)
         var sw = sin(ph) * (26f + 30f * rn) * stride
@@ -139,13 +143,14 @@ class McChar {
             hipR = lp(hipR, lp(hLd, hTr, leadL), ab); kneeR = lp(kneeR, lp(kLd, kTr, leadL), ab)
         }
         if (fl > 0.01f) {
-            // voando: uma perna meio dobrada (coxa à frente, canela pra trás) e a outra esticada; parado ou andando devagar
-            val fk = sin(t * 7f) * 1.2f * fm
-            val fh = -5f - 16f * fm + sin(t * 1.6f) * 3f * (1f - fm) + sin(t * 5f) * 2.5f * fm
-            // (joelho de verdade no voo: ver kbend) perna esquerda meio dobrada: coxa um pouco à frente e canela pra trás; direita esticada acompanhando o corpo
-            val bwg = sin(t * 1.9f) * (3f + 2f * fm)   // balançadinha lenta da perna dobrada
-            hipL = lp(hipL, -16f + bwg, fl); hipR = lp(hipR, 4f + fh * 0.35f - bwg * 0.4f + fk, fl)
-            kneeL = lp(kneeL, 54f + 6f * fm + bwg, fl); kneeR = lp(kneeR, 4f + 3f * fm, fl)
+            // voando parado: as duas pernas retas, um pouco abertas (ver splay), com um balanço leve; andando, juntas e esticadas pra trás
+            val hov = 1f - fm
+            val base = -4f - 12f * fm + sin(t * 1.7f) * 2.5f * hov
+            val fkU = sin(t * 6f) * 4f * fu; val fkD = sin(t * 4.6f) * 3f * fd   // subindo: pés batem de leve; descendo: pernas balançam soltas
+            val hipT = base + 10f * fu - 12f * fd
+            val kneeT = 4f + 3f * fm + 8f * fu + 16f * fd
+            hipL = lp(hipL, hipT + fkU + fkD + sin(t * 7f) * 1.2f * fm, fl); hipR = lp(hipR, hipT - fkU - fkD - sin(t * 7f) * 1.2f * fm - sin(t * 1.7f) * 1.5f * hov, fl)
+            kneeL = lp(kneeL, kneeT + max(0f, fkU) * 0.8f, fl); kneeR = lp(kneeR, kneeT + max(0f, -fkU) * 0.8f, fl)
         }
         if (dashW > 0.001f && fl > 0.01f) {
             val fk2 = sin(t * 14f) * 1.5f
@@ -200,7 +205,7 @@ class McChar {
             Matrix.rotateM(r2, 0, 90f * li, 1f, 0f, 0f)
         }
 
-        val lean = 30f * an.dash.coerceIn(0f, 1f) * fl - 30f * wind * dashW + 18f * cr + 6f * si + 3f * stride * (1f - li) - 7f * li + 12f * rn * stride + ab * (rs * lp(-4f, 14f, sj) + ap * lp(0f, 30f, sj) + fa2 * lp(7f, 12f, sj)) + 10f * land + 30f * jch + 6f * landBig + fl * (8f + 52f * fm) - 10f * chg + 22f * tuck + 26f * dst - an.vp * an.dash.coerceIn(0f, 1f) * fl - 24f * lwE +
+        val lean = 30f * an.dash.coerceIn(0f, 1f) * fl - 30f * wind * dashW + 18f * cr + 6f * si + 3f * stride * (1f - li) - 7f * li + 12f * rn * stride + ab * (rs * lp(-4f, 14f, sj) + ap * lp(0f, 30f, sj) + fa2 * lp(7f, 12f, sj)) + 10f * land + 30f * jch + 6f * landBig + fl * (8f + 52f * fm) * (1f - 0.78f * fu) + 14f * fd - 4f * fu - 10f * chg + 22f * tuck + 26f * dst - an.vp * an.dash.coerceIn(0f, 1f) * fl - 24f * lwE +
             (if (atking) 9f * sin(atk * 3.1416f) else 0f)
         val swimK = if (swimming) an.swimFast.coerceIn(0f, 1f) * (1f - dv) else 0f
         val twist = sin(an.swimPh) * 34f * swimK + sin(ph) * (5f + 9f * rn) * stride * (1f - li) + 14f * chg + (if (atking) 18f * sin(atk * 6.2832f) else 0f)
@@ -221,7 +226,7 @@ class McChar {
 
         val look = sin(t * 0.55f) * sin(t * 0.23f)
         val hy = if (swimK > 0.01f) -twist * 0.55f + 30f * swimK * sm01(sin(an.swimPh * 0.5f + 0.4f) * 1.6f - 0.3f) else if (stride > 0.1f) -twist * 0.7f else look * 16f * (1f - stride)   // nadando: gira a cabeça pra respirar a cada braçada
-        val hnod = -lean * 0.55f + sin(ph * 2f) * 1.8f * stride + sin(t * 1.3f) * 1.4f * (1f - stride) + ab * (-6f * rs + 6f * fa2) - 10f * jch - an.tilt * lp(0.9f, 0.5f, dv) - 70f * li
+        val hnod = -lean * 0.55f + sin(ph * 2f) * 1.8f * stride + sin(t * 1.3f) * 1.4f * (1f - stride) + ab * (-6f * rs + 6f * fa2) - 10f * jch - an.tilt * lp(0.9f, 0.5f, dv) - 70f * li - 11f * fu + 7f * fd
         val htilt = sin(t * 0.8f) * 2f * (1f - stride)
         System.arraycopy(bm, 0, hm, 0, 16)
         Matrix.translateM(hm, 0, 0f, 24f * U, 0f)
@@ -292,6 +297,15 @@ class McChar {
             rxL = lp(rxL, dn + sin(t * 2.6f) * 3f, fl); rzL = lp(rzL, -(16f + fw), fl); elL = lp(elL, -8f, fl)
             if (toolArm) { rxR = lp(rxR, lp(-24f, -40f, fm) + atkRx, fl); rzR = lp(rzR, 20f, fl) }
             else { rxR = lp(rxR, dn - sin(t * 2.6f) * 3f, fl); rzR = lp(rzR, 16f + fw, fl); elR = lp(elR, -8f, fl) }
+        }
+        if (fu > 0.001f || fd > 0.001f) {   // subir: braços em V pra cima batendo de leve; descer: braços abertos planando
+            val fl3 = sin(t * 6.5f) * 6f; val gl = sin(t * 4f) * 4f
+            rxL = lp(rxL, -22f + fl3 * 0.5f, fu); rzL = lp(rzL, -(112f + fl3), fu); elL = lp(elL, -14f, fu)
+            rxL = lp(rxL, 12f, fd); rzL = lp(rzL, -(84f + gl), fd); elL = lp(elL, -6f, fd)
+            if (!toolArm) {
+                rxR = lp(rxR, -22f - fl3 * 0.5f, fu); rzR = lp(rzR, 112f - fl3, fu); elR = lp(elR, -14f, fu)
+                rxR = lp(rxR, 12f, fd); rzR = lp(rzR, 84f - gl, fd); elR = lp(elR, -6f, fd)
+            }
         }
         if (tuck > 0.001f) {   // dash aéreo carregando: braços fechados na frente do corpo, em guarda
             val k = min(1f, tuck * 3f)
@@ -372,7 +386,10 @@ class McChar {
             if (cr > 0f) ang = lp(ang, (if (sd < 0) 1f else -1f) * sw * 0.4f - 4f, cr)   // agachar do Minecraft: pernas quase retas, tronco inclinado
             if (jch > 0f) ang = lp(ang, -6f * jch, min(1f, jch * 3f))   // carregando: joelhos um pouco à frente
             if (bt > 0f) ang = lp(ang, -62f, bt)   // moto: pernas dobradas nas pedaleiras
-            piv(legM[li2], r2, s * 2f * U, hipY, 0f, rx = ang + lean * fl, rz = s * (5f + 7f * (if (sd < 0) qLegL else qLegR)) * li)
+            // pernas um pouco abertas no voo parado (abre pro lado em relação ao eixo da perna, que acompanha a inclinação do corpo)
+            val splay = if (fl > 0.01f) (fl * (1f - dashW) * (9f * (1f - fm) + 2f * fm + 8f * fd - 7f * fu + sin(t * 1.7f + 1f) * 1.5f * (1f - fm)) * (1f - max(tuck, dst))).coerceAtLeast(0f) else 0f
+            val legT = (ang + lean * fl) * 0.017453f
+            piv(legM[li2], r2, s * 2f * U, hipY, 0f, rx = ang + lean * fl, ry = -s * splay * sin(legT), rz = s * (5f + 7f * (if (sd < 0) qLegL else qLegR)) * li + s * splay * cos(legT))
             if (legSq > 0f) Matrix.scaleM(legM[li2], 0, 1f + 0.4f * legSq, 1f - legSq, 1f + 0.4f * legSq)   // perna amassa e alarga
             val lm = legM[li2]
             kbend = if (fl > 0.01f) max(0f, kn) * fl else 0f; curLeg = lm
