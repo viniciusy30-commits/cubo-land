@@ -1869,6 +1869,49 @@ class CharModel {
             }
         }
 
+        // ===== CAMADA DE IDENTIDADE VISUAL PARA ACESSÓRIOS DAS COSTAS =====
+        // Mochilas, capas, asas, armas e caudas recebem acabamento próprio em relevo.
+        val backHi = lite(bcol, 0.32f)
+        val backLo = shadeC(bcol, 0.65f)
+        when (L[Look.BACK]) {
+            1 -> { // capa: borda dupla, fechos e costura em losangos
+                b(base, -0.19f, 0.49f, -0.206f, 0.025f, 0.68f, 0.025f, backLo)
+                b(base, 0.19f, 0.49f, -0.206f, 0.025f, 0.68f, 0.025f, backLo)
+                b(base, 0f, 0.2f, -0.207f, 0.34f, 0.025f, 0.025f, backHi)
+                for (i in -2..2) {
+                    b(base, i * 0.055f, 0.43f + (i % 2) * 0.055f, -0.211f, 0.025f, 0.025f, 0.018f, backHi)
+                }
+                for (sd in intArrayOf(-1, 1)) {
+                    b(base, sd * 0.12f, 0.91f, -0.205f, 0.055f, 0.07f, 0.025f, gold)
+                    b(base, sd * 0.12f, 0.91f, -0.222f, 0.025f, 0.035f, 0.012f, 0xFFF0A0)
+                }
+            }
+            2, 9 -> { // mochila: bolsos, costura, alças e fivelas
+                b(base, 0f, 0.62f, -0.37f, 0.27f, 0.19f, 0.035f, backHi)
+                b(base, 0f, 0.61f, -0.394f, 0.2f, 0.12f, 0.018f, backLo)
+                b(base, 0f, 0.67f, -0.409f, 0.09f, 0.035f, 0.012f, gold)
+                for (sd in intArrayOf(-1, 1)) {
+                    b(base, sd * 0.13f, 0.73f, -0.365f, 0.025f, 0.27f, 0.018f, backHi)
+                    b(base, sd * 0.13f, 0.83f, -0.38f, 0.065f, 0.035f, 0.02f, 0xD9DDE5)
+                    b(base, sd * 0.13f, 0.83f, -0.395f, 0.025f, 0.012f, 0.01f, gold)
+                }
+            }
+            3, 6 -> { // asas: nervuras e contorno reforçado
+                for (sd in intArrayOf(-1, 1)) {
+                    val s = sd.toFloat()
+                    b(base, s * 0.18f, 0.86f, -0.22f, 0.04f, 0.15f, 0.035f, backHi, rz = -s * 18f)
+                    b(base, s * 0.3f, 0.76f, -0.22f, 0.035f, 0.17f, 0.025f, backLo, rz = -s * 30f)
+                    b(base, s * 0.38f, 0.7f, -0.215f, 0.025f, 0.1f, 0.02f, backHi, rz = -s * 38f)
+                }
+            }
+            5 -> { // espada: bainha, runa e rebites do punho
+                b(base, -0.045f, 0.7f, -0.24f, 0.018f, 0.55f, 0.018f, backHi, rz = -38f)
+                b(base, 0.04f, 0.7f, -0.24f, 0.018f, 0.55f, 0.018f, backLo, rz = -38f)
+                b(base, 0f, 0.91f, -0.245f, 0.05f, 0.06f, 0.025f, 0xE8F2FF)
+                b(base, 0f, 0.91f, -0.26f, 0.022f, 0.035f, 0.012f, 0x79CFFF)
+            }
+        }
+
         // ================= PESCOÇO =================
         val ncol = Look.pal(Look.NECKC)
         when (L[Look.NECK]) {
