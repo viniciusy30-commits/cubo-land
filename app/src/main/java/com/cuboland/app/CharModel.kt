@@ -1463,6 +1463,56 @@ class CharModel {
             else b(sm, r.x, r.py - 0.5f, r.z, r.sx, r.sy, r.sz + (if (full) 0.05f else 0f), r.col)   // vestido longo: um pouco mais fundo, o pé não fura na frente
         }
 
+        // ================= MICROTEXTURA E RELEVO DE MATERIAIS =================
+        // Camadas geométricas reais no modelo: pespontos, nervuras, painéis e ferragens.
+        // O padrão muda por peça para que a roupa não pareça apenas um cubo pintado.
+        val fabricHi = lite(tc, 0.22f)
+        val fabricMid = mixC(tc, 0xFFFFFF, 0.10f)
+        val fabricShadow = shadeC(tc, 0.72f)
+        val seamCol = mixC(tc, 0xFFFFFF, 0.30f)
+        // Costura dupla nos ombros e laterais, com pequenas marcas de ponto.
+        for (side in intArrayOf(-1, 1)) {
+            val x = side * (bw * 0.37f)
+            F(x, 0.825f, 0.177f, 0.21f, fabricShadow, 0.012f, side * 8f)
+            F(x + side * 0.012f, 0.825f, 0.184f, 0.18f, seamCol, 0.008f, side * 8f)
+            for (j in 0..5) {
+                F(side * (0.12f + j * 0.009f), 0.55f + (j % 2) * 0.014f, 0.177f, 0.009f, seamCol, 0.009f)
+            }
+        }
+        // Textura tecida em pequenos relevos alternados; deixa áreas amplas menos chapadas.
+        if (top == 0 || top == 1 || top == 3 || top == 7 || top == 12 || top == 17) {
+            for (row in 0..4) for (col in 0..4) {
+                val x = -0.16f + col * 0.08f
+                val y = 0.58f + row * 0.065f
+                if ((row + col) % 2 == 0) F(x, y, 0.176f, 0.018f, fabricMid, 0.008f)
+            }
+        }
+        // Painel dorsal e costuras em X nas peças estruturadas, visíveis ao girar o personagem.
+        K(0f, 0.82f, -0.176f, 0.012f, fabricShadow, 0.014f)
+        if (top == 3 || top == 5 || top == 6 || top == 16 || top == 17) {
+            K(-0.12f, 0.7f, -0.178f, 0.17f, fabricShadow, 0.014f, -18f)
+            K(0.12f, 0.7f, -0.178f, 0.17f, fabricShadow, 0.014f, 18f)
+            K(-0.12f, 0.7f, -0.186f, 0.13f, seamCol, 0.009f, -18f)
+            K(0.12f, 0.7f, -0.186f, 0.13f, seamCol, 0.009f, 18f)
+        }
+        // Zíper/fecho tridimensional individual para casacos, moletons e macacões.
+        if (top == 1 || top == 3 || top == 6 || top == 17) {
+            F(0f, 0.69f, 0.184f, 0.31f, fabricShadow, 0.025f)
+            F(0f, 0.69f, 0.199f, 0.27f, seamCol, 0.008f)
+            for (j in 0..5) F(0.012f, 0.81f - j * 0.045f, 0.204f, 0.012f, 0xD5D9E0, 0.018f)
+            F(-0.025f, 0.86f, 0.2f, 0.045f, 0xD5D9E0, 0.022f)
+        }
+        // Etiqueta de marca, rebites e presilhas em relevo; cor acompanha o acabamento escolhido.
+        F(-0.14f, 0.53f, 0.19f, 0.052f, garmentLo, 0.024f)
+        F(-0.14f, 0.53f, 0.205f, 0.032f, garmentA, 0.018f)
+        F(-0.14f, 0.53f, 0.217f, 0.012f, garmentHi, 0.012f)
+        if (top == 5 || top == 16 || top == 17 || top == 18) {
+            for (side in intArrayOf(-1, 1)) {
+                F(side * 0.17f, 0.77f, 0.198f, 0.026f, 0xD5D9E0, 0.025f)
+                F(side * 0.17f, 0.77f, 0.214f, 0.012f, 0xFFFFFF, 0.012f)
+            }
+        }
+
         // ================= CAMADAS DE ESTAMPA PERSONALIZÁVEIS =================
         // Cada motivo é construído com pequenos volumes, como uma skin voxel, não como um adesivo plano.
         val printCol = Look.pal(Look.TOP_ACCENT)
@@ -2006,6 +2056,23 @@ class CharModel {
             6 -> { hb(0.34f, 1.61f, 0.36f, 0.05f, 0.22f, 0.02f, hairAccent, rz = -12f); hb(0.35f, 1.52f, 0.36f, 0.03f, 0.1f, 0.02f, lite(hairAccent, 0.3f), rz = -12f) }
             7 -> for (k in 0..5) hb(-0.25f + k * 0.1f, 1.78f - (k % 2) * 0.035f, 0.435f, 0.028f, 0.16f, 0.02f, if (k % 2 == 0) hairAccent else hairAccentDark, rz = (k - 2) * 5f)
             8 -> { hb(-0.09f, 1.79f, 0.435f, 0.025f, 0.13f, 0.018f, hairAccent); hb(0.09f, 1.79f, 0.435f, 0.025f, 0.13f, 0.018f, hairAccent) }
+        }
+        // Presilhas e micromechas em relevo: detalhes extra acompanham a cabeça e giram com ela.
+        if (L[Look.HAIR] != 13) {
+            val clip = Look.pal(Look.HATC)
+            for (sd in intArrayOf(-1, 1)) {
+                val x = sd * 0.34f
+                hb(x, 1.66f, 0.414f, 0.075f, 0.035f, 0.025f, shadeC(clip, 0.68f), rz = -sd * 18f)
+                hb(x, 1.67f, 0.43f, 0.055f, 0.018f, 0.018f, lite(clip, 0.38f), rz = -sd * 18f)
+                hb(sd * 0.39f, 1.55f, 0.405f, 0.025f, 0.11f, 0.014f, lite(Look.hair(), 0.32f), rz = sd * 8f)
+            }
+        }
+        // Mechas metalizadas finas sobre o topo, com brilho e sombra para volume de material.
+        val crownAccent = Look.pal(Look.HAIR_ACCENT_COLOR)
+        for (i in 0..3) {
+            val x = -0.21f + i * 0.14f
+            hb(x, 1.81f + (i % 2) * 0.025f, 0.29f, 0.028f, 0.012f, 0.16f,
+                if (i % 2 == 0) lite(crownAccent, 0.24f) else shadeC(crownAccent, 0.78f), rz = (i - 1) * 4f)
         }
         // cabelo volumoso empurra o chapéu pra cima (sem atravessar)
         val hatLift = if (hatId == 0 || hatCovers) 0f else hairLift(L[Look.HAIR])
