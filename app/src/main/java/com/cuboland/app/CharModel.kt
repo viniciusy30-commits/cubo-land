@@ -2285,6 +2285,57 @@ class CharModel {
             }
         }
 
+        // ===== ACABAMENTO INDIVIDUAL DE CHAPÉUS E ACESSÓRIOS DE CABEÇA =====
+        // Filetes, rebites, emblemas e painéis seguem o acessório escolhido.
+        val hatHi = lite(hcl, 0.38f)
+        val hatLo = shadeC(hcl, 0.68f)
+        when (hatId) {
+            1, 2, 3, 16, 17, 21, 22 -> {
+                // Banda em camadas + fivela com sombra e brilho para leitura 3D.
+                hb(0f, 1.82f, 0.365f, 0.52f, 0.055f, 0.025f, hatLo)
+                hb(0f, 1.83f, 0.382f, 0.46f, 0.025f, 0.018f, hatHi)
+                hb(0f, 1.83f, 0.397f, 0.095f, 0.07f, 0.018f, gold)
+                hb(0f, 1.83f, 0.41f, 0.045f, 0.035f, 0.012f, hcl)
+                for (sd in intArrayOf(-1, 1)) {
+                    hb(sd * 0.29f, 1.83f, 0.378f, 0.025f, 0.025f, 0.016f, 0xE7D9B4)
+                }
+            }
+            4, 8, 23 -> {
+                // Armadura/coroa: placas segmentadas, rebites e crista central.
+                for (sd in intArrayOf(-1, 1)) {
+                    hb(sd * 0.29f, 1.82f, 0.43f, 0.12f, 0.1f, 0.035f, hatLo, rz = -sd * 12f)
+                    hb(sd * 0.29f, 1.83f, 0.452f, 0.065f, 0.045f, 0.018f, 0xF5D77B)
+                    hb(sd * 0.42f, 1.72f, 0.39f, 0.045f, 0.045f, 0.025f, 0xD8DEE8)
+                }
+                hb(0f, 1.98f, 0.39f, 0.08f, 0.19f, 0.04f, hatHi)
+                hb(0f, 2.08f, 0.4f, 0.035f, 0.08f, 0.025f, 0xFFFFFF)
+            }
+            5, 6, 14, 15, 20 -> {
+                // Acessórios fofos: costura central, pequenos pingentes e borda contrastante.
+                hb(0f, 1.77f, 0.36f, 0.52f, 0.025f, 0.025f, hatHi)
+                hb(0f, 1.78f, 0.38f, 0.08f, 0.07f, 0.025f, 0xFFF0F5)
+                hb(0f, 1.78f, 0.4f, 0.035f, 0.035f, 0.015f, 0xFF8FB5)
+                for (sd in intArrayOf(-1, 1)) {
+                    hb(sd * 0.36f, 1.76f, 0.34f, 0.035f, 0.035f, 0.025f, 0xFFFFFF)
+                }
+            }
+            10, 12, 13 -> {
+                // Cristal, halo ou chifres: núcleo luminoso e facetas com contraste.
+                hb(0f, 2.02f, 0.13f, 0.045f, 0.15f, 0.04f, hatHi)
+                hb(0f, 2.08f, 0.16f, 0.025f, 0.06f, 0.025f, 0xFFFFFF)
+                for (sd in intArrayOf(-1, 1)) {
+                    hb(sd * 0.25f, 1.88f, 0.12f, 0.04f, 0.09f, 0.035f, hatLo, rz = -sd * 18f)
+                }
+            }
+            18 -> {
+                // Fones: anéis exteriores e núcleo luminoso nos dois earcups.
+                for (sd in intArrayOf(-1, 1)) {
+                    hb(sd * 0.54f, 1.27f, 0.09f, 0.045f, 0.19f, 0.19f, hatHi)
+                    hb(sd * 0.55f, 1.27f, 0.195f, 0.025f, 0.1f, 0.1f, 0x73E7FF)
+                    hb(sd * 0.55f, 1.27f, 0.211f, 0.012f, 0.045f, 0.045f, 0xFFFFFF)
+                }
+            }
+        }
         if (hatLift != 0f) Matrix.translateM(hm, 0, 0f, -hatLift, 0f)
         // ---------- rosto: acessórios por cima (lentes translúcidas por último) ----------
         if (fc == 4) {
