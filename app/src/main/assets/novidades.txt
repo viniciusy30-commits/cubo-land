@@ -1,3 +1,12 @@
+#id 2026-10-21-f
+#titulo Manobras aéreas refeitas
+- Botão novo no ar: seta de giro rosa vira um analógico pequeno: arraste pra frente/trás/lados e solte pra executar (mostra o nome da manobra); parado = pirueta/tornado
+- Voo normal / pulo: cambalhota (frente), mortal (trás), estrela (lados) e pirueta dupla (stick parado)
+- Voo rápido / dash: looping (trás), rolo duplo (frente), rolo de barril (lados) e tornado (parado), com o corpo deitado como uma bala
+- O corpo desenha o caminho no ar: pulinho, círculo do looping, hélice dos rolos, com fita de luz saindo da cabeça e dos pés
+- Aperte de novo na 2ª metade da manobra pra emendar a próxima: COMBO x2, x3...
+- Corrigido: as pernas davam uma travadinha nos primeiros milissegundos de cada passo
+
 #id 2026-10-21-e
 #titulo Corrida nova
 - Corrida refeita: joelhos de verdade dobrando forte na recuperação e absorvendo no apoio, braços com cotovelo bem dobrado, tronco inclinado, torção dos ombros contra o quadril, balanço lateral e quique maior a cada passada
