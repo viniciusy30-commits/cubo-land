@@ -55,7 +55,7 @@ object Look {
 
 
     /** looks prontos: 21 valores na ordem dos índices acima */
-    val PRESET_NAMES = arrayOf("Ninja", "Colegial", "Mago", "Samurai", "Princesa", "Maid", "Príncipe", "Gatinha", "Raposa", "Colegial (menino)", "Cyberpunk", "Carmesim Infernal", "Aurora Glacial", "Streetwear", "Sakura", "Cavaleiro Solar", "Gótica Real", "Explorador", "Neon Arcade", "Floresta Mística")
+    val PRESET_NAMES = arrayOf("Ninja", "Colegial", "Mago", "Samurai", "Princesa", "Maid", "Príncipe", "Gatinha", "Raposa", "Colegial (menino)", "Cyberpunk", "Carmesim Infernal", "Aurora Glacial", "Streetwear", "Sakura", "Cavaleiro Solar", "Gótica Real", "Explorador", "Neon Arcade", "Floresta Mística", "Serafim Celeste")
     val PRESETS = arrayOf(
         intArrayOf(0, 1, 8, 4, 5, 5, 0, 1, 3, 0, 3, 0, 3, 11, 4, 8, 5, 3, 7, 4, 1),
         intArrayOf(1, 0, 16, 4, 4, 0, 1, 8, 11, 5, 11, 6, 3, 0, 4, 0, 9, 4, 0, 4, 0),
