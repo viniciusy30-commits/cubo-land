@@ -224,11 +224,11 @@ class McChar {
         if (bt > 0f) { hipL = lp(hipL, -72f, bt); hipR = lp(hipR, -72f, bt); kneeL = lp(kneeL, 62f, bt); kneeR = lp(kneeR, 62f, bt) }
         // ---- SKATISTA: perna da frente = hipR/kneeR (sd>0, +X), perna de trás = hipL/kneeL (sd<0, -X); rz abre os pés ao longo da prancha ----
         val skw = an.sk.coerceIn(0f, 1f)
-        var spF = 0f; var spR = 0f
+        var spF = 0f; var spR = 0f; var pushFace = 0f
         if (skw > 0.001f) {
             val kSc = an.crouch.coerceIn(0f, 1f); val kPop = an.skPop.coerceIn(0f, 1f); val kLand = an.skLand.coerceIn(0f, 1f)
             val kGr = an.skGrab.coerceIn(0f, 1f); val kFl = an.skFlip.coerceIn(0f, 1f); val kGd = an.skGrind.coerceIn(0f, 1f)
-            val kMan = an.skMan.coerceIn(0f, 1f); val kPw = an.skPush.coerceIn(0f, 1f)
+            val kMan = an.skMan.coerceIn(0f, 1f); val kPw = an.skPush.coerceIn(0f, 1f); val kFace = an.skFace.coerceIn(0f, 1f)
             val sway = sin(an.t * 1.9f) * 2f
             var fH = -14f - 40f * kSc - 14f * kLand + sway; var fK = 24f + 46f * kSc + 24f * kLand
             var rH = -10f - 40f * kSc - 14f * kLand - sway; var rK = 28f + 46f * kSc + 26f * kLand
@@ -237,36 +237,46 @@ class McChar {
             fH = lp(fH, -30f, kMan); fK = lp(fK, 20f, kMan); sF = lp(sF, 18f, kMan)                                                         // manual: peso atrás
             sF = lp(sF, 19f, kGd); sR = lp(sR, 19f, kGd)                                                                                    // grind: base larga
             fH = lp(fH, -34f, kFl * 0.8f); fK = lp(fK, 58f, kFl * 0.8f); rH = lp(rH, -22f, kFl * 0.8f); rK = lp(rK, 70f, kFl * 0.8f)       // flip: pernas recolhidas
-            if (kPw > 0.001f) {   // empurrão: a perna de trás desce até o chão, varre pra trás e volta dobrada; a da frente agacha
+            pushFace = kFace * kPw
+            if (kPw > 0.001f) {   // arrancada: um pé permanece na prancha e o outro toca o chão para impulsionar para trás
                 val phase = an.skPushPh.coerceIn(0f, 1f)
                 val h2: Float; val k2: Float; val s2: Float
                 when {
                     phase < 0.18f -> {
                         val e = phase / 0.18f
                         val smooth = e * e * (3f - 2f * e)
-                        // O pé sai para o lado da prancha antes de tocar o chão.
-                        s2 = 16f + 15f * smooth
-                        h2 = -5f + 4f * smooth
+                        // Tira o pé traseiro da prancha e coloca-o ao lado, perto do chão.
+                        s2 = 14f + 18f * smooth
+                        h2 = -6f + 8f * smooth
                         k2 = 12f + 12f * smooth
                     }
-                    phase < 0.68f -> {
-                        val e = (phase - 0.18f) / 0.50f
-                        val drive = sin(e * 3.1416f)
-                        // A perna estende para trás durante o impulso, sem cruzar a prancha.
-                        s2 = 31f - 5f * e
-                        h2 = 2f + 30f * drive
-                        k2 = 24f + 42f * drive
+                    phase < 0.62f -> {
+                        val e = (phase - 0.18f) / 0.44f
+                        val drive = e * e * (3f - 2f * e)
+                        // Apoia e estende para trás, gerando o impulso.
+                        s2 = 32f - 5f * drive
+                        h2 = 2f + 38f * drive
+                        k2 = 24f - 8f * drive
+                    }
+                    phase < 0.82f -> {
+                        val e = ((phase - 0.62f) / 0.20f).coerceIn(0f, 1f)
+                        val smooth = e * e * (3f - 2f * e)
+                        // Recolhe o pé do chão, dobrando a perna antes de voltar à prancha.
+                        s2 = 27f - 9f * smooth
+                        h2 = 40f - 48f * smooth
+                        k2 = 16f + 34f * sin(e * 3.1416f)
                     }
                     else -> {
-                        val e = ((phase - 0.68f) / 0.32f).coerceIn(0f, 1f)
+                        val e = ((phase - 0.82f) / 0.18f).coerceIn(0f, 1f)
                         val smooth = e * e * (3f - 2f * e)
-                        s2 = 26f - 10f * smooth
-                        h2 = 2f - 7f * smooth
-                        k2 = 24f - 12f * smooth
+                        s2 = 18f - 4f * smooth
+                        h2 = -8f - 4f * smooth
+                        k2 = 50f - 24f * smooth
                     }
                 }
                 rH = lp(rH, h2, kPw); rK = lp(rK, k2, kPw); sR = lp(sR, s2, kPw)
-                fH = lp(fH, -32f, kPw); fK = lp(fK, 56f, kPw)
+                // Perna da frente fica estável e só flexiona para receber o peso do corpo.
+                fH = lp(fH, -18f, kPw); fK = lp(fK, 26f, kPw)
             }
             fH = lp(fH, -105f, kGr); fK = lp(fK, 135f, kGr); rH = lp(rH, -95f, kGr); rK = lp(rK, 130f, kGr); sF = lp(sF, 7f, kGr); sR = lp(sR, 7f, kGr)   // grab: joelhos no peito
             hipR = lp(hipR, fH, skw); kneeR = lp(kneeR, fK, skw); hipL = lp(hipL, rH, skw); kneeL = lp(kneeL, rK, skw)
@@ -536,7 +546,10 @@ class McChar {
             // pernas um pouco abertas no voo parado (abre pro lado em relação ao eixo da perna, que acompanha a inclinação do corpo)
             val splay = if (fl > 0.01f) (fl * (1f - dashW) * (9f * (1f - fm) + 2f * fm + 8f * fd - 7f * fu + sin(t * 1.7f + 1f) * 1.5f * (1f - fm)) * (1f - max(tuck, dst))).coerceAtLeast(0f) else 0f
             val legT = (ang + lean * fl) * 0.017453f
-            piv(legM[li2], r2, s * 2f * U, hipY, 0f, rx = ang + lean * fl, ry = -s * splay * sin(legT), rz = s * (5f + 7f * (if (sd < 0) qLegL else qLegR)) * li + s * splay * cos(legT) + s * (if (sd < 0) spR else spF))
+            // Com o tronco frontal, os pés ficam escalonados: apoio na prancha e pé traseiro fora dela.
+            val hipX = lp(s * 2f * U, if (sd < 0) -0.16f else 0f, pushFace)
+            val hipZ = (if (sd < 0) -0.13f else 0.13f) * pushFace
+            piv(legM[li2], r2, hipX, hipY, hipZ, rx = ang + lean * fl, ry = -s * splay * sin(legT), rz = s * (5f + 7f * (if (sd < 0) qLegL else qLegR)) * li + s * splay * cos(legT) + s * (if (sd < 0) spR else spF))
             if (legSq > 0f) Matrix.scaleM(legM[li2], 0, 1f + 0.4f * legSq, 1f - legSq, 1f + 0.4f * legSq)   // perna amassa e alarga
             val lm = legM[li2]
             kbend = if (kr > 0.01f) max(0f, kn) * kr else 0f; curLeg = lm
