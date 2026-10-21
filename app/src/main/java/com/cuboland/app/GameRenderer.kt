@@ -945,7 +945,9 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         // passada ligada à velocidade real do chão: o pé não desliza (nem devagar)
         val spdH = sqrt(p.vx * p.vx + p.vz * p.vz)
         val strideA = (26f + 30f * runA) * 0.01745f
-        phaseA += dtp * (if (wa > 0.02f && p.onGround) (spdH / ((0.89f - 0.49f * game.lieA) * strideA)).coerceIn(0f, 30f) else 0f)
+        val stepIn = hypot(game.stickX, game.stickY) > 0.1f   // dedo no analógico: a fase já corre desde o 1º frame (antes ficava parada até a velocidade subir = pernas travadas)
+        val stepMin = if (stepIn) 8.5f * (1f - 0.6f * game.lieA) * min(1f, wa * 2.5f) else 0f
+        phaseA += dtp * (if (wa > 0.02f && p.onGround) max(stepMin, (spdH / ((0.89f - 0.49f * game.lieA) * strideA)).coerceIn(0f, 30f)) else 0f)
         if (wasAirP && p.onGround && lastVyP < -4f) { landA = (-lastVyP / 12f).coerceIn(0.35f, 1.5f); landRate = if (landA > 1.05f) 2.8f else 5f }   // queda de super pulo: afunda mais e levanta mais devagar
         landA = max(0f, landA - dtp * landRate)
         if (airNow && !wasAirP) vyHold = p.vy   // começa a pose já na velocidade certa (sem herdar a queda anterior)
@@ -1008,13 +1010,17 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
             Matrix.translateM(base, 0, 0f, -0.9f, 0f)
         }
         val tk = game.trickKind; val tA = game.trickA
-        if (tk > 0 && tA > 0f && tA < 1f) {   // manobra: gira o corpo todo em volta do centro (uma volta completa, começa e termina devagar)
-            val ang = 360f * (tA * tA * (3f - 2f * tA))
+        if (tk > 0 && tA > 0f && tA < 1f) {   // manobra: gira o corpo todo em volta do centro nos 3 eixos (antecipação, giro com pico de velocidade no meio, acabamento suave)
+            val sm = tA * tA * (3f - 2f * tA)
+            val ant = -0.035f * sin(3.1416f * min(1f, tA / 0.18f))   // um recuo rápido antes de girar
+            val e = 0.62f * sm + 0.38f * tA + ant
             Matrix.translateM(base, 0, 0f, 0.9f, 0f)
-            when (tk) { 1 -> Matrix.rotateM(base, 0, ang, 1f, 0f, 0f); 2 -> Matrix.rotateM(base, 0, -ang, 1f, 0f, 0f); 3 -> Matrix.rotateM(base, 0, -ang, 0f, 0f, 1f); 4 -> Matrix.rotateM(base, 0, ang, 0f, 0f, 1f); else -> Matrix.rotateM(base, 0, ang, 0f, 1f, 0f) }
+            if (game.trickYaw != 0f) Matrix.rotateM(base, 0, game.trickYaw * e, 0f, 1f, 0f)
+            if (game.trickPitch != 0f) Matrix.rotateM(base, 0, game.trickPitch * e, 1f, 0f, 0f)
+            if (game.trickRoll != 0f) Matrix.rotateM(base, 0, game.trickRoll * e, 0f, 0f, 1f)
             Matrix.translateM(base, 0, 0f, -0.9f, 0f)
-            an.trk = sin(3.1416f * tA); an.trkK = tk.toFloat()
-        } else { an.trk = 0f; an.trkK = 0f }
+            an.trk = sin(3.1416f * min(1f, tA * 1.15f)).coerceIn(0f, 1f); an.trkK = tk.toFloat(); an.trkF = if (game.trickFast) 1f else 0f
+        } else { an.trk = 0f; an.trkK = 0f; an.trkF = 0f }
         G.glEnable(G.GL_POLYGON_OFFSET_FILL)   // camadas do boneco: o que está por cima ganha na profundidade (acaba o z-fighting nas dobras)
         cm.mc.layerHook = { l -> G.glPolygonOffset(0f, -l.toFloat()) }
         cm.draw(charBox, base, an, handM)

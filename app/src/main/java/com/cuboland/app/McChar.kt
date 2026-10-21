@@ -115,7 +115,7 @@ class McChar {
         val fu = if (swimming) 0f else sm01((fvy - 0.12f) / 0.7f) * fl * (1f - dashW)
         val fd = if (swimming) 0f else sm01((-fvy - 0.12f) / 0.7f) * fl * (1f - dashW)
         val atk = an.atk; val atking = atk < 1f
-        val stride = if (swimming) 0f else min(1f, mv * 3f) * (1f - ab) * (1f - fl)
+        val stride = if (swimming) 0f else sm01(mv * 2.2f) * (1f - ab) * (1f - fl)   // entra suave (antes: cheio em 0,05s com a fase ainda parada = travada)
         var sw = sin(ph) * (26f + 30f * rn) * stride
         var hipL = sw; var hipR = -sw
         var kneeL = max(0f, -cos(ph)) * (12f + 50f * rn) * stride
@@ -172,9 +172,13 @@ class McChar {
             hipL = lp(hipL, -74f, tuck); hipR = lp(hipR, -66f, tuck)
             kneeL = lp(kneeL, 108f, tuck); kneeR = lp(kneeR, 100f, tuck)
         }
-        val tkw = an.trk.coerceIn(0f, 1f); val tkFlip = an.trkK in 0.5f..2.5f
+        val tkw = an.trk.coerceIn(0f, 1f); val tkk = an.trkK.toInt(); val tkFast = an.trkF > 0.5f
+        val tkFlip = tkk == 1 || tkk == 2 || (!tkFast && (tkk == 12 || tkk == 13))   // mortal / giro de costas: corpo encolhido
+        val tkSpin = tkk == 5 && !tkFast   // pirueta: braços pro alto, bailarino
+        val tkSuper = tkFast && !tkFlip   // voo rápido (tonel/espiral): esticado, braços à frente, pose de super-herói
         if (tkw > 0.001f) {   // manobra: cambalhota = corpo encolhido; parafuso/giro = corpo esticado e pernas juntas
             if (tkFlip) { hipL = lp(hipL, -68f, tkw); hipR = lp(hipR, -60f, tkw); kneeL = lp(kneeL, 104f, tkw); kneeR = lp(kneeR, 96f, tkw) }
+            else if (tkSpin) { hipL = lp(hipL, 4f, tkw); hipR = lp(hipR, -8f, tkw); kneeL = lp(kneeL, 6f, tkw); kneeR = lp(kneeR, 38f, tkw) }
             else { hipL = lp(hipL, 3f, tkw); hipR = lp(hipR, 3f, tkw); kneeL = lp(kneeL, 4f, tkw); kneeR = lp(kneeR, 4f, tkw) }
         }
         if (dst > 0.001f) {   // pisada no ar: a perna direita estica de uma vez pra trás (empurra o ar), a esquerda continua dobrada
@@ -332,6 +336,12 @@ class McChar {
             if (tkFlip) {
                 rxL = lp(rxL, -55f, kk); rzL = lp(rzL, -12f, kk); elL = lp(elL, -78f, kk)
                 if (!toolArm) { rxR = lp(rxR, -55f, kk); rzR = lp(rzR, 12f, kk); elR = lp(elR, -78f, kk) }
+            } else if (tkSpin) {
+                rxL = lp(rxL, -172f, kk); rzL = lp(rzL, -8f, kk); elL = lp(elL, -6f, kk)
+                if (!toolArm) { rxR = lp(rxR, -172f, kk); rzR = lp(rzR, 8f, kk); elR = lp(elR, -6f, kk) }
+            } else if (tkSuper) {
+                rxL = lp(rxL, -166f, kk); rzL = lp(rzL, -7f, kk); elL = lp(elL, -3f, kk)
+                if (!toolArm) { rxR = lp(rxR, -166f, kk); rzR = lp(rzR, 7f, kk); elR = lp(elR, -3f, kk) }
             } else {
                 rxL = lp(rxL, 0f, kk); rzL = lp(rzL, -76f, kk); elL = lp(elL, -4f, kk)
                 if (!toolArm) { rxR = lp(rxR, 0f, kk); rzR = lp(rzR, 76f, kk); elR = lp(elR, -4f, kk) }
@@ -348,10 +358,11 @@ class McChar {
         }
         var dashToolA = 0f
         if (dashW > 0.001f && fl > 0.01f) {   // voo rápido: braços pra trás, rentes ao corpo (puxa mais no impulso)
+            val dwA = dashW * (1f - min(1f, tkw * 2.5f))   // durante a manobra a pose dela manda
             val ax = lp(14f, 36f, wind); val fl2 = sin(t * 9f) * 3f
-            rxL = lp(rxL, ax + fl2, dashW); rxR = lp(rxR, ax - fl2, dashW)
-            rzL = lp(rzL, -9f, dashW); rzR = lp(rzR, 9f, dashW); elL = lp(elL, -5f, dashW); elR = lp(elR, -5f, dashW)
-            dashToolA = dashW * (-lean + 180f - (rxR + elR))   // item fica pra trás, longe da cabeça
+            rxL = lp(rxL, ax + fl2, dwA); rxR = lp(rxR, ax - fl2, dwA)
+            rzL = lp(rzL, -9f, dwA); rzR = lp(rzR, 9f, dwA); elL = lp(elL, -5f, dwA); elR = lp(elR, -5f, dwA)
+            dashToolA = dwA * (-lean + 180f - (rxR + elR))   // item fica pra trás, longe da cabeça
         }
         an.armFwdR = 0f
         an.toolA = if (swimming) swimToolA else dashToolA

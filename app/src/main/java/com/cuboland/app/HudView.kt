@@ -174,6 +174,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
     private val press = FloatArray(10)
     private var invOpen = false; private var invSel = -1; private var armItem = 0
     private var poseDownT = 0L; private var poseFired = false; private var poseTapT = 0L
+    private var trickId = -1; private var trickAx = 0f; private var trickAy = 0f   // botão de manobra no ar = analógico: dedo que está nele e a direção (-1..1; y positivo = cima)
     private var bounce = 0f; private var lastSel = -1; private var lastItem = -1; private var nameUntil = 0L
     // 1 pular/boiar, 3 câmera, 4 pausa, 5 mochila, 6 afundar, 7 correr
     private fun bx(i: Int) = when (i) { 1, 6 -> width * 0.858f; 7 -> width * 0.927f; 8 -> width * 0.934f; 3 -> width - 40 * d; 5 -> width - 92 * d; else -> 40 * d }
@@ -283,7 +284,7 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
 
     private fun clearInput() {
         stickId = -1; lookId = -1; sx = 0f; sy = 0f; lookHold = false
-        game.stickX = 0f; game.stickY = 0f; game.jumpHeld = false; game.downHeld = false; game.dashHeld = false; game.attackHeld = false; game.aimOn = false; btnId.clear(); carPtr.clear(); carSync()
+        game.stickX = 0f; game.stickY = 0f; game.jumpHeld = false; game.downHeld = false; game.dashHeld = false; game.attackHeld = false; game.aimOn = false; btnId.clear(); carPtr.clear(); trickId = -1; trickAx = 0f; trickAy = 0f; carSync()
     }
 
     /** solta joystick/botões (usado quando o painel da galeria abre por cima) */
@@ -347,7 +348,10 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
                 6 -> { game.downHeld = true; game.downTap() }
                 7 -> if (game.flying) { dashDownT = System.currentTimeMillis(); game.dashHeld = true }   // no voo: segurar carrega o dash, soltar dispara; toque rápido = liga/desliga a corrida
                      else game.sprint = !game.sprint      // toque liga/desliga; parar de andar desliga sozinho
-                8 -> { poseDownT = System.currentTimeMillis(); poseFired = false; if (game.trickOk()) { game.trickReq = true; poseFired = true } }   // no ar o botão de postura vira MANOBRA
+                8 -> {   // no ar o botão de postura vira o ANALÓGICO DE MANOBRA: arrasta pra escolher e solta pra executar (toque sem arrastar = pirueta)
+                    poseDownT = System.currentTimeMillis(); poseFired = false
+                    if (!game.player.onGround && !game.player.inWater) { poseFired = true; if (game.trickOk() || game.trickCanQueue()) { trickId = id; trickAx = 0f; trickAy = 0f } }
+                }
                 3 -> game.wantCam = true
                 4 -> togglePause()
             }
@@ -371,6 +375,12 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
             // mira por toque: só gira a câmera depois de arrastar um pouco; antes disso o dedo só mira
             if (!aimTouch || lookMoved > 12 * d) game.addLook(x - lx, y - ly)
             lx = x; ly = y; aimAt(x, y)
+        } else if (id == trickId) {
+            val r = 52 * d
+            var dx = x - bx(8); var dy = y - byy(8)
+            val l = hypot(dx, dy)
+            if (l > r) { dx = dx / l * r; dy = dy / l * r }
+            trickAx = dx / r; trickAy = -dy / r
         }
     }
 
@@ -387,6 +397,11 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
             lookHold = false
         }
         if (carPtr.remove(id) != null) carSync()
+        if (id == trickId) {   // soltou o analógico de manobra: executa na direção escolhida
+            trickId = -1
+            game.trickDx = trickAx; game.trickDy = trickAy; game.trickReq = true
+            trickAx = 0f; trickAy = 0f
+        }
         val b = btnId.remove(id)
         if (b == 1) game.jumpHeld = false
         if (b == 6) game.downHeld = false
@@ -498,6 +513,8 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
     private val S_BAG = arrayOf("...###...", "..#...#..", ".#######.", "#########", "##.....##", "##.###.##", "##.###.##", "#########", ".#######.")
     private val S_EYE = arrayOf("..#####..", ".#######.", ".##...##.", "##..#..##", ".##...##.", ".#######.", "..#####..")
     private val S_PAUSE = arrayOf("###.###", "###.###", "###.###", "###.###", "###.###", "###.###", "###.###", "###.###", "###.###")
+    // manobra no ar: seta circular (giro) com ponta — bem diferente do bonequinho de agachar
+    private val S_TRICK = arrayOf("..#####..", ".#.....#.", "#.....###", "#......#.", "#........", "#.......#", ".#.....#.", "..#####..")
     private val S_POSE = arrayOf("...###...", "...###...", "....#....", ".#######.", "#..###..#", "...###...", "..##.##..", ".##...##.", "##.....##")
     private val S_X = arrayOf("##...##", "###.###", ".#####.", "..###..", ".#####.", "###.###", "##...##")
     private val S_SLIME = arrayOf("..ggggg..", ".ggggggg.", "ggkgggkgg", "ggkgggkgg", "ggggggggg", "gGGGGGGGg", ".ggggggg.")
@@ -923,11 +940,14 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
             val active = btnId.containsValue(i) || (i == 5 && invOpen) || (i == 7 && (game.sprint || game.airDashCharge > 0f)) || (i == 8 && game.posture != 0)
             press[i] += ((if (active) 1f else 0f) - press[i]) * 0.5f
             val on = press[i] > 0.5f
-            val base = if ((i == 7 && (game.sprint || game.airDashCharge > 0f)) || (i == 8 && game.posture != 0)) Cz.GREEN else accent(i)
+            val trickM = i == 8 && !game.player.onGround && !game.player.inWater   // no ar: botão de manobra
+            val trickFastUi = trickM && game.trickFastNow()
+            val base = if (trickM) (if (trickFastUi) Color.rgb(90, 214, 255) else Cz.PINK) else if ((i == 7 && (game.sprint || game.airDashCharge > 0f)) || (i == 8 && game.posture != 0)) Cz.GREEN else accent(i)
             val R = max(4, (br(i) / u).roundToInt())
             val cx = bx(i); val cy = byy(i) + (if (on) u else 0f)
             pxRound(c, cx, byy(i), R, base, on)
-            val spr = when (i) { 1 -> S_UP; 6 -> S_DOWN; 7 -> S_RUN; 8 -> S_POSE; 3 -> S_EYE; 5 -> S_BAG; else -> S_PAUSE }
+            val spr = when (i) { 1 -> S_UP; 6 -> S_DOWN; 7 -> S_RUN; 8 -> if (trickM) S_TRICK else S_POSE; 3 -> S_EYE; 5 -> S_BAG; else -> S_PAUSE }
+            if (trickM && trickId < 0 && (game.trickOk() || game.trickCanQueue())) pxRing(c, sn(cx), sn(byy(i)), R + 2, 1, Color.argb((120 + 110 * sin(clock * 5f)).toInt().coerceIn(0, 255), 255, 255, 255))   // pulsa: pronto pra manobra
             sprite(c, spr, sn(cx), cy, base)
             if (i == 1 && game.superCharge > 0.02f) {   // barrinha da carga do super pulo, em cima do botão
                 val bw = 18 * u; val chg = game.superCharge; val by = sn(byy(1) - br(1) - 12 * d)
@@ -935,6 +955,27 @@ class HudView(ctx: Context, val game: Game, val worldName: String, val onMode: (
                 rc(c, cx - bw / 2, by, cx + bw / 2, by + u, Color.argb(120, 255, 255, 255))
                 rc(c, cx - bw / 2, by, cx - bw / 2 + sn(bw * chg), by + u, if (chg >= 1f) Color.rgb(255, 214, 90) else Color.rgb(255, (255 - 60 * chg).toInt(), (255 - 170 * chg).toInt()))
             }
+        }
+        if (trickId >= 0 && !invOpen) {   // analógico de manobra aberto em volta do botão
+            val ox = sn(bx(8)); val oy = sn(byy(8))
+            val RR = max(8, (52 * d / u).roundToInt()); val rpx = RR * u
+            val fastT = game.trickFastNow()
+            val tcol = if (fastT) Color.rgb(90, 214, 255) else Cz.PINK
+            pxDisc(c, ox, oy, RR, Color.argb(80, 20, 14, 30))
+            pxRing(c, ox, oy, RR + 1, 1, Color.argb(230, 20, 14, 30)); pxRing(c, ox, oy, RR, 1, tcol)
+            val mag = hypot(trickAx, trickAy)
+            val sec = if (mag < 0.38f) -1 else (((Math.toDegrees(atan2(trickAx.toDouble(), trickAy.toDouble())).toFloat() + 360f + 22.5f) % 360f) / 45f).toInt()
+            for (k in 0 until 8) {   // 8 direções (0 = cima, sentido horário)
+                val an = k * 0.7854f; val mx = ox + sin(an) * rpx; val my = oy - cos(an) * rpx
+                val hot = k == sec; val hs = if (hot) 1.6f * u else u
+                rc(c, mx - hs, my - hs, mx + hs, my + hs, if (hot) Color.rgb(255, 236, 140) else Color.argb(210, 255, 255, 255))
+            }
+            val kx = sn(ox + trickAx * rpx); val ky = sn(oy - trickAy * rpx); val KR = max(3, (20 * d / u).roundToInt())
+            pxDisc(c, kx, ky + u, KR, Color.argb(120, 0, 0, 0)); pxDisc(c, kx, ky, KR, Cz.INK)
+            pxDisc(c, kx, ky, KR - 1, tcol); pxDisc(c, kx, ky, KR - 2, mixC(tcol, Color.WHITE, 0.45f)); pxDisc(c, kx - u, ky - u, max(1, KR / 3), Color.WHITE)
+            val nm = game.trickName(game.trickPick(trickAx, trickAy), fastT)
+            val ns = max(2, tsc(1.3f))
+            pxText(c, nm, min(w - 8 * d, ox + rpx), oy - rpx - 16 * d - 7 * ns, ns, Color.WHITE, 2, outline = true)
         }
         if (!invOpen) drawCarUi(c, w, h)
         // barra de carga do golpe poderoso (perto da mira)

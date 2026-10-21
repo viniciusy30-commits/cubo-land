@@ -569,10 +569,68 @@ class Game(val world: World) {
     @Volatile var flyLaunch = 0f; @Volatile private var launchReq = false   // decolagem: super pulo + botão de pular no ar -> voa (1 -> 0 em ~0,8s, pra animação)
     @Volatile var dashHeld = false; @Volatile var dashFire = false; @Volatile var airDashCharge = 0f   // dash aéreo: segura o botão de correr no voo (carrega) e solta (dispara)
     @Volatile var airDashStomp = 0f; @Volatile var dashDirPitch = 0f; private var dashPre = 0f; private var dashCh = 0f; private var chargeFxT = 0f; private var trailFxT = 0f; private var vertFxT = 0f
-    // manobras no ar (botão de postura no ar): 1 cambalhota frente, 2 cambalhota trás, 3 parafuso esquerda, 4 parafuso direita, 5 giro (piruetas)
+    // manobras no ar: o botão de manobra é um ANALÓGICO (arrasta e solta). A direção escolhe a manobra e a velocidade do voo (normal x rápido) muda o estilo:
+    // 1 mortal/looping, 2 mortal/looping de costas, 3/4 parafuso/tonel esq/dir, 5 pirueta/tonel triplo, 10/11 saca-rolha/espiral esq/dir, 12/13 giro de costas/espiral invertida esq/dir
     @Volatile var trickReq = false; @Volatile var trickKind = 0; @Volatile var trickA = 0f   // trickA: progresso 0..1
+    @Volatile var trickDx = 0f; @Volatile var trickDy = 0f   // analógico ao soltar (x: lados, y: cima = pra frente)
+    @Volatile var trickPitch = 0f; @Volatile var trickRoll = 0f; @Volatile var trickYaw = 0f   // total de graus em cada eixo do corpo (múltiplos de 360)
+    @Volatile var trickFast = false   // a manobra começou no voo rápido
     private var trickLeft = 0f; private var trickDur = 0.65f; private var trickFxT = 0f
     fun trickOk(): Boolean = !player.onGround && !player.inWater && !driving && !seated && posture == 0 && trickLeft <= 0f
+    fun trickFastNow(): Boolean = flying && (airDashT > 0.02f || hypot(player.vx, player.vz) > 11f)
+    /** direção do analógico (dx: lados, dy: cima) -> tipo da manobra */
+    fun trickPick(dx: Float, dy: Float): Int {
+        if (hypot(dx, dy) < 0.38f) return 5
+        val a = Math.toDegrees(atan2(dx.toDouble(), dy.toDouble())).toFloat()   // 0 = cima, 90 = direita, 180 = baixo
+        val sec = (((a + 360f + 22.5f) % 360f) / 45f).toInt()   // 0 cima, 1 cima-dir, 2 dir, 3 baixo-dir, 4 baixo, 5 baixo-esq, 6 esq, 7 cima-esq
+        return when (sec) { 0 -> 1; 1 -> 11; 2 -> 4; 3 -> 13; 4 -> 2; 5 -> 12; 6 -> 3; else -> 10 }
+    }
+    fun trickName(kind: Int, fast: Boolean): String = if (!fast) when (kind) {
+        1 -> "Mortal"; 2 -> "Mortal de costas"; 3 -> "Parafuso esquerda"; 4 -> "Parafuso direita"; 5 -> "Pirueta"
+        10 -> "Saca-rolha esquerda"; 11 -> "Saca-rolha direita"; 12 -> "Giro de costas esquerda"; else -> "Giro de costas direita"
+    } else when (kind) {
+        1 -> "Looping"; 2 -> "Looping de costas"; 3 -> "Tonel duplo esquerda"; 4 -> "Tonel duplo direita"; 5 -> "Tonel triplo"
+        10 -> "Espiral esquerda"; 11 -> "Espiral direita"; 12 -> "Espiral invertida esquerda"; else -> "Espiral invertida direita"
+    }
+    private var trickQ = false; private var trickQDx = 0f; private var trickQDy = 0f; private var trickCombo = 0   // próxima manobra emendada (aperta na 2ª metade da atual)
+    fun trickCanQueue(): Boolean = trickLeft > 0f && trickA > 0.5f && !trickQ && !player.onGround && !player.inWater && !driving
+    private fun trickStart(p: Ent, dx: Float, dy: Float) {
+        val fast = trickFastNow()
+        val k = trickPick(dx, dy)
+        var pt = 0f; var rl = 0f; var yw = 0f; var du = 0.8f
+        if (!fast) {
+            when (k) {
+                1 -> { pt = 360f; du = 0.80f }
+                2 -> { pt = -360f; du = 0.80f }
+                3 -> { rl = -360f; du = 0.66f }
+                4 -> { rl = 360f; du = 0.66f }
+                5 -> { yw = 720f; du = 0.74f }
+                10 -> { pt = 360f; rl = -360f; du = 0.95f }
+                11 -> { pt = 360f; rl = 360f; du = 0.95f }
+                12 -> { pt = -360f; yw = 360f; du = 0.92f }
+                else -> { pt = -360f; yw = -360f; du = 0.92f }
+            }
+        } else {
+            when (k) {
+                1 -> { pt = 720f; du = 1.0f }
+                2 -> { pt = -720f; du = 1.0f }
+                3 -> { rl = -720f; du = 0.62f }
+                4 -> { rl = 720f; du = 0.62f }
+                5 -> { rl = 1080f; du = 0.78f }
+                10 -> { pt = 360f; rl = -720f; du = 1.05f }
+                11 -> { pt = 360f; rl = 720f; du = 1.05f }
+                12 -> { pt = -360f; rl = -720f; du = 1.05f }
+                else -> { pt = -360f; rl = 720f; du = 1.05f }
+            }
+        }
+        trickKind = k; trickFast = fast; trickPitch = pt; trickRoll = rl; trickYaw = yw
+        trickDur = du; trickLeft = du; trickA = 0f; trickFxT = 0f
+        shake = max(shake, if (fast) 0.07f else 0.03f)
+        pickMsg = (if (trickCombo >= 2) "COMBO x" + trickCombo + "  " else "") + trickName(k, fast); pickT = 1.3f
+        if (flying && !fast) p.vy = max(p.vy, 2.4f)   // voo normal: um pulinho de estilo pra cima
+        if (fast) windBurst(p, 0.8f)   // voo rápido: estouro de vento na largada
+        else windAdd(WindP(2, p.x, p.y + 0.85f, p.z, 0f, 1f, 0f, 0xFFFFFF, 0.45f, 0f, 2.2f, 0f), 0.8f)
+    }
     val dashActive: Boolean get() = airDashT > 0.02f
     private var airDashT = 0f; private var windAmt = 0f   // airDashT: tempo restante do impulso (a velocidade extra se dissipa devagar); windAmt: intensidade suave do vento (0..1)
     // postura: 0 em pé, 1 agachado, 2 sentado, 3 deitado (valores suavizados pra animação/câmera)
@@ -1622,31 +1680,48 @@ class Game(val world: World) {
             }
         }
         airDashT = max(0f, airDashT - dt)
-        // manobras: o stick escolhe (frente/trás = cambalhota, lados = parafuso, parado = giro)
+        // manobras: o analógico do botão escolhe a direção; no voo rápido tudo fica mais longo, mais veloz e com mais efeito
         if (trickReq) {
             trickReq = false
-            if (trickOk()) {
-                val sy = stickY; val sx = stickX
-                trickKind = if (abs(sy) > 0.45f && abs(sy) >= abs(sx)) (if (sy > 0f) 1 else 2) else if (abs(sx) > 0.45f) (if (sx < 0f) 3 else 4) else 5
-                trickDur = if (trickKind <= 2) 0.72f else if (trickKind == 5) 0.58f else 0.62f
-                trickLeft = trickDur; trickA = 0f; trickFxT = 0f
-                shake = max(shake, 0.03f)
-            }
+            if (trickCanQueue()) { trickQ = true; trickQDx = trickDx; trickQDy = trickDy }   // na 2ª metade da manobra: emenda a próxima (combo)
+            else if (trickOk()) { trickCombo = 1; trickStart(p, trickDx, trickDy) }
         }
         if (trickLeft > 0f) {
             if (p.onGround && !flying || p.inWater || driving || seated) trickLeft = min(trickLeft, 0.08f)   // pousou no meio: termina a volta rapidinho
             trickLeft = max(0f, trickLeft - dt)
             trickA = (1f - trickLeft / trickDur).coerceIn(0f, 1f)
             trickFxT -= dt
-            if (trickFxT <= 0f && trickA > 0.05f && trickA < 0.95f) {   // anel de vento girando em volta do eixo da manobra
-                trickFxT = 0.07f
-                val ax = if (trickKind <= 2) cos(bodyYaw) else if (trickKind == 5) 0f else sin(bodyYaw)
-                val ay = if (trickKind == 5) 1f else 0f
-                val az = if (trickKind <= 2) -sin(bodyYaw) else if (trickKind == 5) 0f else cos(bodyYaw)
-                windAdd(WindP(2, p.x, p.y + 0.85f, p.z, ax, ay, az, if (rnd.nextBoolean()) 0xFFFFFF else 0x9FE6FF, 0.42f, 0f, 1.4f, 0f), 0.8f)
+            if (trickFxT <= 0f && trickA > 0.05f && trickA < 0.95f) {   // anel de vento no eixo principal + faíscas girando em volta do corpo
+                trickFxT = if (trickFast) 0.045f else 0.07f
+                val pitchMain = abs(trickPitch) >= abs(trickRoll) && trickPitch != 0f
+                val ax = if (pitchMain) cos(bodyYaw) else if (trickRoll != 0f) sin(bodyYaw) else 0f
+                val ay = if (!pitchMain && trickRoll == 0f) 1f else 0f
+                val az = if (pitchMain) -sin(bodyYaw) else if (trickRoll != 0f) cos(bodyYaw) else 0f
+                windAdd(WindP(2, p.x, p.y + 0.85f, p.z, ax, ay, az, if (rnd.nextBoolean()) 0xFFFFFF else 0x9FE6FF, if (trickFast) 0.5f else 0.42f, 0f, if (trickFast) 2.0f else 1.4f, 0f), if (trickFast) 1f else 0.8f)
+                if (parts.size < 460) for (n in 0 until (if (trickFast) 3 else 2)) {
+                    val a = trickA * 18.85f * (if (trickRoll < 0f || trickPitch < 0f) -1f else 1f) + n * 2.1f
+                    val r = if (trickFast) 0.95f else 0.75f
+                    val sx = cos(bodyYaw); val sz = -sin(bodyYaw); val fx2 = sin(bodyYaw); val fz2 = cos(bodyYaw)
+                    val ox = if (pitchMain) fx2 * cos(a) * r else sx * cos(a) * r
+                    val oz = if (pitchMain) fz2 * cos(a) * r else sz * cos(a) * r
+                    val oy = sin(a) * r
+                    val col = when ((rnd.nextFloat() * 3f).toInt()) { 0 -> 0xFFFFFF; 1 -> 0x9FE6FF; else -> 0xFFD966 }
+                    val pr = Particle(p.x + ox, p.y + 0.9f + oy, p.z + oz, ox * 0.6f, oy * 0.6f, oz * 0.6f, col, 0.04f + rnd.nextFloat() * 0.04f, 0.35f + rnd.nextFloat() * 0.25f)
+                    pr.grav = 1.5f
+                    parts.add(pr)
+                }
             }
-            if (trickLeft <= 0f) { trickKind = 0; trickA = 0f }
-        } else if (trickKind != 0) { trickKind = 0; trickA = 0f }
+            if (trickLeft <= 0f) {
+                if (trickA > 0.9f) {   // acabou a manobra inteira: anel de acabamento
+                    windAdd(WindP(2, p.x, p.y + 0.85f, p.z, 0f, 1f, 0f, 0xFFFFFF, 0.5f, 0f, if (trickFast) 3.4f else 2.4f, 0f), 0.9f)
+                }
+                trickKind = 0; trickA = 0f
+                if (trickQ) {
+                    trickQ = false
+                    if (!p.onGround || flying) { trickCombo += 1; trickStart(p, trickQDx, trickQDy) } else trickCombo = 0
+                } else trickCombo = 0
+            }
+        } else if (trickKind != 0) { trickKind = 0; trickA = 0f; trickQ = false; trickCombo = 0 }
         if (flying && airDashT <= 0f && abs(p.vy) > 3f) {   // subindo/descendo no voo: riscos de vento verticais passando pelo corpo
             vertFxT -= dt
             if (vertFxT <= 0f) {

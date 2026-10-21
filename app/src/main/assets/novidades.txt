@@ -1,3 +1,13 @@
+#id 2026-10-21-g
+#titulo Manobras no ar com analógico
+- Pernas: acabou a travadinha nos primeiros milissegundos do passo (a passada agora começa a rodar no 1º frame e a amplitude entra suave)
+- No ar, o botão de agachar vira o botão de MANOBRA: seta de giro rosa (azul no voo rápido), bem diferente do bonequinho de agachar
+- O botão de manobra agora é um ANALÓGICO: encoste, arraste pra uma das 8 direções (o nome da manobra aparece na hora) e solte pra executar; só tocar = pirueta
+- Voo normal / pulo: mortal (frente), mortal de costas, parafuso (lados), saca-rolha (frente + lado), giro de costas (trás + lado) e pirueta dupla (parado), com pulinho de estilo
+- Voo rápido / dash: looping duplo, looping de costas, tonel duplo (lados), tonel triplo (parado), espiral e espiral invertida (diagonais), corpo esticado como super-herói, estouro de vento e mais faíscas
+- Giro com antecipação, pico de velocidade no meio e acabamento com anel de vento
+- COMBO: aperte o analógico de novo na 2ª metade da manobra pra emendar a próxima (COMBO x2, x3...)
+
 #id 2026-10-21-f
 #titulo Manobras aéreas refeitas
 - Botão novo no ar: seta de giro rosa vira um analógico pequeno: arraste pra frente/trás/lados e solte pra executar (mostra o nome da manobra); parado = pirueta/tornado

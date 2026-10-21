@@ -45,6 +45,7 @@ class Anim {
     @JvmField var sj = 0f         // 0..1 (suavizado) no ar de um SUPER PULO
     @JvmField var flip = 0f       // graus da cambalhota do super pulo (0..360)
     @JvmField var launch = 0f     // 1 -> 0: acabou de decolar do super pulo pro voo (braços pra cima, relaxando)
+    @JvmField var trkF = 0f   // manobra começou no voo rápido (0/1)
     @JvmField var trk = 0f; @JvmField var trkK = 0f   // manobra no ar: peso 0..1 e tipo (1-2 cambalhota: encolhe; 3-5 parafuso/giro: braços abertos)
     @JvmField var dst = 0f        // 0..1 pisada no ar do dash (perna estica pra trás empurrando o ar); decai depois do disparo
     @JvmField var vp = 0f         // graus da direção do voo acima da horizontal (o corpo acompanha no dash)
@@ -683,7 +684,7 @@ class CharModel {
         val uImp = 1f - an.imp.coerceIn(0f, 1f)
         val wind = if (an.imp <= 0f) 0f else if (uImp < 0.4f) uImp / 0.4f else max(0f, 1f - (uImp - 0.4f) / 0.25f)
         val atk = an.atk; val atking = atk < 1f
-        val stride = if (swimming) 0f else min(1f, mv * 3f) * (1f - ab) * (1f - fl)
+        val stride = if (swimming) 0f else min(1f, mv * 2.2f).let { it * it * (3f - 2f * it) } * (1f - ab) * (1f - fl)
         var sw = sin(ph) * (26f + 30f * rn) * stride
         var hipL = sw; var hipR = -sw
         var kneeL = max(0f, -cos(ph)) * (12f + 50f * rn) * stride
