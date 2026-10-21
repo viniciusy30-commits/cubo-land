@@ -519,6 +519,15 @@ class McChar {
         val shoeC = Look.pal(Look.SHOEC); val hatC = Look.pal(Look.HATC); val backC = Look.pal(Look.BACKC); val neckC = Look.pal(Look.NECKC)
         val leather = 0x6B4A2A; val steel = 0xC5CEDA
         val aw = if (girl) 3f else 4f   // Alex (menina): braços de 3 px
+        // Slots de acabamento expostos na interface aplicados ao personagem renderizado no jogo.
+        val accentTop = Look.pal(Look.TOP_ACCENT)
+        val accentBottom = Look.pal(Look.BOTTOM_ACCENT)
+        val accentHair = Look.pal(Look.HAIR_ACCENT_COLOR)
+        val topPattern = L[Look.TOP_PATTERN].coerceIn(0, Look.TOP_PATTERNS.size - 1)
+        val bottomPattern = L[Look.BOTTOM_PATTERN].coerceIn(0, Look.BOTTOM_PATTERNS.size - 1)
+        val hairAccentStyle = L[Look.HAIR_ACCENT].coerceIn(0, Look.HAIR_ACCENTS.size - 1)
+        val metalHi = lite(steel, 0.34f)
+
 
         // ================= PERNAS =================
         val pantPx = when { overalls -> 12f; full -> 0f; else -> when (bot) { 0 -> 12f; 1 -> 5f; 3 -> 8.5f; 4 -> 12f; 6 -> 12f; 7 -> 12f; else -> 0f } }
@@ -582,6 +591,47 @@ class McChar {
                 6 -> { lb(lm, 0f, -5.4f, 0.3f, 4.7f, 1.2f, 5.3f, lite(shoeC, 0.2f)); lb(lm, 0f, -4.3f, 0.3f, 4.6f, 1.6f, 5.1f, shoeC) }
                 7 -> { for (k in 0..5) lb(lm, 0f, -5.5f + k.toFloat(), 0f, 4.6f, 1f, 4.6f, if (k % 2 == 0) shoeC else white); lb(lm, 0f, -5.7f, 0.5f, 4.7f, 0.7f, 5.4f, shadeC(shoeC, 0.6f)) }
             }
+
+            lay(5,10)
+            val pantY=6f-max(0.4f,pantPx)/2f
+            if(pantPx>1f) {
+                lb(lm,s*2.18f,pantY,0f,0.24f,max(0.6f,pantPx-0.25f),4.72f,shadeC(pantC,0.7f))
+                lb(lm,s*1.68f,pantY,2.18f,0.08f,max(0.6f,pantPx-0.5f),0.08f,lite(pantC,0.25f))
+                val py=6f-min(pantPx*0.34f,3.2f)
+                if(bot==0 || bot==3 || bot==6) { lb(lm,-1.1f,py,2.3f,1.1f,1f,0.12f,shadeC(pantC,0.75f)); lb(lm,-1.1f,py+0.38f,2.4f,1.1f,0.16f,0.08f,lite(pantC,0.18f)); lb(lm,-1.1f,py+0.38f,2.46f,0.18f,0.18f,0.06f,accentBottom) }
+                when(bottomPattern) {
+                    1 -> lb(lm,s*2.25f,pantY,0f,0.42f,max(0.6f,pantPx-0.2f),4.85f,accentBottom)
+                    2 -> { lb(lm,0.9f,py,2.34f,1.15f,1.05f,0.14f,accentBottom); lb(lm,0.9f,py+0.4f,2.43f,1.1f,0.16f,0.08f,lite(accentBottom,0.3f)) }
+                    3 -> { val ky=6f-min(pantPx-0.2f,7f); lb(lm,0f,ky,2.35f,3.3f,1.25f,0.18f,shadeC(accentBottom,0.6f)); lb(lm,0f,ky,2.46f,2.75f,0.86f,0.08f,accentBottom); for(x in intArrayOf(-1,1)) lb(lm,x.toFloat(),ky,2.52f,0.1f,0.7f,0.06f,metalHi) }
+                    4 -> { val cy=6f-min(pantPx*0.46f,4.8f); lb(lm,s*1.1f,cy,2.3f,1.55f,2f,0.16f,shadeC(pantC,0.68f)); lb(lm,s*1.1f,cy+0.45f,2.4f,1.3f,0.16f,0.08f,accentBottom) }
+                    5 -> for(y in intArrayOf(6,3,0,-3)) if(y>6-pantPx && y<6) lb(lm,0f,y.toFloat(),2.34f,4.1f,0.2f,0.08f,accentBottom)
+                    6 -> for(y in intArrayOf(4,1,-2)) if(y>6-pantPx && y<6) { lb(lm,0f,y.toFloat(),2.36f,0.72f,0.72f,0.1f,shadeC(accentBottom,0.65f)); lb(lm,0f,y.toFloat(),2.44f,0.36f,0.36f,0.08f,lite(accentBottom,0.3f)) }
+                }
+            }
+            if(skirtLen>0.5f) {
+                for(x in intArrayOf(-2,0,2)) lb(lm,x.toFloat(),6f-skirtLen/2f,2.72f,0.12f,max(1f,skirtLen-0.8f),0.08f,if(x==0) lite(skirtC,0.28f) else shadeC(skirtC,0.72f))
+                when(bottomPattern) {
+                    1,5 -> for(y in intArrayOf(-2,0)) lb(lm,0f,6f-skirtLen+y*0.25f,2.76f,5f,0.16f,0.08f,accentBottom)
+                    2,6 -> for(x in intArrayOf(-1,1)) lb(lm,x*1.2f,6f-skirtLen/2f,2.78f,0.42f,0.62f,0.08f,accentBottom)
+                    3 -> lb(lm,0f,6f-min(skirtLen-0.7f,2.4f),2.79f,4.2f,0.9f,0.1f,accentBottom)
+                    4 -> for(x in intArrayOf(-1,1)) lb(lm,x*1.4f,6f-skirtLen/2f,2.78f,0.6f,1.5f,0.1f,accentBottom)
+                }
+            }
+            // Solado em duas camadas, costura das botas, ilhoses/cadarços dos tênis.
+            if(shoe!=3) {
+                lb(lm,0f,-5.85f,0.45f,4.9f,0.52f,5.6f,shadeC(shoeC,0.58f))
+                lb(lm,0f,-5.56f,0.65f,4.65f,0.16f,5.35f,lite(shoeC,0.24f))
+                when(shoe) {
+                    0,4 -> { val rows=if(shoe==4) intArrayOf(1,-1,-3) else intArrayOf(-1,-3); for(y in rows) lb(lm,0f,y.toFloat(),2.56f,4.2f,0.16f,0.1f,shadeC(shoeC,0.62f)); for(x in intArrayOf(-1,1)) lb(lm,x*1.7f,-2.2f,2.64f,0.24f,0.38f,0.1f,metalHi) }
+                    1 -> { for(k in 0..3) lb(lm,-0.55f+k*0.36f,-4f+(k%2)*0.28f,3f,0.9f,0.15f,0.08f,white); lb(lm,0f,-3f,3f,2.5f,0.18f,0.08f,white) }
+                    2,6 -> { lb(lm,0f,-4.35f,2.85f,2.1f,0.18f,0.08f,metalHi); for(x in intArrayOf(-1,1)) lb(lm,x*1.55f,-4.65f,2.85f,0.18f,0.18f,0.08f,accentBottom) }
+                    5 -> lb(lm,0f,-4.1f,1f,4.1f,0.18f,0.16f,0xE5BE78)
+                    7 -> for(k in 0..5) lb(lm,0f,-5.3f+k*0.78f,2.55f,4.15f,0.12f,0.08f,if(k%2==0) accentBottom else white)
+                }
+            } else {
+                lb(lm,0f,-5.25f,0.85f,4.6f,1.25f,5.8f,skin)
+                for(x in intArrayOf(-2,-1,0,1,2)) lb(lm,x*0.75f,-5.55f,2.7f,0.48f,0.45f,0.6f,skin)
+            }
             if (kbend > 2f) {   // junta do joelho: tampa a fresta que abre ao dobrar
                 lay(1, 5)
                 val jw = if (pantPx >= 6f) pantW + 0.05f else 4.04f
@@ -636,6 +686,42 @@ class McChar {
             17 -> { tb(-2.9f, 3f, 2.5f, 2.4f, 6f, 0.35f, lite(tc, 0.3f), rz = 8f); tb(2.9f, 3f, 2.5f, 2.4f, 6f, 0.35f, lite(tc, 0.3f), rz = -8f); for (k in 0..2) { tb(-1.6f, 1f - 3f * k.toFloat(), 2.55f, 0.8f, 0.8f, 0.3f, gold); tb(1.6f, 1f - 3f * k.toFloat(), 2.55f, 0.8f, 0.8f, 0.3f, gold) } }
         }
 
+
+        // ================= PASSADA DE ROUPAS 3D =================
+        // Cada modelo tem uma silhueta de acabamento própria; detalhes volumétricos com sombra/luz.
+        lay(4,12)
+        val garmentZ=2.72f
+        val rearZ=-2.72f
+        when(top) {
+            0 -> { tb(0f,5.25f,garmentZ,2.5f,0.5f,0.14f,shadeC(tc,0.68f)); tb(0f,5.34f,garmentZ+0.08f,1.9f,0.15f,0.07f,lite(tc,0.3f)); tb(-2.3f,1f,garmentZ,1.5f,1.6f,0.14f,shadeC(tc,0.75f)); tb(-2.3f,1.1f,garmentZ+0.1f,1.2f,1.25f,0.08f,lite(tc,0.12f)) }
+            1 -> { tb(0f,-3f,garmentZ,4.9f,2f,0.18f,shadeC(tc,0.68f)); tb(0f,-2.85f,garmentZ+0.12f,4.4f,1.45f,0.1f,lite(tc,0.08f)); for(x in intArrayOf(-1,1)) { tb(x*0.9f,3.6f,garmentZ,0.14f,1.7f,0.12f,accentTop); tb(x*0.9f,2.7f,garmentZ+0.1f,0.18f,0.2f,0.1f,metalHi) } }
+            2 -> { tb(0f,0.1f,garmentZ,5.8f,0.5f,0.16f,accentTop); for(x in intArrayOf(-2,-1,1,2)) tb(x*0.8f,2.5f,garmentZ,0.12f,1.8f,0.1f,shadeC(tc,0.8f)) }
+            3 -> { tb(0f,0f,garmentZ,0.18f,10.8f,0.14f,steel); tb(0.19f,0f,garmentZ+0.08f,0.06f,10.2f,0.07f,white); for(k in 0..4) tb(0.55f,3.2f-k*2f,garmentZ+0.1f,0.2f,0.2f,0.1f,metalHi); tb(-2.2f,1.7f,garmentZ,1.55f,1.7f,0.12f,shadeC(tc,0.74f)); tb(-2.2f,1.7f,garmentZ+0.1f,1.2f,1.25f,0.07f,accentTop) }
+            4 -> { tb(0f,-3.4f,garmentZ,8.5f,0.8f,0.2f,leather); tb(0f,-3.4f,garmentZ+0.13f,1.25f,0.9f,0.12f,gold); tb(0f,-3.4f,garmentZ+0.22f,0.65f,0.52f,0.07f,accentTop) }
+            5 -> { for(x in intArrayOf(-2,2)) { tb(x.toFloat(),1.6f,garmentZ,3f,3.2f,0.24f,steel); tb(x.toFloat(),1.75f,garmentZ+0.15f,2.5f,2.55f,0.12f,mixC(steel,tc,0.35f)) }; tb(0f,1.65f,garmentZ+0.2f,1.4f,1.4f,0.14f,shadeC(accentTop,0.6f),rz=45f); tb(0f,1.65f,garmentZ+0.3f,0.78f,0.78f,0.08f,lite(accentTop,0.3f),rz=45f); for(x in intArrayOf(-3,3)) for(y in intArrayOf(-3,3)) tb(x.toFloat(),y.toFloat(),garmentZ+0.22f,0.3f,0.3f,0.1f,gold) }
+            6 -> { tb(0f,1.8f,garmentZ,4.1f,3.1f,0.16f,tc); tb(0f,1.65f,garmentZ+0.12f,2.5f,1.8f,0.1f,shadeC(tc,0.78f)); for(x in intArrayOf(-2,2)) { tb(x.toFloat(),4.65f,garmentZ+0.13f,0.6f,2.2f,0.16f,tc); tb(x.toFloat(),4.1f,garmentZ+0.24f,0.26f,0.26f,0.12f,gold) } }
+            7 -> { for(x in intArrayOf(-1,1)) tb(x*1.25f,4.65f,garmentZ,1.5f,1.35f,0.2f,white,rz=x*-14f); tb(0f,0f,garmentZ,0.12f,8.8f,0.08f,shadeC(tc,0.7f)); for(k in 0..3) tb(0f,3f-k*2f,garmentZ+0.1f,0.2f,0.2f,0.1f,metalHi) }
+            8 -> { tb(0f,4.45f,garmentZ,7.4f,1.2f,0.16f,white); tb(0f,4.25f,garmentZ+0.1f,6.6f,0.14f,0.07f,accentTop); tb(0f,2.65f,garmentZ+0.1f,1.25f,1.5f,0.13f,accentTop) }
+            9 -> { for(x in intArrayOf(-3,3)) tb(x.toFloat(),4.2f,garmentZ,0.95f,0.55f,0.12f,gold); for(k in 0..4) tb(-0.7f,3.7f-k*2f,garmentZ+0.12f,0.28f,0.28f,0.1f,gold) }
+            10 -> { tb(-1.1f,2.7f,garmentZ,2f,5.7f,0.16f,lite(tc,0.28f),rz=-18f); tb(1f,2.7f,garmentZ+0.12f,2f,5.7f,0.15f,shadeC(tc,0.7f),rz=18f); tb(0f,-3.2f,garmentZ+0.14f,8.5f,1.05f,0.2f,accentTop); tb(0f,-3.2f,garmentZ+0.28f,1.5f,0.9f,0.1f,gold) }
+            11 -> { for(x in intArrayOf(-3,3)) tb(x.toFloat(),0f,garmentZ,0.16f,9.6f,0.12f,gold); tb(0f,1.75f,garmentZ+0.11f,1.5f,1.5f,0.12f,gold,rz=45f); tb(0f,1.75f,garmentZ+0.22f,0.78f,0.78f,0.08f,accentTop,rz=45f) }
+            12 -> { for(x in intArrayOf(-1,1)) tb(x*1.7f,3.7f,garmentZ,1.4f,3.7f,0.16f,lite(tc,0.24f),rz=x*17f); tb(0f,4.25f,garmentZ+0.11f,1.7f,1.35f,0.12f,white); tb(-2.5f,1.25f,garmentZ+0.1f,1.45f,1.1f,0.12f,shadeC(tc,0.7f)); tb(-2.5f,1.7f,garmentZ+0.19f,0.62f,0.4f,0.08f,accentTop) }
+            13 -> { for(x in intArrayOf(-3,3)) tb(x.toFloat(),4.4f,garmentZ,1.05f,1.35f,0.12f,shadeC(tc,0.68f)); tb(0f,1.8f,garmentZ+0.1f,1.2f,1.2f,0.12f,accentTop,rz=45f) }
+            14 -> { for(x in intArrayOf(-3,3)) tb(x.toFloat(),4.2f,garmentZ,1.45f,0.9f,0.14f,shadeC(tc,0.72f)); tb(-2.2f,1.8f,garmentZ+0.1f,1.1f,1.1f,0.12f,accentTop,rz=45f); tb(-2.2f,1.8f,garmentZ+0.2f,0.55f,0.55f,0.08f,gold,rz=45f); tb(0f,-4.3f,garmentZ,8.5f,0.55f,0.16f,leather) }
+            15 -> { tb(0f,-1.3f,garmentZ,4.5f,6.1f,0.16f,white); tb(0f,1.7f,garmentZ+0.12f,3.1f,2.3f,0.1f,white); for(k in -3..3) tb(k*0.55f,-4.15f,garmentZ+0.14f,0.46f,0.28f,0.08f,lite(white,0.8f)); tb(0f,3.1f,garmentZ+0.2f,0.66f,0.66f,0.12f,accentTop,rz=45f) }
+            16 -> { for(x in intArrayOf(-3,3)) { tb(x.toFloat(),0.2f,garmentZ,1.5f,7.6f,0.16f,leather); tb(x.toFloat(),0.4f,garmentZ+0.12f,1.1f,2f,0.1f,shadeC(tc,0.7f)); tb(x.toFloat(),0.4f,garmentZ+0.2f,0.68f,0.15f,0.08f,gold) }; tb(0f,-3.6f,garmentZ,8.4f,0.65f,0.18f,leather); tb(0f,-3.6f,garmentZ+0.12f,1f,0.8f,0.1f,gold) }
+            17 -> { for(x in intArrayOf(-1,1)) tb(x*1.7f,4f,garmentZ,1.1f,3f,0.16f,shadeC(tc,0.72f),rz=x*16f); for(k in 0..3) tb(-0.7f,2f-k*2f,garmentZ+0.1f,0.34f,0.34f,0.12f,gold); tb(3f,-0.2f,garmentZ,0.12f,8.5f,0.08f,shadeC(tc,0.7f)) }
+        }
+        for(k in -3..3) { val xx=k*1.05f; tb(xx,-5.15f,garmentZ,0.42f,0.08f,0.07f,if(k%2==0) lite(tc,0.3f) else shadeC(tc,0.7f)); tb(xx,-5.15f,rearZ,0.42f,0.08f,0.07f,if(k%2==0) lite(tc,0.3f) else shadeC(tc,0.7f)) }
+        when(topPattern) {
+            1 -> { tb(-2.55f,2f,garmentZ+0.1f,1.3f,1.3f,0.12f,shadeC(accentTop,0.62f),rz=45f); tb(-2.55f,2f,garmentZ+0.2f,0.82f,0.82f,0.08f,accentTop,rz=45f) }
+            2 -> for(y in intArrayOf(3,0,-3)) tb(0f,y.toFloat(),garmentZ+0.08f,8f,0.25f,0.08f,accentTop)
+            3 -> for(r in 0..2) for(c in 0..3) tb(-3f+c*2f,2.5f-r*2.2f,garmentZ+0.08f,0.82f,0.82f,0.08f,if((r+c)%2==0) accentTop else lite(accentTop,0.25f))
+            4 -> { tb(-1.7f,2.4f,garmentZ+0.09f,0.6f,2.4f,0.1f,shadeC(accentTop,0.65f),rz=28f); tb(-1.1f,1.5f,garmentZ+0.17f,0.5f,2f,0.08f,accentTop,rz=28f) }
+            5 -> for(x in intArrayOf(-2,2)) tb(x.toFloat(),2f,garmentZ+0.08f,0.9f,0.9f,0.1f,accentTop,rz=45f)
+            6 -> for(x in intArrayOf(-2,0,2)) tb(x.toFloat(),2f,garmentZ+0.08f,0.72f,0.72f,0.1f,accentTop,rz=45f)
+            7 -> { tb(0f,1.2f,garmentZ+0.08f,4.6f,3f,0.1f,shadeC(accentTop,0.62f)); tb(0f,1.2f,garmentZ+0.16f,4f,2.4f,0.08f,accentTop); for(k in 0..3) tb(-1.25f+k*0.83f,1.2f,garmentZ+0.23f,0.18f,1.75f,0.06f,0x73E7FF) }
+        }
         // ================= BRAÇOS =================
         for (sd in intArrayOf(-1, 1)) {
             val s = sd.toFloat(); val ai = if (sd < 0) 0 else 1
@@ -659,6 +745,17 @@ class McChar {
                 10, 11, 14 -> { ab(am, s * 0.8f, 0.2f, 0f, aw + 3.4f, 8.6f, 5.2f, sCol); ab(am, s * 0.8f, -3.9f, 0f, aw + 3.6f, 1f, 5.4f, if (top == 11) gold else lite(sCol, 0.5f)) }
                 5 -> { ab(am, s * 0.5f, 5.2f, 0f, aw + 2.4f, 3.4f, 5.8f, tCol); ab(am, s * 0.5f, 6.9f, 0f, aw + 2.6f, 0.6f, 6f, gold); ab(am, 0f, -4.2f, 0f, aw + 0.9f, 3.6f, 4.9f, steel); ab(am, 0f, -2.2f, 0f, aw + 1f, 0.5f, 5f, gold) }
                 8 -> ab(am, 0f, 6f - 3.2f, 0f, aw + 0.85f, 0.7f, 4.85f, tc)
+            }
+
+            if(sleeve>0.1f) {
+                ab(am,0f,6f-min(sleeve,11.8f)+0.8f,2.48f,aw+0.5f,0.16f,0.12f,accentTop)
+                when(topPattern) {
+                    1 -> { ab(am,0f,2.1f,2.53f,0.95f,0.95f,0.1f,shadeC(accentTop,0.65f)); ab(am,0f,2.1f,2.61f,0.55f,0.55f,0.07f,accentTop) }
+                    2 -> for(y in intArrayOf(1,-2)) ab(am,0f,y.toFloat(),2.5f,aw+0.5f,0.18f,0.1f,accentTop)
+                    3 -> for(y in intArrayOf(2,0,-2)) for(x in intArrayOf(-1,1)) ab(am,x.toFloat(),y.toFloat(),2.5f,0.72f,0.72f,0.08f,if((x+y)%2==0) accentTop else lite(accentTop,0.25f))
+                    4,5,6 -> ab(am,0f,1.7f,2.52f,0.65f,0.65f,0.1f,accentTop)
+                    7 -> { ab(am,0f,1.4f,2.5f,aw+0.5f,2.5f,0.1f,shadeC(accentTop,0.6f)); ab(am,0f,1.4f,2.58f,0.15f,2f,0.07f,0x73E7FF) }
+                }
             }
             if (sd < 0 && handOut != null) {
                 System.arraycopy(am, 0, handOut, 0, 16)
@@ -760,6 +857,22 @@ class McChar {
             22 -> { for (g in intArrayOf(-1, 1)) { val gf = g.toFloat(); hb(gf * 4.6f, 3.6f, -1.5f, 2.2f, 1.0f, 2.2f, tie); for (k in 0..4) hb(gf * (5.2f + (k % 2).toFloat() * 0.6f), 1.8f - 2.2f * k.toFloat(), -1.5f, 2.5f, 2.4f, 2.5f, if (k % 2 == 0) hairC else hairD) } }
         }
 
+
+        // Mechas de cor que respeitam a escolha do menu e criam reflexos volumétricos.
+        if(!hatCovers && hairAccentStyle>0) {
+            lay(10,14)
+            val hairShadow=shadeC(accentHair,0.68f); val hairLight=lite(accentHair,0.34f)
+            when(hairAccentStyle) {
+                1 -> { hb(0f,3.45f,4.58f,0.95f,2.35f,0.16f,hairShadow); hb(0f,3.48f,4.68f,0.56f,2.05f,0.08f,accentHair); hb(0f,4.72f,4.2f,0.45f,0.2f,0.08f,hairLight) }
+                2 -> for(x in intArrayOf(-2,2)) { hb(x.toFloat(),3.5f,4.58f,0.7f,2.05f,0.14f,hairShadow); hb(x.toFloat(),3.55f,4.67f,0.4f,1.8f,0.08f,accentHair) }
+                3 -> for(x in intArrayOf(-3,-2,2,3)) hb(x.toFloat(),1f,4.5f,0.55f,0.6f,0.14f,accentHair)
+                4 -> for(k in 0..4) { val x=-2.6f+k*1.3f; hb(x,3.4f,4.58f,0.55f,1.6f,0.14f,hairShadow,rz=(k-2)*4f); hb(x,3.45f,4.67f,0.3f,1.4f,0.08f,if(k%2==0) accentHair else hairLight,rz=(k-2)*4f) }
+                5 -> for(x in intArrayOf(-3,-1,1,3)) hb(x.toFloat(),4.98f,-0.5f,0.24f,0.08f,3f,hairLight)
+                6 -> for(x in intArrayOf(-1,1)) { hb(x*3.35f,0.6f,4.35f,0.7f,2.9f,0.14f,hairShadow); hb(x*3.35f,0.55f,4.45f,0.42f,2.65f,0.08f,accentHair) }
+                7 -> for(k in 0..6) hb(-3f+k,4.98f,-0.4f,0.2f,0.07f,3.2f,if(k%2==0) accentHair else hairLight)
+                8 -> for(x in intArrayOf(-1,1)) hb(x*1.4f,4.96f,-0.5f,0.14f,0.06f,2.5f,accentHair)
+            }
+        }
         // ================= CHAPÉUS E ENFEITES =================
         lay(13, 19)
         when (hatId) {
@@ -788,6 +901,23 @@ class McChar {
             23 -> { hb(0f, 4.2f, 0f, 9.6f, 2.4f, 9.6f, steel); hb(4.8f, 1.6f, 0f, 0.9f, 3.2f, 8.4f, steel); hb(-4.8f, 1.6f, 0f, 0.9f, 3.2f, 8.4f, steel); hb(0f, 2.4f, 4.9f, 1f, 4f, 0.8f, steel); for (g in intArrayOf(-1, 1)) { val gf = g.toFloat(); hb(gf * 5.6f, 4.6f, 0f, 1.6f, 1.6f, 1.6f, 0xF0E8D0); hb(gf * 6.6f, 6f, 0f, 1.4f, 2.2f, 1.4f, 0xF0E8D0, rz = gf * -20f); hb(gf * 7.3f, 7.8f, 0f, 1f, 1.4f, 1f, 0xF0E8D0, rz = gf * -35f) } }
         }
 
+
+        // Relevos materiais por família de chapéu, coroa, fone e capacete.
+        lay(15,19)
+        when(hatId) {
+            1 -> { hb(0f,4.55f+hl,4.45f,0.9f,0.75f,0.12f,accentTop); hb(0f,4.55f+hl,4.55f,0.38f,0.38f,0.08f,metalHi) }
+            2 -> for(k in -2..2) hb(k*1.25f,2f,4.55f,0.3f,0.12f,0.08f,lite(hatC,0.3f))
+            3 -> { hb(0f,2f,4.6f,2.2f,0.25f,0.1f,shadeC(hatC,0.65f)); hb(0f,2.12f,4.68f,1.25f,0.1f,0.06f,accentTop) }
+            4,15 -> for(x in intArrayOf(-2,0,2)) { hb(x.toFloat(),5.6f+hl,4.55f,0.78f,0.78f,0.12f,shadeC(accentTop,0.62f),rz=45f); hb(x.toFloat(),5.6f+hl,4.64f,0.46f,0.46f,0.08f,accentTop,rz=45f) }
+            5,6,14 -> for(x in intArrayOf(-1,1)) { hb(x*2.8f,5.6f+hl,0.28f,0.75f,1.15f,0.12f,accentTop); hb(x*2.8f,5.55f+hl,0.37f,0.34f,0.7f,0.08f,lite(accentTop,0.28f)) }
+            8,23 -> { for(x in intArrayOf(-3,3)) for(y in intArrayOf(2,-1)) hb(x.toFloat(),y.toFloat(),4.8f,0.3f,0.3f,0.1f,gold); hb(0f,2.5f,4.9f,1.1f,1.1f,0.12f,accentTop) }
+            9,17 -> for(x in intArrayOf(-3,-1,1,3)) hb(x.toFloat(),4.15f+hl,4.5f,0.18f,0.1f,0.08f,shadeC(hatC,0.7f))
+            11 -> { hb(0f,2.2f,4.65f,4.8f,0.18f,0.1f,metalHi); hb(0f,2.2f,4.72f,2f,0.1f,0.06f,accentTop) }
+            16 -> { hb(1f,4.5f,4.8f,1.15f,0.7f,0.12f,shadeC(hatC,0.62f)); hb(1f,4.5f,4.9f,0.58f,0.32f,0.08f,accentTop) }
+            18 -> { for(x in intArrayOf(-5,5)) for(y in intArrayOf(0,2)) hb(x.toFloat(),y.toFloat(),1.85f,0.2f,0.2f,0.1f,metalHi); hb(-5.6f,-0.1f,2.1f,0.32f,0.72f,0.14f,0x73E7FF) }
+            19,20 -> for(x in intArrayOf(-3,3)) hb(x.toFloat(),1.6f,4.65f,0.18f,4f,0.1f,lite(hatC,0.25f))
+            21 -> { hb(0f,5.15f,4.8f,5.3f,0.25f,0.1f,shadeC(hatC,0.6f)); hb(0f,5.3f,4.9f,2.1f,0.14f,0.07f,accentTop) }
+        }
         // ================= ROSTO: óculos e marcas =================
         lay(7, 12)
         val gz = 4.3f
@@ -827,6 +957,16 @@ class McChar {
             9 -> { tb(-1.4f, 4.5f, 2.45f, 0.4f, 2.6f, 0.3f, gold, rz = -25f); tb(1.4f, 4.5f, 2.45f, 0.4f, 2.6f, 0.3f, gold, rz = 25f); tb(0f, 2.6f, 2.55f, 1.8f, 1.8f, 0.4f, gold) }
         }
 
+
+        lay(11,15)
+        when(L[Look.NECK]) {
+            1 -> { tb(0f,4.65f,2.72f,8.5f,0.16f,0.1f,lite(neckC,0.3f)); for(x in intArrayOf(-3,3)) tb(x.toFloat(),4.2f,2.72f,0.16f,0.55f,0.1f,shadeC(neckC,0.7f)) }
+            2,5 -> { tb(0f,5.2f,2.82f,0.55f,0.55f,0.14f,metalHi); tb(0f,5.2f,2.92f,0.26f,0.26f,0.1f,accentTop) }
+            3,9 -> { tb(0f,2.9f,2.8f,0.16f,1.25f,0.12f,gold); tb(0f,2.35f,2.88f,0.78f,0.78f,0.14f,gold,rz=45f); tb(0f,2.35f,3f,0.4f,0.4f,0.08f,accentTop,rz=45f) }
+            4 -> { tb(0f,3.9f,2.8f,0.22f,0.4f,0.1f,gold); tb(0f,3.45f,2.85f,0.95f,0.18f,0.1f,accentTop) }
+            6 -> { tb(-3f,5.1f,2.75f,0.22f,0.4f,0.1f,gold); tb(-3f,4.75f,2.82f,0.4f,0.22f,0.1f,white) }
+            7 -> for(x in intArrayOf(-2,0,2)) tb(x.toFloat(),5.65f,2.68f,0.5f,0.16f,0.1f,accentTop)
+        }
         // ================= COSTAS =================
         lay(2, 6)
         val flap = sin(t * 9f) * (10f + 14f * mv)
