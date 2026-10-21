@@ -1020,6 +1020,17 @@ class CharModel {
                     for (k in bands.indices) sb(-0.36f + (k + 1) * 0.0225f, -0.36f + k * 0.0225f, -0.115f, 0.105f, 0.206f, bands[k])
                 }
             }
+            // Acabamento próprio de cada calçado: costura, ilhós, gravação e metais em relevo.
+            when (sh) {
+                0 -> { for(i in 0..2) b(t2,0f,ya(-0.31f-i*0.025f),0.128f,0.11f,0.006f,0.009f,lite(shc,0.42f)); for(sx in intArrayOf(-1,1)) b(t2,sx*0.08f,ya(-0.325f),0.139f,0.014f,0.014f,0.01f,0xE9C56D) }
+                1 -> { b(t2,0f,ya(-0.375f),0.236f,0.15f,0.008f,0.008f,shadeC(shc,0.72f)); for(i in 0..3) b(t2,if(i%2==0)-0.04f else 0.04f,ya(-0.345f+i*0.012f),0.134f,0.02f,0.012f,0.012f,0xD5D9E0); b(t2,0.075f,ya(-0.365f),0.238f,0.035f,0.025f,0.008f,lite(shc,0.35f)) }
+                2 -> { b(t2,0f,ya(-0.371f),0.225f,0.14f,0.012f,0.009f,lite(shc,0.3f)); b(t2,0f,ya(-0.37f),0.24f,0.04f,0.024f,0.012f,0xE9C56D); b(t2,0f,ya(-0.37f),0.248f,0.018f,0.012f,0.006f,0x65452B) }
+                3 -> { b(t2,0f,ya(-0.39f),0.06f,0.19f,0.018f,0.014f,0xB98B55); for(sx in intArrayOf(-1,0,1)) b(t2,sx*0.055f,ya(-0.39f),0.073f,0.018f,0.018f,0.012f,gold) }
+                4 -> { for(i in 0..3) b(t2,0f,ya(-0.285f-i*0.018f),0.13f,0.13f,0.006f,0.009f,lite(shc,0.35f)); b(t2,0f,ya(-0.302f),0.145f,0.035f,0.028f,0.012f,gold); b(t2,0f,ya(-0.302f),0.154f,0.014f,0.014f,0.008f,0x48BFE3) }
+                5 -> { b(t2,0f,ya(-0.414f),0.17f,0.12f,0.008f,0.009f,0xD7B17B); b(t2,-0.035f,ya(-0.414f),0.176f,0.03f,0.008f,0.008f,0x6F4A29); b(t2,0.035f,ya(-0.414f),0.176f,0.03f,0.008f,0.008f,0x6F4A29) }
+                6 -> { b(t2,-0.045f,ya(-0.37f),0.148f,0.012f,0.025f,0.01f,gold,rz=-18f); b(t2,0f,ya(-0.358f),0.148f,0.09f,0.012f,0.01f,gold); b(t2,0.045f,ya(-0.37f),0.148f,0.012f,0.025f,0.01f,gold,rz=18f) }
+                else -> { for(i in 0..2) b(t2,0f,ya(-0.355f+i*0.014f),0.116f,0.18f,0.006f,0.008f,if(i%2==0)white else lite(shc,0.25f)); b(t2,0.075f,ya(-0.385f),0.238f,0.035f,0.025f,0.008f,0xFFD35C) }
+            }
         }
 
         // ================= CORPO =================
