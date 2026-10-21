@@ -13,51 +13,105 @@ object McTex {
     private val ALL: Array<String> = McTexData.D + McTexData2.D + McTexData3.D + McTexData4.D + McTexData5.D + McTexData6.D + McTexData7.D + McTexData8.D + McTexData9.D
     private val names = HashMap<String, Int>().also { m ->
         for ((i, e) in ALL.withIndex()) m[e.substring(0, e.indexOf(':'))] = i
+        // Alguns nomes foram gravados com erros no pacote importado; aliases preservam os dados
+        // originais, mas permitem que os blocos usem os nomes corretos.
+        fun alias(correct: String, stored: String) { m[stored]?.let { m[correct] = it } }
+        alias("stripped_crimson_stem_top", "stred_crimson_stem_top")
+        alias("stripped_crimson_stem_side", "strd_crimson_stem_side")
+        alias("stripped_warped_stem_top", "strped_warped_stem_top")
+        alias("stripped_warped_stem_side", "stred_warped_stem_side")
     }
-    private val cache = arrayOfNulls<IntArray>(ALL.size)
+    private val missingIndex = ALL.size
+    private val cache = arrayOfNulls<IntArray>(ALL.size + 1)
+    private val missingNames = HashSet<String>()
 
     /** itens 16x16 do pack (ferramentas): ARGB ou null se não existir */
     fun itemPix(name: String): IntArray? {
         for (e in McItemData.D) {
             if (!e.startsWith("$name:")) continue
-            val z = Base64.decode(e.substring(e.indexOf(':') + 1), Base64.DEFAULT)
-            val inf = Inflater(); inf.setInput(z)
-            val raw = ByteArray(16 * 16 * 4); var n = 0
-            while (n < raw.size && !inf.finished()) { val r = inf.inflate(raw, n, raw.size - n); if (r <= 0) break; n += r }
-            inf.end()
-            val out = IntArray(256)
-            for (p in 0 until 256) {
-                val r = raw[p * 4].toInt() and 255; val g = raw[p * 4 + 1].toInt() and 255; val b = raw[p * 4 + 2].toInt() and 255; val a = raw[p * 4 + 3].toInt() and 255
-                out[p] = (a shl 24) or (r shl 16) or (g shl 8) or b
+            return try {
+                val z = Base64.decode(e.substring(e.indexOf(':') + 1), Base64.DEFAULT)
+                val inf = Inflater(); inf.setInput(z)
+                val raw = ByteArray(16 * 16 * 4 + 1); var n = 0
+                try {
+                    while (n < raw.size && !inf.finished()) {
+                        val r = inf.inflate(raw, n, raw.size - n)
+                        if (r <= 0) break
+                        n += r
+                    }
+                    if (n != 16 * 16 * 4 || !inf.finished()) {
+                        android.util.Log.e("CuboLand-TextureAudit", "Textura de item inválida: $name ($n bytes)")
+                        return IntArray(256) { p -> if (((p % 16 / 4) + (p / 16 / 4)) % 2 == 0) 0xFFFF00FF.toInt() else 0xFF202020.toInt() }
+                    }
+                    IntArray(256) { p ->
+                        val r = raw[p * 4].toInt() and 255; val g = raw[p * 4 + 1].toInt() and 255
+                        val b = raw[p * 4 + 2].toInt() and 255; val a = raw[p * 4 + 3].toInt() and 255
+                        (a shl 24) or (r shl 16) or (g shl 8) or b
+                    }
+                } finally { inf.end() }
+            } catch (ex: Exception) {
+                android.util.Log.e("CuboLand-TextureAudit", "Falha ao decodificar textura de item $name", ex)
+                IntArray(256) { p -> if (((p % 16 / 4) + (p / 16 / 4)) % 2 == 0) 0xFFFF00FF.toInt() else 0xFF202020.toInt() }
             }
-            return out
         }
         return null
     }
     private val tinted = HashMap<Long, IntArray>()
 
-    /** nome do arquivo da textura i ("" se não existir) */
-    fun nameOf(i: Int): String = if (i in ALL.indices) ALL[i].substring(0, ALL[i].indexOf(':')) else ""
+    /** nome do arquivo da textura i */
+    fun nameOf(i: Int): String = when (i) {
+        missingIndex -> "TEXTURA_AUSENTE"
+        else -> if (i in ALL.indices) ALL[i].substring(0, ALL[i].indexOf(':')) else ""
+    }
 
-    /** índice da textura pelo nome do arquivo (0 se não existir) */
-    fun id(name: String): Int = names[name] ?: 0
+    /** Índice da textura. Ausências viram um padrão de diagnóstico, nunca pedra silenciosamente. */
+    fun id(name: String): Int {
+        names[name]?.let { return it }
+        if (missingNames.add(name)) android.util.Log.e("CuboLand-TextureAudit", "Textura não encontrada: $name")
+        return missingIndex
+    }
+
+    private fun missingPixels(): IntArray = IntArray(256) { p ->
+        val x = p and 15; val y = p shr 4
+        if (((x / 4) + (y / 4)) % 2 == 0) 0xFFFF00FF.toInt() else 0xFF202020.toInt()
+    }
 
     /** 256 pixels ARGB (linha por linha) da textura original */
     fun pix(i: Int): IntArray {
-        val k = if (i in cache.indices) i else 0
+        val k = if (i in cache.indices) i else missingIndex
         cache[k]?.let { return it }
+        if (k == missingIndex) {
+            val out = missingPixels()
+            cache[k] = out
+            return out
+        }
         val e = ALL[k]
-        val z = Base64.decode(e.substring(e.indexOf(':') + 1), Base64.DEFAULT)
-        val inf = Inflater()
-        inf.setInput(z)
-        val raw = ByteArray(16 * 16 * 4)
-        var n = 0
-        while (n < raw.size && !inf.finished()) { val r = inf.inflate(raw, n, raw.size - n); if (r <= 0) break; n += r }
-        inf.end()
-        val out = IntArray(256)
-        for (p in 0 until 256) {
-            val r = raw[p * 4].toInt() and 255; val g = raw[p * 4 + 1].toInt() and 255; val b = raw[p * 4 + 2].toInt() and 255; val a = raw[p * 4 + 3].toInt() and 255
-            out[p] = (a shl 24) or (r shl 16) or (g shl 8) or b
+        val out = try {
+            val z = Base64.decode(e.substring(e.indexOf(':') + 1), Base64.DEFAULT)
+            val inf = Inflater()
+            inf.setInput(z)
+            val raw = ByteArray(16 * 16 * 4 + 1)
+            var n = 0
+            try {
+                while (n < raw.size && !inf.finished()) {
+                    val r = inf.inflate(raw, n, raw.size - n)
+                    if (r <= 0) break
+                    n += r
+                }
+                if (n != 16 * 16 * 4 || !inf.finished()) {
+                    android.util.Log.e("CuboLand-TextureAudit", "Dados incompletos para ${nameOf(k)}: $n/${raw.size} bytes")
+                    missingPixels()
+                } else {
+                    IntArray(256) { p ->
+                        val r = raw[p * 4].toInt() and 255; val g = raw[p * 4 + 1].toInt() and 255
+                        val b = raw[p * 4 + 2].toInt() and 255; val a = raw[p * 4 + 3].toInt() and 255
+                        (a shl 24) or (r shl 16) or (g shl 8) or b
+                    }
+                }
+            } finally { inf.end() }
+        } catch (e: Exception) {
+            android.util.Log.e("CuboLand-TextureAudit", "Falha ao decodificar ${nameOf(k)}", e)
+            missingPixels()
         }
         cache[k] = out
         return out

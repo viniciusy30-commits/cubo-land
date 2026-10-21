@@ -1,5 +1,6 @@
 package com.cuboland.app
 
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import org.json.JSONArray
 import java.nio.ByteBuffer
@@ -184,9 +185,25 @@ object Deco {
     // ---- pixels das texturas (Atlas.build chama por pixel) ----
     private fun decode(tex: Int): IntArray {
         val a = IntArray(64 * 64)
-        val st = res("/deco/tex/$tex.png")
-        val bm = if (st == null) null else BitmapFactory.decodeStream(st)
-        if (bm == null) { java.util.Arrays.fill(a, -65281) } else { bm.getPixels(a, 0, 64, 0, 0, 64, 64); bm.recycle() }
+        try {
+            val bm = res("/deco/tex/$tex.png")?.use { BitmapFactory.decodeStream(it) }
+            if (bm == null) {
+                java.util.Arrays.fill(a, -65281)
+            } else {
+                // O atlas espera 64x64; normaliza dimensões inesperadas sem suavizar o pixel art.
+                val sized = if (bm.width == 64 && bm.height == 64) bm
+                    else Bitmap.createScaledBitmap(bm, 64, 64, false)
+                try {
+                    sized.getPixels(a, 0, 64, 0, 0, 64, 64)
+                } finally {
+                    if (sized !== bm) sized.recycle()
+                    bm.recycle()
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("CuboLand-TextureAudit", "Falha ao carregar textura de decoração $tex", e)
+            java.util.Arrays.fill(a, -65281)
+        }
         return a
     }
     fun pixel(tex: Int, x: Int, y: Int): Int {
