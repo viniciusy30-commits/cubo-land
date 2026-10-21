@@ -29,17 +29,30 @@ object McTex {
     fun itemPix(name: String): IntArray? {
         for (e in McItemData.D) {
             if (!e.startsWith("$name:")) continue
-            val z = Base64.decode(e.substring(e.indexOf(':') + 1), Base64.DEFAULT)
-            val inf = Inflater(); inf.setInput(z)
-            val raw = ByteArray(16 * 16 * 4); var n = 0
-            while (n < raw.size && !inf.finished()) { val r = inf.inflate(raw, n, raw.size - n); if (r <= 0) break; n += r }
-            inf.end()
-            val out = IntArray(256)
-            for (p in 0 until 256) {
-                val r = raw[p * 4].toInt() and 255; val g = raw[p * 4 + 1].toInt() and 255; val b = raw[p * 4 + 2].toInt() and 255; val a = raw[p * 4 + 3].toInt() and 255
-                out[p] = (a shl 24) or (r shl 16) or (g shl 8) or b
+            return try {
+                val z = Base64.decode(e.substring(e.indexOf(':') + 1), Base64.DEFAULT)
+                val inf = Inflater(); inf.setInput(z)
+                val raw = ByteArray(16 * 16 * 4 + 1); var n = 0
+                try {
+                    while (n < raw.size && !inf.finished()) {
+                        val r = inf.inflate(raw, n, raw.size - n)
+                        if (r <= 0) break
+                        n += r
+                    }
+                    if (n != 16 * 16 * 4 || !inf.finished()) {
+                        android.util.Log.e("CuboLand-TextureAudit", "Textura de item inválida: $name ($n bytes)")
+                        return IntArray(256) { p -> if (((p % 16 / 4) + (p / 16 / 4)) % 2 == 0) 0xFFFF00FF.toInt() else 0xFF202020.toInt() }
+                    }
+                    IntArray(256) { p ->
+                        val r = raw[p * 4].toInt() and 255; val g = raw[p * 4 + 1].toInt() and 255
+                        val b = raw[p * 4 + 2].toInt() and 255; val a = raw[p * 4 + 3].toInt() and 255
+                        (a shl 24) or (r shl 16) or (g shl 8) or b
+                    }
+                } finally { inf.end() }
+            } catch (ex: Exception) {
+                android.util.Log.e("CuboLand-TextureAudit", "Falha ao decodificar textura de item $name", ex)
+                IntArray(256) { p -> if (((p % 16 / 4) + (p / 16 / 4)) % 2 == 0) 0xFFFF00FF.toInt() else 0xFF202020.toInt() }
             }
-            return out
         }
         return null
     }
@@ -77,7 +90,7 @@ object McTex {
             val z = Base64.decode(e.substring(e.indexOf(':') + 1), Base64.DEFAULT)
             val inf = Inflater()
             inf.setInput(z)
-            val raw = ByteArray(16 * 16 * 4)
+            val raw = ByteArray(16 * 16 * 4 + 1)
             var n = 0
             try {
                 while (n < raw.size && !inf.finished()) {
@@ -85,7 +98,7 @@ object McTex {
                     if (r <= 0) break
                     n += r
                 }
-                if (n != raw.size || !inf.finished()) {
+                if (n != 16 * 16 * 4 || !inf.finished()) {
                     android.util.Log.e("CuboLand-TextureAudit", "Dados incompletos para ${nameOf(k)}: $n/${raw.size} bytes")
                     missingPixels()
                 } else {
