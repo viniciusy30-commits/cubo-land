@@ -263,10 +263,10 @@ class CharacterActivity : CozyActivity() {
         pv.addView(cv, FrameLayout.LayoutParams(-1, -1))
         importedSkinAvatarPreview = MinecraftSkinPreviewView(this)
         pv.addView(importedSkinAvatarPreview, FrameLayout.LayoutParams(-1, -1))
-        val savedSkinPreview = MinecraftSkinLibrary.load(this)
-        if (savedSkinPreview != null) { importedSkinAvatarPreview.setSkin(savedSkinPreview); cv.visibility = View.GONE; skinPreviewHint.text = "PRÉVIA DA SKIN IMPORTADA" }
         skinPreviewHint = cTxtL("⟳  ARRASTE PARA GIRAR  ⟳", 11f, Color.WHITE, true)
         pv.addView(skinPreviewHint, FrameLayout.LayoutParams(-2, -2, Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = dp(6) })
+        val savedSkinPreview = MinecraftSkinLibrary.load(this)
+        if (savedSkinPreview != null) { importedSkinAvatarPreview.setSkin(savedSkinPreview); cv.visibility = View.GONE; skinPreviewHint.text = "PRÉVIA DA SKIN IMPORTADA" }
         leftCol.addView(pv, lpW(MATCH, 0, 1f))
         val skinImportCard = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
