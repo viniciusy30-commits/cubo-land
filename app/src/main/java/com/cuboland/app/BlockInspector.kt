@@ -18,6 +18,7 @@ import android.widget.BaseAdapter
 import android.widget.Button
 import android.widget.EditText
 import android.widget.FrameLayout
+import android.widget.GridView
 import android.widget.LinearLayout
 import android.widget.ListView
 import android.widget.Spinner
@@ -55,6 +56,12 @@ class BlockInspector(
     private val category = Spinner(act)
     private val count = TextView(act)
     private val list = ListView(act)
+    private val grid = GridView(act)
+    private var scanMode = true
+    private var onlyBad = false
+    private lateinit var gridAdapter: BaseAdapter
+    private val modeButton = Button(act)
+    private val issueButton = Button(act)
     private val nameLine = TextView(act)
     private val detailsLine = TextView(act)
     private val statusLine = TextView(act)
@@ -114,6 +121,17 @@ class BlockInspector(
         count.textSize = 12f
         count.setPadding(act.dp(3), act.dp(5), 0, act.dp(4))
         column.addView(count)
+
+        val scanControls = LinearLayout(act).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+        modeButton.text = "▦ Grade"; modeButton.textSize = 11f; modeButton.isAllCaps = false; modeButton.setTextColor(Color.WHITE)
+        modeButton.background = rounded(Color.rgb(67, 94, 130), Color.rgb(67, 94, 130), 8, 1)
+        modeButton.setOnClickListener { scanMode = !scanMode; modeButton.text = if (scanMode) "▦ Grade" else "☰ Lista"; list.visibility = if (scanMode) View.GONE else View.VISIBLE; grid.visibility = if (scanMode) View.VISIBLE else View.GONE }
+        issueButton.text = "⚠ Índices inválidos"; issueButton.textSize = 11f; issueButton.isAllCaps = false; issueButton.setTextColor(Color.WHITE)
+        issueButton.background = rounded(Color.rgb(110, 55, 58), Color.rgb(170, 75, 80), 8, 1)
+        issueButton.setOnClickListener { onlyBad = !onlyBad; issueButton.text = if (onlyBad) "✕ Mostrar todos" else "⚠ Índices inválidos"; applyFilters() }
+        scanControls.addView(modeButton, LinearLayout.LayoutParams(0, act.dp(38), 1f).apply { rightMargin = act.dp(4) })
+        scanControls.addView(issueButton, LinearLayout.LayoutParams(0, act.dp(38), 1.5f).apply { leftMargin = act.dp(4) })
+        column.addView(scanControls)
 
         val detailCard = LinearLayout(act).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -217,6 +235,34 @@ class BlockInspector(
             }
         }
         column.addView(list, LinearLayout.LayoutParams(-1, 0, 1f))
+        grid.numColumns = 3; grid.horizontalSpacing = act.dp(5); grid.verticalSpacing = act.dp(5); grid.stretchMode = GridView.STRETCH_COLUMN_WIDTH
+        grid.setPadding(0, act.dp(3), 0, act.dp(3)); grid.setBackgroundColor(Color.rgb(12, 16, 23))
+        grid.adapter = object : BaseAdapter() {
+            override fun getCount() = filtered.size
+            override fun getItem(position: Int) = filtered[position]
+            override fun getItemId(position: Int) = filtered[position].id.toLong()
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val item = filtered[position]
+                val card = (convertView as? LinearLayout) ?: LinearLayout(act).apply {
+                    orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; setPadding(act.dp(4), act.dp(5), act.dp(4), act.dp(5))
+                    val preview = CubePreviewView(act)
+                    val name = TextView(act).apply { setTextColor(Color.WHITE); textSize = 10f; maxLines = 2; gravity = Gravity.CENTER; ellipsize = android.text.TextUtils.TruncateAt.END }
+                    val meta = TextView(act).apply { textSize = 9f; gravity = Gravity.CENTER }
+                    addView(preview, LinearLayout.LayoutParams(act.dp(64), act.dp(64))); addView(name); addView(meta)
+                    tag = arrayOf(preview, name, meta)
+                }
+                val v = card.tag as Array<*>
+                val preview = v[0] as CubePreviewView; val name = v[1] as TextView; val meta = v[2] as TextView
+                val bad = hasInvalidTiles(item.id); preview.blockId = item.id; preview.invalidate(); name.text = item.name
+                meta.text = if (bad) "⚠ ${item.id} • TILE INVÁLIDO" else "✓ ${item.id} • índices OK"
+                meta.setTextColor(if (bad) Color.rgb(255, 105, 105) else Color.rgb(133, 225, 165))
+                card.background = rounded(if (item.id == selectedId) Color.rgb(43, 54, 72) else Color.rgb(21, 27, 36), if (bad) Color.rgb(235, 72, 78) else if (item.id == selectedId) Color.rgb(255, 190, 80) else Color.rgb(55, 68, 86), 8, 2)
+                return card
+            }
+        }
+        gridAdapter = grid.adapter as BaseAdapter
+        grid.setOnItemClickListener { _, _, position, _ -> if (position in filtered.indices) { selectedId = filtered[position].id; adapter.notifyDataSetChanged(); gridAdapter.notifyDataSetChanged(); updateDetails() } }
+        column.addView(grid, LinearLayout.LayoutParams(-1, 0, 1f)); grid.visibility = View.VISIBLE; list.visibility = View.GONE
 
         search.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -265,8 +311,10 @@ class BlockInspector(
                 (q.isEmpty() || normalize(entry.name).contains(q) || entry.id.toString().contains(q))
         }
         if (filtered.none { it.id == selectedId }) selectedId = filtered.firstOrNull()?.id ?: -1
+        if (onlyBad) filtered = filtered.filter { hasInvalidTiles(it.id) }
         if (::adapter.isInitialized) adapter.notifyDataSetChanged()
-        count.text = "${filtered.size} blocos encontrados  •  ${entries.size} no catálogo"
+        if (::gridAdapter.isInitialized) gridAdapter.notifyDataSetChanged()
+        count.text = "${filtered.size} exibidos • ${entries.size} no catálogo • vermelho = índice inválido"
         updateDetails()
     }
 
@@ -277,6 +325,11 @@ class BlockInspector(
         adapter.notifyDataSetChanged()
         updateDetails()
         list.setSelection(filtered.indexOfFirst { it.id == selectedId })
+    }
+
+    private fun hasInvalidTiles(id: Int): Boolean {
+        if (id !in 1 until B.N) return true
+        return intArrayOf(B.tTop[id], B.tSide[id], B.tBot[id]).any { it !in 0 until Blk.tileCount }
     }
 
     private fun updateDetails() {
