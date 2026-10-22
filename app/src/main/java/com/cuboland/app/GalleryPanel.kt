@@ -35,6 +35,7 @@ class GalleryPanel(
     private val backBtn: Button
     private val closeBtn: Button
     private val body = LinearLayout(act)
+    private val reviewPrefs = act.getSharedPreferences("block_review", Context.MODE_PRIVATE)
     private lateinit var inspector: BlockInspector
     private var preferInspector = false
     private val gold = Color.rgb(255, 214, 120)
@@ -184,6 +185,14 @@ class GalleryPanel(
         busy = false
         body.removeAllViews(); backBtn.visibility = View.INVISIBLE; closeBtn.visibility = View.VISIBLE
         title.text = "GALERIA DE BLOCOS"; sub.text = "Escolha uma categoria, depois um tipo de bloco"
+        heading("REVISÃO DE BLOCOS")
+        val validCount = B.names.indices.count { reviewPrefs.getString("status_$it", null) == "valid" }
+        val invalidCount = B.names.indices.count { reviewPrefs.getString("status_$it", null) == "invalid" }
+        val reviewTabs = listOf(
+            card("VÁLIDOS", "$validCount blocos aprovados", Color.rgb(45, 165, 95), "✓") { showReviewed("valid") },
+            card("INVÁLIDOS", "$invalidCount blocos reprovados", Color.rgb(200, 65, 70), "✕") { showReviewed("invalid") }
+        )
+        addGrid(reviewTabs, 2)
         heading("BLOCOS")
         val cs = ArrayList<View>()
         for ((i, p) in menu.withIndex()) {
@@ -209,6 +218,35 @@ class GalleryPanel(
         preferInspector = true
         busy = false
         inspector.show()
+    }
+
+    /** Lista de revisão separada por estado, acessível pela galeria. */
+    private fun showReviewed(status: String) {
+        preferInspector = false
+        inspector.hide()
+        busy = false
+        body.removeAllViews(); backBtn.visibility = View.VISIBLE; closeBtn.visibility = View.VISIBLE
+        backBtn.setOnClickListener { showCats() }
+        val valid = status == "valid"
+        title.text = if (valid) "BLOCOS VÁLIDOS" else "BLOCOS INVÁLIDOS"
+        sub.text = if (valid) "Blocos aprovados por você" else "Blocos que precisam de correção"
+        val accent = if (valid) Color.rgb(45, 165, 95) else Color.rgb(200, 65, 70)
+        val ids = B.names.indices.filter { reviewPrefs.getString("status_$it", null) == status }
+        if (ids.isEmpty()) {
+            val empty = label(if (valid) "Você ainda não validou nenhum bloco." else "Você ainda não invalidou nenhum bloco.", 14f, Color.rgb(176, 184, 198), font = false)
+            empty.gravity = Gravity.CENTER
+            empty.setPadding(act.dp(12), act.dp(28), act.dp(12), act.dp(28))
+            body.addView(empty)
+            return
+        }
+        heading("${ids.size} BLOCOS")
+        val cards = ids.map { id ->
+            val name = B.names.getOrNull(id).orEmpty().ifBlank { "Bloco #$id" }
+            card(name, "ID $id · toque para abrir no mapa", accent, if (valid) "✓" else "✕") {
+                pick(-1, id, World.GAL_BLOCK, "Teste do bloco: $name (#$id)")
+            }
+        }
+        addGrid(cards, cols())
     }
 
     /** passo 2: tipos de bloco da categoria (cada um vira uma sala de exposição) */
