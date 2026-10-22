@@ -8,6 +8,7 @@ on:
     branches: [main]
     paths:
       - '_incoming/skate-build.txt'
+      - '.github/workflows/android.yml'
       - 'monodeco_gen_7_v7.5.0.mcaddon'
       - 'tools/deco_import.py'
       - 'tools/deco/registry.json'
