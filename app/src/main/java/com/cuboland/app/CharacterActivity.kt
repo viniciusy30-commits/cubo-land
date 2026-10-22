@@ -1,8 +1,6 @@
 package com.cuboland.app
 
 import android.graphics.Color
-import android.content.Intent
-import android.graphics.Bitmap
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.Gravity
@@ -17,19 +15,12 @@ import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
-import android.widget.ImageView
-import android.widget.Toast
 
 class CharacterActivity : CozyActivity() {
     private lateinit var content: LinearLayout
     private lateinit var scroll: ScrollView
     private lateinit var cv: CharView
-    private lateinit var importedSkinAvatarPreview: MinecraftSkinPreviewView
     private lateinit var skinPreviewHint: TextView
-    private lateinit var skinLibraryRow: LinearLayout
-    private lateinit var importedSkinPreview: ImageView
-    private lateinit var importedSkinStatus: TextView
-    private val PICK_SKIN_PNG = 7041
     private val refreshers = ArrayList<() -> Unit>()
     private val tabViews = ArrayList<TextView>()
     private val TABS = arrayOf("Looks", "Corpo", "Cabelo", "Rosto", "Roupas", "Acessórios", "Acabamento")
@@ -104,34 +95,6 @@ class CharacterActivity : CozyActivity() {
                 val sel = Look.v[idx] == i
                 views[i].background = SwatchDrawable(this, colors[i] or (0xFF shl 24), sel)
             }
-        }
-    }
-
-    private fun refreshSkinLibrary() {
-        if (!::skinLibraryRow.isInitialized) return
-        skinLibraryRow.removeAllViews()
-        val skins = MinecraftSkinLibrary.list(this)
-        if (skins.isEmpty()) {
-            skinLibraryRow.addView(cTxt("Nenhuma skin salva ainda. Importe PNGs 64×64 para montar sua coleção.", 12f, Cz.SOFT, false))
-            return
-        }
-        for (fileName in skins) {
-            val label = MinecraftSkinLibrary.displayName(fileName)
-            val chip = cChip(label) {
-                if (MinecraftSkinLibrary.activate(this, fileName)) {
-                    val bitmap = MinecraftSkinLibrary.load(this)
-                    if (bitmap != null) {
-                        importedSkinPreview.visibility = View.VISIBLE
-                        importedSkinPreview.setImageBitmap(bitmap)
-                        importedSkinAvatarPreview.setSkin(bitmap)
-                        cv.visibility = View.GONE
-                        skinPreviewHint.text = "SKIN ATIVA: $label"
-                        importedSkinStatus.text = "Skin ativa: $label • aplicada ao avatar 3D ao entrar no mundo"
-                        importedSkinStatus.setTextColor(Cz.GREEN)
-                    }
-                }
-            }
-            skinLibraryRow.addView(chip, lpW(WRAP, WRAP).apply { rightMargin = dp(6) })
         }
     }
 
@@ -222,28 +185,6 @@ class CharacterActivity : CozyActivity() {
         for (k in 0 until content.childCount) content.getChildAt(k).popIn(60L * k, 16)
     }
 
-    @Deprecated("Deprecated in Android API 33; kept for compatibility with the current app") 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode != PICK_SKIN_PNG || resultCode != RESULT_OK) return
-        val uri = data?.data ?: return
-        val result = MinecraftSkinLibrary.import(this, uri)
-        importedSkinStatus.text = result.message
-        if (result.ok) {
-            importedSkinStatus.setTextColor(Cz.GREEN)
-            importedSkinPreview.visibility = View.VISIBLE
-            importedSkinPreview.setImageBitmap(result.bitmap)
-            importedSkinAvatarPreview.setSkin(result.bitmap)
-            cv.visibility = View.GONE
-            skinPreviewHint.text = "PRÉVIA DA SKIN IMPORTADA"
-            refreshSkinLibrary()
-            Toast.makeText(this, "Skin salva na biblioteca e aplicada ao avatar 3D ao entrar no mundo.", Toast.LENGTH_SHORT).show()
-        } else {
-            importedSkinStatus.setTextColor(Cz.RED)
-            Toast.makeText(this, result.message, Toast.LENGTH_LONG).show()
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Look.load(this)
@@ -261,55 +202,9 @@ class CharacterActivity : CozyActivity() {
         val pv = FrameLayout(this).apply { background = CozyBox(this@CharacterActivity, Cz.GOLD, 22f, false); setPadding(dp(6), dp(6), dp(6), dp(6)) }
         cv = CharView(this); cv.scenic = true
         pv.addView(cv, FrameLayout.LayoutParams(-1, -1))
-        importedSkinAvatarPreview = MinecraftSkinPreviewView(this)
-        pv.addView(importedSkinAvatarPreview, FrameLayout.LayoutParams(-1, -1))
         skinPreviewHint = cTxtL("⟳  ARRASTE PARA GIRAR  ⟳", 11f, Color.WHITE, true)
         pv.addView(skinPreviewHint, FrameLayout.LayoutParams(-2, -2, Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = dp(6) })
-        val savedSkinPreview = MinecraftSkinLibrary.load(this)
-        if (savedSkinPreview != null) { importedSkinAvatarPreview.setSkin(savedSkinPreview); cv.visibility = View.GONE; skinPreviewHint.text = "PRÉVIA DA SKIN IMPORTADA" }
         leftCol.addView(pv, lpW(MATCH, 0, 1f))
-        val skinImportCard = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(10), dp(8), dp(10), dp(8))
-            background = CozyBox(this@CharacterActivity, Cz.PANEL, 14f, false)
-        }
-        skinImportCard.addView(cTxt("SKIN PNG DO MINECRAFT", 12f, Cz.GOLD, true))
-        importedSkinStatus = cTxt(
-            if (MinecraftSkinLibrary.exists(this)) "Skin PNG importada neste dispositivo." else "Importe uma skin original em PNG (64×64).",
-            12f, Cz.SOFT, false
-        )
-        skinImportCard.addView(importedSkinStatus)
-        val skinImportRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-        skinImportRow.addView(cBtn("Importar PNG", Cz.LILAC, 13f) {
-            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-                addCategory(Intent.CATEGORY_OPENABLE)
-                type = "image/png"
-            }
-            startActivityForResult(intent, PICK_SKIN_PNG)
-        }, lpW(0, WRAP, 1f).apply { rightMargin = dp(8) })
-        importedSkinPreview = ImageView(this).apply {
-            scaleType = ImageView.ScaleType.FIT_CENTER
-            setBackgroundColor(Color.rgb(35, 35, 43))
-            setPadding(dp(4), dp(4), dp(4), dp(4))
-            val b = MinecraftSkinLibrary.load(this@CharacterActivity)
-            if (b != null) setImageBitmap(b) else visibility = View.GONE
-        }
-        skinImportRow.addView(importedSkinPreview, LinearLayout.LayoutParams(dp(64), dp(64)))
-        skinImportCard.addView(skinImportRow)
-        leftCol.addView(skinImportCard, lpW(MATCH, WRAP).apply { topMargin = dp(8) })
-        val skinLibraryCard = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(10), dp(8), dp(10), dp(8))
-            background = CozyBox(this@CharacterActivity, Cz.PANEL, 14f, false)
-        }
-        skinLibraryCard.addView(cTxt("MINHA BIBLIOTECA DE SKINS", 12f, Cz.GOLD, true))
-        skinLibraryRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        skinLibraryCard.addView(HorizontalScrollView(this).apply {
-            isHorizontalScrollBarEnabled = false
-            addView(skinLibraryRow)
-        }, lpW(MATCH, WRAP).apply { topMargin = dp(6) })
-        leftCol.addView(skinLibraryCard, lpW(MATCH, WRAP).apply { topMargin = dp(8) })
-        refreshSkinLibrary()
         val nameBox = EditText(this).apply {
             setText(Look.name(this@CharacterActivity)); hint = "Nome do personagem"
             setTextColor(Cz.TXT); setHintTextColor(Cz.TXT_SOFT); typeface = uiFont(); textSize = 15f
