@@ -8,6 +8,9 @@ on:
     branches: [main]
     paths:
       - '_incoming/skate-build.txt'
+      - 'monodeco_gen_7_v7.5.0.mcaddon'
+      - 'tools/deco_import.py'
+      - 'tools/deco/registry.json'
   workflow_run:
     workflows: ["Unpack and commit", "Reverter atualização"]
     types: [completed]
@@ -35,6 +38,24 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
+
+      - name: Instalar dependencias do importador monoDeco
+        run: python3 -m pip install --user Pillow numpy
+
+      - name: Importar monoDeco completo
+        run: python3 tools/deco_import.py monodeco_gen_7_v7.5.0.mcaddon --batches 1,2,3,4
+
+      - name: Salvar recursos importados no repositorio
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/main/resources/deco tools/deco/registry.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Importar recursos monoDeco no catalogo do CuboLand"
+            git push
+          else
+            echo "Os recursos gerados ja estao atualizados."
+          fi
 
       - name: Validar catalogo de decoracao
         run: python3 tools/deco_validate.py
