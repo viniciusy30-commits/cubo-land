@@ -12,6 +12,7 @@ on:
       - 'monodeco_gen_7_v7.5.0.mcaddon'
       - 'tools/deco_import.py'
       - 'tools/deco/registry.json'
+      - 'app/src/main/java/com/cuboland/app/BlockInspector.kt'
   workflow_run:
     workflows: ["Unpack and commit", "Reverter atualização"]
     types: [completed]
