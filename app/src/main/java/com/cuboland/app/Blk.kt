@@ -745,7 +745,7 @@ object Blk {
         for ((n, d) in Deco.items.withIndex()) {
             val tiles = IntArray(d.tex.size) { s -> val t = d.tex[s]; if (t < 0) -1 else tc.getOrPut(t) { val qm = qmap[t]; if (qm != null) qm else { val nt = if (bigOk.contains(t)) tlBig(t) else tl(K_DECO, t); if (nt < 24) -1 else nt } } }
             d.tile = tiles
-            val first = (tiles.firstOrNull { it >= 0 } ?: continue) and 0xFFFF
+            val first = tiles.firstOrNull { it >= 0 } ?: continue
             val id = blk(d.name, if (d.cat == 5) C_FURN else C_DEC, first, first, first, 0xB0A090, M_WOOD, 4f,
                 fup or (if (d.light >= 8) F_LIGHT else 0), "")
             if (id != 0) { Deco.idx[id] = n; d.blockId = id }
