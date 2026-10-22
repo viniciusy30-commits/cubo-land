@@ -177,11 +177,11 @@ def bake(g):
                 sx, sy, sz = s
                 cube_uv = {
                     'up':    {'uv': [uu + sz, vv],             'uv_size': [sx, sz]},
-                    'down':  {'uv': [uu + sz + sx, vv + sz],   'uv_size': [-sx, -sz]},
+                    'down':  {'uv': [uu + sz + sx, vv + sz],   'uv_size': [sx, sz]},
                     'west':  {'uv': [uu, vv + sz],             'uv_size': [sz, sy]},
                     'north': {'uv': [uu + sz, vv + sz],        'uv_size': [sx, sy]},
                     'east':  {'uv': [uu + sz + sx, vv + sz],   'uv_size': [sz, sy]},
-                    'south': {'uv': [uu + sz + sx + sz, vv + sz], 'uv_size': [-sx, sy]},
+                    'south': {'uv': [uu + sz + sx + sz, vv + sz], 'uv_size': [sx, sy]},
                 }
             for fn, fd in cube_uv.items() if isinstance(cube_uv, dict) else []:
                 if fn not in FACES: continue
