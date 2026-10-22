@@ -17,18 +17,28 @@ if os.path.isfile(ADDON_ROOT):
     if not zipfile.is_zipfile(ADDON_ROOT):
         raise SystemExit("Erro: o arquivo informado nao e um .mcaddon/.zip valido.")
     _tmp = tempfile.mkdtemp(prefix="monodeco_import_")
+    _root_real = os.path.realpath(_tmp)
     with zipfile.ZipFile(ADDON_ROOT) as _z:
+        # Bloqueia caminhos absolutos e ../ antes de extrair arquivos do pacote.
+        for _info in _z.infolist():
+            _dest = os.path.realpath(os.path.join(_tmp, _info.filename))
+            if _dest != _root_real and not _dest.startswith(_root_real + os.sep):
+                raise SystemExit("Erro: o addon contem um caminho de arquivo inseguro: " + _info.filename)
         _z.extractall(_tmp)
     ADDON_ROOT = _tmp
     atexit.register(lambda: __import__("shutil").rmtree(_tmp, ignore_errors=True))
 if not os.path.isdir(ADDON_ROOT):
     raise SystemExit("Erro: informe um .mcaddon/.zip existente ou uma pasta extraida.")
-_bp = sorted(glob.glob(os.path.join(ADDON_ROOT, '*_BP')))
-_rp = sorted(glob.glob(os.path.join(ADDON_ROOT, '*_RP')))
+# Alguns exportadores colocam os dois pacotes dentro de uma pasta intermediaria.
+_bp = sorted(glob.glob(os.path.join(ADDON_ROOT, '**', '*_BP'), recursive=True))
+_rp = sorted(glob.glob(os.path.join(ADDON_ROOT, '**', '*_RP'), recursive=True))
+_bp = [p for p in _bp if os.path.isdir(p) and os.path.isdir(os.path.join(p, 'blocks'))]
+_rp = [p for p in _rp if os.path.isdir(p) and os.path.isfile(os.path.join(p, 'textures', 'terrain_texture.json')) and os.path.isdir(os.path.join(p, 'models', 'blocks'))]
 if not _bp or not _rp:
-    raise SystemExit("Erro: nao encontrei as pastas *_BP e *_RP dentro do addon.")
+    raise SystemExit("Erro: nao encontrei um pacote *_BP com blocks/ e um *_RP com textures/terrain_texture.json e models/blocks/.")
 BP, RP = _bp[0], _rp[0]
-OUT = A.root + '/app/src/main/resources/deco'; REG = A.root + '/tools/deco/registry.json'
+OUT = os.path.join(os.path.abspath(A.root), 'app/src/main/resources/deco')
+REG = os.path.join(os.path.abspath(A.root), 'tools/deco/registry.json')
 os.makedirs(OUT + '/tex', exist_ok=True)
 
 # ---- familias de construcao que NAO sao mobilia/decoracao (ficam pra depois, se o usuario quiser) ----
