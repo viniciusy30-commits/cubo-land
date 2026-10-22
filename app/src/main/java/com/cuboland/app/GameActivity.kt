@@ -99,6 +99,7 @@ class GameActivity : AppCompatActivity() {
         h.onTvZoom = { tv?.zoom() }
         root.addView(h, 1)
         if (test) {
+            // Captura somente a superfície 3D do jogo para anexar evidência visual ao relatório do bloco.
             val review = BlockReviewOverlay(this, game) { callback ->
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && gl.width > 0 && gl.height > 0) {
                     val bitmap = Bitmap.createBitmap(gl.width, gl.height, Bitmap.Config.ARGB_8888)
