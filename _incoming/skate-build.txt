@@ -3,3 +3,4 @@ custom-skins-2026-10-22
 custom-skins-final-2026-10-22
 custom-skins-28-presets-2026-10-22
 import-minecraft-skin-png-2026-10-22
+minecraft-skin-uv-renderer-2026-10-22
