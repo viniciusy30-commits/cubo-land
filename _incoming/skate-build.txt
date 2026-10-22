@@ -20,3 +20,5 @@ fix-monodeco-texture-icons-2026-10-22
 monodeco-import-audit-2026-10-22
 monodeco-import-validation-2026-10-22
 fix-deco-validator-record-size-2026-10-22
+
+monoDeco-import-build-2026-10-22
