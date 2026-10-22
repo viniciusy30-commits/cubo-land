@@ -1140,7 +1140,13 @@ class GameRenderer(val game: Game, private val appContext: Context? = null) : GL
         } else { an.trk = 0f; an.trkK = 0f; an.trkF = 0f; an.trkP = 0f }
         G.glEnable(G.GL_POLYGON_OFFSET_FILL)   // camadas do boneco: o que está por cima ganha na profundidade (acaba o z-fighting nas dobras)
         cm.mc.layerHook = { l -> G.glPolygonOffset(0f, -l.toFloat()) }
-        if (minecraftSkin.isActive()) minecraftSkin.draw(vp, base, an.phase, an.move, an.run) else cm.draw(charBox, base, an, handM)
+        if (minecraftSkin.isActive()) {
+            minecraftSkin.draw(vp, base, an.phase, an.move, an.run)
+            // O renderizador de skin usa outro shader e malha; restaura o estado do renderer principal.
+            G.glUseProgram(prog)
+            G.glActiveTexture(G.GL_TEXTURE0); G.glBindTexture(G.GL_TEXTURE_2D, atlasTex); G.glUniform1i(uTex, 0)
+            bindMesh(cubeVb, cubeIb)
+        } else cm.draw(charBox, base, an, handM)
         cm.mc.layerHook = null
         G.glPolygonOffset(0f, 0f); G.glDisable(G.GL_POLYGON_OFFSET_FILL)
         if (id > 0) {   // mesmo modelo 3D da 1ª pessoa e dos ícones: cabo pra cima, fio pra frente
