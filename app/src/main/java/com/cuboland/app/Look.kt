@@ -55,7 +55,7 @@ object Look {
 
 
     /** looks prontos: 21 valores na ordem dos índices acima */
-    val PRESET_NAMES = arrayOf("Ninja", "Colegial", "Mago", "Samurai", "Princesa", "Maid", "Príncipe", "Gatinha", "Raposa", "Colegial (menino)", "Cyberpunk", "Carmesim Infernal", "Aurora Glacial", "Streetwear", "Sakura", "Cavaleiro Solar", "Gótica Real", "Explorador", "Neon Arcade", "Floresta Mística", "Serafim Celeste", "Anime Hoodie Branco", "Guerreiro do Vazio", "Demônio de Chifres Rubros", "Techwear Monocromático", "Mago Azul e Ouro", "Streetwear Pastel", "Gatinho Urbano")
+    val PRESET_NAMES = arrayOf("Ninja", "Colegial", "Mago", "Samurai", "Princesa", "Maid", "Príncipe", "Gatinha", "Raposa", "Colegial (menino)", "Cyberpunk", "Carmesim Infernal", "Aurora Glacial", "Streetwear", "Sakura", "Cavaleiro Solar", "Gótica Real", "Explorador", "Neon Arcade", "Floresta Mística", "Serafim Celeste", "Anime Hoodie Branco", "Guerreiro do Vazio", "Demônio de Chifres Rubros", "Techwear Monocromático", "Mago Azul e Ouro", "Streetwear Pastel", "Gatinho Urbano", "Kitsune Neon", "Princesa Lunar", "Cyber Oni", "Bruxa Carmesim", "Anjo Cristal", "Guardião Tático", "Flor de Sakura", "Hoodie Techwear")
     val PRESETS = arrayOf(
         intArrayOf(0, 1, 8, 4, 5, 5, 0, 1, 3, 0, 3, 0, 3, 11, 4, 8, 5, 3, 7, 4, 1),
         intArrayOf(1, 0, 16, 4, 4, 0, 1, 8, 11, 5, 11, 6, 3, 0, 4, 0, 9, 4, 0, 4, 0),
@@ -86,7 +86,16 @@ object Look {
         intArrayOf(0, 2, 30, 4, 5, 5, 0, 17, 3, 7, 3, 0, 3, 30, 3, 9, 2, 3, 1, 3, 1, 7, 24, 4, 3, 0, 24),
         intArrayOf(0, 1, 32, 8, 5, 10, 0, 11, 8, 0, 3, 0, 6, 25, 6, 0, 1, 6, 9, 6, 0, 6, 6, 4, 6, 5, 6),
         intArrayOf(1, 1, 2, 17, 0, 4, 1, 1, 3, 1, 3, 1, 2, 28, 1, 1, 9, 1, 1, 1, 2, 5, 18, 1, 17, 4, 18),
-        intArrayOf(1, 0, 41, 21, 7, 6, 1, 1, 8, 7, 3, 1, 3, 27, 6, 7, 9, 6, 6, 6, 5, 6, 23, 4, 23, 5, 23))
+        intArrayOf(1, 0, 41, 21, 7, 6, 1, 1, 8, 7, 3, 1, 3, 27, 6, 7, 9, 6, 6, 6, 5, 6, 23, 4, 23, 5, 23),
+        // Presets autorais com silhuetas novas: os acessórios 3D são peças reais no modelo, não só nomes/cores.
+        intArrayOf(1, 4, 10, 10, 7, 7, 1, 3, 3, 7, 3, 1, 3, 14, 4, 2, 8, 10, 8, 14, 5, 7, 24, 4, 3, 7, 24),
+        intArrayOf(1, 1, 32, 9, 4, 10, 1, 2, 1, 2, 13, 4, 6, 25, 6, 0, 1, 6, 3, 6, 0, 1, 6, 1, 6, 5, 6),
+        intArrayOf(0, 8, 12, 4, 5, 7, 0, 17, 3, 7, 3, 1, 3, 31, 3, 8, 2, 3, 8, 3, 1, 7, 24, 4, 3, 7, 24),
+        intArrayOf(1, 3, 6, 11, 4, 8, 1, 11, 13, 6, 3, 4, 3, 24, 4, 8, 6, 13, 8, 13, 1, 6, 4, 5, 3, 4, 13),
+        intArrayOf(1, 0, 32, 8, 4, 10, 1, 11, 8, 6, 9, 4, 6, 29, 6, 0, 3, 6, 3, 6, 0, 6, 6, 4, 6, 5, 6),
+        intArrayOf(0, 5, 8, 4, 5, 5, 0, 5, 3, 7, 3, 4, 3, 30, 3, 8, 5, 3, 8, 3, 1, 7, 9, 3, 3, 7, 9),
+        intArrayOf(1, 1, 33, 17, 4, 4, 1, 2, 1, 5, 13, 2, 1, 28, 6, 0, 1, 13, 2, 13, 0, 5, 18, 1, 13, 4, 18),
+        intArrayOf(1, 2, 41, 4, 7, 7, 1, 1, 3, 7, 3, 1, 3, 27, 3, 1, 9, 3, 6, 3, 5, 7, 24, 4, 3, 7, 24))
 
     fun applyPreset(i: Int) {
         val preset = PRESETS[((i % PRESETS.size) + PRESETS.size) % PRESETS.size]
