@@ -48,6 +48,25 @@ class MinecraftSkinRenderer {
     private val leftLeg = Part("leftLeg", .25f, .75f, .25f, arrayOf(
         intArrayOf(20,52,4,12), intArrayOf(28,52,4,12), intArrayOf(16,52,4,12),
         intArrayOf(24,52,4,12), intArrayOf(20,48,4,4), intArrayOf(24,48,4,4)))
+    // Camada externa oficial com transparência PNG.
+    private val headOuter = Part("headOuter", .518f, .518f, .518f, arrayOf(
+        intArrayOf(40,8,8,8), intArrayOf(56,8,8,8), intArrayOf(32,8,8,8),
+        intArrayOf(48,8,8,8), intArrayOf(40,0,8,8), intArrayOf(48,0,8,8)))
+    private val torsoOuter = Part("torsoOuter", .516f, .766f, .266f, arrayOf(
+        intArrayOf(20,36,8,12), intArrayOf(32,36,8,12), intArrayOf(16,36,4,12),
+        intArrayOf(28,36,4,12), intArrayOf(20,32,8,4), intArrayOf(28,32,8,4)))
+    private val rightArmOuter = Part("rightArmOuter", .266f, .766f, .266f, arrayOf(
+        intArrayOf(44,36,4,12), intArrayOf(52,36,4,12), intArrayOf(40,36,4,12),
+        intArrayOf(48,36,4,12), intArrayOf(44,32,4,4), intArrayOf(48,32,4,4)))
+    private val leftArmOuter = Part("leftArmOuter", .266f, .766f, .266f, arrayOf(
+        intArrayOf(52,52,4,12), intArrayOf(60,52,4,12), intArrayOf(48,52,4,12),
+        intArrayOf(56,52,4,12), intArrayOf(52,48,4,4), intArrayOf(56,48,4,4)))
+    private val rightLegOuter = Part("rightLegOuter", .266f, .766f, .266f, arrayOf(
+        intArrayOf(4,36,4,12), intArrayOf(12,36,4,12), intArrayOf(0,36,4,12),
+        intArrayOf(8,36,4,12), intArrayOf(4,32,4,4), intArrayOf(8,32,4,4)))
+    private val leftLegOuter = Part("leftLegOuter", .266f, .766f, .266f, arrayOf(
+        intArrayOf(4,52,4,12), intArrayOf(12,52,4,12), intArrayOf(0,52,4,12),
+        intArrayOf(8,52,4,12), intArrayOf(4,48,4,4), intArrayOf(8,48,4,4)))
 
     fun init(context: Context?) {
         active = false
@@ -102,6 +121,12 @@ class MinecraftSkinRenderer {
         drawLimb(leftArm, root, .375f, 1.375f, 0f, -swing)
         drawLimb(rightLeg, root, -.125f, .75f, 0f, -swing)
         drawLimb(leftLeg, root, .125f, .75f, 0f, swing)
+        drawPart(headOuter, root, 0f, 1.625f, 0f, 0f, 0f)
+        drawPart(torsoOuter, root, 0f, 1.0f, 0f, 0f, 0f)
+        drawLimb(rightArmOuter, root, -.375f, 1.375f, 0f, swing)
+        drawLimb(leftArmOuter, root, .375f, 1.375f, 0f, -swing)
+        drawLimb(rightLegOuter, root, -.125f, .75f, 0f, -swing)
+        drawLimb(leftLegOuter, root, .125f, .75f, 0f, swing)
         G.glDisable(G.GL_CULL_FACE)
     }
 
