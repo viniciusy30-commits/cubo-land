@@ -8,3 +8,4 @@ minecraft-skin-outer-layer-fix-2026-10-22
 minecraft-skin-avatar-preview-2026-10-22
 minecraft-skin-gl-state-restore-2026-10-22
 minecraft-skin-library-slots-2026-10-22
+minecraft-skin-hand-transform-2026-10-22
