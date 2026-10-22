@@ -19,8 +19,22 @@ object Atlas {
     val bmp: Bitmap by lazy { build() }
     @Volatile var raw: IntArray? = null   // preenchido por build()
     private val tileCache = arrayOfNulls<Bitmap>(NT * ROWS)
-    /** recorte de um tile do atlas (ícones do HUD) */
+    private val quarterTileCache = HashMap<Int, Bitmap>()
+    /** Recorta a textura exata para os ícones, inclusive texturas de 32x32 empacotadas em quadrantes. */
     fun tile(i: Int): Bitmap {
+        if (i > 0xFFFF) {
+            val cached = quarterTileCache[i]
+            if (cached != null) return cached
+            val cell = i and 0xFFFF
+            val quadrant = ((i ushr 16) - 1).coerceIn(0, 3)
+            val x = (cell % NT) * T + (quadrant and 1) * (T / 2)
+            val y = (cell / NT) * T + (quadrant shr 1) * (T / 2)
+            val crop = Bitmap.createBitmap(bmp, x, y, T / 2, T / 2)
+            val scaled = Bitmap.createScaledBitmap(crop, T, T, true)
+            crop.recycle()
+            quarterTileCache[i] = scaled
+            return scaled
+        }
         val k = if (i in 0 until NT * ROWS) i else 0
         val c = tileCache[k]
         if (c != null) return c
