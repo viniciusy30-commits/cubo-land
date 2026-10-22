@@ -16,6 +16,7 @@ on:
       - 'app/src/main/java/com/cuboland/app/Game.kt'
       - 'app/src/main/java/com/cuboland/app/GameActivity.kt'
       - 'app/src/main/java/com/cuboland/app/BlockReviewOverlay.kt'
+      - 'app/src/main/java/com/cuboland/app/GithubReportSync.kt'
   workflow_run:
     workflows: ["Unpack and commit", "Reverter atualização"]
     types: [completed]
