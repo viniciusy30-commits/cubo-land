@@ -640,6 +640,11 @@ class Game(val world: World) {
         if (big) shake = max(shake, 0.08f)
     }
 
+    /** Atualiza o bloco sob a mira para a ferramenta de revisão da galeria. */
+    fun updateReviewTarget() {
+        raycast(camX, camY, camZ, dirX(), dirY(), dirZ(), camDist, camDist + 8f)
+    }
+
     fun raycast(ox: Float, oy: Float, oz: Float, dx: Float, dy: Float, dz: Float, t0: Float, t1: Float) {
         hasHit = false
         var t = t0
