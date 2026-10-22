@@ -667,196 +667,31 @@ class McChar {
         lay(0, 0)
         tb(0f, -7f, 0f, 7.9f, 2.8f, 3.9f, covC)
 
-        // ================= TRONCO + ROUPA =================
+        // ================= TRONCO + ROUPA (pixel-art por face, estilo skin de Minecraft) =================
         lay(0, 0)
         tb(0f, 0f, 0f, 8f, 12f, 4f, skin)
-        var sleeve = 4f; var sCol = tc; var tCol = tc
-        when (top) {
-            1, 3, 7, 14, 17 -> sleeve = 10.5f
-            2 -> sleeve = 3f
-            4 -> sleeve = 8f
-            5 -> { sleeve = 0f; tCol = mixC(steel, tc, 0.3f) }
-            8 -> { tCol = white; sCol = white }
-            9 -> { sleeve = 10.5f; tCol = shadeC(tc, 0.85f); sCol = tCol }
-            10, 11 -> sleeve = 10.5f
-            12 -> { sleeve = 10.5f; tCol = shadeC(tc, 0.7f); sCol = tCol }
-            13 -> sleeve = 0f
-            15 -> { sleeve = 3.5f; tCol = shadeC(tc, 0.4f); sCol = white }
-            16 -> { tCol = white; sCol = white }
-            6 -> { tCol = white; sCol = white }
-        }
+        val spec = ClothData.top(top)
+        val cp = ClothArt.pal(tc, accentTop, skin)
+        val sleeve = spec.sleeve.toFloat()
+        val tCol = cp[spec.baseT.code]; val sCol = cp[spec.baseS.code]
         lay(1, 1)
         tb(0f, 0f, 0f, 8.7f, 12.2f, 4.7f, tCol)
-
-        // ================= SKIN-STYLE CLOTHING: SILHOUETTE + PIXEL MATERIAL =================
-        // Em vez de empilhar adornos aleatórios, cada roupa recebe uma leitura clara,
-        // bordas, painéis, costuras e pequenos pixels de material coerentes.
-        lay(2, 8)
-        val front = 2.48f
-        val frontHi = 2.61f
-        val edge = shadeC(tc, 0.62f)
-        val seam = shadeC(tc, 0.76f)
-        val clothHi = lite(tc, 0.20f)
-        val clothMid = lite(tc, 0.08f)
-        // Base de gola/ombros com forma de pixel-art
-        when(top) {
-            0 -> { // camiseta
-                tb(0f,5.0f,front,2.5f,0.55f,0.12f,edge)
-                tb(0f,5.02f,frontHi,1.75f,0.28f,0.08f,skinD)
-                tb(-2.45f,0.9f,front,1.15f,1.35f,0.12f,shadeC(tc,0.82f))
-                tb(-2.45f,0.92f,frontHi,0.82f,0.98f,0.08f,clothHi)
-            }
-            1 -> { // moletom
-                tb(0f,4.65f,-2.5f,4.1f,2.2f,0.25f,edge)
-                tb(0f,4.4f,front,3.4f,1.1f,0.12f,edge)
-                tb(0f,-3.4f,front,5.1f,1.9f,0.18f,shadeC(tc,0.72f))
-                tb(0f,-3.3f,frontHi,4.55f,1.35f,0.08f,clothMid)
-                for(x in intArrayOf(-1,1)) tb(x*0.45f,3.65f,frontHi,0.12f,1.15f,0.08f,white)
-            }
-            2 -> { // vestido: corpete, cintura e saia com pregas
-                tb(0f,1.4f,front,5.6f,1.1f,0.15f,shadeC(tc,0.68f))
-                tb(0f,1.4f,frontHi,4.9f,0.55f,0.08f,accentTop)
-                for(x in intArrayOf(-3,-2,-1,1,2,3)) tb(x*0.72f,-2.4f,front,0.13f,5.2f,0.1f,if(x%2==0) clothHi else edge)
-                tb(0f,4.5f,front,4.5f,0.55f,0.12f,white)
-                tb(0f,4.25f,frontHi,1.5f,0.24f,0.08f,accentTop)
-            }
-            3 -> { // jaqueta
-                tb(0f,0f,front,0.2f,11.2f,0.16f,edge)
-                tb(-1.15f,2.4f,frontHi,2.1f,3.1f,0.1f,clothHi,rz=12f)
-                tb(1.15f,2.4f,frontHi,2.1f,3.1f,0.1f,shadeC(tc,0.82f),rz=-12f)
-                for(y in intArrayOf(3,1,-1,-3)) tb(0.25f,y.toFloat(),frontHi,0.22f,0.22f,0.1f,metalHi)
-                for(x in intArrayOf(-2,2)) { tb(x.toFloat(),-2.3f,front,1.55f,1.3f,0.12f,edge); tb(x.toFloat(),-2.1f,frontHi,1.2f,0.85f,0.08f,clothMid) }
-            }
-            4 -> { // túnica
-                tb(0f,4.6f,front,3.2f,0.5f,0.14f,clothHi)
-                tb(0f,-3.1f,front,7.8f,0.45f,0.14f,edge)
-                tb(0f,-3.05f,frontHi,6.9f,0.16f,0.08f,accentTop)
-                tb(0f,-2.0f,frontHi,0.62f,5.2f,0.1f,shadeC(tc,0.82f))
-            }
-            5 -> { // armadura: placas legíveis, não uma caixa lisa
-                tb(0f,3.5f,front,6.8f,3.2f,0.22f,steel)
-                tb(0f,3.45f,frontHi,5.8f,2.35f,0.12f,mixC(steel,tc,0.36f))
-                tb(0f,0.5f,front,4.8f,2.7f,0.18f,shadeC(steel,0.76f))
-                tb(0f,0.5f,frontHi,3.8f,1.8f,0.1f,steel)
-                tb(0f,1.8f,frontHi+0.08f,1.3f,1.3f,0.1f,accentTop,rz=45f)
-                for(x in intArrayOf(-3,3)) for(y in intArrayOf(4,2,0,-2)) tb(x.toFloat(),y.toFloat(),frontHi,0.25f,0.25f,0.1f,gold)
-            }
-            6 -> { // macacão
-                tb(0f,-1.1f,front,5.4f,5.4f,0.18f,tc)
-                for(x in intArrayOf(-2,2)) { tb(x.toFloat(),4.25f,front,1.1f,3.2f,0.2f,shadeC(tc,0.72f)); tb(x.toFloat(),4.15f,frontHi,0.62f,2.65f,0.1f,clothHi); tb(x.toFloat(),2.7f,frontHi+0.07f,0.24f,0.24f,0.08f,gold) }
-                tb(0f,-0.4f,frontHi,2.8f,2f,0.1f,shadeC(tc,0.78f))
-                tb(0f,-0.3f,frontHi+0.08f,2.25f,1.4f,0.08f,clothMid)
-            }
-            7 -> { // camisa social
-                tb(0f,4.7f,front,3.4f,0.7f,0.16f,white)
-                tb(-1.1f,4.25f,frontHi,1.7f,1.15f,0.12f,white,rz=24f)
-                tb(1.1f,4.25f,frontHi,1.7f,1.15f,0.12f,white,rz=-24f)
-                tb(0f,0f,frontHi,0.16f,10.4f,0.08f,edge)
-                for(y in intArrayOf(3,1,-1,-3)) tb(0f,y.toFloat(),frontHi+0.06f,0.2f,0.2f,0.08f,metalHi)
-                tb(-2.5f,1.6f,frontHi,1.25f,1.25f,0.08f,white)
-            }
-            8 -> { // uniforme marinheiro
-                tb(0f,4.25f,front,7.4f,1.4f,0.18f,white)
-                tb(0f,3.7f,frontHi,6.6f,0.2f,0.08f,accentTop)
-                tb(0f,2.8f,frontHi,1.1f,1.4f,0.12f,accentTop,rz=45f)
-                for(y in intArrayOf(-3,-4)) tb(0f,y.toFloat(),frontHi,8.1f,0.18f,0.08f,white)
-            }
-            9 -> { // gakuran
-                tb(0f,4.4f,front,4.2f,1.2f,0.18f,edge)
-                tb(0f,4.45f,frontHi,3.3f,0.78f,0.1f,tc)
-                tb(0f,0f,frontHi,0.22f,10.6f,0.1f,clothHi)
-                for(y in intArrayOf(3,1,-1,-3)) tb(0f,y.toFloat(),frontHi+0.08f,0.35f,0.35f,0.1f,gold)
-                for(x in intArrayOf(-3,3)) tb(x.toFloat(),-1.8f,front,1.0f,1.1f,0.12f,shadeC(tc,0.72f))
-            }
-            10 -> { // kimono: painéis cruzados e obi
-                tb(-1.15f,1.1f,frontHi,2.8f,8.6f,0.12f,clothHi,rz=-13f)
-                tb(1.15f,1.1f,frontHi+0.06f,2.8f,8.6f,0.12f,shadeC(tc,0.82f),rz=13f)
-                tb(0f,-2.6f,frontHi+0.13f,8.3f,1.25f,0.14f,accentTop)
-                tb(0f,-2.55f,frontHi+0.22f,1.35f,1.45f,0.1f,gold)
-            }
-            11 -> { // robe de mago
-                for(x in intArrayOf(-3,3)) tb(x.toFloat(),0f,frontHi,0.38f,10.8f,0.12f,gold)
-                tb(0f,1.7f,frontHi,1.9f,1.9f,0.12f,shadeC(accentTop,0.7f),rz=45f)
-                tb(0f,1.7f,frontHi+0.08f,1.1f,1.1f,0.1f,accentTop,rz=45f)
-                tb(0f,-4.6f,front,8.5f,0.8f,0.18f,edge)
-            }
-            12 -> { // terno
-                tb(0f,4.7f,front,3.6f,0.65f,0.16f,white)
-                tb(-1.05f,2.4f,frontHi,2.1f,4.5f,0.12f,clothHi,rz=12f)
-                tb(1.05f,2.4f,frontHi+0.04f,2.1f,4.5f,0.12f,shadeC(tc,0.82f),rz=-12f)
-                tb(0f,3.7f,frontHi+0.12f,0.55f,0.7f,0.1f,accentTop)
-                tb(0f,1.3f,frontHi+0.12f,0.3f,3.5f,0.1f,accentTop)
-                tb(-2.7f,-1.7f,frontHi,1.1f,0.9f,0.08f,white)
-            }
-            13 -> { // regata
-                tb(-2.65f,4.4f,front,1.05f,2.2f,0.16f,shadeC(tc,0.72f))
-                tb(2.65f,4.4f,front,1.05f,2.2f,0.16f,shadeC(tc,0.72f))
-                tb(0f,-5.2f,front,8.6f,0.45f,0.16f,edge)
-            }
-            14 -> { // haori samurai
-                tb(-1.35f,1.3f,frontHi,2.8f,8.2f,0.14f,clothHi,rz=-12f)
-                tb(1.35f,1.3f,frontHi+0.05f,2.8f,8.2f,0.14f,shadeC(tc,0.76f),rz=12f)
-                tb(0f,-3.5f,frontHi+0.12f,8.4f,1f,0.16f,leather)
-                tb(0f,-3.45f,frontHi+0.2f,1.5f,0.8f,0.1f,gold)
-                tb(-2.5f,2.4f,frontHi+0.1f,1.0f,1f,0.1f,accentTop,rz=45f)
-            }
-            15 -> { // maid
-                tb(0f,4.65f,front,5.4f,0.7f,0.16f,white)
-                tb(0f,4.1f,frontHi,1.8f,0.3f,0.08f,accentTop)
-                tb(0f,0.2f,frontHi,4.6f,7.4f,0.12f,white)
-                for(x in intArrayOf(-2,2)) tb(x.toFloat(),-3.5f,frontHi+0.08f,0.2f,1.1f,0.08f,lite(white,0.8f))
-                tb(0f,-4.7f,frontHi,8.1f,0.55f,0.12f,accentTop)
-            }
-            16 -> { // colete aventureiro
-                for(x in intArrayOf(-2,2)) {
-                    tb(x.toFloat(),0.4f,frontHi,2.2f,8.5f,0.14f,leather)
-                    tb(x.toFloat(),0.1f,frontHi+0.08f,1.7f,2.0f,0.1f,shadeC(tc,0.72f))
-                    tb(x.toFloat(),0.3f,frontHi+0.16f,1.2f,0.18f,0.08f,gold)
-                    tb(x.toFloat(),-2.2f,frontHi+0.08f,1.65f,1.4f,0.1f,edge)
-                }
-                tb(0f,-4.6f,front,8.6f,0.9f,0.18f,leather)
-            }
-            17 -> { // casacão
-                tb(0f,0f,front,0.22f,11.2f,0.16f,edge)
-                tb(-1.4f,2.4f,frontHi,2.6f,4.2f,0.12f,clothHi,rz=9f)
-                tb(1.4f,2.4f,frontHi+0.04f,2.6f,4.2f,0.12f,shadeC(tc,0.82f),rz=-9f)
-                for(y in intArrayOf(3,1,-1,-3)) tb(0f,y.toFloat(),frontHi+0.13f,0.32f,0.32f,0.1f,gold)
-                tb(0f,-5.0f,front,8.6f,0.7f,0.16f,edge)
-            }
+        run {
+            lay(2, 2)
+            val cw = 8.7f / 8f; val chh = 12.2f / 12f; val dz = 4.7f / 4f; val th = 0.14f; val off = 2.35f + 0.05f
+            ClothArt.greedy(ClothArt.withPattern(ClothArt.rows(spec.front), topPattern), spec.baseT) { x0, y0, w, h, c ->
+                tb(-4.35f + (x0 + w / 2f) * cw, 6.1f - (y0 + h / 2f) * chh, off, w * cw, h * chh, th, cp[c.code]) }
+            ClothArt.greedy(ClothArt.rows(spec.back), spec.baseT) { x0, y0, w, h, c ->
+                tb(4.35f - (x0 + w / 2f) * cw, 6.1f - (y0 + h / 2f) * chh, -off, w * cw, h * chh, th, cp[c.code]) }
+            val sideRows = ClothArt.rows(spec.side)
+            for (sd in intArrayOf(-1, 1)) ClothArt.greedy(sideRows, spec.baseT) { x0, y0, w, h, c ->
+                tb(sd * (4.35f + 0.05f), 6.1f - (y0 + h / 2f) * chh, 2.35f - (x0 + w / 2f) * dz, th, h * chh, w * dz, cp[c.code]) }
         }
-        // Pixels de tecido: listras, xadrez, raios e emblemas desenhados em grade,
-        // em vez de símbolos gigantes que parecem peças coladas na roupa.
-        when(topPattern) {
-            1 -> {
-                val crest = arrayOf(intArrayOf(0,2),intArrayOf(-1,1),intArrayOf(1,1),intArrayOf(-1,0),intArrayOf(1,0),intArrayOf(0,-1))
-                for(p in crest) tb(p[0]*0.62f,1.7f+p[1]*0.62f,frontHi+0.2f,0.58f,0.58f,0.08f,accentTop)
-            }
-            2 -> for(y in intArrayOf(3,0,-3)) tb(0f,y.toFloat(),frontHi+0.18f,7.5f,0.28f,0.08f,accentTop)
-            3 -> for(y in intArrayOf(3,1,-1,-3)) for(x in intArrayOf(-3,-1,1,3)) tb(x.toFloat(),y.toFloat(),frontHi+0.18f,0.62f,0.62f,0.08f,if((x+y)%4==0) accentTop else lite(accentTop,0.32f))
-            4 -> for(k in 0..4) tb((-2+k)*0.62f,2.8f-k*0.82f,frontHi+0.18f,0.62f,0.92f,0.08f,accentTop,rz=18f)
-            5 -> for(x in intArrayOf(-2,2)) {
-                tb(x.toFloat(),2.1f,frontHi+0.18f,0.62f,0.62f,0.08f,accentTop)
-                tb(x-0.62f,1.5f,frontHi+0.18f,0.62f,0.62f,0.08f,accentTop)
-                tb(x+0.62f,1.5f,frontHi+0.18f,0.62f,0.62f,0.08f,accentTop)
-                tb(x.toFloat(),0.9f,frontHi+0.18f,0.62f,0.62f,0.08f,accentTop)
-            }
-            6 -> for(x in intArrayOf(-2,0,2)) {
-                tb(x.toFloat(),2.3f,frontHi+0.18f,0.22f,1.4f,0.08f,accentTop)
-                tb(x.toFloat(),2.3f,frontHi+0.18f,1.2f,0.22f,0.08f,accentTop)
-            }
-            7 -> {
-                tb(0f,1.4f,frontHi+0.18f,4.6f,3.2f,0.08f,shadeC(accentTop,0.72f))
-                for(x in intArrayOf(-1,0,1)) tb(x*0.9f,1.4f,frontHi+0.24f,0.18f,2.4f,0.06f,0x73E7FF)
-                for(y in intArrayOf(0,2)) tb(0f,y.toFloat(),frontHi+0.24f,3.8f,0.12f,0.06f,0x73E7FF)
-            }
-        }
-        // Costuras discretas e pixels de sombra nos ombros e na bainha.
-        for(x in intArrayOf(-3,3)) {
-            tb(x.toFloat(),0.3f,frontHi+0.12f,0.12f,8.8f,0.06f,if(top==5) gold else seam)
-        }
-        for(k in -3..3) tb(k*1.0f,-5.25f,frontHi+0.1f,0.48f,0.12f,0.06f,if(k%2==0) clothHi else edge)
 
         // ================= BRAÇOS =================
+        val armFr = ClothArt.rows(spec.armF).let { if (girl) ClothArt.slim(it) else it }
+        val armBk = ClothArt.rows(spec.armB).let { if (girl) ClothArt.slim(it) else it }
+        val armOu = ClothArt.rows(spec.armO)
         for (sd in intArrayOf(-1, 1)) {
             val s = sd.toFloat(); val ai = if (sd < 0) 0 else 1
             val rx = if (sd < 0) rxR else rxL; val rz = if (sd < 0) -rzR else -rzL; val el = if (sd < 0) elR else elL   // +x é a ESQUERDA do boneco: o item vai na direita (sd<0)
@@ -868,53 +703,30 @@ class McChar {
             if (slvH > 0.01f) ab(am, 0f, 6f - slvH / 2f, 0f, aw, slvH, 4f, sCol)
             if (12f - slvH > 0.01f) ab(am, 0f, -6f + (12f - slvH) / 2f, 0f, aw, 12f - slvH, 4f, skin)
             lay(1, 5)
+            if (sleeve > 0f) ab(am, 0f, 6f - sleeve / 2f, 0f, aw + 0.7f, sleeve, 4.7f, sCol)
+            // mangas largas, ombreiras, babados: formas extras com desenho próprio
+            for (e in spec.ex) ab(am, s * e.cx, e.cy, 0f, aw + e.we, e.h, e.d, cp[e.base.code])
+            lay(6, 6)
             if (sleeve > 0f) {
-                ab(am, 0f, 6f - sleeve / 2f, 0f, aw + 0.7f, sleeve, 4.7f, sCol)
-                val cuff = when (top) { 1, 3 -> shadeC(tc, 0.7f); 7 -> lite(tc, 0.55f); 12 -> white; 9 -> gold; 17 -> shadeC(tc, 0.7f); else -> shadeC(sCol, 0.82f) }
-                if (sleeve >= 10f) ab(am, 0f, 6f - sleeve + 0.7f, 0f, aw + 0.9f, 1.4f, 4.9f, cuff) else ab(am, 0f, 6f - sleeve + 0.35f, 0f, aw + 0.8f, 0.7f, 4.8f, cuff)
+                val wA = aw + 0.7f; val cwA = wA / aw; val dz = 4.7f / 4f; val th = 0.14f; val off = 2.35f + 0.05f
+                // frente/costas: colunas "de fora pra dentro" (0 = borda de fora)
+                ClothArt.greedy(armFr, spec.baseS) { x0, y0, w, h, c ->
+                    ab(am, s * (wA / 2f - (x0 + w / 2f) * cwA), 6f - (y0 + h / 2f), off, w * cwA, h.toFloat(), th, cp[c.code]) }
+                ClothArt.greedy(armBk, spec.baseS) { x0, y0, w, h, c ->
+                    ab(am, s * (wA / 2f - (x0 + w / 2f) * cwA), 6f - (y0 + h / 2f), -off, w * cwA, h.toFloat(), th, cp[c.code]) }
+                ClothArt.greedy(armOu, spec.baseS) { x0, y0, w, h, c ->
+                    ab(am, s * (wA / 2f + 0.05f), 6f - (y0 + h / 2f), 2.35f - (x0 + w / 2f) * dz, th, h.toFloat(), w * dz, cp[c.code]) }
             }
-            when (top) {
-                2 -> ab(am, 0f, 4.2f, 0f, aw + 1.6f, 3.6f, 5.4f, tc)
-                15 -> { ab(am, 0f, 4.2f, 0f, aw + 1.8f, 3.8f, 5.5f, white); ab(am, 0f, 2.2f, 0f, aw + 2f, 0.6f, 5.7f, lite(0xE8D5B0, 0.2f)) }
-                10, 11, 14 -> { ab(am, s * 0.8f, 0.2f, 0f, aw + 3.4f, 8.6f, 5.2f, sCol); ab(am, s * 0.8f, -3.9f, 0f, aw + 3.6f, 1f, 5.4f, if (top == 11) gold else lite(sCol, 0.5f)) }
-                5 -> { ab(am, s * 0.5f, 5.2f, 0f, aw + 2.4f, 3.4f, 5.8f, tCol); ab(am, s * 0.5f, 6.9f, 0f, aw + 2.6f, 0.6f, 6f, gold); ab(am, 0f, -4.2f, 0f, aw + 0.9f, 3.6f, 4.9f, steel); ab(am, 0f, -2.2f, 0f, aw + 1f, 0.5f, 5f, gold) }
-                8 -> ab(am, 0f, 6f - 3.2f, 0f, aw + 0.85f, 0.7f, 4.85f, tc)
-            }
-
-            if(sleeve>0.1f) {
-                ab(am,0f,6f-min(sleeve,11.8f)+0.8f,2.48f,aw+0.5f,0.16f,0.12f,accentTop)
-                when(topPattern) {
-                    1 -> { ab(am,0f,2.1f,2.53f,0.95f,0.95f,0.1f,shadeC(accentTop,0.65f)); ab(am,0f,2.1f,2.61f,0.55f,0.55f,0.07f,accentTop) }
-                    2 -> for(y in intArrayOf(1,-2)) ab(am,0f,y.toFloat(),2.5f,aw+0.5f,0.18f,0.1f,accentTop)
-                    3 -> for(y in intArrayOf(2,0,-2)) for(x in intArrayOf(-1,1)) ab(am,x.toFloat(),y.toFloat(),2.5f,0.72f,0.72f,0.08f,if((x+y)%2==0) accentTop else lite(accentTop,0.25f))
-                    4,5,6 -> ab(am,0f,1.7f,2.52f,0.65f,0.65f,0.1f,accentTop)
-                    7 -> { ab(am,0f,1.4f,2.5f,aw+0.5f,2.5f,0.1f,shadeC(accentTop,0.6f)); ab(am,0f,1.4f,2.58f,0.15f,2f,0.07f,0x73E7FF) }
-                }
-            }
-
-            // Microtextura de manga: costuras, cotovelos e pixels de tecido com paleta controlada.
-            if(sleeve>0.1f) {
-                val armFront=2.58f
-                val armShadow=shadeC(sCol,0.72f)
-                val armLight=lite(sCol,0.18f)
-                ab(am,-1.15f,2.2f,armFront,0.12f,6.2f,0.06f,armShadow)
-                ab(am,1.15f,2.2f,armFront,0.12f,6.2f,0.06f,armLight)
-                // pixels curtos alternados; evitam que a manga seja apenas um bloco de cor.
-                for(row in 0..3) for(col in intArrayOf(-1,1)) {
-                    val yy=3.3f-row*1.65f
-                    val cc=when((row+col+top)%4) {
-                        0 -> armShadow
-                        1 -> armLight
-                        2 -> if(top==5) gold else shadeC(accentTop,0.8f)
-                        else -> sCol
-                    }
-                    if(top==5 || top==9 || top==12 || (row+col)%3==0)
-                        ab(am,col*0.65f,yy,armFront+0.05f,0.42f,0.42f,0.06f,cc)
-                }
-                if(top==3 || top==7 || top==9 || top==12 || top==17) {
-                    ab(am,0f,-3.7f,armFront+0.06f,aw+0.5f,0.55f,0.08f,if(top==9) gold else edge)
-                    for(x in intArrayOf(-1,1)) ab(am,x*0.9f,-3.7f,armFront+0.12f,0.16f,0.16f,0.05f,metalHi)
-                }
+            for (e in spec.ex) {
+                val wE = aw + e.we; val th = 0.14f; val ex0 = s * e.cx
+                val fr = ClothArt.rows(e.front); val bk = ClothArt.rows(e.back); val ou = ClothArt.rows(e.outer)
+                val cwE = wE / fr[0].length; val chE = e.h / fr.size; val dzE = e.d / ou[0].length; val chO = e.h / ou.size
+                ClothArt.greedy(fr, e.base) { x0, y0, w, h, c ->
+                    ab(am, ex0 - wE / 2f + (x0 + w / 2f) * cwE, e.cy + e.h / 2f - (y0 + h / 2f) * chE, e.d / 2f + 0.05f, w * cwE, h * chE, th, cp[c.code]) }
+                ClothArt.greedy(bk, e.base) { x0, y0, w, h, c ->
+                    ab(am, ex0 + wE / 2f - (x0 + w / 2f) * cwE, e.cy + e.h / 2f - (y0 + h / 2f) * chE, -(e.d / 2f + 0.05f), w * cwE, h * chE, th, cp[c.code]) }
+                ClothArt.greedy(ou, e.base) { x0, y0, w, h, c ->
+                    ab(am, ex0 + s * (wE / 2f + 0.05f), e.cy + e.h / 2f - (y0 + h / 2f) * chO, e.d / 2f - (x0 + w / 2f) * dzE, th, h * chO, w * dzE, cp[c.code]) }
             }
             if (sd < 0 && handOut != null) {
                 System.arraycopy(am, 0, handOut, 0, 16)
