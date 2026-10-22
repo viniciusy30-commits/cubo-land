@@ -72,7 +72,7 @@ def main():
             for bit, factor in enumerate((4, 16, 4, 2, 2)):
                 if dm & (1 << bit): mask_len *= factor
             mask_len = (mask_len + 7) // 8 if dm else 0
-            rec_size = 3 + 48 + mask_len
+            rec_size = 3 + 40 + mask_len
             end = pos + quads * rec_size
             if end > len(raw): raise ValueError(f"geometria {gi}: dados de faces truncados")
             pos = end
