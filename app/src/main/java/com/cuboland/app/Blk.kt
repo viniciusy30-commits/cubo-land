@@ -60,6 +60,10 @@ object Blk {
     val fts: IntArray get() { defs; return ft }
     val specs = arrayOfNulls<IntArray>(MAXT)
     private var nextTile = 24
+    /** tiles 2x2 (texturas HD 128x128 do addon): bigTile[i] = a célula i é a âncora (canto sup. esquerdo) de um bloco de 2x2 células */
+    @JvmField val bigTile = BooleanArray(MAXT)
+    private var bigBase = -1
+    private var bigUsed = 0
     /** quantos tiles já foram usados (o atlas ajusta as linhas a isso) */
     val tileCount: Int get() { defs; return nextTile }
     private var nextId = 14
@@ -689,17 +693,64 @@ object Blk {
     }
 
     /** mobília e decoração do addon monoDeco (Deco). Ordem do items.json = ordem dos ids: só acrescente no fim! */
+    private fun allocCell(): Int {
+        if (dead) return 1
+        val i = nextTile
+        if (i >= MAXT) return 1
+        nextTile++
+        return i
+    }
+
+    /** tile 2x2 (128x128 px) para uma textura HD: região de 2 linhas do atlas alinhada, 32 tiles por região. Sem espaço = tile normal 64x64 */
+    private fun tlBig(c1: Int): Int {
+        if (dead) return 1
+        if (bigBase < 0 || bigUsed >= 32) {
+            val m = 2 * Atlas.NT
+            val b = (nextTile + m - 1) / m * m
+            if (b + m > MAXT - 8) return tl(K_DECO, c1)
+            bigBase = b; bigUsed = 0; nextTile = b + m
+        }
+        val i = bigBase + bigUsed * 2
+        bigUsed++
+        specs[i] = intArrayOf(K_DECO, c1, c1, c1, 0, i * 13 + 5, 0)
+        bigTile[i] = true
+        return i
+    }
+
     private fun buildDeco() {
         val fup = F_SHAPE or (7 shl 5)
         val tc = HashMap<Int, Int>()
+        // quais texturas ganham tile 2x2: tantas quantas couberem no que sobra do atlas (as demais ficam em 64x64 como antes)
+        Deco.loadBig()
+        val seen = HashSet<Int>(); val cand = ArrayList<Int>(); val qList = ArrayList<Int>(); var nSmall = 0
+        for (d0 in Deco.items) for (t0 in d0.tex) { if (t0 >= 0 && seen.add(t0)) { if (Deco.isBigTex(t0)) cand.add(t0) else if (Deco.isQuarterTex(t0)) qList.add(t0) else nSmall++ } }
+        val nQ = (qList.size + 3) / 4
+        val avail = MAXT - 8 - nextTile
+        var k = cand.size
+        while (k > 0 && nSmall + nQ + (cand.size - k) + ((k + 31) / 32) * 128 + 127 > avail) k--
+        val bigOk = HashSet<Int>()
+        for (q in 0 until k) bigOk.add(cand[q])
+        // texturas 32x32 nativas: 4 por célula (cada uma num quadrante de 32x32); o tile do item guarda célula | (quadrante+1) shl 16
+        val qmap = HashMap<Int, Int>()
+        var qi = 0
+        while (qi < qList.size) {
+            val cell = allocCell()
+            if (cell < 24) break
+            val sp = IntArray(7)
+            sp[0] = K_DECO; sp[5] = cell * 13 + 5; sp[6] = 2
+            for (j in 0 until 4) { if (qi + j < qList.size) { sp[1 + j] = qList[qi + j] + 1; qmap[qList[qi + j]] = cell or ((j + 1) shl 16) } }
+            specs[cell] = sp
+            qi += 4
+        }
         for ((n, d) in Deco.items.withIndex()) {
-            val tiles = IntArray(d.tex.size) { s -> val t = d.tex[s]; if (t < 0) -1 else tc.getOrPut(t) { val nt = tl(K_DECO, t); if (nt < 24) -1 else nt } }
+            val tiles = IntArray(d.tex.size) { s -> val t = d.tex[s]; if (t < 0) -1 else tc.getOrPut(t) { val qm = qmap[t]; if (qm != null) qm else { val nt = if (bigOk.contains(t)) tlBig(t) else tl(K_DECO, t); if (nt < 24) -1 else nt } } }
             d.tile = tiles
-            val first = tiles.firstOrNull { it >= 0 } ?: continue
+            val first = (tiles.firstOrNull { it >= 0 } ?: continue) and 0xFFFF
             val id = blk(d.name, if (d.cat == 5) C_FURN else C_DEC, first, first, first, 0xB0A090, M_WOOD, 4f,
                 fup or (if (d.light >= 8) F_LIGHT else 0), "")
             if (id != 0) { Deco.idx[id] = n; d.blockId = id }
         }
+        android.util.Log.i("CuboDeco", "texturas HD (2x2): " + k + " de " + cand.size + " | 32x32 empacotadas: " + qmap.size + " em " + nQ + " celulas | tiles usados: " + nextTile + " de " + MAXT)
     }
 
     // ================= MOBÍLIA v3 (FurnC): catálogo orientado a dados, 1 bloco por cor =================
@@ -968,8 +1019,8 @@ object Blk {
         pk("Mangue Descascado", C_BUILD, "stripped_mangrove_log_top", "stripped_mangrove_log_side", "stripped_mangrove_log_top", 0x592018, M_WOOD, 7f, 0, false, "")
         pk("Carvalho Pálido Descascado", C_BUILD, "stripped_pale_oak_log_top", "stripped_pale_oak_log_side", "stripped_pale_oak_log_top", 0xF5EDEC, M_WOOD, 7f, 0, false, "")
         pk("Bambu Descascado", C_BUILD, "stripped_bamboo_block_top", "stripped_bamboo_block", "stripped_bamboo_block_top", 0xBC9D49, M_WOOD, 6f, 0, false, "")
-        pk("Carmesim Descascado", C_BUILD, "stripped_crimson_stem_top", "stripped_crimson_stem_side", "stripped_crimson_stem_top", 0x7A324D, M_WOOD, 7f, 0, false, "")
-        pk("Distorcido Descascado", C_BUILD, "stripped_warped_stem_top", "stripped_warped_stem_side", "stripped_warped_stem_top", 0x21797B, M_WOOD, 7f, 0, false, "")
+        pk("Carmesim Descascado", C_BUILD, "stred_crimson_stem_top", "strd_crimson_stem_side", "stred_crimson_stem_top", 0x7A324D, M_WOOD, 7f, 0, false, "")
+        pk("Distorcido Descascado", C_BUILD, "strped_warped_stem_top", "stred_warped_stem_side", "strped_warped_stem_top", 0x21797B, M_WOOD, 7f, 0, false, "")
         pk("Tijolos de Lama", C_BUILD, "mud_bricks", "mud_bricks", "mud_bricks", 0x885D40, M_STONE, 8f, 0, false, "")
         pk("Tijolos do Fim", C_BUILD, "end_bricks", "end_bricks", "end_bricks", 0xEFE091, M_STONE, 10f, 0, false, "")
         pk("Tijolos do Nether Rachados", C_BUILD, "cracked_nether_bricks", "cracked_nether_bricks", "cracked_nether_bricks", 0x281015, M_STONE, 10f, 0, false, "")

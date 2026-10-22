@@ -5,7 +5,7 @@ Uso: python3 tools/deco_import.py <pasta_addon_extraida> --batches 1,2   (da rai
 - registry.json so cresce no fim -> ids dos blocos nunca mudam (os mundos salvam ids).
 Gera: app/src/main/resources/deco/{items.json,geo.bin,tex/N.png}
 """
-import os, sys, re, json, glob, math, struct, argparse
+import os, sys, re, json, glob, math, struct, argparse, hashlib
 from PIL import Image
 
 ap = argparse.ArgumentParser(); ap.add_argument('addon'); ap.add_argument('--batches', default='1')
@@ -159,10 +159,12 @@ def bake(g):
                 quads.append((mats.index(mn), int(max(0, min(1, sh))*255), vs, b['name']))
     return mats, quads
 
+ASM_NAME = {}
 def assemble(d, c):
     """Itens de varios blocos (md:segment: cama, armario alto, cortina...): -> [(geometry_id, (dx,dy,dz) em blocos)] ou None.
     Layout (frente padrao, igual aos scripts do addon): left=+x/right=-x (esquerda no indice 0), front=0/mid,back = -z, bottom=0/mid/top = +y."""
     if 'md:segment' not in d['description'].get('states', {}): return None
+    if 'tag:md:horizontal_connector' in c or 'tag:md:z_horizontal_connector' in c: return None   # segmentos = alternativas por vizinhanca (dinamico), nao pecas de um moveis grande
     key = next((k for k in c if re.match(r'md:\d', k)), '')
     segs = {}
     for pm in d.get('permutations', []):
@@ -199,7 +201,8 @@ def assemble(d, c):
     out = []
     for n, gid in segs.items():
         r = parsed[n]
-        out.append((gid, (idx('x', r['x']) - nmx('x') if 'x' in r else 0, idx('y', r['y']) if 'y' in r else 0, idx('z', r['z']) - nmx('z') if 'z' in r else 0)))
+        off_ = (idx('x', r['x']) - nmx('x') if 'x' in r else 0, idx('y', r['y']) if 'y' in r else 0, idx('z', r['z']) - nmx('z') if 'z' in r else 0)
+        out.append((gid, off_)); ASM_NAME[(gid, off_)] = n
     return out
 
 SCREEN_RX = re.compile(r'^(tv|tv_vertical|laptop|pc_setup|pc_potato|teleprompter|touchscreen_menu|tablet_display|smartphone_display)(_\d+[a-z]?)*$')
@@ -250,6 +253,184 @@ def ev_vis(expr, var, val):
     except Exception:
         return True
 
+def state_defaults(d):
+    """valores padrao dos estados do bloco (1o valor de cada lista) + tracos de colocacao. Direcao padrao = 'south' (sem rotacao;
+    as permutacoes do addon so giram north/east/west e o jogo gira o modelo pelo fState)."""
+    st = {'minecraft:cardinal_direction': 'south', 'minecraft:facing_direction': 'down', 'minecraft:vertical_half': 'bottom'}
+    for k, v in d['description'].get('states', {}).items():
+        vals = v if isinstance(v, list) else (v.get('values') if isinstance(v, dict) else None)
+        if isinstance(vals, list) and vals: st[k] = vals[0]
+        elif isinstance(v, dict) and 'values' in v and isinstance(v['values'], dict): st[k] = v['values'].get('min', 0)
+    return st
+
+def ev_expr(expr, st):
+    """avalia uma expressao molang de bone_visibility com os estados em st. Variavel/estado desconhecido -> None (indeterminado)."""
+    if isinstance(expr, bool): return expr
+    if isinstance(expr, (int, float)): return bool(expr)
+    try:
+        miss = []
+        def sub(m):
+            k = m.group(1)
+            if k not in st: miss.append(k); return 'None'
+            return repr(st[k])
+        e = re.sub(r"(?:q|query)\.block_state\('([^']+)'\)", sub, str(expr))
+        if miss: return None
+        e = e.replace('&&', ' and ').replace('||', ' or ')
+        e = re.sub(r'!(?!=)', ' not ', e); e = re.sub(r'\btrue\b', 'True', e); e = re.sub(r'\bfalse\b', 'False', e)
+        if re.search(r'\b(q|query|v|variable|math|t|c)\.', e): return None
+        return bool(eval(e, {'__builtins__': {}}, {}))
+    except Exception:
+        return None
+
+def visible_bones(g, bv, st):
+    """-> conjunto de nomes de ossos VISIVEIS. Osso escondido esconde os filhos (como no Bedrock). Osso sem regra = visivel;
+    expressao que nao da pra resolver = visivel (comportamento antigo)."""
+    bones = {b['name']: b for b in g.get('bones', [])}
+    hid = set()
+    for n, e in (bv or {}).items():
+        if ev_expr(e, st) is False: hid.add(n)
+    vis = set()
+    for n, b in bones.items():
+        cur = n; ok = True; k = 0
+        while cur is not None and k < 20:
+            if cur in hid: ok = False; break
+            cur = bones[cur].get('parent') if cur in bones else None; k += 1
+        if ok: vis.add(n)
+    return vis
+
+CARD = ['south', 'north', 'east', 'west']   # indice = dir do jogo (Furniture.faceOf): 0 sul, 1 norte(180), 2 leste(90), 3 oeste(-90)
+
+def seg_from_flags(F, B, L, R):   # igual a decideSegmentFromFlags do addon (horizontal_full_connected.js)
+    if not L and not R and not F and not B: return 'single'
+    if L and not R and not F and not B: return 'right'
+    if not L and R and not F and not B: return 'left'
+    if not L and not R and F and not B: return 'front'
+    if not L and not R and not F and B: return 'back'
+    if L and R and not F and not B: return 'mid'
+    if not L and not R and F and B: return 'mid2'
+    if F and L and not R and not B: return 'front_right'
+    if F and not L and R and not B: return 'front_left'
+    if not F and L and not R and B: return 'back_right'
+    if not F and not L and R and B: return 'back_left'
+    if F and L and R and not B: return 'front_mid'
+    if not F and L and R and B: return 'back_mid'
+    if F and L and not R and B: return 'mid_right'
+    if F and not L and R and B: return 'mid_left'
+    return 'center'
+
+def rel_flags(card, n, e, s_, w):   # frente/tras/esquerda/direita a partir dos vizinhos do mundo (igual getRelatives do addon)
+    return {'north': (n, s_, w, e), 'south': (s_, n, e, w), 'west': (w, e, s_, n), 'east': (e, w, n, s_)}.get(card, (n, s_, w, e))
+
+def slot_vertical(top, bottom, left, right):   # igual decideSlotAndApply (vertical_full_connected.js)
+    vu, vd, hl, hr = int(bool(top)), int(bool(bottom)), int(bool(left)), int(bool(right))
+    va, ha = vu or vd, hl or hr
+    if not va and not ha: return 'single'
+    if va and not ha: return 'bottom' if (vu and not vd) else ('mid' if (vu and vd) else 'top')
+    if not va and ha: return 'left' if (not hl and hr) else ('mid2' if (hl and hr) else 'right')
+    row = 'bottom' if (vu and not vd) else ('mid' if (vu and vd) else 'top')
+    col = 'left' if (not hl and hr) else ('mid' if (hl and hr) else 'right')
+    return 'center' if (row == 'mid' and col == 'mid') else row + '_' + col
+
+def mkstate(d, c, ci, m, u):
+    """estado do bloco para a variante: direcao ci, vizinhos do mundo m (bit0 N, 1 L/E, 2 S, 3 O/W), cima/baixo u (bit0 cima, bit1 baixo)"""
+    st = state_defaults(d); states = d['description'].get('states', {})
+    card = CARD[ci]; st['minecraft:cardinal_direction'] = card
+    n, e, s_, w = bool(m & 1), bool(m & 2), bool(m & 4), bool(m & 8); up, dn = bool(u & 1), bool(u & 2)
+    for k, v in (('md:north_neighbor', n), ('md:east_neighbor', e), ('md:south_neighbor', s_), ('md:west_neighbor', w)):
+        if k in states: st[k] = 1 if v else 0
+    if 'md:top' in states: st['md:top'] = 1 if up else 0
+    if 'md:bottom' in states: st['md:bottom'] = 1 if dn else 0
+    F, B, L, R = rel_flags(card, n, e, s_, w)
+    if 'tag:md:z_horizontal_connector' in c:   # postes/esteiras em fila (z_horizontal_connected.js): so frente/tras -> single, front, mid, back
+        sg = 'mid' if (F and B) else ('front' if F else ('back' if B else 'single'))
+        if 'md:segment' in states: st['md:segment'] = sg
+        if 'md:slot' in states: st['md:slot'] = sg
+    elif 'tag:md:horizontal_connector' in c:
+        sg = seg_from_flags(F, B, L, R)
+        if 'md:segment' in states: st['md:segment'] = sg
+        if 'md:slot' in states: st['md:slot'] = sg
+    elif 'md:slot' in states:
+        st['md:slot'] = slot_vertical(up, dn, L, R)
+    return st
+
+def active_geo(d, st):
+    """-> (geometry_id, ossos visiveis) para o estado st, aplicando permutacoes (geometria/bone_visibility) como o Bedrock (a ultima que casa vence)"""
+    gref = d['components'].get('minecraft:geometry'); gid = gref if isinstance(gref, str) else (gref or {}).get('identifier')
+    bv = gref.get('bone_visibility') if isinstance(gref, dict) else None
+    for pm in d.get('permutations', []):
+        g2 = pm['components'].get('minecraft:geometry')
+        if g2 is None or ev_expr(pm['condition'], st) is not True: continue
+        if isinstance(g2, str): gid = g2; bv = None
+        else: gid = g2.get('identifier', gid); bv = g2.get('bone_visibility')
+    if gid not in geos: return None
+    return gid, frozenset(visible_bones(geos[gid], bv if isinstance(bv, dict) else {}, st))
+
+_dyn_cache = {}
+DIMS = ('c', 'm', 'u', 'p', 'w')   # direcao, 4 vizinhos, cima/baixo, paridade da pilha (md:inout), encostado na parede (md:mount)
+def dyn_size(dmode):
+    n = 1
+    for b, k in enumerate((4, 16, 4, 2, 2)):
+        if dmode & (1 << b): n *= k
+    return n
+
+def dyn_build(d, c):
+    """blocos cuja forma depende do mundo: direcao, vizinhos iguais, cima/baixo, pilha (md:inout em_0_up) e parede (md:mount wall_0).
+    Devolve (mats, quads, dmode, masks) ou None se estatico. dmode: bit0 direcao(4), bit1 vizinhos(16), bit2 cima/baixo(4), bit3 pilha(2), bit4 parede(2).
+    Variante idx = ci + C*(mi + M*(ui + U*(pi + P*wi))) com cada fator =1 se o bit nao esta ligado. masks[q]: bit idx = quad visivel."""
+    import itertools
+    states = d['description'].get('states', {})
+    conn = ('tag:md:horizontal_connector' in c) or ('tag:md:z_horizontal_connector' in c)
+    raw = json.dumps(d, sort_keys=True)
+    txt = json.dumps(c.get('minecraft:geometry')) + ' ' + ' '.join(pm['condition'] + json.dumps(pm['components'].get('minecraft:geometry')) for pm in d.get('permutations', []))
+    m_p = 'md:inout' in txt and '"md:in_0_up"' in raw
+    m_w = 'md:mount' in txt and '"md:wall_0"' in raw
+    sigs = txt + json.dumps(state_defaults(d), sort_keys=True) + str(conn) + str('md:slot' in states) + str(m_p) + str(m_w)
+    if sigs in _dyn_cache: return _dyn_cache[sigs]
+    m_n = '_neighbor' in txt or ((conn or 'md:slot' in states) and ('md:slot' in txt or 'md:segment' in txt))
+    m_u = 'md:top' in txt or 'md:bottom' in txt or ('md:slot' in states and not conn and 'md:slot' in txt)
+    m_c = 'cardinal_direction' in txt or m_n or m_w
+    full = [4 if m_c else 1, 16 if m_n else 1, 4 if m_u else 1, 2 if m_p else 1, 2 if m_w else 1]
+    def stt(co):
+        st = mkstate(d, c, co[0], co[1], co[2])
+        if m_p: st['md:inout'] = 2 if co[3] else 0
+        if m_w: st['md:mount'] = 'wall' if co[4] else 'main'
+        return st
+    res = {}
+    for co in itertools.product(*[range(k) for k in full]):
+        res[co] = active_geo(d, stt(co))
+    if any(v is None for v in res.values()): _dyn_cache[sigs] = None; return None
+    dep = []
+    for ax in range(5):   # a forma depende deste eixo?
+        dep.append(any(res[co] != res[co[:ax] + (0,) + co[ax + 1:]] for co in res))
+    if not any(dep): _dyn_cache[sigs] = None; return None
+    dm = sum(1 << b for b in range(5) if dep[b])
+    sz = [full[b] if dep[b] else 1 for b in range(5)]
+    nbits = sz[0] * sz[1] * sz[2] * sz[3] * sz[4]; nb = (nbits + 7) // 8
+    def ix_of(co): return co[0] + sz[0] * (co[1] + sz[1] * (co[2] + sz[2] * (co[3] + sz[3] * co[4])))
+    comp = list(itertools.product(*[range(k) for k in sz]))   # so as combinacoes dos eixos que importam
+    gids = sorted({res[co][0] for co in comp})
+    mats = []; quads = []; masks = []
+    for gid in gids:
+        m1, q1 = bake(geos[gid])
+        for mn in m1:
+            if mn not in mats: mats.append(mn)
+        for slot, sh, vs, bn in q1:
+            mk = bytearray(nb)
+            for co in comp:
+                r = res[co]
+                if r[0] == gid and bn in r[1]:
+                    ix = ix_of(co); mk[ix >> 3] |= 1 << (ix & 7)
+            if any(mk):
+                quads.append((mats.index(m1[slot]), sh, vs, 3)); masks.append(bytes(mk))
+    out = (mats, quads, dm, masks) if quads else None
+    _dyn_cache[sigs] = out; return out
+
+def frame0(im):
+    """textura mais alta que larga = tira de flipbook (quadros w x w empilhados). A geometria do addon e quadrada e usa o 1o quadro:
+    pega o quadro de cima em vez de espremer a tira inteira (que misturava todos os quadros)."""
+    w, h = im.size
+    return im.crop((0, 0, w, w)) if h > w else im
+
 def xform(quads, rotY, trans):
     out = []
     for slot, sh, vs, bn in quads:
@@ -279,7 +460,7 @@ def tex_id(short):
     if short not in texidx:
         texidx[short] = len(reg['tex']); reg['tex'].append(short)
     return texidx[short]
-usednames = set(); skipped = 0
+usednames = set(); skipped = 0; bv_fixed = 0; geo_dyn = {}
 for key in reg['items']:
     if key not in pathof: skipped += 1; continue
     folder, p = pathof[key]
@@ -288,13 +469,29 @@ for key in reg['items']:
     g = geos.get(gid)
     if not g: skipped += 1; continue
     asm = assemble(d, c)
-    gkey = gid if not asm else 'ASM:' + '|'.join(f'{a}@{o}' for a, o in sorted(asm))
+    has_tog = any(v in d['description'].get('states', {}) for v in ('md:is_open', 'md:on'))
+    dy = None if (asm or has_tog) else dyn_build(d, c)
+    if dy:
+        dsig = 'DYN:' + hashlib.md5(repr((sorted(dy[0]), dy[2], dy[3], [round(sum(v[0]+v[1]+v[2] for v in q[2]), 3) for q in dy[1]])).encode()).hexdigest()
+        if dsig not in geo_index:
+            geo_dyn[len(geo_list)] = (dy[2], dy[3]); geo_index[dsig] = len(geo_list); geo_list.append((dy[0], dy[1]))
+        gkey = dsig
+    else:
+        gkey = gid if not asm else 'ASM:' + '|'.join(f'{a}@{o}' for a, o in sorted(asm)) + '|' + hashlib.md5(json.dumps([gref, [pm['components'].get('minecraft:geometry') for pm in d.get('permutations', [])]], sort_keys=True, default=str).encode()).hexdigest()[:10]
     if gkey not in geo_index:
         if asm:
             mats = []; quads = []
             for sg, (dx, dy, dz) in asm:
                 if sg not in geos: continue
                 m2, q2 = bake(geos[sg])
+                nm_ = ASM_NAME.get((sg, (dx, dy, dz)))
+                if nm_:   # bone_visibility do bloco-segmento (ex. md:segment == 'left' esconde a cabeceira da direita)
+                    st_ = state_defaults(d); st_['md:segment'] = nm_
+                    if 'md:slot' in d['description'].get('states', {}): st_['md:slot'] = nm_
+                    r_ = active_geo(d, st_)
+                    if r_ and r_[0] == sg:
+                        q3 = [qq for qq in q2 if qq[3] in r_[1]]
+                        if q3: q2 = q3
                 for mn in m2:
                     if mn not in mats: mats.append(mn)
                 for slot, sh, vs, bn in q2:
@@ -304,22 +501,27 @@ for key in reg['items']:
         geo_index[gkey] = len(geo_list); geo_list.append((mats, quads))
     # estados abrir/ligar (md:is_open / md:on): bone_visibility ou variante aberta (transformacao da porta)
     stvar = next((v for v in ('md:is_open', 'md:on') if v in d['description'].get('states', {})), None)
-    kind = 0; openbox = None; vis_sig = ''
+    kind = 0; openbox = None; vis_sig = ''; pbv = []
     if stvar:
         isl = (stvar == 'md:on' and group(folder, 4) == 'ILUMINAÇÃO')
         kind = 2 if isl else 1
         bv = gref.get('bone_visibility') if isinstance(gref, dict) else None
-        vis_sig = f'|{stvar}|{kind}|' + json.dumps(bv, sort_keys=True)
+        pbv = [pm['components']['minecraft:geometry'].get('bone_visibility') for pm in d.get('permutations', []) if isinstance(pm['components'].get('minecraft:geometry'), dict) and 'bone_visibility' in pm['components']['minecraft:geometry']]
+        vis_sig = f'|{stvar}|{kind}|' + json.dumps(bv, sort_keys=True) + json.dumps(pbv, sort_keys=True) + json.dumps(state_defaults(d), sort_keys=True)
+    bvd = gref.get('bone_visibility') if isinstance(gref, dict) else None
+    if not stvar and isinstance(bvd, dict) and not asm and not dy:   # estado padrao (sem vizinhos, direcao south): so os ossos que valem nele
+        vis_sig = '|bv|' + json.dumps(bvd, sort_keys=True) + json.dumps(state_defaults(d), sort_keys=True)
     gkey2 = gkey + vis_sig
     if gkey2 not in geo_index:
         mats, quads = geo_list[geo_index[gkey]]
         nq = []
-        if stvar and isinstance(gref, dict) and isinstance(gref.get('bone_visibility'), dict):
-            bvm = gref['bone_visibility']
+        st0 = state_defaults(d); st0[stvar or 'x'] = (kind == 2); st1 = dict(st0); st1[stvar or 'x'] = (kind != 2)
+        a0 = active_geo(d, st0) if stvar else None; a1 = active_geo(d, st1) if stvar else None
+        has_bv = stvar and ((isinstance(gref, dict) and isinstance(gref.get('bone_visibility'), dict)) or bool(pbv))
+        if has_bv and a0 and a1:
+            vis0 = a0[1]; vis1 = a1[1]   # ossos visiveis em cada estado (componente + permutacoes)
             for slot, sh, vs, bn in quads:
-                e = bvm.get(bn, True)
-                v0 = ev_vis(e, stvar, kind == 2); v1 = ev_vis(e, stvar, kind != 2)
-                nq.append((slot, sh, vs, (1 if v0 else 0) | (2 if v1 else 0)))
+                nq.append((slot, sh, vs, (1 if bn in vis0 else 0) | (2 if bn in vis1 else 0)))
         elif stvar == 'md:is_open':
             tr = {'rotation': [0, 90, 0], 'translation': [0.875, 0, 0]}
             for pm in d.get('permutations', []):
@@ -336,6 +538,11 @@ for key in reg['items']:
                 pts = [rot(p_, [0, rr, 0], [0, 0, 0]) for p_ in pts]
                 openbox = [round(min(p_[0] for p_ in pts)/16+0.5+tv[0], 3), round(o_[1]/16, 3), round(min(p_[2] for p_ in pts)/16+0.5+tv[2], 3),
                            round(max(p_[0] for p_ in pts)/16+0.5+tv[0], 3), round((o_[1]+s_[1])/16, 3), round(max(p_[2] for p_ in pts)/16+0.5+tv[2], 3)]
+        elif isinstance(bvd, dict) and not asm and not dy:
+            vis = visible_bones(g, bvd, state_defaults(d))
+            nq = [(slot, sh, vs, 3) for slot, sh, vs, bn in quads if bn in vis]
+            if not nq: nq = [(slot, sh, vs, 3) for slot, sh, vs, bn in quads]   # tudo escondido = regra que nao entendi: mostra tudo
+            bv_fixed += 1
         else:
             nq = [(slot, sh, vs, 3) for slot, sh, vs, bn in quads]
         geo_index[gkey2] = len(geo_list); geo_list.append((mats, nq))
@@ -380,21 +587,48 @@ for key in reg['items']:
 
 # ---- escreve ----
 with open(OUT + '/geo.bin', 'wb') as fo:
-    fo.write(struct.pack('<i', len(geo_list)))
-    for mats, quads in geo_list:
-        fo.write(struct.pack('<ii', len(mats), len(quads)))
-        for slot, sh, vs, vb in quads:
+    fo.write(struct.pack('<ii', -2, len(geo_list)))   # -2 = formato v2 (byte dmode por geometria + mascara de variantes por quad)
+    for gi, (mats, quads) in enumerate(geo_list):
+        dm, masks = geo_dyn.get(gi, (0, None))
+        fo.write(struct.pack('<iiB', len(mats), len(quads), dm))
+        for qi, (slot, sh, vs, vb) in enumerate(quads):
             fo.write(struct.pack('<BBB', slot, sh, vb if isinstance(vb, int) else 3))
             for x, y, z, u, v in vs:
                 fo.write(struct.pack('<hhhHH', int(round(x*2048)), int(round(y*2048)), int(round(z*2048)),
                                      int(max(0, min(1, u))*65535), int(max(0, min(1, v))*65535)))
+            if dm: fo.write(masks[qi])   # mascara de variantes DEPOIS dos 4 vertices
 json.dump(items, open(OUT + '/items.json', 'w'), ensure_ascii=False, separators=(',', ':'))
 for i, short in enumerate(reg['tex']):
     pth = texpath(short)
     if not pth: continue
-    im = Image.open(pth).convert('RGBA')
-    im = im.resize((64, 64), Image.NEAREST if im.size[0] <= 64 else Image.LANCZOS)
+    im = frame0(Image.open(pth).convert('RGBA'))
+    if im.size != (64, 64):
+        if im.size[0] <= 64 and im.size[1] <= 64: im = im.resize((64, 64), Image.NEAREST)   # pixel art: ampliacao exata, sem borrar
+        else: im = im.convert('RGBa').resize((64, 64), Image.BOX).convert('RGBA')            # reducao por media de area, com alfa pre-multiplicado (sem halo escuro nas bordas transparentes)
     im.save(f'{OUT}/tex/{i}.png', optimize=True)
+# ---- versao HD (128x128) das texturas que passam de 64px: o jogo usa tile 2x2 no atlas quando sobra espaco (Blk.buildDeco) ----
+big_ids = []
+for f_ in glob.glob(OUT + '/tex/*hd.png'): os.remove(f_)
+for i, short in enumerate(reg['tex']):
+    pth = texpath(short)
+    if not pth: continue
+    src = frame0(Image.open(pth).convert('RGBA'))
+    if max(src.size) <= 64: continue
+    if src.size == (128, 128): hd = src
+    elif src.size[0] >= 128 and src.size[1] >= 128: hd = src.convert('RGBa').resize((128, 128), Image.BOX).convert('RGBA')
+    else: hd = src.convert('RGBa').resize((128, 128), Image.LANCZOS).convert('RGBA')   # 72x72, 64x128... (ampliar)
+    hd.save(f'{OUT}/tex/{i}hd.png', optimize=True); big_ids.append(i)
+json.dump(big_ids, open(OUT + '/big.json', 'w'))
+import numpy as np
+q32 = []
+for i, short in enumerate(reg['tex']):
+    if i in set(big_ids) or not os.path.exists(f'{OUT}/tex/{i}.png'): continue
+    a_ = np.array(Image.open(f'{OUT}/tex/{i}.png').convert('RGBA'))
+    if np.array_equal(np.repeat(np.repeat(a_[::2, ::2], 2, 0), 2, 1), a_): q32.append(i)   # 32x32 (ou 16x16) ampliado 2x: amostrar x*2,y*2 e exato
+json.dump(q32, open(OUT + '/q32.json', 'w'))
+print('texturas 32x32 nativas (4 por celula):', len(q32))
+print('texturas HD (128x128):', len(big_ids))
 os.makedirs(os.path.dirname(REG), exist_ok=True)
 json.dump(reg, open(REG, 'w'), ensure_ascii=False)
+print('geometrias com bone_visibility aplicado (estado padrao):', bv_fixed)
 print('itens', len(items), 'geos', len(geo_list), 'texturas', len(reg['tex']), 'pulados', skipped)

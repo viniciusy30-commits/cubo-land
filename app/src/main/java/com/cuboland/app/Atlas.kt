@@ -24,13 +24,20 @@ object Atlas {
         val k = if (i in 0 until NT * ROWS) i else 0
         val c = tileCache[k]
         if (c != null) return c
+        if (k < Blk.MAXT && Blk.bigTile[k]) {   // tile 2x2 (HD): reduz a região inteira para o tamanho de um ícone
+            val bg = Bitmap.createBitmap(bmp, (k % NT) * T, (k / NT) * T, 2 * T, 2 * T)
+            val sm = Bitmap.createScaledBitmap(bg, T, T, true)
+            bg.recycle()
+            tileCache[k] = sm
+            return sm
+        }
         val b = Bitmap.createBitmap(bmp, (k % NT) * T, (k / NT) * T, T, T)
         tileCache[k] = b
         return b
     }
     /** coordenada U/V dentro do atlas 2D: t = 0..1 dentro do tile */
-    fun u(tile: Int, t: Float): Float = ((tile % NT) + 0.01f + t * 0.98f) / NT
-    fun v(tile: Int, t: Float): Float = ((tile / NT) + 0.01f + t * 0.98f) / ROWS
+    fun u(tile: Int, t: Float): Float { if (tile > 0xFFFF) { val c = tile and 0xFFFF; val sq = (tile ushr 16) - 1; return ((c % NT) + (sq and 1) * 0.5f + 0.005f + t * 0.49f) / NT }; val z = if (tile >= 0 && tile < Blk.MAXT && Blk.bigTile[tile]) 2f else 1f; return ((tile % NT) + 0.01f * z + t * (z - 0.02f * z)) / NT }
+    fun v(tile: Int, t: Float): Float { if (tile > 0xFFFF) { val c = tile and 0xFFFF; val sq = (tile ushr 16) - 1; return ((c / NT) + (sq shr 1) * 0.5f + 0.005f + t * 0.49f) / ROWS }; val z = if (tile >= 0 && tile < Blk.MAXT && Blk.bigTile[tile]) 2f else 1f; return ((tile / NT) + 0.01f * z + t * (z - 0.02f * z)) / ROWS }
     private const val TAU = 6.2831853f
     private const val CLEAR = 0x004F9A3A
 
@@ -909,6 +916,28 @@ object Atlas {
         if (nDefs > 0) for (t in 24 until NT * ROWS) {
             val sp = Blk.specs[t] ?: continue
             val x0 = (t % NT) * T; val y0 = (t / NT) * T
+            if (sp[0] == Blk.K_DECO && Blk.bigTile[t]) {   // textura HD do addon: 128x128 em 2x2 células (as outras 3 células não têm receita e ficam de fora do laço)
+                for (y in 0 until 2 * T) for (x in 0 until 2 * T) {
+                    val hc = Deco.pixelBig(sp[1], x, y)
+                    out[(y0 + y) * w + x0 + x] = if ((hc ushr 24) == 0) CLEAR else hc
+                }
+                bleedN(out, w, x0, y0, 2 * T)
+                continue
+            }
+            if (sp[0] == Blk.K_DECO && (sp[6] and 255) == 2) {   // 4 texturas 32x32 do addon numa célula (c1..c4 = índice+1, 0 = vazio)
+                val hs = T / 2
+                for (qd in 0 until 4) {
+                    val tx = sp[1 + qd] - 1
+                    if (tx < 0) continue
+                    val qx0 = x0 + (qd and 1) * hs; val qy0 = y0 + (qd shr 1) * hs
+                    for (y in 0 until hs) for (x in 0 until hs) {
+                        val qc = Deco.pixel(tx, x * 2, y * 2)
+                        out[(qy0 + y) * w + qx0 + x] = if ((qc ushr 24) == 0) CLEAR else qc
+                    }
+                    bleedN(out, w, qx0, qy0, hs)
+                }
+                continue
+            }
             for (y in 0 until T) for (x in 0 until T) {
                 val qx = x / 4; val qy = y / 4   // grade de 16x16 pixels grandes (pixel art)
                 val g0 = if (sp[0] == Blk.K_DECO) Deco.pixel(sp[1], x, y) else if (sp[0] == Blk.K_MC && sp[4] == 1) McTex.flatGlass(sp[1], sp[2]) else if (sp[0] == Blk.K_MC) McTex.sample(sp[1], sp[2], qx, qy) else if (sp[0] == Blk.K_BUILD) BuildArt.sample(sp[1], sp[2], sp[3], sp[4], x * 64 / T, y * 64 / T, sp[6] and 255) else genNew(sp, (qx + 0.5f) / 16f, (qy + 0.5f) / 16f)
@@ -925,25 +954,27 @@ object Atlas {
     }
 
     /** pixels transparentes herdam a cor dos vizinhos opacos: no mipmap/filtro a borda da folha/matinho mistura verde com verde (nada de contorno escuro) */
-    private fun bleed(px: IntArray, w: Int, x0: Int, y0: Int) {
+    private fun bleed(px: IntArray, w: Int, x0: Int, y0: Int) { bleedN(px, w, x0, y0, T) }
+
+    private fun bleedN(px: IntArray, w: Int, x0: Int, y0: Int, sz: Int) {
         var has = false
-        for (y in 0 until T) for (x in 0 until T) if ((px[(y0 + y) * w + x0 + x] ushr 24) == 0) { has = true; break }
+        for (y in 0 until sz) for (x in 0 until sz) if ((px[(y0 + y) * w + x0 + x] ushr 24) == 0) { has = true; break }
         if (!has) return
-        val filled = BooleanArray(T * T) { (px[(y0 + it / T) * w + x0 + it % T] ushr 24) != 0 }
-        repeat(T / 2) {
+        val filled = BooleanArray(sz * sz) { (px[(y0 + it / sz) * w + x0 + it % sz] ushr 24) != 0 }
+        repeat(sz / 2) {
             val add = ArrayList<IntArray>()
-            for (y in 0 until T) for (x in 0 until T) {
-                if (filled[y * T + x]) continue
+            for (y in 0 until sz) for (x in 0 until sz) {
+                if (filled[y * sz + x]) continue
                 var r = 0; var g = 0; var b = 0; var n = 0
                 for (dy in -1..1) for (dx in -1..1) {
                     val nx = x + dx; val ny = y + dy
-                    if (nx < 0 || ny < 0 || nx >= T || ny >= T || !filled[ny * T + nx]) continue
+                    if (nx < 0 || ny < 0 || nx >= sz || ny >= sz || !filled[ny * sz + nx]) continue
                     val c = px[(y0 + ny) * w + x0 + nx]; r += (c shr 16) and 255; g += (c shr 8) and 255; b += c and 255; n++
                 }
                 if (n > 0) add.add(intArrayOf(x, y, (r / n shl 16) or (g / n shl 8) or (b / n)))
             }
             if (add.isEmpty()) return
-            for (a in add) { px[(y0 + a[1]) * w + x0 + a[0]] = a[2]; filled[a[1] * T + a[0]] = true }   // alpha continua 0
+            for (a in add) { px[(y0 + a[1]) * w + x0 + a[0]] = a[2]; filled[a[1] * sz + a[0]] = true }   // alpha continua 0
         }
     }
 }

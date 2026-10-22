@@ -1,6 +1,5 @@
 package com.cuboland.app
 
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import org.json.JSONArray
 import java.nio.ByteBuffer
@@ -18,7 +17,9 @@ object Deco {
         var blockId: Int = 0
         var nc: Boolean = false   // sem colisão no addon (cortina, quadro, bandeira): atravessa, mas a caixa ainda serve pra mirar/quebrar
     }
-    class Geo(val nQuad: Int, val slot: IntArray, val shade: FloatArray, val vis: IntArray, val pos: FloatArray, val uv: FloatArray)
+    /** dmode: 0 = forma fixa; bit0 = depende da direção, bit1 = dos 4 vizinhos iguais (N/L/S/O), bit2 = de cima/baixo.
+     *  vmask[q * nb + (v shr 3)] bit (v and 7) = quad q visível na variante v (v = ci + C*(mi + M*ui), ver variant()) */
+    class Geo(val nQuad: Int, val slot: IntArray, val shade: FloatArray, val vis: IntArray, val pos: FloatArray, val uv: FloatArray, val dmode: Int, val nb: Int, val vmask: ByteArray)
 
     @JvmField val idx = IntArray(16384)
     init { java.util.Arrays.fill(idx, -1) }
@@ -132,14 +133,66 @@ object Deco {
         return out
     }
 
+    /** bytes de máscara por quad para um dmode */
+    private fun nbOf(dm: Int): Int {
+        if (dm == 0) return 0
+        var bits = 1
+        if ((dm and 1) != 0) bits *= 4
+        if ((dm and 2) != 0) bits *= 16
+        if ((dm and 4) != 0) bits *= 4
+        if ((dm and 8) != 0) bits *= 2
+        if ((dm and 16) != 0) bits *= 2
+        return (bits + 7) / 8
+    }
+
+    /** variante do bloco: direção (0 sul, 1 norte, 2 leste, 3 oeste), vizinhos IGUAIS no mundo (bit0 N=z-1, bit1 L=x+1, bit2 S=z+1, bit3 O=x-1),
+     *  cima/baixo (bit0 y+1, bit1 y-1), paridade da pilha de blocos iguais embaixo (md:inout: em cima de "main" vira "up", em cima de "up" volta a "main")
+     *  e encostado em parede (md:mount: algo atrás, na direção da frente, e nada embaixo). Regras do addon (horizontal/vertical_connected, in_0_up, wall_0).
+     *  idx = ci + cc*(mi + mm*(ui + uu*(pi + pp*wi))) — cada fator vale 1 quando o bit do dmode não está ligado. */
+    private fun variant(w: World, x: Int, y: Int, z: Int, id: Int, dir: Int, dm: Int): Int {
+        var ci = 0; var mi = 0; var ui = 0; var pi = 0; var wi = 0
+        var cc = 1; var mm = 1; var uu = 1; var pp = 1
+        if ((dm and 1) != 0) { ci = dir; cc = 4 }
+        if ((dm and 2) != 0) {
+            mm = 16
+            if (w.get(x, y, z - 1) == id) mi = mi or 1
+            if (w.get(x + 1, y, z) == id) mi = mi or 2
+            if (w.get(x, y, z + 1) == id) mi = mi or 4
+            if (w.get(x - 1, y, z) == id) mi = mi or 8
+        }
+        if ((dm and 4) != 0) {
+            uu = 4
+            if (w.get(x, y + 1, z) == id) ui = ui or 1
+            if (w.get(x, y - 1, z) == id) ui = ui or 2
+        }
+        if ((dm and 8) != 0) {
+            pp = 2
+            var k = 1
+            while (k <= 16 && w.get(x, y - k, z) == id) k++
+            pi = (k - 1) and 1
+        }
+        if ((dm and 16) != 0) {
+            var bx = x; var bz = z
+            if (dir == 0) bz = z + 1 else if (dir == 1) bz = z - 1 else if (dir == 2) bx = x + 1 else bx = x - 1
+            if (w.solid(bx, y, bz) && !w.solid(x, y - 1, z)) wi = 1
+        }
+        return ci + cc * (mi + mm * (ui + uu * (pi + pp * wi)))
+    }
+
     private fun loadGeos(): ArrayList<Geo> {
         val out = ArrayList<Geo>()
         val st = res("/deco/geo.bin") ?: return out
         val bb = ByteBuffer.wrap(st.readBytes()).order(ByteOrder.LITTLE_ENDIAN)
-        val n = bb.getInt()
+        var n = bb.getInt()
+        var v2 = false
+        if (n == -2) { v2 = true; n = bb.getInt() }   // formato v2: byte dmode por geometria + máscara de variantes por quad
         for (g in 0 until n) {
             bb.getInt()  // nº de materiais
             val nq = bb.getInt()
+            var dm = 0
+            if (v2) dm = bb.get().toInt() and 255
+            val nb = nbOf(dm)
+            val vmask = ByteArray(nq * nb)
             val slot = IntArray(nq); val shade = FloatArray(nq); val vis = IntArray(nq); val pos = FloatArray(nq * 12); val uv = FloatArray(nq * 8)
             for (q in 0 until nq) {
                 slot[q] = bb.get().toInt() and 255
@@ -152,8 +205,9 @@ object Deco {
                     uv[q * 8 + v * 2] = (bb.getShort().toInt() and 0xFFFF) / 65535f
                     uv[q * 8 + v * 2 + 1] = (bb.getShort().toInt() and 0xFFFF) / 65535f
                 }
+                for (k in 0 until nb) vmask[q * nb + k] = bb.get()
             }
-            out.add(Geo(nq, slot, shade, vis, pos, uv))
+            out.add(Geo(nq, slot, shade, vis, pos, uv, dm, nb, vmask))
         }
         return out
     }
@@ -185,25 +239,9 @@ object Deco {
     // ---- pixels das texturas (Atlas.build chama por pixel) ----
     private fun decode(tex: Int): IntArray {
         val a = IntArray(64 * 64)
-        try {
-            val bm = res("/deco/tex/$tex.png")?.use { BitmapFactory.decodeStream(it) }
-            if (bm == null) {
-                java.util.Arrays.fill(a, -65281)
-            } else {
-                // O atlas espera 64x64; normaliza dimensões inesperadas sem suavizar o pixel art.
-                val sized = if (bm.width == 64 && bm.height == 64) bm
-                    else Bitmap.createScaledBitmap(bm, 64, 64, false)
-                try {
-                    sized.getPixels(a, 0, 64, 0, 0, 64, 64)
-                } finally {
-                    if (sized !== bm) sized.recycle()
-                    bm.recycle()
-                }
-            }
-        } catch (e: Exception) {
-            android.util.Log.e("CuboLand-TextureAudit", "Falha ao carregar textura de decoração $tex", e)
-            java.util.Arrays.fill(a, -65281)
-        }
+        val st = res("/deco/tex/$tex.png")
+        val bm = if (st == null) null else BitmapFactory.decodeStream(st)
+        if (bm == null) { java.util.Arrays.fill(a, -65281) } else { bm.getPixels(a, 0, 64, 0, 0, 64, 64); bm.recycle() }
         return a
     }
     fun pixel(tex: Int, x: Int, y: Int): Int {
@@ -211,7 +249,43 @@ object Deco {
         if (a == null) { a = decode(tex); texCache[tex] = a }
         return a[(y and 63) * 64 + (x and 63)]
     }
-    fun freeCache() { texCache.clear() }
+    fun freeCache() { texCache.clear(); texCacheBig.clear() }
+
+    // ---- texturas HD (128x128, tile 2x2 no atlas): só as que passam de 64px no addon (big.json lista os índices) ----
+    private val texCacheBig = HashMap<Int, IntArray>()
+    private val bigSet = HashSet<Int>()
+    private var bigLoaded = false
+    private val qSet = HashSet<Int>()
+    fun loadBig() {
+        if (bigLoaded) return
+        bigLoaded = true
+        val st = res("/deco/big.json")
+        if (st != null) {
+            val a = JSONArray(String(st.readBytes(), Charsets.UTF_8))
+            for (i in 0 until a.length()) bigSet.add(a.getInt(i))
+        }
+        val sq = res("/deco/q32.json")
+        if (sq != null) {
+            val b = JSONArray(String(sq.readBytes(), Charsets.UTF_8))
+            for (i in 0 until b.length()) qSet.add(b.getInt(i))
+        }
+    }
+    /** textura que é 32x32 de verdade (o 64x64 gerado é só o dobro): 4 por célula do atlas */
+    fun isQuarterTex(tex: Int): Boolean { return qSet.contains(tex) }
+    fun isBigTex(tex: Int): Boolean { return bigSet.contains(tex) }
+    private fun decodeBig(tex: Int): IntArray {
+        val a = IntArray(128 * 128)
+        val st = res("/deco/tex/" + tex + "hd.png")
+        val bm = if (st == null) null else BitmapFactory.decodeStream(st)
+        if (bm == null) { java.util.Arrays.fill(a, -65281) } else { bm.getPixels(a, 0, 128, 0, 0, 128, 128); bm.recycle() }
+        return a
+    }
+    /** pixel (x,y) de 0..127 da textura HD */
+    fun pixelBig(tex: Int, x: Int, y: Int): Int {
+        var a = texCacheBig[tex]
+        if (a == null) { a = decodeBig(tex); texCacheBig[tex] = a }
+        return a[(y and 127) * 128 + (x and 127)]
+    }
 
     // ---- malha ----
     fun emit(o: MeshBuf, w: World, x: Int, y: Int, z: Int, id: Int, vr: Float) {
@@ -221,8 +295,11 @@ object Deco {
         val g = geos[item.geo]
         val dir = Furniture.faceOf(w, x, y, z, 0)
         val tg = if (toggled(w, x, y, z, item.kd)) 2 else 1
+        var vr0 = 0
+        if (g.dmode != 0) vr0 = variant(w, x, y, z, id, dir, g.dmode)
         for (q in 0 until g.nQuad) {
             if ((g.vis[q] and tg) == 0) continue
+            if (g.dmode != 0 && ((g.vmask[q * g.nb + (vr0 shr 3)].toInt() shr (vr0 and 7)) and 1) == 0) continue
             val s = g.slot[q]
             val tile = if (s < item.tile.size) item.tile[s] else -1
             if (tile < 0) continue
@@ -250,6 +327,7 @@ object Deco {
         var n = 0
         for (q in 0 until g.nQuad) {
             if ((g.vis[q] and 1) == 0) continue
+            if (g.dmode != 0 && (g.vmask[q * g.nb].toInt() and 1) == 0) continue
             val sl = g.slot[q]
             val tile = if (sl < item.tile.size) item.tile[sl] else -1
             if (tile < 0) continue
