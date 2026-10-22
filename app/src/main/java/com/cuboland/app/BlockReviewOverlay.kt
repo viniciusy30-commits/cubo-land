@@ -2,6 +2,7 @@ package com.cuboland.app
 
 import android.app.AlertDialog
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -18,7 +19,7 @@ import java.util.Date
 import java.util.Locale
 
 /** Compact review controls; touches outside buttons are passed through to gameplay. */
-class BlockReviewOverlay(ctx: Context, private val game: Game) : View(ctx) {
+class BlockReviewOverlay(ctx: Context, private val game: Game, private val captureScreenshot: ((Bitmap?) -> Unit) -> Unit) : View(ctx) {
     private val prefs = ctx.getSharedPreferences("block_review", Context.MODE_PRIVATE)
     private val syncer = GithubReportSync(ctx)
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -115,7 +116,13 @@ class BlockReviewOverlay(ctx: Context, private val game: Game) : View(ctx) {
                 when (pressed) {
                     "Configurar GitHub" -> showGitHubDialog()
                     "✓ Válido" -> if (targetId > 0 && game.hasHit) saveStatus("valid")
-                    "✕ Inválido" -> if (targetId > 0 && game.hasHit) saveStatus("invalid")
+                    "✕ Inválido" -> if (targetId > 0 && game.hasHit) {
+                        val id = targetId; val x = targetX; val y = targetY; val z = targetZ
+                        message = "Capturando bloco #$id…"; syncing = true; invalidate()
+                        captureScreenshot { bitmap ->
+                            post { syncing = false; saveStatus("invalid", bitmap, id, x, y, z) }
+                        }
+                    }
                     "Copiar" -> if (targetId > 0 && game.hasHit) {
                         game.hotbar[game.sel.coerceIn(0, 7)] = targetId
                         message = "Bloco #$targetId copiado para a mão"
@@ -193,19 +200,34 @@ class BlockReviewOverlay(ctx: Context, private val game: Game) : View(ctx) {
         }
     }
 
-    private fun saveStatus(status: String) {
-        val id = targetId
+    private fun saveStatus(status: String, screenshot: Bitmap? = null, reviewedId: Int = targetId,
+                           reviewedX: Int = targetX, reviewedY: Int = targetY, reviewedZ: Int = targetZ) {
+        val id = reviewedId
         val data = JSONObject()
         data.put("id", id)
         data.put("name", B.names.getOrNull(id).orEmpty())
         data.put("status", status)
-        data.put("x", targetX); data.put("y", targetY); data.put("z", targetZ)
+        data.put("x", reviewedX); data.put("y", reviewedY); data.put("z", reviewedZ)
         data.put("updatedAt", SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.US).format(Date()))
-        val all = JSONObject(prefs.getString("report", "{}") ?: "{}")
-        all.put(id.toString(), data)
-        prefs.edit().putString("status_$id", status).putString("report", all.toString(2)).apply()
-        message = "Bloco #$id marcado; enviando relatório…"
-        syncReport()
+        fun saveAndSync() {
+            val all = JSONObject(prefs.getString("report", "{}") ?: "{}")
+            all.put(id.toString(), data)
+            prefs.edit().putString("status_$id", status).putString("report", all.toString(2)).apply()
+            if (status == "invalid" && screenshot == null) message = "Bloco #$id invalidado; captura indisponível"
+            else message = "Bloco #$id marcado; enviando relatório…"
+            syncReport()
+        }
+        if (screenshot != null && status == "invalid") {
+            message = "Enviando foto do bloco #$id…"; syncing = true; invalidate()
+            syncer.uploadScreenshot(screenshot, id) { ok, result ->
+                post {
+                    syncing = false
+                    if (ok) data.put("screenshotUrl", result)
+                    else message = "Foto não enviada: $result"
+                    saveAndSync()
+                }
+            }
+        } else saveAndSync()
     }
 
     fun exportReport(): String = prefs.getString("report", "{}") ?: "{}"
