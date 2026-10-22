@@ -50,32 +50,41 @@ class BlockReviewOverlay(ctx: Context, private val game: Game) : View(ctx) {
         c.drawText("⚙", settings.centerX(), settings.centerY() + dp(6f), paint)
         buttons.add(settings to "Configurar GitHub")
 
-        val buttonH = dp(36f)
-        val gap = dp(6f)
-        val buttonW = minOf(dp(88f), (w - dp(32f) - gap * 2f) / 3f)
+        // Controles compactos, posicionados acima da hotbar.
+        val buttonH = dp(28f)
+        val gap = dp(4f)
+        val buttonW = minOf(dp(78f), (w - dp(28f) - gap * 2f) / 3f)
         val totalW = buttonW * 3f + gap * 2f
         val left = (w - totalW) / 2f
-        val top = h - dp(16f) - buttonH
+        val top = h - dp(82f) - buttonH
 
         if (targetId > 0) {
             val status = prefs.getString("status_$targetId", null)
             val name = B.names.getOrNull(targetId).orEmpty().ifBlank { "Bloco #$targetId" }
             val label = when (status) { "valid" -> "Válido"; "invalid" -> "Inválido"; else -> "Sem avaliação" }
-            val panel = RectF(left, top - dp(31f), left + totalW, top + buttonH)
+            val panel = RectF(left, top - dp(24f), left + totalW, top + buttonH)
             paint.color = Color.argb(210, 15, 20, 29); c.drawRoundRect(panel, dp(9f), dp(9f), paint)
-            paint.color = Color.WHITE; paint.textAlign = Paint.Align.CENTER; paint.textSize = dp(11f)
+            paint.color = Color.WHITE; paint.textAlign = Paint.Align.CENTER; paint.textSize = dp(10f)
             val title = "$name (#$targetId) · $label"
             c.drawText(if (paint.measureText(title) > totalW - dp(12f)) "Bloco #$targetId · $label" else title,
-                left + totalW / 2f, top - dp(11f), paint)
+                left + totalW / 2f, top - dp(8f), paint)
             addButton(c, RectF(left, top, left + buttonW, top + buttonH), "✓ Válido", Color.rgb(35, 135, 79))
             addButton(c, RectF(left + buttonW + gap, top, left + buttonW * 2f + gap, top + buttonH), "✕ Inválido", Color.rgb(178, 55, 61))
             addButton(c, RectF(left + (buttonW + gap) * 2f, top, left + totalW, top + buttonH), "Copiar", Color.rgb(62, 91, 151))
-        } else {
-            paint.color = Color.argb(175, 15, 20, 29)
-            val hint = RectF(dp(12f), h - dp(42f), w - dp(12f), h - dp(12f))
-            c.drawRoundRect(hint, dp(8f), dp(8f), paint)
-            paint.color = Color.WHITE; paint.textSize = dp(11f); paint.textAlign = Paint.Align.CENTER
-            c.drawText(if (syncing) "Enviando relatório ao GitHub…" else message, w / 2f, h - dp(23f), paint)
+        }
+
+        // Aviso discreto no topo, sem cobrir a hotbar.
+        val bannerText = if (syncing) "Sincronizando com GitHub…" else message
+        if (bannerText.isNotBlank() && bannerText != "Mire em um bloco para avaliar") {
+            paint.textSize = dp(10f); paint.textAlign = Paint.Align.CENTER
+            val maxTextW = w - dp(100f)
+            val shown = if (paint.measureText(bannerText) > maxTextW) {
+                if (syncing) "Sincronizando com GitHub…" else bannerText.take(48) + "…"
+            } else bannerText
+            val bannerW = minOf(w - dp(88f), maxOf(dp(150f), paint.measureText(shown) + dp(20f)))
+            val banner = RectF((w - bannerW) / 2f, dp(10f), (w + bannerW) / 2f, dp(34f))
+            paint.color = Color.argb(205, 15, 20, 29); c.drawRoundRect(banner, dp(7f), dp(7f), paint)
+            paint.color = Color.WHITE; c.drawText(shown, w / 2f, dp(25f), paint)
         }
         paint.textAlign = Paint.Align.LEFT
         postInvalidateDelayed(300)
@@ -180,7 +189,6 @@ class BlockReviewOverlay(ctx: Context, private val game: Game) : View(ctx) {
                 syncing = false
                 message = result
                 invalidate()
-                android.widget.Toast.makeText(context, result, android.widget.Toast.LENGTH_LONG).show()
             }
         }
     }
