@@ -1,6 +1,8 @@
 package com.cuboland.app
 
 import android.graphics.Color
+import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.Gravity
@@ -15,11 +17,16 @@ import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.ImageView
+import android.widget.Toast
 
 class CharacterActivity : CozyActivity() {
     private lateinit var content: LinearLayout
     private lateinit var scroll: ScrollView
     private lateinit var cv: CharView
+    private lateinit var importedSkinPreview: ImageView
+    private lateinit var importedSkinStatus: TextView
+    private val PICK_SKIN_PNG = 7041
     private val refreshers = ArrayList<() -> Unit>()
     private val tabViews = ArrayList<TextView>()
     private val TABS = arrayOf("Looks", "Corpo", "Cabelo", "Rosto", "Roupas", "Acessórios", "Acabamento")
@@ -184,6 +191,24 @@ class CharacterActivity : CozyActivity() {
         for (k in 0 until content.childCount) content.getChildAt(k).popIn(60L * k, 16)
     }
 
+    @Deprecated("Deprecated in Android API 33; kept for compatibility with the current app") 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != PICK_SKIN_PNG || resultCode != RESULT_OK) return
+        val uri = data?.data ?: return
+        val result = MinecraftSkinLibrary.import(this, uri)
+        importedSkinStatus.text = result.message
+        if (result.ok) {
+            importedSkinStatus.setTextColor(Cz.GREEN)
+            importedSkinPreview.visibility = View.VISIBLE
+            importedSkinPreview.setImageBitmap(result.bitmap)
+            Toast.makeText(this, "PNG importado e salvo no CuboLand.", Toast.LENGTH_SHORT).show()
+        } else {
+            importedSkinStatus.setTextColor(Cz.RED)
+            Toast.makeText(this, result.message, Toast.LENGTH_LONG).show()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Look.load(this)
@@ -203,6 +228,35 @@ class CharacterActivity : CozyActivity() {
         pv.addView(cv, FrameLayout.LayoutParams(-1, -1))
         pv.addView(cTxtL("⟳  ARRASTE PARA GIRAR  ⟳", 11f, Color.WHITE, true), FrameLayout.LayoutParams(-2, -2, Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = dp(6) })
         leftCol.addView(pv, lpW(MATCH, 0, 1f))
+        val skinImportCard = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(10), dp(8), dp(10), dp(8))
+            background = CozyBox(this@CharacterActivity, Cz.PANEL, 14f, false)
+        }
+        skinImportCard.addView(cTxt("SKIN PNG DO MINECRAFT", 12f, Cz.GOLD, true))
+        importedSkinStatus = cTxt(
+            if (MinecraftSkinLibrary.exists(this)) "Skin PNG importada neste dispositivo." else "Importe uma skin original em PNG (64×64).",
+            12f, Cz.SOFT, false
+        )
+        skinImportCard.addView(importedSkinStatus)
+        val skinImportRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+        skinImportRow.addView(cBtn("Importar PNG", Cz.LILAC, 13f) {
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "image/png"
+            }
+            startActivityForResult(intent, PICK_SKIN_PNG)
+        }, lpW(0, WRAP, 1f).apply { rightMargin = dp(8) })
+        importedSkinPreview = ImageView(this).apply {
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            setBackgroundColor(Color.rgb(35, 35, 43))
+            setPadding(dp(4), dp(4), dp(4), dp(4))
+            val b = MinecraftSkinLibrary.load(this@CharacterActivity)
+            if (b != null) setImageBitmap(b) else visibility = View.GONE
+        }
+        skinImportRow.addView(importedSkinPreview, LinearLayout.LayoutParams(dp(64), dp(64)))
+        skinImportCard.addView(skinImportRow)
+        leftCol.addView(skinImportCard, lpW(MATCH, WRAP).apply { topMargin = dp(8) })
         val nameBox = EditText(this).apply {
             setText(Look.name(this@CharacterActivity)); hint = "Nome do personagem"
             setTextColor(Cz.TXT); setHintTextColor(Cz.TXT_SOFT); typeface = uiFont(); textSize = 15f
