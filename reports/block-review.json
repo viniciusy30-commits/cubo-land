@@ -2,10 +2,10 @@
   "38": {
     "id": 38,
     "name": "Concreto Cinza-claro",
-    "status": "valid",
+    "status": "invalid",
     "x": 41,
     "y": 10,
     "z": 11,
-    "updatedAt": "2026-10-22T16:24:31-03:00"
+    "updatedAt": "2026-10-22T16:24:32-03:00"
   }
 }
