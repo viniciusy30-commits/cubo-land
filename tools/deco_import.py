@@ -8,7 +8,7 @@ Gera: app/src/main/resources/deco/{items.json,geo.bin,tex/N.png}
 import os, sys, re, json, glob, math, struct, argparse, hashlib
 from PIL import Image
 
-ap = argparse.ArgumentParser(); ap.add_argument('addon'); ap.add_argument('--batches', default='1')
+ap = argparse.ArgumentParser(); ap.add_argument('addon'); ap.add_argument('--batches', default='1,2,3,4', help='lotes cumulativos; por padrao importa todos os lotes de mobilia e decoracao (1,2,3,4)')
 ap.add_argument('--root', default=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 A = ap.parse_args()
 BP = glob.glob(A.addon + '/*_BP')[0]; RP = glob.glob(A.addon + '/*_RP')[0]
