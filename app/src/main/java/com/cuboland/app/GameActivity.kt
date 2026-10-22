@@ -93,6 +93,10 @@ class GameActivity : AppCompatActivity() {
         h.onTvSized = { tv?.relayout() }
         h.onTvZoom = { tv?.zoom() }
         root.addView(h, 1)
+        if (test) {
+            val review = BlockReviewOverlay(this, game)
+            root.addView(review, 2, FrameLayout.LayoutParams(-1, -1))
+        }
         if (test) setupGalleryPanel(root, h)
         loading.setProgress(1f)
         loading.postDelayed({ loading.animate().alpha(0f).setDuration(450).withEndAction { root.removeView(loading) }.start() }, 500)
