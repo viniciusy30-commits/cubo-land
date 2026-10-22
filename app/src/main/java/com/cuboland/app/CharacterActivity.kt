@@ -25,6 +25,7 @@ class CharacterActivity : CozyActivity() {
     private lateinit var scroll: ScrollView
     private lateinit var cv: CharView
     private lateinit var importedSkinAvatarPreview: MinecraftSkinPreviewView
+    private lateinit var skinPreviewHint: TextView
     private lateinit var importedSkinPreview: ImageView
     private lateinit var importedSkinStatus: TextView
     private val PICK_SKIN_PNG = 7041
@@ -205,6 +206,7 @@ class CharacterActivity : CozyActivity() {
             importedSkinPreview.setImageBitmap(result.bitmap)
             importedSkinAvatarPreview.setSkin(result.bitmap)
             cv.visibility = View.GONE
+            skinPreviewHint.text = "PRÉVIA DA SKIN IMPORTADA"
             Toast.makeText(this, "Skin importada. Ela será aplicada ao avatar 3D ao entrar no mundo.", Toast.LENGTH_SHORT).show()
         } else {
             importedSkinStatus.setTextColor(Cz.RED)
@@ -232,9 +234,9 @@ class CharacterActivity : CozyActivity() {
         importedSkinAvatarPreview = MinecraftSkinPreviewView(this)
         pv.addView(importedSkinAvatarPreview, FrameLayout.LayoutParams(-1, -1))
         val savedSkinPreview = MinecraftSkinLibrary.load(this)
-        if (savedSkinPreview != null) { importedSkinAvatarPreview.setSkin(savedSkinPreview); cv.visibility = View.GONE }
-        importedSkinAvatarPreview.setOnTouchListener { _, event -> cv.onTouchEvent(event) }
-        pv.addView(cTxtL("⟳  ARRASTE PARA GIRAR  ⟳", 11f, Color.WHITE, true), FrameLayout.LayoutParams(-2, -2, Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = dp(6) })
+        if (savedSkinPreview != null) { importedSkinAvatarPreview.setSkin(savedSkinPreview); cv.visibility = View.GONE; skinPreviewHint.text = "PRÉVIA DA SKIN IMPORTADA" }
+        skinPreviewHint = cTxtL("⟳  ARRASTE PARA GIRAR  ⟳", 11f, Color.WHITE, true)
+        pv.addView(skinPreviewHint, FrameLayout.LayoutParams(-2, -2, Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = dp(6) })
         leftCol.addView(pv, lpW(MATCH, 0, 1f))
         val skinImportCard = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
