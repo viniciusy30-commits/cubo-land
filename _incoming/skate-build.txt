@@ -6,3 +6,4 @@ import-minecraft-skin-png-2026-10-22
 minecraft-skin-uv-renderer-2026-10-22
 minecraft-skin-outer-layer-fix-2026-10-22
 minecraft-skin-avatar-preview-2026-10-22
+minecraft-skin-gl-state-restore-2026-10-22
