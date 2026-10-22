@@ -108,6 +108,9 @@ class MinecraftSkinRenderer {
 
     fun draw(vp: FloatArray, root: FloatArray, phase: Float, moving: Float, running: Float) {
         if (!active || program == 0) return
+        val blendWasEnabled = G.glIsEnabled(G.GL_BLEND)
+        G.glEnable(G.GL_BLEND)
+        G.glBindBuffer(G.GL_ARRAY_BUFFER, 0); G.glBindBuffer(G.GL_ELEMENT_ARRAY_BUFFER, 0)
         G.glUseProgram(program)
         G.glUniformMatrix4fv(uVp, 1, false, vp, 0)
         G.glActiveTexture(G.GL_TEXTURE0); G.glBindTexture(G.GL_TEXTURE_2D, texture)
