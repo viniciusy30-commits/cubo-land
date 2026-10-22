@@ -13,7 +13,6 @@ import javax.microedition.khronos.opengles.GL10
 import kotlin.math.*
 
 class GameRenderer(val game: Game, private val appContext: Context? = null) : GLSurfaceView.Renderer {
-    private val minecraftSkin = MinecraftSkinRenderer()
     private val world = game.world
     private var prog = 0
     private var aPos = 0; private var aCol = 0; private var aUV = 0
@@ -207,7 +206,6 @@ class GameRenderer(val game: Game, private val appContext: Context? = null) : GL
     }
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
-        minecraftSkin.init(appContext)
         for (d in voxOwned) { d.vb = 0; d.ib = 0; d.vdirty = true }; voxOwned.clear()
         G.glClearColor(fogR, fogG, fogB, 1f)
         prog = G.glCreateProgram()
@@ -1140,13 +1138,7 @@ class GameRenderer(val game: Game, private val appContext: Context? = null) : GL
         } else { an.trk = 0f; an.trkK = 0f; an.trkF = 0f; an.trkP = 0f }
         G.glEnable(G.GL_POLYGON_OFFSET_FILL)   // camadas do boneco: o que está por cima ganha na profundidade (acaba o z-fighting nas dobras)
         cm.mc.layerHook = { l -> G.glPolygonOffset(0f, -l.toFloat()) }
-        if (minecraftSkin.isActive()) {
-            minecraftSkin.draw(vp, base, an, handM)
-            // O renderizador de skin usa outro shader e malha; restaura o estado do renderer principal.
-            G.glUseProgram(prog)
-            G.glActiveTexture(G.GL_TEXTURE0); G.glBindTexture(G.GL_TEXTURE_2D, atlasTex); G.glUniform1i(uTex, 0)
-            bindMesh(cubeVb, cubeIb)
-        } else cm.draw(charBox, base, an, handM)
+        cm.draw(charBox, base, an, handM)
         cm.mc.layerHook = null
         G.glPolygonOffset(0f, 0f); G.glDisable(G.GL_POLYGON_OFFSET_FILL)
         if (id > 0) {   // mesmo modelo 3D da 1ª pessoa e dos ícones: cabo pra cima, fio pra frente
