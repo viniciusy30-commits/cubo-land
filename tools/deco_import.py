@@ -1,17 +1,33 @@
 #!/usr/bin/env python3
-"""Importa mobilia/decoracao do addon monoDeco (.mcaddon extraido) pro jogo.
-Uso: python3 tools/deco_import.py <pasta_addon_extraida> --batches 1,2   (da raiz do projeto)
+"""Importa mobilia/decoracao do addon monoDeco (.mcaddon ou pasta extraida) pro jogo.
+Uso: python3 tools/deco_import.py <arquivo.mcaddon-ou-pasta> --batches 1,2   (da raiz do projeto)
 - Os lotes (BATCHES) sao cumulativos: rode SEMPRE com todos os lotes ja feitos (ver tools/deco/registry.json).
 - registry.json so cresce no fim -> ids dos blocos nunca mudam (os mundos salvam ids).
 Gera: app/src/main/resources/deco/{items.json,geo.bin,tex/N.png}
 """
-import os, sys, re, json, glob, math, struct, argparse, hashlib
+import os, sys, re, json, glob, math, struct, argparse, hashlib, tempfile, zipfile, atexit
 from PIL import Image
 
 ap = argparse.ArgumentParser(); ap.add_argument('addon'); ap.add_argument('--batches', default='1,2,3,4', help='lotes cumulativos; por padrao importa todos os lotes de mobilia e decoracao (1,2,3,4)')
 ap.add_argument('--root', default=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 A = ap.parse_args()
-BP = glob.glob(A.addon + '/*_BP')[0]; RP = glob.glob(A.addon + '/*_RP')[0]
+ADDON_ROOT = os.path.abspath(A.addon)
+# Aceita o arquivo .mcaddon original diretamente; nao exige extracao manual.
+if os.path.isfile(ADDON_ROOT):
+    if not zipfile.is_zipfile(ADDON_ROOT):
+        raise SystemExit("Erro: o arquivo informado nao e um .mcaddon/.zip valido.")
+    _tmp = tempfile.mkdtemp(prefix="monodeco_import_")
+    with zipfile.ZipFile(ADDON_ROOT) as _z:
+        _z.extractall(_tmp)
+    ADDON_ROOT = _tmp
+    atexit.register(lambda: __import__("shutil").rmtree(_tmp, ignore_errors=True))
+if not os.path.isdir(ADDON_ROOT):
+    raise SystemExit("Erro: informe um .mcaddon/.zip existente ou uma pasta extraida.")
+_bp = sorted(glob.glob(os.path.join(ADDON_ROOT, '*_BP')))
+_rp = sorted(glob.glob(os.path.join(ADDON_ROOT, '*_RP')))
+if not _bp or not _rp:
+    raise SystemExit("Erro: nao encontrei as pastas *_BP e *_RP dentro do addon.")
+BP, RP = _bp[0], _rp[0]
 OUT = A.root + '/app/src/main/resources/deco'; REG = A.root + '/tools/deco/registry.json'
 os.makedirs(OUT + '/tex', exist_ok=True)
 
