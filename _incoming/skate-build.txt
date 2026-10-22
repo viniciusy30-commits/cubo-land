@@ -2,3 +2,4 @@ cuboland-reference-skin-presets 2026-10-22
 custom-skins-2026-10-22
 custom-skins-final-2026-10-22
 custom-skins-28-presets-2026-10-22
+import-minecraft-skin-png-2026-10-22
