@@ -25,6 +25,8 @@ class MinecraftSkinRenderer {
     private var active = false
     private val model = FloatArray(16)
     private val temp = FloatArray(16)
+    private val poseRoot = FloatArray(16)
+    private val poseMatrix = FloatArray(16)
     private val vertices: FloatBuffer = ByteBuffer.allocateDirect(36 * 5 * 4)
         .order(ByteOrder.nativeOrder()).asFloatBuffer()
 
@@ -106,7 +108,7 @@ class MinecraftSkinRenderer {
 
     fun isActive(): Boolean = active
 
-    fun draw(vp: FloatArray, root: FloatArray, phase: Float, moving: Float, running: Float, handOut: FloatArray? = null) {
+    fun draw(vp: FloatArray, root: FloatArray, an: Anim, handOut: FloatArray? = null) {
         if (!active || program == 0) return
         val blendWasEnabled = G.glIsEnabled(G.GL_BLEND)
         G.glEnable(G.GL_BLEND)
@@ -115,19 +117,48 @@ class MinecraftSkinRenderer {
         G.glUniformMatrix4fv(uVp, 1, false, vp, 0)
         G.glActiveTexture(G.GL_TEXTURE0); G.glBindTexture(G.GL_TEXTURE_2D, texture)
         G.glUniform1i(uTex, 0)
-        val swing = sin(phase) * (if (running > .5f) 48f else 30f) * moving
-        drawPart(head, root, 0f, 1.625f, 0f, 0f, 0f)
-        drawPart(torso, root, 0f, 1.0f, 0f, 0f, 0f)
-        drawLimb(rightArm, root, -.375f, 1.375f, 0f, swing, handOut)
-        drawLimb(leftArm, root, .375f, 1.375f, 0f, -swing)
-        drawLimb(rightLeg, root, -.125f, .75f, 0f, -swing)
-        drawLimb(leftLeg, root, .125f, .75f, 0f, swing)
-        drawPart(headOuter, root, 0f, 1.625f, 0f, 0f, 0f)
-        drawPart(torsoOuter, root, 0f, 1.0f, 0f, 0f, 0f)
-        drawLimb(rightArmOuter, root, -.375f, 1.375f, 0f, swing)
-        drawLimb(leftArmOuter, root, .375f, 1.375f, 0f, -swing)
-        drawLimb(rightLegOuter, root, -.125f, .75f, 0f, -swing)
-        drawLimb(leftLegOuter, root, .125f, .75f, 0f, swing)
+
+        val move = an.move.coerceIn(0f, 1f)
+        val run = an.run.coerceIn(0f, 1f)
+        val crouch = an.crouch.coerceIn(0f, 1f)
+        val sit = an.sit.coerceIn(0f, 1f)
+        val lie = an.lie.coerceIn(0f, 1f)
+        val fly = an.fly.coerceIn(0f, 1f)
+        val swim = an.swim.coerceIn(0f, 1f)
+        val air = an.airA.coerceIn(0f, 1f)
+        val swing = sin(an.phase) * (if (run > .5f) 48f else 30f) * move
+
+        // Deita o avatar em torno do centro do corpo, como a pose deitado do modelo original.
+        Matrix.setIdentityM(poseMatrix, 0)
+        if (lie > 0.001f) {
+            Matrix.translateM(poseMatrix, 0, 0f, .9f, 0f)
+            Matrix.rotateM(poseMatrix, 0, 90f * lie, 1f, 0f, 0f)
+            Matrix.translateM(poseMatrix, 0, 0f, -.9f, 0f)
+        }
+        Matrix.multiplyMM(poseRoot, 0, root, 0, poseMatrix, 0)
+
+        val bodyY = 1.0f - .13f * crouch - .08f * sit
+        val headY = 1.625f - .12f * crouch - .08f * sit
+        drawPart(head, poseRoot, 0f, headY, 0f, 0f, 0f)
+        drawPart(torso, poseRoot, 0f, bodyY, 0f, 8f * sit, 0f)
+
+        val swimArm = sin(an.swimPh) * 42f * swim
+        val armPose = -70f * fly - 26f * air - 22f * sit + swimArm
+        val rightArmAngle = swing + armPose + an.atkArm
+        val leftArmAngle = -swing + armPose - swimArm * .25f
+        drawLimb(rightArm, poseRoot, -.375f, 1.375f - .08f * crouch - .04f * sit, 0f, rightArmAngle, handOut)
+        drawLimb(leftArm, poseRoot, .375f, 1.375f - .08f * crouch - .04f * sit, 0f, leftArmAngle)
+        val legPose = -58f * sit + 24f * swim + 12f * air
+        drawLimb(rightLeg, poseRoot, -.125f, .75f - .05f * crouch, 0f, -swing + legPose)
+        drawLimb(leftLeg, poseRoot, .125f, .75f - .05f * crouch, 0f, swing - legPose)
+
+        // Segunda camada oficial, com os mesmos pivôs e movimentos das peças-base.
+        drawPart(headOuter, poseRoot, 0f, headY, 0f, 0f, 0f)
+        drawPart(torsoOuter, poseRoot, 0f, bodyY, 0f, 8f * sit, 0f)
+        drawLimb(rightArmOuter, poseRoot, -.375f, 1.375f - .08f * crouch - .04f * sit, 0f, rightArmAngle)
+        drawLimb(leftArmOuter, poseRoot, .375f, 1.375f - .08f * crouch - .04f * sit, 0f, leftArmAngle)
+        drawLimb(rightLegOuter, poseRoot, -.125f, .75f - .05f * crouch, 0f, -swing + legPose)
+        drawLimb(leftLegOuter, poseRoot, .125f, .75f - .05f * crouch, 0f, swing - legPose)
         if (!blendWasEnabled) G.glDisable(G.GL_BLEND)
     }
 
