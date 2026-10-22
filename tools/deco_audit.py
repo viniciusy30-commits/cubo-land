@@ -17,8 +17,11 @@ def main():
     args = ap.parse_args()
     with zipfile.ZipFile(args.addon) as z:
         names = set(z.namelist())
-        bp_roots = sorted({n.split("/")[0] for n in names if n.endswith("_BP/")})
-        rp_roots = sorted({n.split("/")[0] for n in names if n.endswith("_RP/")})
+        # ZIPs nem sempre incluem entradas de diretorio terminadas em "/".
+        # Descobrir os packs pelos componentes de caminho evita falso erro em .mcaddon validos.
+        roots = {n.split("/", 1)[0] for n in names}
+        bp_roots = sorted(root for root in roots if root.endswith("_BP"))
+        rp_roots = sorted(root for root in roots if root.endswith("_RP"))
         if not bp_roots or not rp_roots:
             raise SystemExit("Erro: nao encontrei as pastas _BP e _RP no pacote.")
         bp, rp = bp_roots[0] + "/", rp_roots[0] + "/"
@@ -41,7 +44,6 @@ def main():
                         geo_ids.add(ident)
         tt = read_json(rp + "textures/terrain_texture.json") or {}
         tex_data = tt.get("texture_data", {})
-        pngs = {p[:-4] for p in names if p.startswith(rp) and p.lower().endswith(".png")}
         def resolve_texture(short):
             entry = tex_data.get(short)
             if entry:
