@@ -46,15 +46,36 @@ object MinecraftSkinLibrary {
 
     fun list(context: Context): List<String> {
         val dir = File(context.filesDir, LIBRARY_DIR)
-        return dir.listFiles()?.filter { it.isFile && it.extension.equals("png", true) }
+        val imported = dir.listFiles()?.filter { it.isFile && it.extension.equals("png", true) }
             ?.sortedBy { it.name }?.map { it.name } ?: emptyList()
+        return BUILTIN_SKINS.map { "preset_${it.first}" } + imported
+    }
+
+    fun displayName(fileName: String): String {
+        if (fileName.startsWith("preset_")) {
+            val asset = fileName.removePrefix("preset_")
+            return BUILTIN_SKINS.firstOrNull { it.first == asset }?.second ?: asset.removeSuffix(".png")
+        }
+        return fileName.removeSuffix(".png").replace("_", " ").uppercase()
     }
 
     fun activate(context: Context, fileName: String): Boolean {
-        if (!fileName.matches(Regex("skin_[0-9]{2,}\\.png"))) return false
-        val source = File(File(context.filesDir, LIBRARY_DIR), fileName)
-        if (!source.isFile) return false
-        return try { source.copyTo(File(context.filesDir, ACTIVE_FILE), true); true } catch (_: Exception) { false }
+        val destination = File(context.filesDir, ACTIVE_FILE)
+        return try {
+            if (fileName.startsWith("preset_")) {
+                val assetName = fileName.removePrefix("preset_")
+                if (BUILTIN_SKINS.none { it.first == assetName }) return false
+                context.assets.open("preset_skins/$assetName").use { input ->
+                    FileOutputStream(destination).use { output -> input.copyTo(output) }
+                }
+            } else {
+                if (!fileName.matches(Regex("skin_[0-9]{2,}\\.png"))) return false
+                val source = File(File(context.filesDir, LIBRARY_DIR), fileName)
+                if (!source.isFile) return false
+                source.copyTo(destination, true)
+            }
+            true
+        } catch (_: Exception) { false }
     }
 
     fun load(context: Context): Bitmap? {
