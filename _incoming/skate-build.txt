@@ -15,3 +15,4 @@ add-10-original-skin-presets-2026-10-22
 skin-presets-isolated-python-env-2026-10-22
 
 revert-ready-skins-2026-10-22
+remove-custom-skin-import-2026-10-22
