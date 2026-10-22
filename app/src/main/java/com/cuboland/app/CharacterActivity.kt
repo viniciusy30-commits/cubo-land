@@ -116,7 +116,7 @@ class CharacterActivity : CozyActivity() {
             return
         }
         for (fileName in skins) {
-            val label = fileName.removeSuffix(".png").replace("_", " ").uppercase()
+            val label = MinecraftSkinLibrary.displayName(fileName)
             val chip = cChip(label) {
                 if (MinecraftSkinLibrary.activate(this, fileName)) {
                     val bitmap = MinecraftSkinLibrary.load(this)
