@@ -96,14 +96,23 @@ for p in glob.glob(RP + '/models/blocks/*.geo.json'):
 # ---- texturas: shortname -> arquivo ----
 tt = json.load(open(RP + '/textures/terrain_texture.json'))['texture_data']
 def texpath(short):
+    # Resolve primeiro o caminho oficial do terrain_texture; alguns addons guardam o PNG
+    # em subpastas diferentes e outros deixam entradas antigas no atlas. Nunca inventa
+    # um arquivo por nome: so aceita um caminho que exista dentro do resource pack.
     e = tt.get(short)
     if e:
-        t = e['textures']; t = t[0] if isinstance(t, list) else t
-        if isinstance(t, dict): t = t['path']
-        p = RP + '/' + t + '.png'
-        if os.path.exists(p): return p
-    p = RP + '/textures/blocks/' + short + '.png'
-    return p if os.path.exists(p) else None
+        ts = e['textures']
+        ts = ts if isinstance(ts, list) else [ts]
+        for t in ts:
+            if isinstance(t, dict): t = t.get('path', '')
+            if not t: continue
+            p = os.path.normpath(os.path.join(RP, str(t) + '.png'))
+            if p.startswith(os.path.normpath(RP) + os.sep) and os.path.isfile(p): return p
+    # Compatibilidade com packs que omitem a entrada do atlas, mas mantem o PNG.
+    for base in ('textures/blocks', 'textures/items', 'textures/models'):
+        p = os.path.join(RP, base, short + '.png')
+        if os.path.isfile(p): return p
+    return None
 
 def rot(v, ang, piv):  # Bedrock: aplica X, depois Y, depois Z (graus)
     x, y, z = v[0]-piv[0], v[1]-piv[1], v[2]-piv[2]
