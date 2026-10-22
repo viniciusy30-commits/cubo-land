@@ -112,8 +112,6 @@ class MinecraftSkinRenderer {
         G.glUniformMatrix4fv(uVp, 1, false, vp, 0)
         G.glActiveTexture(G.GL_TEXTURE0); G.glBindTexture(G.GL_TEXTURE_2D, texture)
         G.glUniform1i(uTex, 0)
-        G.glEnable(G.GL_CULL_FACE)
-        G.glEnable(G.GL_DEPTH_TEST)
         val swing = sin(phase) * (if (running > .5f) 48f else 30f) * moving
         drawPart(head, root, 0f, 1.625f, 0f, 0f, 0f)
         drawPart(torso, root, 0f, 1.0f, 0f, 0f, 0f)
@@ -127,7 +125,6 @@ class MinecraftSkinRenderer {
         drawLimb(leftArmOuter, root, .375f, 1.375f, 0f, -swing)
         drawLimb(rightLegOuter, root, -.125f, .75f, 0f, -swing)
         drawLimb(leftLegOuter, root, .125f, .75f, 0f, swing)
-        G.glDisable(G.GL_CULL_FACE)
     }
 
     private fun drawLimb(p: Part, root: FloatArray, x: Float, pivotY: Float, z: Float, angle: Float) {
