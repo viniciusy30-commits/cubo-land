@@ -170,7 +170,20 @@ def bake(g):
             o = c['origin']; s = c['size']; inf = c.get('inflate', 0)
             x0, y0, z0 = o[0]-inf, o[1]-inf, o[2]-inf; x1, y1, z1 = o[0]+s[0]+inf, o[1]+s[1]+inf, o[2]+s[2]+inf
             cr = c.get('rotation'); cp = c.get('pivot', [0,0,0])
-            for fn, fd in c['uv'].items() if isinstance(c.get('uv'), dict) else []:
+            cube_uv = c.get('uv')
+            if isinstance(cube_uv, list) and len(cube_uv) >= 2:
+                # Bedrock box-UV shorthand: expand the six faces using the cube dimensions.
+                uu, vv = cube_uv[0], cube_uv[1]
+                sx, sy, sz = s
+                cube_uv = {
+                    'up':    {'uv': [uu + sz, vv],             'uv_size': [sx, sz]},
+                    'down':  {'uv': [uu + sz + sx, vv + sz],   'uv_size': [-sx, -sz]},
+                    'west':  {'uv': [uu, vv + sz],             'uv_size': [sz, sy]},
+                    'north': {'uv': [uu + sz, vv + sz],        'uv_size': [sx, sy]},
+                    'east':  {'uv': [uu + sz + sx, vv + sz],   'uv_size': [sz, sy]},
+                    'south': {'uv': [uu + sz + sx + sz, vv + sz], 'uv_size': [-sx, sy]},
+                }
+            for fn, fd in cube_uv.items() if isinstance(cube_uv, dict) else []:
                 if fn not in FACES: continue
                 uv = fd.get('uv', [0,0]); us = fd.get('uv_size', [0,0])
                 if us[0] == 0 or us[1] == 0: continue
@@ -585,7 +598,11 @@ for key in reg['items']:
     mats, quads = geo_list[geo_index[gkey]]
     mi = c.get('minecraft:material_instances', {})
     def res(n):
-        e = mi.get(n) or mi.get('*') or (next(iter(mi.values())) if mi else None)
+        # A geometry material must map to its matching block material. Only use a
+        # sole entry as fallback when the mapping is unambiguous; never assign the
+        # first of several unrelated materials to every face.
+        e = mi.get(n) or mi.get('*')
+        if e is None and len(mi) == 1: e = next(iter(mi.values()))
         if e is None: return None
         return e['texture'] if isinstance(e, dict) else e
     tl = []
