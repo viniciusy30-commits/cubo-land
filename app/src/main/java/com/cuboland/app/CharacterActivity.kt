@@ -63,7 +63,7 @@ class CharacterActivity : CozyActivity() {
         val perRow = 3
         for ((n, id) in list.withIndex()) {
             if (n % perRow == 0) { row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }; card.addView(row, lpW(MATCH, WRAP).apply { topMargin = dp(4) }) }
-            val c = cChip("✦ NOVO · " + Look.HAIR_STYLES[id]) { Look.set(Look.HAIR, id); changed() }
+            val c = cChip("✦ " + Look.HAIR_STYLES[id]) { Look.set(Look.HAIR, id); changed() }
             chips.add(c)
             row!!.addView(c, lpW(0, WRAP, 1f).apply { if (n % perRow != 0) leftMargin = dp(4) })
         }
