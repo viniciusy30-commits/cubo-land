@@ -15,7 +15,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 
 /**
- * Painel da galeria de blocos: ao entrar no mapa abre sozinho, o jogador escolhe a categoria (e, se quiser, só uma seção dela)
+ * Painel da galeria de blocos com revisão de blocos: ao entrar no mapa abre sozinho, o jogador escolhe a categoria (e, se quiser, só uma seção dela)
  * e o mapa é regerado só com isso. O botão CATEGORIAS, no alto da tela, abre o painel de novo a qualquer hora.
  * onPick(categoria, seção, extra): categoria/seção = índices de World.galleryMenu (seção -1 = todas); extra = World.GAL_*.
  */
