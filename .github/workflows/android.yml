@@ -36,6 +36,11 @@ jobs:
         with:
           gradle-version: '8.7'
 
+      - name: Gerar skins profissionais integradas
+        run: |
+          python3 -m pip install --user Pillow
+          python3 tools/generate_builtin_skins.py
+
       - name: Build debug APK
         run: gradle assembleDebug --stacktrace
 
