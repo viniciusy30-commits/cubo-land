@@ -2132,8 +2132,6 @@ class CharModel {
                 hb(-0.3f, 1.74f, -0.1f, 0.1f, 0.04f, 0.5f, shadeC(white, 0.92f))
                 hb(0.3f, 1.74f, -0.1f, 0.1f, 0.04f, 0.5f, shadeC(white, 0.92f))
             }
-        }
-
             24 -> { // chifres infernais: base óssea, ponta afiada e brilho interno
                 for (sd in intArrayOf(-1, 1)) {
                     val s = sd.toFloat()
