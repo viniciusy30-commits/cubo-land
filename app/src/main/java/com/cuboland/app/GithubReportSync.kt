@@ -1,6 +1,8 @@
 package com.cuboland.app
 
 import android.content.Context
+import android.graphics.Bitmap
+import java.io.ByteArrayOutputStream
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import org.json.JSONObject
@@ -94,6 +96,26 @@ class GithubReportSync(private val context: Context) {
         }
     }
 
+    /** Upload an in-game screenshot and return its GitHub URL. */
+    fun uploadScreenshot(bitmap: Bitmap, blockId: Int, callback: (Boolean, String) -> Unit) {
+        executor.execute {
+            try {
+                val token = readToken()
+                val bytes = ByteArrayOutputStream().use { out -> bitmap.compress(Bitmap.CompressFormat.JPEG, 82, out); out.toByteArray() }
+                val path = "reports/block-images/block-" + blockId + "-" + System.currentTimeMillis() + ".jpg"
+                val encodedPath = path.split("/").joinToString("/") { java.net.URLEncoder.encode(it, "UTF-8") }
+                val body = JSONObject().put("message", "Adicionar captura do bloco #" + blockId)
+                    .put("content", Base64.getEncoder().encodeToString(bytes)).put("branch", "main")
+                val put = request("PUT", "$API/repos/$REPO/contents/$encodedPath", token, body.toString())
+                if (put.first !in 200..201) {
+                    val detail = try { JSONObject(put.second).optString("message") } catch (_: Exception) { "" }
+                    throw IllegalStateException("GitHub recusou a foto (HTTP " + put.first + ") " + detail.take(100))
+                }
+                callback(true, "https://github.com/$REPO/blob/main/$path")
+            } catch (e: Exception) { callback(false, e.message ?: "Falha ao enviar a foto.") }
+            finally { if (!bitmap.isRecycled) bitmap.recycle() }
+        }
+    }
     private fun request(method: String, url: String, token: String, body: String?): Pair<Int, String> {
         val connection = URL(url).openConnection() as HttpURLConnection
         try {
