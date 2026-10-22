@@ -13,6 +13,9 @@ on:
       - 'tools/deco_import.py'
       - 'tools/deco/registry.json'
       - 'app/src/main/java/com/cuboland/app/BlockInspector.kt'
+      - 'app/src/main/java/com/cuboland/app/Game.kt'
+      - 'app/src/main/java/com/cuboland/app/GameActivity.kt'
+      - 'app/src/main/java/com/cuboland/app/BlockReviewOverlay.kt'
   workflow_run:
     workflows: ["Unpack and commit", "Reverter atualização"]
     types: [completed]
