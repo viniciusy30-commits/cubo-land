@@ -469,14 +469,14 @@ def tex_id(short):
     if short not in texidx:
         texidx[short] = len(reg['tex']); reg['tex'].append(short)
     return texidx[short]
-usednames = set(); skipped = 0; bv_fixed = 0; geo_dyn = {}
+usednames = set(); skipped = 0; skipped_geo = 0; skipped_tex = 0; missing_tex_refs = set(); bv_fixed = 0; geo_dyn = {}
 for key in reg['items']:
     if key not in pathof: skipped += 1; continue
     folder, p = pathof[key]
     d = json.load(open(p))['minecraft:block']; c = d['components']
     gref = c.get('minecraft:geometry'); gid = gref if isinstance(gref, str) else (gref or {}).get('identifier')
     g = geos.get(gid)
-    if not g: skipped += 1; continue
+    if not g: skipped += 1; skipped_geo += 1; continue
     asm = assemble(d, c)
     has_tog = any(v in d['description'].get('states', {}) for v in ('md:is_open', 'md:on'))
     dy = None if (asm or has_tog) else dyn_build(d, c)
@@ -564,8 +564,13 @@ for key in reg['items']:
         return e['texture'] if isinstance(e, dict) else e
     tl = []
     for mn in mats:
-        t = res(mn); tl.append(tex_id(t) if t and texpath(t) else -1)
-    if all(t < 0 for t in tl): skipped += 1; continue
+        t = res(mn)
+        tp = texpath(t) if t else None
+        if t and tp: tl.append(tex_id(t))
+        else:
+            tl.append(-1)
+            if t: missing_tex_refs.add(t)
+    if all(t < 0 for t in tl): skipped += 1; skipped_tex += 1; continue
     scr = screen_of(mats, quads) if SCREEN_RX.match(folder) else None
     def box(b):
         if not b: return None
@@ -641,3 +646,7 @@ os.makedirs(os.path.dirname(REG), exist_ok=True)
 json.dump(reg, open(REG, 'w'), ensure_ascii=False)
 print('geometrias com bone_visibility aplicado (estado padrao):', bv_fixed)
 print('itens', len(items), 'geos', len(geo_list), 'texturas', len(reg['tex']), 'pulados', skipped)
+print('pulados por geometria ausente:', skipped_geo, '| pulados por todas as texturas ausentes:', skipped_tex)
+if missing_tex_refs:
+    print('referencias de textura ausentes (ate 80):', ', '.join(sorted(missing_tex_refs)[:80]))
+    print('total de referencias de textura ausentes:', len(missing_tex_refs))
