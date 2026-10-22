@@ -2,6 +2,8 @@ name: Build APK
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [main]
   push:
     branches: [main]
     paths:
@@ -20,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.event.pull_request.head.sha || 'main' }}
 
       - uses: actions/setup-java@v4
         with:
@@ -46,6 +48,7 @@ jobs:
           path: CuboLand.apk
 
       - name: Publicar versao (o app baixa daqui)
+        if: github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ github.run_number }}
