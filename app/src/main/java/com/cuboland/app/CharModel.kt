@@ -2134,6 +2134,83 @@ class CharModel {
             }
         }
 
+            24 -> { // chifres infernais: base óssea, ponta afiada e brilho interno
+                for (sd in intArrayOf(-1, 1)) {
+                    val s = sd.toFloat()
+                    hb(s * 0.25f, 1.86f, -0.01f, 0.16f, 0.22f, 0.15f, shadeC(hcl, 0.68f), rz = -s * 22f)
+                    hb(s * 0.32f, 2.02f, -0.015f, 0.12f, 0.2f, 0.12f, hcl, rz = -s * 34f)
+                    hb(s * 0.39f, 2.16f, 0f, 0.065f, 0.15f, 0.065f, lite(hcl, 0.42f), rz = -s * 43f)
+                    hb(s * 0.25f, 1.79f, 0.09f, 0.09f, 0.08f, 0.06f, 0xD83D58)
+                }
+            }
+            25 -> { // tiara lunar com crescente e gemas
+                hb(0f, 1.77f, 0.405f, 0.7f, 0.045f, 0.04f, hcl)
+                hb(0f, 1.94f, 0.405f, 0.05f, 0.25f, 0.045f, lite(hcl, 0.35f))
+                hb(-0.1f, 1.91f, 0.405f, 0.05f, 0.15f, 0.045f, hcl, rz = -25f)
+                hb(0.1f, 1.91f, 0.405f, 0.05f, 0.15f, 0.045f, hcl, rz = 25f)
+                hb(0f, 2.08f, 0.41f, 0.09f, 0.09f, 0.045f, 0xA9DEF9)
+                hb(-0.27f, 1.81f, 0.41f, 0.07f, 0.07f, 0.04f, 0xF1C0E8)
+                hb(0.27f, 1.81f, 0.41f, 0.07f, 0.07f, 0.04f, 0xF1C0E8)
+            }
+            26 -> { // fones cyberpunk com antenas e módulos luminosos
+                hb(0f, 1.79f, 0f, 0.82f, 0.07f, 0.09f, shadeC(hcl, 0.62f))
+                hb(-0.45f, 1.52f, 0f, 0.1f, 0.48f, 0.17f, hcl)
+                hb(0.45f, 1.52f, 0f, 0.1f, 0.48f, 0.17f, hcl)
+                hb(-0.5f, 1.27f, 0f, 0.16f, 0.25f, 0.27f, shadeC(hcl, 0.7f))
+                hb(0.5f, 1.27f, 0f, 0.16f, 0.25f, 0.27f, shadeC(hcl, 0.7f))
+                hb(-0.5f, 1.27f, 0.145f, 0.09f, 0.12f, 0.025f, 0x48BFE3)
+                hb(0.5f, 1.27f, 0.145f, 0.09f, 0.12f, 0.025f, 0xFF6F91)
+                hb(-0.32f, 1.92f, -0.02f, 0.04f, 0.18f, 0.04f, hcl, rz = -18f)
+                hb(0.32f, 1.92f, -0.02f, 0.04f, 0.18f, 0.04f, hcl, rz = 18f)
+            }
+            27 -> { // capuz volumoso com orelhas e forro
+                hb(0f, 1.62f, -0.04f, 0.96f, 0.3f, 0.9f, hcl)
+                hb(0f, 1.36f, -0.39f, 0.94f, 0.7f, 0.16f, hcl)
+                hb(-0.45f, 1.36f, -0.04f, 0.12f, 0.7f, 0.78f, hcl)
+                hb(0.45f, 1.36f, -0.04f, 0.12f, 0.7f, 0.78f, hcl)
+                for (sd in intArrayOf(-1, 1)) {
+                    val s = sd.toFloat()
+                    hb(s * 0.28f, 1.91f, -0.02f, 0.18f, 0.25f, 0.12f, hcl, rz = -s * 12f)
+                    hb(s * 0.28f, 1.92f, 0.05f, 0.09f, 0.13f, 0.025f, 0xF1C0E8, rz = -s * 12f)
+                }
+                hb(0f, 1.44f, 0.43f, 0.58f, 0.035f, 0.025f, lite(hcl, 0.35f))
+            }
+            28 -> { // coroa floral: pétalas, folhas e gema central
+                for (i in 0 until 9) {
+                    val x = (i - 4) * 0.095f
+                    hb(x, 1.78f + (i % 2) * 0.025f, 0.4f, 0.13f, 0.09f, 0.07f, if (i % 2 == 0) 0xF1C0E8 else 0xFFB4A2, rz = (i - 4) * 9f)
+                    if (i % 2 == 0) hb(x, 1.73f, 0.39f, 0.05f, 0.08f, 0.04f, 0x6CC070, rz = (i - 4) * 8f)
+                }
+                hb(0f, 1.82f, 0.45f, 0.09f, 0.09f, 0.03f, 0xFFD35C)
+            }
+            29 -> { // halo cristalino flutuante com quatro fragmentos
+                val fy = 2.03f + sin(t * 2.5f) * 0.035f
+                hb(0f, fy, 0.22f, 0.52f, 0.035f, 0.06f, hcl)
+                hb(0f, fy, -0.22f, 0.52f, 0.035f, 0.06f, hcl)
+                hb(0.22f, fy, 0f, 0.06f, 0.035f, 0.38f, hcl)
+                hb(-0.22f, fy, 0f, 0.06f, 0.035f, 0.38f, hcl)
+                for (sd in intArrayOf(-1, 1)) hb(sd * 0.34f, fy + 0.04f, 0.02f, 0.07f, 0.11f, 0.07f, lite(hcl, 0.48f), rz = sd * 24f)
+                hb(0f, fy + 0.04f, 0.24f, 0.08f, 0.08f, 0.035f, 0xFFFFFF)
+            }
+            30 -> { // visor tático, lentes duplas e faixa lateral
+                hb(0f, 1.48f, 0.445f, 0.78f, 0.18f, 0.06f, shadeC(hcl, 0.55f))
+                hb(-0.18f, 1.49f, 0.482f, 0.29f, 0.105f, 0.025f, 0x48BFE3)
+                hb(0.18f, 1.49f, 0.482f, 0.29f, 0.105f, 0.025f, 0x48BFE3)
+                hb(0f, 1.49f, 0.498f, 0.06f, 0.13f, 0.018f, lite(hcl, 0.4f))
+                hb(-0.42f, 1.47f, 0.38f, 0.07f, 0.16f, 0.05f, hcl)
+                hb(0.42f, 1.47f, 0.38f, 0.07f, 0.16f, 0.05f, hcl)
+            }
+            31 -> { // chifres neon com anéis e ponta luminosa
+                for (sd in intArrayOf(-1, 1)) {
+                    val s = sd.toFloat()
+                    hb(s * 0.23f, 1.84f, 0f, 0.13f, 0.2f, 0.12f, shadeC(hcl, 0.7f), rz = -s * 18f)
+                    hb(s * 0.29f, 1.98f, 0f, 0.1f, 0.2f, 0.1f, hcl, rz = -s * 30f)
+                    hb(s * 0.35f, 2.13f, 0f, 0.06f, 0.13f, 0.06f, 0x48BFE3, rz = -s * 42f)
+                    hb(s * 0.27f, 1.92f, 0.07f, 0.14f, 0.035f, 0.13f, 0xFF6F91)
+                }
+            }
+        }
+
         // ===== ACABAMENTO INDIVIDUAL DE CHAPÉUS E ACESSÓRIOS DE CABEÇA =====
         // Filetes, rebites, emblemas e painéis seguem o acessório escolhido.
         val hatHi = lite(hcl, 0.38f)
@@ -2158,6 +2235,24 @@ class CharModel {
                 }
                 hb(0f, 1.98f, 0.39f, 0.08f, 0.19f, 0.04f, hatHi)
                 hb(0f, 2.08f, 0.4f, 0.035f, 0.08f, 0.025f, 0xFFFFFF)
+            }
+            24, 31 -> {
+                for (sd in intArrayOf(-1, 1)) {
+                    hb(sd * 0.29f, 1.96f, 0.08f, 0.07f, 0.04f, 0.06f, 0xFF6F91)
+                    hb(sd * 0.32f, 2.06f, 0.02f, 0.035f, 0.07f, 0.035f, 0xFFFFFF)
+                }
+            }
+            25, 28, 29 -> {
+                hb(-0.18f, 1.82f, 0.44f, 0.045f, 0.045f, 0.025f, 0xFFFFFF)
+                hb(0.18f, 1.82f, 0.44f, 0.045f, 0.045f, 0.025f, 0xFFFFFF)
+            }
+            26, 30 -> {
+                hb(-0.5f, 1.27f, 0.16f, 0.035f, 0.1f, 0.025f, 0xFFFFFF)
+                hb(0.5f, 1.27f, 0.16f, 0.035f, 0.1f, 0.025f, 0xFFFFFF)
+            }
+            27 -> {
+                hb(-0.3f, 1.42f, 0.44f, 0.025f, 0.42f, 0.025f, hatHi)
+                hb(0.3f, 1.42f, 0.44f, 0.025f, 0.42f, 0.025f, hatHi)
             }
             5, 6, 14, 15, 20 -> {
                 // Acessórios fofos: costura central, pequenos pingentes e borda contrastante.
