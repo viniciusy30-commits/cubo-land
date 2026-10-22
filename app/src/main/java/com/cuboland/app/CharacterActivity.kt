@@ -63,7 +63,7 @@ class CharacterActivity : CozyActivity() {
         val perRow = 3
         for ((n, id) in list.withIndex()) {
             if (n % perRow == 0) { row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }; card.addView(row, lpW(MATCH, WRAP).apply { topMargin = dp(4) }) }
-            val c = cChip(Look.HAIR_STYLES[id]) { Look.set(Look.HAIR, id); changed() }
+            val c = cChip("✦ " + Look.HAIR_STYLES[id]) { Look.set(Look.HAIR, id); changed() }
             chips.add(c)
             row!!.addView(c, lpW(0, WRAP, 1f).apply { if (n % perRow != 0) leftMargin = dp(4) })
         }
@@ -125,7 +125,7 @@ class CharacterActivity : CozyActivity() {
                 val c = cCard("Corpo"); grid(c, "Tipo", Look.GENDER, Look.GENDER_NAMES, 2); swatch(c, "Pele", Look.SKIN, Look.SKINS, Look.SKIN_NAMES, 6); add(c)
             }
             2 -> {
-                val c = cCard(if (Look.v[Look.GENDER] == 1) "Ateliê de cabelo feminino" else "Ateliê de cabelo masculino", "50 cortes com volume, mechas e movimento. Gire o personagem para conferir o resultado.")
+                val c = cCard(if (Look.v[Look.GENDER] == 1) "Ateliê de cabelo feminino" else "Ateliê de cabelo masculino", "✦ NOVO identifica os 50 penteados reformulados. Gire o personagem para conferir frente, lado e costas.")
                 hairGrid(c)
                 swatch(c, "Cor base", Look.HAIRC, Look.HAIRS, Look.HAIR_NAMES, 8)
                 swatch(c, "Mechas / reflexos", Look.HAIR_ACCENT_COLOR, Look.PAL, Look.PAL_NAMES, 8)
