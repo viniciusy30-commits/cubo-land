@@ -128,6 +128,7 @@ class MinecraftSkinRenderer {
         drawLimb(leftArmOuter, root, .375f, 1.375f, 0f, -swing)
         drawLimb(rightLegOuter, root, -.125f, .75f, 0f, -swing)
         drawLimb(leftLegOuter, root, .125f, .75f, 0f, swing)
+        if (!blendWasEnabled) G.glDisable(G.GL_BLEND)
     }
 
     private fun drawLimb(p: Part, root: FloatArray, x: Float, pivotY: Float, z: Float, angle: Float) {
