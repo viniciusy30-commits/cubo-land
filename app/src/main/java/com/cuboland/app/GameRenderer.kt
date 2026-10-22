@@ -1,5 +1,6 @@
 package com.cuboland.app
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.opengl.GLES20 as G
 import android.opengl.GLSurfaceView
@@ -11,7 +12,8 @@ import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 import kotlin.math.*
 
-class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
+class GameRenderer(val game: Game, private val appContext: Context? = null) : GLSurfaceView.Renderer {
+    private val minecraftSkin = MinecraftSkinRenderer()
     private val world = game.world
     private var prog = 0
     private var aPos = 0; private var aCol = 0; private var aUV = 0
@@ -205,6 +207,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
     }
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
+        minecraftSkin.init(appContext)
         for (d in voxOwned) { d.vb = 0; d.ib = 0; d.vdirty = true }; voxOwned.clear()
         G.glClearColor(fogR, fogG, fogB, 1f)
         prog = G.glCreateProgram()
@@ -1137,7 +1140,7 @@ class GameRenderer(val game: Game) : GLSurfaceView.Renderer {
         } else { an.trk = 0f; an.trkK = 0f; an.trkF = 0f; an.trkP = 0f }
         G.glEnable(G.GL_POLYGON_OFFSET_FILL)   // camadas do boneco: o que está por cima ganha na profundidade (acaba o z-fighting nas dobras)
         cm.mc.layerHook = { l -> G.glPolygonOffset(0f, -l.toFloat()) }
-        cm.draw(charBox, base, an, handM)
+        if (minecraftSkin.isActive()) minecraftSkin.draw(vp, base, an.phase, an.move, an.run) else cm.draw(charBox, base, an, handM)
         cm.mc.layerHook = null
         G.glPolygonOffset(0f, 0f); G.glDisable(G.GL_POLYGON_OFFSET_FILL)
         if (id > 0) {   // mesmo modelo 3D da 1ª pessoa e dos ícones: cabo pra cima, fio pra frente
