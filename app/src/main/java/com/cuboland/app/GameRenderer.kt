@@ -1141,7 +1141,7 @@ class GameRenderer(val game: Game, private val appContext: Context? = null) : GL
         G.glEnable(G.GL_POLYGON_OFFSET_FILL)   // camadas do boneco: o que está por cima ganha na profundidade (acaba o z-fighting nas dobras)
         cm.mc.layerHook = { l -> G.glPolygonOffset(0f, -l.toFloat()) }
         if (minecraftSkin.isActive()) {
-            minecraftSkin.draw(vp, base, an.phase, an.move, an.run, handM)
+            minecraftSkin.draw(vp, base, an, handM)
             // O renderizador de skin usa outro shader e malha; restaura o estado do renderer principal.
             G.glUseProgram(prog)
             G.glActiveTexture(G.GL_TEXTURE0); G.glBindTexture(G.GL_TEXTURE_2D, atlasTex); G.glUniform1i(uTex, 0)
