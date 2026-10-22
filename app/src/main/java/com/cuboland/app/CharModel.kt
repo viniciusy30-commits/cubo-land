@@ -397,57 +397,57 @@ class CharModel {
             hLocks(0.46f, 0.075f, 3f, 5f, 240 + hs)
         }
         when (hs) {
-            0 -> { cap(); hBack(1.28f, 0.04f, 7); hSide(1.35f); bangs(floatArrayOf(.16f,.23f,.18f,.26f,.14f), -2f, 14f); hLocks(.34f,.065f,2f,3f,20); hStreak(-.12f,.05f,.32f) }
-            1 -> { cap(); hBack(1.39f); hSide(1.47f, shade=.72f); spikes(hs,9,.34f); hFade(1.57f,2,.18f,.52f) }
-            2 -> { cap(); longLayers(1.04f,.95f,.105f,5f,8); bangs(floatArrayOf(.23f,.2f,.17f,.2f,.23f),0f,5f); hLocks(.55f,.09f,2f,6f,22) }
-            3 -> { cap(); hBack(1.25f); hSide(1.4f); bangs(floatArrayOf(.18f,.14f,.2f,.15f,.2f)); for(sd in intArrayOf(-1,1)){hPony(1.48f,sd*.43f,.72f,true,t,move,sway,tie,30+sd*3,true);hBow(sd*.45f,1.56f,-.08f,.23f,tie,sd.toFloat())} }
+            0 -> { cap(); hBack(1.28f, 0.04f, 7); hSide(1.35f); bangs(floatArrayOf(0.16f,0.23f,0.18f,0.26f,0.14f), -2f, 14f); hLocks(0.34f,0.065f,2f,3f,20); hStreak(-0.12f,0.05f,0.32f) }
+            1 -> { cap(); hBack(1.39f); hSide(1.47f, shade=0.72f); spikes(hs,9,0.34f); hFade(1.57f,2,0.18f,0.52f) }
+            2 -> { cap(); longLayers(1.04f,0.95f,0.105f,5f,8); bangs(floatArrayOf(0.23f,0.2f,0.17f,0.2f,0.23f),0f,5f); hLocks(0.55f,0.09f,2f,6f,22) }
+            3 -> { cap(); hBack(1.25f); hSide(1.4f); bangs(floatArrayOf(0.18f,0.14f,0.2f,0.15f,0.2f)); for(sd in intArrayOf(-1,1)){hPony(1.48f,sd*0.43f,0.72f,true,t,move,sway,tie,30+sd*3,true);hBow(sd*0.45f,1.56f,-0.08f,0.23f,tie,sd.toFloat())} }
             4 -> pony(false,1.05f,true)
             5 -> bunPair(false)
-            6 -> { cap(); longLayers(.63f,.78f,.12f,7f,9); bangs(floatArrayOf(.17f,.22f,.16f,.2f,.23f,.18f),0f,13f); hLocks(.82f,.105f,3f,7f,35) }
-            7 -> { hCurls(.48f,1.82f,.205f,1.28f,4,40); bangs(floatArrayOf(.12f,.16f,.1f,.14f,.11f),0f,10f); hCurl(-.28f,1.54f,.35f,.16f,53); hCurl(.28f,1.56f,.35f,.17f,55) }
-            8 -> { cap(); hFade(1.58f,4,.1f,.8f); hb(0f,1.82f,-.02f,.58f,.19f,.52f,tone(60)); for(i in 0..3) strand(-.22f+i*.14f,1.86f,.3f,.2f,.12f,.12f,-8f,i*5f,tone(64+i),shine,segs=2) }
-            9 -> { cap(); hBack(1.17f); hSide(1.24f); sidePart(.65f,6); hLocks(.48f,.07f,4f,4f,80) }
-            10 -> { cap(); hBack(1.26f); hSide(1.36f); bangs(floatArrayOf(.24f,.12f,.29f,.16f,.22f),-3f,24f); spikes(hs,6,.25f); hLocks(.28f,.07f,3f,3f,90) }
-            11 -> { cap(); hBack(1.43f); hSide(1.5f,shade=.86f); bangs(floatArrayOf(.1f,.13f,.08f,.11f,.1f)); hb(0f,1.84f,.03f,.24f,.24f,.26f,shine,rz=-12f); strand(0f,1.9f,.06f,.32f,.22f,.2f,-26f,0f,tone(100),shine,segs=3,taper=.12f) }
-            12 -> spikes(hs,12,.42f)
-            13 -> { hb(0f,1.715f,0f,.76f,.035f,.76f,deep); hFade(1.61f,3,.0f,.28f); hb(0f,1.735f,0f,.73f,.025f,.73f,shadeC(skin,.96f)) }
-            14 -> { cap(); hFade(1.59f,3,.1f,.6f); for(i in -2..2) hSpike(i*.13f,0f,.42f-abs(i)*.025f,.12f, i*11f,-7f,120+i) }
-            15 -> { cap(); hBack(1.32f); hSide(1.42f); bangs(floatArrayOf(.12f,.17f,.22f,.17f,.12f),0f,4f); hb(0f,1.74f,.06f,.055f,.02f,.43f,shine) }
-            16 -> { cap(); longLayers(.82f,.88f,.1f,3f,8); bangs(floatArrayOf(.14f,.18f,.16f,.18f,.14f)); for(sd in intArrayOf(-1,1)) hb(sd*.27f,1.6f,.35f,.1f,.5f,.08f,tone(120+sd),rz=-sd*12f) }
-            17 -> { cap(); hBack(1.22f); hSide(1.36f); bangs(floatArrayOf(.17f,.14f,.19f,.14f,.17f)); hBraid(-.28f,1.56f,.31f,5,.92f,0f,-8f,t,move,130,tie,4f); hBraid(.28f,1.56f,.31f,5,.92f,0f,8f,t,move,150,tie,-4f) }
+            6 -> { cap(); longLayers(0.63f,0.78f,0.12f,7f,9); bangs(floatArrayOf(0.17f,0.22f,0.16f,0.2f,0.23f,0.18f),0f,13f); hLocks(0.82f,0.105f,3f,7f,35) }
+            7 -> { hCurls(0.48f,1.82f,0.205f,1.28f,4,40); bangs(floatArrayOf(0.12f,0.16f,0.1f,0.14f,0.11f),0f,10f); hCurl(-0.28f,1.54f,0.35f,0.16f,53); hCurl(0.28f,1.56f,0.35f,0.17f,55) }
+            8 -> { cap(); hFade(1.58f,4,0.1f,0.8f); hb(0f,1.82f,-0.02f,0.58f,0.19f,0.52f,tone(60)); for(i in 0..3) strand(-0.22f+i*0.14f,1.86f,0.3f,0.2f,0.12f,0.12f,-8f,i*5f,tone(64+i),shine,segs=2) }
+            9 -> { cap(); hBack(1.17f); hSide(1.24f); sidePart(0.65f,6); hLocks(0.48f,0.07f,4f,4f,80) }
+            10 -> { cap(); hBack(1.26f); hSide(1.36f); bangs(floatArrayOf(0.24f,0.12f,0.29f,0.16f,0.22f),-3f,24f); spikes(hs,6,0.25f); hLocks(0.28f,0.07f,3f,3f,90) }
+            11 -> { cap(); hBack(1.43f); hSide(1.5f,shade=0.86f); bangs(floatArrayOf(0.1f,0.13f,0.08f,0.11f,0.1f)); hb(0f,1.84f,0.03f,0.24f,0.24f,0.26f,shine,rz=-12f); strand(0f,1.9f,0.06f,0.32f,0.22f,0.2f,-26f,0f,tone(100),shine,segs=3,taper=0.12f) }
+            12 -> spikes(hs,12,0.42f)
+            13 -> { hb(0f,1.715f,0f,0.76f,0.035f,0.76f,deep); hFade(1.61f,3,0.0f,0.28f); hb(0f,1.735f,0f,0.73f,0.025f,0.73f,shadeC(skin,0.96f)) }
+            14 -> { cap(); hFade(1.59f,3,0.1f,0.6f); for(i in -2..2) hSpike(i*0.13f,0f,0.42f-abs(i)*0.025f,0.12f, i*11f,-7f,120+i) }
+            15 -> { cap(); hBack(1.32f); hSide(1.42f); bangs(floatArrayOf(0.12f,0.17f,0.22f,0.17f,0.12f),0f,4f); hb(0f,1.74f,0.06f,0.055f,0.02f,0.43f,shine) }
+            16 -> { cap(); longLayers(0.82f,0.88f,0.1f,3f,8); bangs(floatArrayOf(0.14f,0.18f,0.16f,0.18f,0.14f)); for(sd in intArrayOf(-1,1)) hb(sd*0.27f,1.6f,0.35f,0.1f,0.5f,0.08f,tone(120+sd),rz=-sd*12f) }
+            17 -> { cap(); hBack(1.22f); hSide(1.36f); bangs(floatArrayOf(0.17f,0.14f,0.19f,0.14f,0.17f)); hBraid(-0.28f,1.56f,0.31f,5,0.92f,0f,-8f,t,move,130,tie,4f); hBraid(0.28f,1.56f,0.31f,5,0.92f,0f,8f,t,move,150,tie,-4f) }
             18 -> bunPair(true)
-            19 -> { pony(true,1.15f,true); hBow(0f,1.77f,-.44f,.25f,tie) }
-            20 -> { cap(); hBack(1.3f); hSide(1.4f); hSpike(0f,-.1f,.25f,.07f,0f,0f,160) }
-            21 -> { cap(); hFade(1.59f,4,.05f,.82f); hBack(1.47f,shade=.68f); hSide(1.49f,shade=.68f); bangs(floatArrayOf(.12f,.16f,.1f,.13f,.12f)) }
-            22 -> { cap(); hBack(1.39f); hSide(1.48f); bangs(floatArrayOf(.08f,.11f,.08f,.11f,.08f)); hb(0f,1.85f,-.02f,.56f,.13f,.46f,tone(170)); hStreak(-.08f,.04f,.32f) }
-            23 -> { cap(); hBack(1.42f); hSide(1.5f); hb(0f,1.84f,.02f,.5f,.22f,.48f,tone(180),rz=-4f); for(i in 0..4) strand(-.25f+i*.125f,1.86f,.31f,.24f,.11f,.12f,-18f,-5f+i*3f,tone(184+i),shine,segs=3) }
-            24 -> { hCurls(.42f,1.79f,.16f,1.35f,4,200); bangs(floatArrayOf(.1f,.14f,.12f,.14f,.1f)); hLocks(.3f,.06f,2f,2f,210) }
-            25 -> { hCurls(.57f,1.91f,.205f,1.2f,5,220); for(i in -2..2) hCurl(i*.2f,1.88f,.25f,.18f,225+i) }
-            26 -> { cap(); hBack(.98f,.1f,9,sway); hSide(1.18f,.05f); bangs(floatArrayOf(.14f,.2f,.16f,.12f,.18f)); hHang(7,3,.72f,.075f,4,240,sway,5f,.16f,deep,true,1.6f) }
-            27 -> { cap(); hBack(1.02f,.23f,8,sway); hSide(1.35f,.08f); bangs(floatArrayOf(.1f,.14f,.1f,.12f)); hShine(1.46f) }
-            28 -> { bunPair(false); hb(0f,1.7f,-.44f,.08f,.08f,.05f,tie) }
-            29 -> { cap(); longLayers(.74f,.94f,.1f,5f,8); bangs(floatArrayOf(.25f,.19f,.13f,.19f,.25f),0f,4f); hLocks(.72f,.09f,2f,4f,250) }
-            30 -> { cap(); hBack(1.4f); hSide(1.45f); for(i in 0..5) strand(.3f-i*.12f,1.77f,.42f,.3f+i*.035f,.13f,.08f,-8f,-22f-i*3f,tone(260+i),shine,segs=3,taper=.28f); hLocks(.38f,.07f,2f,3f,270) }
-            31 -> { cap(); longLayers(.9f,.95f,.11f,10f,8); bangs(floatArrayOf(.15f,.19f,.17f,.2f,.16f),-2f,17f); hBack(.92f,.2f,8,sway) }
-            32 -> { cap(); longLayers(.52f,.78f,.12f,2f,9); bangs(floatArrayOf(.18f,.23f,.2f,.23f,.18f),0f,5f) }
-            33 -> { cap(); longLayers(.65f,.9f,.12f,9f,9); bangs(floatArrayOf(.16f,.22f,.18f,.21f,.16f)); hLocks(.7f,.1f,3f,9f,280) }
-            34 -> { hCurls(.5f,1.84f,.19f,1.15f,5,290); bangs(floatArrayOf(.13f,.16f,.11f,.15f,.12f)); hLocks(.68f,.08f,2f,6f,300) }
-            35 -> { cap(); hBack(1.35f); hSide(1.4f); bangs(floatArrayOf(.16f,.26f,.32f,.25f,.14f),-12f,25f); sidePart(.3f,3) }
-            36 -> { cap(); hFade(1.62f,4,.1f,.85f); hb(0f,1.83f,0f,.52f,.18f,.5f,tone(310)); for(i in -2..2) strand(i*.12f,1.83f,.28f,.18f,.11f,.11f,-6f,i*3f,tone(315+i),shine,segs=2) }
-            37 -> { cap(); hb(0f,1.82f,0f,.8f,.18f,.8f,tone(320)); hBack(1.33f); hSide(1.38f); bangs(floatArrayOf(.17f,.18f,.18f,.18f,.17f),0f,2f); hStreak(0f,.1f,.34f,.04f,.25f) }
-            38 -> { cap(); hBack(1.36f); hSide(1.42f); bangs(floatArrayOf(.12f,.18f,.12f,.18f,.12f)); for(i in -2..2) strand(i*.12f,1.76f,.35f,.2f,.1f,.08f,-10f,i*7f,tone(330+i),shine,segs=2) }
-            39 -> pony(false,.86f,false)
-            40 -> { cap(); hSide(1.25f,.08f); hBack(1.28f,.12f,8); bangs(floatArrayOf(.18f,.24f,.17f,.25f,.18f),0f,10f); hLocks(.38f,.075f,4f,5f,340) }
-            41 -> { cap(); hSide(1.26f,.12f); hBack(1.27f,.1f,8); bangs(floatArrayOf(.27f,.18f,.13f,.2f,.28f),-8f,18f); hLocks(.44f,.08f,5f,4f,350) }
-            42 -> pony(true,.92f,true)
+            19 -> { pony(true,1.15f,true); hBow(0f,1.77f,-0.44f,0.25f,tie) }
+            20 -> { cap(); hBack(1.3f); hSide(1.4f); hSpike(0f,-0.1f,0.25f,0.07f,0f,0f,160) }
+            21 -> { cap(); hFade(1.59f,4,0.05f,0.82f); hBack(1.47f,shade=0.68f); hSide(1.49f,shade=0.68f); bangs(floatArrayOf(0.12f,0.16f,0.1f,0.13f,0.12f)) }
+            22 -> { cap(); hBack(1.39f); hSide(1.48f); bangs(floatArrayOf(0.08f,0.11f,0.08f,0.11f,0.08f)); hb(0f,1.85f,-0.02f,0.56f,0.13f,0.46f,tone(170)); hStreak(-0.08f,0.04f,0.32f) }
+            23 -> { cap(); hBack(1.42f); hSide(1.5f); hb(0f,1.84f,0.02f,0.5f,0.22f,0.48f,tone(180),rz=-4f); for(i in 0..4) strand(-0.25f+i*0.125f,1.86f,0.31f,0.24f,0.11f,0.12f,-18f,-5f+i*3f,tone(184+i),shine,segs=3) }
+            24 -> { hCurls(0.42f,1.79f,0.16f,1.35f,4,200); bangs(floatArrayOf(0.1f,0.14f,0.12f,0.14f,0.1f)); hLocks(0.3f,0.06f,2f,2f,210) }
+            25 -> { hCurls(0.57f,1.91f,0.205f,1.2f,5,220); for(i in -2..2) hCurl(i*0.2f,1.88f,0.25f,0.18f,225+i) }
+            26 -> { cap(); hBack(0.98f,0.1f,9,sway); hSide(1.18f,0.05f); bangs(floatArrayOf(0.14f,0.2f,0.16f,0.12f,0.18f)); hHang(7,3,0.72f,0.075f,4,240,sway,5f,0.16f,deep,true,1.6f) }
+            27 -> { cap(); hBack(1.02f,0.23f,8,sway); hSide(1.35f,0.08f); bangs(floatArrayOf(0.1f,0.14f,0.1f,0.12f)); hShine(1.46f) }
+            28 -> { bunPair(false); hb(0f,1.7f,-0.44f,0.08f,0.08f,0.05f,tie) }
+            29 -> { cap(); longLayers(0.74f,0.94f,0.1f,5f,8); bangs(floatArrayOf(0.25f,0.19f,0.13f,0.19f,0.25f),0f,4f); hLocks(0.72f,0.09f,2f,4f,250) }
+            30 -> { cap(); hBack(1.4f); hSide(1.45f); for(i in 0..5) strand(0.3f-i*0.12f,1.77f,0.42f,0.3f+i*0.035f,0.13f,0.08f,-8f,-22f-i*3f,tone(260+i),shine,segs=3,taper=0.28f); hLocks(0.38f,0.07f,2f,3f,270) }
+            31 -> { cap(); longLayers(0.9f,0.95f,0.11f,10f,8); bangs(floatArrayOf(0.15f,0.19f,0.17f,0.2f,0.16f),-2f,17f); hBack(0.92f,0.2f,8,sway) }
+            32 -> { cap(); longLayers(0.52f,0.78f,0.12f,2f,9); bangs(floatArrayOf(0.18f,0.23f,0.2f,0.23f,0.18f),0f,5f) }
+            33 -> { cap(); longLayers(0.65f,0.9f,0.12f,9f,9); bangs(floatArrayOf(0.16f,0.22f,0.18f,0.21f,0.16f)); hLocks(0.7f,0.1f,3f,9f,280) }
+            34 -> { hCurls(0.5f,1.84f,0.19f,1.15f,5,290); bangs(floatArrayOf(0.13f,0.16f,0.11f,0.15f,0.12f)); hLocks(0.68f,0.08f,2f,6f,300) }
+            35 -> { cap(); hBack(1.35f); hSide(1.4f); bangs(floatArrayOf(0.16f,0.26f,0.32f,0.25f,0.14f),-12f,25f); sidePart(0.3f,3) }
+            36 -> { cap(); hFade(1.62f,4,0.1f,0.85f); hb(0f,1.83f,0f,0.52f,0.18f,0.5f,tone(310)); for(i in -2..2) strand(i*0.12f,1.83f,0.28f,0.18f,0.11f,0.11f,-6f,i*3f,tone(315+i),shine,segs=2) }
+            37 -> { cap(); hb(0f,1.82f,0f,0.8f,0.18f,0.8f,tone(320)); hBack(1.33f); hSide(1.38f); bangs(floatArrayOf(0.17f,0.18f,0.18f,0.18f,0.17f),0f,2f); hStreak(0f,0.1f,0.34f,0.04f,0.25f) }
+            38 -> { cap(); hBack(1.36f); hSide(1.42f); bangs(floatArrayOf(0.12f,0.18f,0.12f,0.18f,0.12f)); for(i in -2..2) strand(i*0.12f,1.76f,0.35f,0.2f,0.1f,0.08f,-10f,i*7f,tone(330+i),shine,segs=2) }
+            39 -> pony(false,0.86f,false)
+            40 -> { cap(); hSide(1.25f,0.08f); hBack(1.28f,0.12f,8); bangs(floatArrayOf(0.18f,0.24f,0.17f,0.25f,0.18f),0f,10f); hLocks(0.38f,0.075f,4f,5f,340) }
+            41 -> { cap(); hSide(1.26f,0.12f); hBack(1.27f,0.1f,8); bangs(floatArrayOf(0.27f,0.18f,0.13f,0.2f,0.28f),-8f,18f); hLocks(0.44f,0.08f,5f,4f,350) }
+            42 -> pony(true,0.92f,true)
             43 -> bunPair(false)
-            44 -> { cap(); longLayers(.7f,.92f,.1f,3f,8); bangs(floatArrayOf(.15f,.2f,.15f,.2f,.15f)); hBow(.28f,1.61f,-.36f,.22f,tie,1f) }
-            45 -> { cap(); hSide(1.3f); hBack(1.12f,.08f,8); bangs(floatArrayOf(.12f,.16f,.12f,.16f,.12f)); hBraid(.39f,1.6f,.25f,6,.8f,0f,18f,t,move,360,tie,4f) }
-            46 -> { cap(); hBack(.92f,.12f,8,sway); hSide(1.22f,.08f); bangs(floatArrayOf(.18f,.13f,.17f,.13f,.18f)); hBraid(-.3f,1.58f,.26f,6,.82f,0f,-9f,t,move,370,tie,3f); hBraid(.3f,1.58f,.26f,6,.82f,0f,9f,t,move,390,tie,-3f) }
-            47 -> { cap(); hBack(1.24f); hSide(1.4f); bangs(floatArrayOf(.18f,.14f,.2f,.14f,.18f)); hBun(0f,1.91f,-.18f,.29f,400,false); hBack(.95f,.08f,8,sway, .96f, 410,1.64f) }
-            48 -> { hCurls(.48f,1.86f,.17f,1.18f,5,420); bangs(floatArrayOf(.14f,.17f,.14f,.17f,.14f)); for(sd in intArrayOf(-1,1)) hCurl(sd*.3f,1.55f,.31f,.18f,425+sd) }
-            49 -> { cap(); hSide(1.42f); bangs(floatArrayOf(.16f,.2f,.17f,.2f,.16f)); for(sd in intArrayOf(-1,1)) { hBun(sd*.43f,1.78f,-.08f,.22f,440+sd,true); for(i in 0..4) strand(sd*.43f,1.76f,-.08f,.48f-i*.035f,.075f,.08f,i*3f,sd*8f,tone(450+i+sd),shine,segs=3,taper=.18f) } }
-            else -> { cap(); longLayers(.8f,.9f,.11f,5f,8); bangs(floatArrayOf(.17f,.2f,.15f,.2f,.17f)) }
+            44 -> { cap(); longLayers(0.7f,0.92f,0.1f,3f,8); bangs(floatArrayOf(0.15f,0.2f,0.15f,0.2f,0.15f)); hBow(0.28f,1.61f,-0.36f,0.22f,tie,1f) }
+            45 -> { cap(); hSide(1.3f); hBack(1.12f,0.08f,8); bangs(floatArrayOf(0.12f,0.16f,0.12f,0.16f,0.12f)); hBraid(0.39f,1.6f,0.25f,6,0.8f,0f,18f,t,move,360,tie,4f) }
+            46 -> { cap(); hBack(0.92f,0.12f,8,sway); hSide(1.22f,0.08f); bangs(floatArrayOf(0.18f,0.13f,0.17f,0.13f,0.18f)); hBraid(-0.3f,1.58f,0.26f,6,0.82f,0f,-9f,t,move,370,tie,3f); hBraid(0.3f,1.58f,0.26f,6,0.82f,0f,9f,t,move,390,tie,-3f) }
+            47 -> { cap(); hBack(1.24f); hSide(1.4f); bangs(floatArrayOf(0.18f,0.14f,0.2f,0.14f,0.18f)); hBun(0f,1.91f,-0.18f,0.29f,400,false); hBack(0.95f,0.08f,8,sway, 0.96f, 410,1.64f) }
+            48 -> { hCurls(0.48f,1.86f,0.17f,1.18f,5,420); bangs(floatArrayOf(0.14f,0.17f,0.14f,0.17f,0.14f)); for(sd in intArrayOf(-1,1)) hCurl(sd*0.3f,1.55f,0.31f,0.18f,425+sd) }
+            49 -> { cap(); hSide(1.42f); bangs(floatArrayOf(0.16f,0.2f,0.17f,0.2f,0.16f)); for(sd in intArrayOf(-1,1)) { hBun(sd*0.43f,1.78f,-0.08f,0.22f,440+sd,true); for(i in 0..4) strand(sd*0.43f,1.76f,-0.08f,0.48f-i*0.035f,0.075f,0.08f,i*3f,sd*8f,tone(450+i+sd),shine,segs=3,taper=0.18f) } }
+            else -> { cap(); longLayers(0.8f,0.9f,0.11f,5f,8); bangs(floatArrayOf(0.17f,0.2f,0.15f,0.2f,0.17f)) }
         }
         // Micro-mechas de brilho aplicadas por cima do volume, sem depender da cor escolhida.
         if (hs != 13) {
