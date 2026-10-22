@@ -12,3 +12,4 @@ minecraft-skin-hand-transform-2026-10-22
 minecraft-skin-preview-init-fix-2026-10-22
 minecraft-skin-animation-poses-2026-10-22
 add-10-original-skin-presets-2026-10-22
+skin-presets-isolated-python-env-2026-10-22
