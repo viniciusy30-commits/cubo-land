@@ -106,7 +106,7 @@ class MinecraftSkinRenderer {
 
     fun isActive(): Boolean = active
 
-    fun draw(vp: FloatArray, root: FloatArray, phase: Float, moving: Float, running: Float) {
+    fun draw(vp: FloatArray, root: FloatArray, phase: Float, moving: Float, running: Float, handOut: FloatArray? = null) {
         if (!active || program == 0) return
         val blendWasEnabled = G.glIsEnabled(G.GL_BLEND)
         G.glEnable(G.GL_BLEND)
@@ -118,7 +118,7 @@ class MinecraftSkinRenderer {
         val swing = sin(phase) * (if (running > .5f) 48f else 30f) * moving
         drawPart(head, root, 0f, 1.625f, 0f, 0f, 0f)
         drawPart(torso, root, 0f, 1.0f, 0f, 0f, 0f)
-        drawLimb(rightArm, root, -.375f, 1.375f, 0f, swing)
+        drawLimb(rightArm, root, -.375f, 1.375f, 0f, swing, handOut)
         drawLimb(leftArm, root, .375f, 1.375f, 0f, -swing)
         drawLimb(rightLeg, root, -.125f, .75f, 0f, -swing)
         drawLimb(leftLeg, root, .125f, .75f, 0f, swing)
@@ -131,10 +131,15 @@ class MinecraftSkinRenderer {
         if (!blendWasEnabled) G.glDisable(G.GL_BLEND)
     }
 
-    private fun drawLimb(p: Part, root: FloatArray, x: Float, pivotY: Float, z: Float, angle: Float) {
+    private fun drawLimb(p: Part, root: FloatArray, x: Float, pivotY: Float, z: Float, angle: Float, handOut: FloatArray? = null) {
         Matrix.setIdentityM(model, 0)
         Matrix.translateM(model, 0, x, pivotY, z)
         Matrix.rotateM(model, 0, angle, 1f, 0f, 0f)
+        if (handOut != null) {
+            System.arraycopy(model, 0, temp, 0, 16)
+            Matrix.translateM(temp, 0, 0f, -p.h, 0.02f)
+            Matrix.multiplyMM(handOut, 0, root, 0, temp, 0)
+        }
         Matrix.translateM(model, 0, 0f, -p.h * .5f, 0f)
         Matrix.scaleM(model, 0, p.w, p.h, p.d)
         Matrix.multiplyMM(temp, 0, root, 0, model, 0)
