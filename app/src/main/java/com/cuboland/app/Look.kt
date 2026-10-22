@@ -41,7 +41,7 @@ object Look {
     val TOPS = arrayOf("Camiseta", "Moletom", "Vestido", "Jaqueta", "Túnica", "Armadura", "Macacão", "Camisa social", "Marinheiro", "Gakuran", "Kimono", "Robe de mago", "Terno", "Regata", "Haori samurai", "Maid", "Colete aventureiro", "Casacão")
     val BOTTOMS = arrayOf("Calça", "Shorts", "Saia", "Bermuda", "Hakama", "Saia plissada", "Leggings", "Cargo")
     val SHOE_STYLES = arrayOf("Botas", "Tênis", "Sapatilha", "Descalço", "Botas altas", "Geta", "Mocassim", "Meias listradas")
-    val HATS = arrayOf("Nenhum", "Chapéu de bruxo", "Gorro de lã", "Boné", "Coroa", "Orelhas de gato", "Orelhas de coelho", "Laço grande", "Capacete", "Chapéu de palha", "Florzinha", "Faixa ninja", "Auréola", "Chifrinhos", "Orelhas de raposa", "Tiara", "Boina", "Chapéu kasa", "Fones", "Capuz", "Touca de maid", "Cartola", "Chapéu de chef", "Capacete viking")
+    val HATS = arrayOf("Nenhum", "Chapéu de bruxo", "Gorro de lã", "Boné", "Coroa", "Orelhas de gato", "Orelhas de coelho", "Laço grande", "Capacete", "Chapéu de palha", "Florzinha", "Faixa ninja", "Auréola", "Chifrinhos", "Orelhas de raposa", "Tiara", "Boina", "Chapéu kasa", "Fones", "Capuz", "Touca de maid", "Cartola", "Chapéu de chef", "Capacete viking", "Chifres infernais", "Tiara lunar", "Fones cyberpunk", "Capuz com orelhas", "Coroa floral", "Halo cristalino", "Visor tático", "Chifres neon")
     val FACES = arrayOf("Nada", "Óculos redondos", "Óculos escuros", "Sardas", "Tapa-olho", "Cicatriz", "Curativo", "Bigodes de gato", "Máscara", "Óculos quadrados", "Lágrima", "Monóculo", "Óculos aviador")
     val BACKS = arrayOf("Nada", "Capa", "Mochila", "Asinhas", "Rabinho", "Espada nas costas", "Asas de morcego", "Aljava", "Rabo de raposa", "Mochila escolar")
     val MOUTHS = arrayOf("Sorriso", "Neutra", "Biquinho", "Aberta", "Dentinho", "Gatinho")
@@ -51,7 +51,7 @@ object Look {
     val HAIR_ACCENTS = arrayOf("Sem mechas", "Mecha central", "Duas mechas", "Pontas coloridas", "Franja bicolor", "Reflexos", "Mecha lateral", "Neon alternado", "Duas mechas finas")
 
     // 26 slots persistidos; cores de roupa/acessórios usam a paleta expandida de 32 cores.
-    val COUNTS = intArrayOf(2, 10, 50, 24, 9, 16, 2, 18, 32, 8, 32, 8, 32, 24, 32, 13, 10, 32, 10, 32, 6, 8, 32, 7, 32, 9, 32)
+    val COUNTS = intArrayOf(2, 10, 50, 24, 9, 16, 2, 18, 32, 8, 32, 8, 32, 32, 32, 13, 10, 32, 10, 32, 6, 8, 32, 7, 32, 9, 32)
 
 
     /** looks prontos: 21 valores na ordem dos índices acima */
@@ -80,13 +80,13 @@ object Look {
         intArrayOf(1, 2, 25, 12, 1, 1, 1, 4, 7, 6, 7, 0, 7, 14, 7, 3, 8, 7, 7, 7, 0, 5, 23, 2, 23, 2, 23),
         // Coleção inspirada em linguagens visuais recorrentes nas galerias públicas de skins:
         // anime streetwear, armadura dark-fantasy, demônio, techwear, mago azul/dourado e moda pastel.
-        intArrayOf(0, 2, 0, 4, 0, 5, 0, 1, 2, 0, 3, 1, 3, 0, 2, 1, 9, 3, 1, 2, 0, 0, 29, 1, 3, 4, 29),
-        intArrayOf(0, 1, 12, 4, 5, 8, 0, 5, 3, 7, 3, 0, 15, 8, 3, 8, 6, 9, 8, 6, 1, 7, 9, 4, 3, 7, 9),
-        intArrayOf(0, 0, 13, 8, 5, 8, 0, 11, 3, 6, 3, 4, 3, 13, 4, 8, 6, 8, 8, 4, 1, 6, 4, 2, 3, 3, 4),
-        intArrayOf(0, 2, 30, 4, 5, 5, 0, 17, 3, 7, 3, 0, 3, 18, 3, 9, 2, 3, 1, 3, 1, 7, 24, 4, 3, 0, 24),
-        intArrayOf(0, 1, 32, 8, 5, 10, 0, 11, 8, 0, 3, 0, 6, 1, 6, 0, 1, 6, 9, 6, 0, 6, 6, 4, 6, 5, 6),
-        intArrayOf(1, 1, 2, 17, 0, 4, 1, 1, 1, 1, 3, 1, 2, 16, 1, 1, 9, 1, 1, 1, 2, 5, 18, 1, 17, 4, 18),
-        intArrayOf(1, 0, 41, 21, 7, 6, 1, 1, 8, 7, 3, 1, 3, 5, 6, 7, 9, 6, 6, 6, 5, 6, 23, 4, 23, 5, 23))
+        intArrayOf(0, 2, 0, 4, 0, 5, 0, 1, 2, 0, 3, 1, 3, 26, 2, 1, 9, 3, 1, 2, 0, 0, 29, 1, 3, 4, 29),
+        intArrayOf(0, 1, 12, 4, 5, 8, 0, 5, 3, 7, 3, 0, 15, 24, 3, 8, 6, 9, 8, 6, 1, 7, 9, 4, 3, 7, 9),
+        intArrayOf(0, 0, 13, 8, 5, 8, 0, 11, 3, 6, 3, 4, 3, 31, 4, 8, 6, 8, 8, 4, 1, 6, 4, 2, 3, 3, 4),
+        intArrayOf(0, 2, 30, 4, 5, 5, 0, 17, 3, 7, 3, 0, 3, 30, 3, 9, 2, 3, 1, 3, 1, 7, 24, 4, 3, 0, 24),
+        intArrayOf(0, 1, 32, 8, 5, 10, 0, 11, 8, 0, 3, 0, 6, 25, 6, 0, 1, 6, 9, 6, 0, 6, 6, 4, 6, 5, 6),
+        intArrayOf(1, 1, 2, 17, 0, 4, 1, 1, 3, 1, 3, 1, 2, 28, 1, 1, 9, 1, 1, 1, 2, 5, 18, 1, 17, 4, 18),
+        intArrayOf(1, 0, 41, 21, 7, 6, 1, 1, 8, 7, 3, 1, 3, 27, 6, 7, 9, 6, 6, 6, 5, 6, 23, 4, 23, 5, 23))
 
     fun applyPreset(i: Int) {
         val preset = PRESETS[((i % PRESETS.size) + PRESETS.size) % PRESETS.size]
