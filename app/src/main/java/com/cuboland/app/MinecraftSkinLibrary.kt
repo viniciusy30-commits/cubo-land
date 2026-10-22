@@ -11,19 +11,6 @@ import java.io.FileOutputStream
 object MinecraftSkinLibrary {
     private const val ACTIVE_FILE = "minecraft_skin_imported.png"
     private const val LIBRARY_DIR = "minecraft_skins"
-    private val BUILTIN_SKINS = listOf(
-        "01_crimson_mage.png" to "Mago Carmesim",
-        "02_void_knight.png" to "Cavaleiro do Vazio",
-        "03_cyber_ninja.png" to "Ninja Cibernético",
-        "04_royal_mage.png" to "Maga Imperial",
-        "05_forest_ranger.png" to "Patrulheiro Élfico",
-        "06_gothic_rose.png" to "Gótica Carmesim",
-        "07_frost_guardian.png" to "Guardião Glacial",
-        "08_streetwear.png" to "Streetwear Neon",
-        "09_sun_paladin.png" to "Paladino Solar",
-        "10_shadow_assassin.png" to "Assassino Sombrio"
-    )
-
     data class Result(val ok: Boolean, val message: String, val bitmap: Bitmap? = null, val savedName: String? = null)
 
     fun import(context: Context, uri: Uri): Result {
@@ -55,32 +42,20 @@ object MinecraftSkinLibrary {
         val dir = File(context.filesDir, LIBRARY_DIR)
         val imported = dir.listFiles()?.filter { it.isFile && it.extension.equals("png", true) }
             ?.sortedBy { it.name }?.map { it.name } ?: emptyList()
-        return BUILTIN_SKINS.map { "preset_${it.first}" } + imported
+        return imported
     }
 
     fun displayName(fileName: String): String {
-        if (fileName.startsWith("preset_")) {
-            val asset = fileName.removePrefix("preset_")
-            return BUILTIN_SKINS.firstOrNull { it.first == asset }?.second ?: asset.removeSuffix(".png")
-        }
         return fileName.removeSuffix(".png").replace("_", " ").uppercase()
     }
 
     fun activate(context: Context, fileName: String): Boolean {
         val destination = File(context.filesDir, ACTIVE_FILE)
         return try {
-            if (fileName.startsWith("preset_")) {
-                val assetName = fileName.removePrefix("preset_")
-                if (BUILTIN_SKINS.none { it.first == assetName }) return false
-                context.assets.open("preset_skins/$assetName").use { input ->
-                    FileOutputStream(destination).use { output -> input.copyTo(output) }
-                }
-            } else {
-                if (!fileName.matches(Regex("skin_[0-9]{2,}\\.png"))) return false
+            if (!fileName.matches(Regex("skin_[0-9]{2,}\\.png"))) return false
                 val source = File(File(context.filesDir, LIBRARY_DIR), fileName)
                 if (!source.isFile) return false
                 source.copyTo(destination, true)
-            }
             true
         } catch (_: Exception) { false }
     }
