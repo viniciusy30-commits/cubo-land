@@ -40,8 +40,8 @@ class MinecraftSkinRenderer {
         intArrayOf(44,20,4,12), intArrayOf(52,20,4,12), intArrayOf(40,20,4,12),
         intArrayOf(48,20,4,12), intArrayOf(44,16,4,4), intArrayOf(48,16,4,4)))
     private val leftArm = Part("leftArm", .25f, .75f, .25f, arrayOf(
-        intArrayOf(44,52,4,12), intArrayOf(52,52,4,12), intArrayOf(48,52,4,12),
-        intArrayOf(40,52,4,12), intArrayOf(44,48,4,4), intArrayOf(48,48,4,4)))
+        intArrayOf(36,52,4,12), intArrayOf(44,52,4,12), intArrayOf(32,52,4,12),
+        intArrayOf(40,52,4,12), intArrayOf(36,48,4,4), intArrayOf(40,48,4,4)))
     private val rightLeg = Part("rightLeg", .25f, .75f, .25f, arrayOf(
         intArrayOf(4,20,4,12), intArrayOf(12,20,4,12), intArrayOf(0,20,4,12),
         intArrayOf(8,20,4,12), intArrayOf(4,16,4,4), intArrayOf(8,16,4,4)))
