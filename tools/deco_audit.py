@@ -55,8 +55,17 @@ def main():
                         return True
             return any(rp + base + short + ".png" in names for base in
                        ("textures/blocks/", "textures/items/", "textures/models/"))
+        # Geometrias incorporadas ao Bedrock, sem arquivo .geo.json no addon.
+        builtin_geometries = {
+            "minecraft:geometry.full_block",
+            "minecraft:geometry.cross",
+            "minecraft:geometry.torch",
+            "minecraft:geometry.cube",
+        }
         blocks = 0
         missing_primary_geometry = []
+        missing_permutation_geometries = []
+        builtin_geometry_refs = collections.Counter()
         missing_texture_refs = collections.Counter()
         state_counts = collections.Counter()
         folder_counts = collections.Counter()
@@ -86,8 +95,21 @@ def main():
                 state_counts.update(desc["states"].keys())
             g = comps.get("minecraft:geometry")
             gid = g if isinstance(g, str) else (g or {}).get("identifier")
-            if gid not in geo_ids:
+            if gid in builtin_geometries:
+                builtin_geometry_refs[gid] += 1
+            elif gid and gid not in geo_ids:
                 missing_primary_geometry.append({"block": p, "geometry": gid})
+            for pi, perm in enumerate(d.get("permutations", [])):
+                pg = perm.get("components", {}).get("minecraft:geometry")
+                pgid = pg if isinstance(pg, str) else (pg or {}).get("identifier")
+                if not pgid:
+                    continue
+                if pgid in builtin_geometries:
+                    builtin_geometry_refs[pgid] += 1
+                elif pgid not in geo_ids:
+                    missing_permutation_geometries.append({
+                        "block": p, "permutation": pi, "geometry": pgid
+                    })
             mats = comps.get("minecraft:material_instances", {})
             for mat in mats.values() if isinstance(mats, dict) else []:
                 if isinstance(mat, dict):
@@ -108,8 +130,11 @@ def main():
             "blocks_with_states": dynamic_blocks,
             "texture_data_entries": len(tex_data),
             "png_files": sum(1 for p in names if p.startswith(rp) and p.lower().endswith(".png")),
+            "builtin_geometry_references": dict(builtin_geometry_refs),
             "missing_primary_geometry_count": len(missing_primary_geometry),
             "missing_primary_geometry": missing_primary_geometry,
+            "missing_permutation_geometry_count": len(missing_permutation_geometries),
+            "missing_permutation_geometries": missing_permutation_geometries,
             "missing_texture_reference_count": sum(missing_texture_refs.values()),
             "missing_texture_references": dict(missing_texture_refs),
             "malformed_block_json_count": len(malformed),
@@ -121,7 +146,8 @@ def main():
         for k in ("archive_entries", "block_definitions", "geometry_files",
                   "geometry_identifiers", "blocks_with_permutations", "blocks_with_states",
                   "texture_data_entries", "png_files", "missing_primary_geometry_count",
-                  "missing_texture_reference_count", "malformed_block_json_count"):
+                  "missing_permutation_geometry_count", "missing_texture_reference_count",
+                  "malformed_block_json_count"):
             print(f"{k}: {report[k]}")
         if report["missing_texture_references"]:
             print("Texturas ausentes (referencia: ocorrencias):")
