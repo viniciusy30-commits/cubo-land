@@ -24,6 +24,7 @@ class CharacterActivity : CozyActivity() {
     private lateinit var content: LinearLayout
     private lateinit var scroll: ScrollView
     private lateinit var cv: CharView
+    private lateinit var importedSkinAvatarPreview: MinecraftSkinPreviewView
     private lateinit var importedSkinPreview: ImageView
     private lateinit var importedSkinStatus: TextView
     private val PICK_SKIN_PNG = 7041
@@ -202,7 +203,9 @@ class CharacterActivity : CozyActivity() {
             importedSkinStatus.setTextColor(Cz.GREEN)
             importedSkinPreview.visibility = View.VISIBLE
             importedSkinPreview.setImageBitmap(result.bitmap)
-            Toast.makeText(this, "PNG importado e salvo no CuboLand.", Toast.LENGTH_SHORT).show()
+            importedSkinAvatarPreview.setSkin(result.bitmap)
+            cv.visibility = View.GONE
+            Toast.makeText(this, "Skin importada. Ela será aplicada ao avatar 3D ao entrar no mundo.", Toast.LENGTH_SHORT).show()
         } else {
             importedSkinStatus.setTextColor(Cz.RED)
             Toast.makeText(this, result.message, Toast.LENGTH_LONG).show()
@@ -226,6 +229,11 @@ class CharacterActivity : CozyActivity() {
         val pv = FrameLayout(this).apply { background = CozyBox(this@CharacterActivity, Cz.GOLD, 22f, false); setPadding(dp(6), dp(6), dp(6), dp(6)) }
         cv = CharView(this); cv.scenic = true
         pv.addView(cv, FrameLayout.LayoutParams(-1, -1))
+        importedSkinAvatarPreview = MinecraftSkinPreviewView(this)
+        pv.addView(importedSkinAvatarPreview, FrameLayout.LayoutParams(-1, -1))
+        val savedSkinPreview = MinecraftSkinLibrary.load(this)
+        if (savedSkinPreview != null) { importedSkinAvatarPreview.setSkin(savedSkinPreview); cv.visibility = View.GONE }
+        importedSkinAvatarPreview.setOnTouchListener { _, event -> cv.onTouchEvent(event) }
         pv.addView(cTxtL("⟳  ARRASTE PARA GIRAR  ⟳", 11f, Color.WHITE, true), FrameLayout.LayoutParams(-2, -2, Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = dp(6) })
         leftCol.addView(pv, lpW(MATCH, 0, 1f))
         val skinImportCard = LinearLayout(this).apply {
