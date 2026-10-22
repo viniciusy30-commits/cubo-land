@@ -26,6 +26,7 @@ class CharacterActivity : CozyActivity() {
     private lateinit var cv: CharView
     private lateinit var importedSkinAvatarPreview: MinecraftSkinPreviewView
     private lateinit var skinPreviewHint: TextView
+    private lateinit var skinLibraryRow: LinearLayout
     private lateinit var importedSkinPreview: ImageView
     private lateinit var importedSkinStatus: TextView
     private val PICK_SKIN_PNG = 7041
@@ -103,6 +104,34 @@ class CharacterActivity : CozyActivity() {
                 val sel = Look.v[idx] == i
                 views[i].background = SwatchDrawable(this, colors[i] or (0xFF shl 24), sel)
             }
+        }
+    }
+
+    private fun refreshSkinLibrary() {
+        if (!::skinLibraryRow.isInitialized) return
+        skinLibraryRow.removeAllViews()
+        val skins = MinecraftSkinLibrary.list(this)
+        if (skins.isEmpty()) {
+            skinLibraryRow.addView(cTxt("Nenhuma skin salva ainda. Importe PNGs 64×64 para montar sua coleção.", 12f, Cz.SOFT, false))
+            return
+        }
+        for (fileName in skins) {
+            val label = fileName.removeSuffix(".png").replace("_", " ").uppercase()
+            val chip = cChip(label) {
+                if (MinecraftSkinLibrary.activate(this, fileName)) {
+                    val bitmap = MinecraftSkinLibrary.load(this)
+                    if (bitmap != null) {
+                        importedSkinPreview.visibility = View.VISIBLE
+                        importedSkinPreview.setImageBitmap(bitmap)
+                        importedSkinAvatarPreview.setSkin(bitmap)
+                        cv.visibility = View.GONE
+                        skinPreviewHint.text = "SKIN ATIVA: $label"
+                        importedSkinStatus.text = "Skin ativa: $label • aplicada ao avatar 3D ao entrar no mundo"
+                        importedSkinStatus.setTextColor(Cz.GREEN)
+                    }
+                }
+            }
+            skinLibraryRow.addView(chip, lpW(WRAP, WRAP).apply { rightMargin = dp(6) })
         }
     }
 
@@ -207,7 +236,8 @@ class CharacterActivity : CozyActivity() {
             importedSkinAvatarPreview.setSkin(result.bitmap)
             cv.visibility = View.GONE
             skinPreviewHint.text = "PRÉVIA DA SKIN IMPORTADA"
-            Toast.makeText(this, "Skin importada. Ela será aplicada ao avatar 3D ao entrar no mundo.", Toast.LENGTH_SHORT).show()
+            refreshSkinLibrary()
+            Toast.makeText(this, "Skin salva na biblioteca e aplicada ao avatar 3D ao entrar no mundo.", Toast.LENGTH_SHORT).show()
         } else {
             importedSkinStatus.setTextColor(Cz.RED)
             Toast.makeText(this, result.message, Toast.LENGTH_LONG).show()
@@ -267,6 +297,19 @@ class CharacterActivity : CozyActivity() {
         skinImportRow.addView(importedSkinPreview, LinearLayout.LayoutParams(dp(64), dp(64)))
         skinImportCard.addView(skinImportRow)
         leftCol.addView(skinImportCard, lpW(MATCH, WRAP).apply { topMargin = dp(8) })
+        val skinLibraryCard = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(10), dp(8), dp(10), dp(8))
+            background = CozyBox(this@CharacterActivity, Cz.PANEL, 14f, false)
+        }
+        skinLibraryCard.addView(cTxt("MINHA BIBLIOTECA DE SKINS", 12f, Cz.GOLD, true))
+        skinLibraryRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        skinLibraryCard.addView(HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            addView(skinLibraryRow)
+        }, lpW(MATCH, WRAP).apply { topMargin = dp(6) })
+        leftCol.addView(skinLibraryCard, lpW(MATCH, WRAP).apply { topMargin = dp(8) })
+        refreshSkinLibrary()
         val nameBox = EditText(this).apply {
             setText(Look.name(this@CharacterActivity)); hint = "Nome do personagem"
             setTextColor(Cz.TXT); setHintTextColor(Cz.TXT_SOFT); typeface = uiFont(); textSize = 15f
