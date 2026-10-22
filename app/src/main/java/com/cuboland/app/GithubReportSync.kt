@@ -89,11 +89,56 @@ class GithubReportSync(private val context: Context) {
                     val detail = try { JSONObject(put.second).optString("message") } catch (_: Exception) { "" }
                     throw IllegalStateException("GitHub recusou o envio (HTTP ${put.first}) ${detail.take(120)}. Verifique Contents: Read and write.")
                 }
-                callback(true, "Relatório sincronizado com o GitHub.")
+                // Publica também uma página Markdown com as capturas incorporadas.
+                try { syncMarkdownReport(reportJson, token) } catch (_: Exception) { /* JSON continua sendo a fonte principal */ }
+                callback(true, "Relatório e imagens sincronizados com o GitHub.")
             } catch (e: Exception) {
                 callback(false, e.message ?: "Falha ao sincronizar.")
             }
         }
+    }
+
+    /** Cria/atualiza um relatório Markdown com as fotos incorporadas. */
+    private fun syncMarkdownReport(reportJson: String, token: String) {
+        val all = JSONObject(reportJson)
+        val markdown = StringBuilder("# Relatório de avaliação de blocos\n\n")
+        markdown.append("Este relatório é atualizado automaticamente pelo CuboLand.\n\n")
+        val entries = mutableListOf<JSONObject>()
+        val keys = all.keys()
+        while (keys.hasNext()) {
+            val key = keys.next()
+            all.optJSONObject(key)?.let { entries.add(it) }
+        }
+        entries.sortByDescending { it.optString("updatedAt") }
+        for (item in entries) {
+            val id = item.optInt("id")
+            val name = item.optString("name", "Bloco #$id")
+            val status = if (item.optString("status") == "invalid") "❌ Inválido" else "✅ Válido"
+            markdown.append("## ").append(name).append(" (#").append(id).append(")\n\n")
+            markdown.append("- **Status:** ").append(status).append("\n")
+            markdown.append("- **Coordenadas:** X ").append(item.optInt("x"))
+                .append(", Y ").append(item.optInt("y")).append(", Z ").append(item.optInt("z")).append("\n")
+            markdown.append("- **Atualizado:** ").append(item.optString("updatedAt", "—")).append("\n\n")
+            val imageUrl = item.optString("screenshotUrl", "")
+            if (imageUrl.isNotBlank()) {
+                val rawUrl = imageUrl
+                    .replace("https://github.com/$REPO/blob/main/", "https://raw.githubusercontent.com/$REPO/main/")
+                markdown.append("![Captura do bloco #").append(id).append("](").append(rawUrl).append(")\n\n")
+                markdown.append("[Abrir imagem em tamanho original](").append(rawUrl).append(")\n\n")
+            }
+            markdown.append("---\n\n")
+        }
+        val path = "reports/README.md"
+        val encodedPath = path.split("/").joinToString("/") { java.net.URLEncoder.encode(it, "UTF-8") }
+        val get = request("GET", "$API/repos/$REPO/contents/$encodedPath", token, null)
+        val sha = if (get.first == 200) JSONObject(get.second).optString("sha").takeIf { it.isNotBlank() } else null
+        if (get.first != 200 && get.first != 404) throw IllegalStateException("Não foi possível consultar a página de imagens.")
+        val body = JSONObject().put("message", "Atualizar relatório visual dos blocos")
+            .put("content", Base64.getEncoder().encodeToString(markdown.toString().toByteArray(StandardCharsets.UTF_8)))
+            .put("branch", "main")
+        if (sha != null) body.put("sha", sha)
+        val put = request("PUT", "$API/repos/$REPO/contents/$encodedPath", token, body.toString())
+        if (put.first !in 200..201) throw IllegalStateException("Não foi possível atualizar a página visual do relatório (HTTP ${put.first}).")
     }
 
     /** Upload an in-game screenshot and return its GitHub URL. */
