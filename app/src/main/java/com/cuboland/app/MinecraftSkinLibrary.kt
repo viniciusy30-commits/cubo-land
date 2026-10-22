@@ -7,13 +7,22 @@ import android.net.Uri
 import java.io.File
 import java.io.FileOutputStream
 
-/**
- * Biblioteca local de skins Minecraft. Os PNGs são preservados byte a byte;
- * o atlas ativo é o que o renderizador carrega ao iniciar o mundo.
- */
+/** Biblioteca local e coleção de skins Minecraft integradas ao CuboLand. */
 object MinecraftSkinLibrary {
     private const val ACTIVE_FILE = "minecraft_skin_imported.png"
     private const val LIBRARY_DIR = "minecraft_skins"
+    private val BUILTIN_SKINS = listOf(
+        "01_crimson_mage.png" to "Mago Carmesim",
+        "02_void_knight.png" to "Cavaleiro do Vazio",
+        "03_cyber_ninja.png" to "Ninja Cibernético",
+        "04_royal_mage.png" to "Maga Imperial",
+        "05_forest_ranger.png" to "Patrulheiro Élfico",
+        "06_gothic_rose.png" to "Gótica Carmesim",
+        "07_frost_guardian.png" to "Guardião Glacial",
+        "08_streetwear.png" to "Streetwear Neon",
+        "09_sun_paladin.png" to "Paladino Solar",
+        "10_shadow_assassin.png" to "Assassino Sombrio"
+    )
 
     data class Result(val ok: Boolean, val message: String, val bitmap: Bitmap? = null, val savedName: String? = null)
 
@@ -21,13 +30,11 @@ object MinecraftSkinLibrary {
         val decoded = try {
             context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it) }
         } catch (_: Exception) { null } ?: return Result(false, "Não consegui ler esse arquivo PNG.")
-
         if (decoded.width != 64 || decoded.height != 64) {
             val dims = "${decoded.width}×${decoded.height}"
             decoded.recycle()
             return Result(false, "A skin precisa ser PNG 64×64. Arquivo recebido: $dims.")
         }
-
         return try {
             val dir = File(context.filesDir, LIBRARY_DIR).apply { mkdirs() }
             var index = 1
