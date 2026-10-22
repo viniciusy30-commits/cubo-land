@@ -1,23 +1,26 @@
 package com.cuboland.app
 
+import android.app.AlertDialog
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
+import android.text.InputType
 import android.view.MotionEvent
 import android.view.View
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.TextView
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-/**
- * Compact review controls for the test gallery.
- * Touches outside the actual buttons are deliberately passed through to the game HUD/GL surface.
- */
+/** Compact review controls; touches outside buttons are passed through to gameplay. */
 class BlockReviewOverlay(ctx: Context, private val game: Game) : View(ctx) {
     private val prefs = ctx.getSharedPreferences("block_review", Context.MODE_PRIVATE)
+    private val syncer = GithubReportSync(ctx)
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val buttons = ArrayList<Pair<RectF, String>>()
     private var pressedButton: String? = null
@@ -26,70 +29,62 @@ class BlockReviewOverlay(ctx: Context, private val game: Game) : View(ctx) {
     private var targetY = 0
     private var targetZ = 0
     private var message = "Mire em um bloco para avaliar"
+    private var syncing = false
     private val density = resources.displayMetrics.density
     private fun dp(v: Float) = v * density
+    private val settingsRect get() = RectF(width - dp(48f), dp(10f), width - dp(10f), dp(48f))
 
     override fun onDraw(c: Canvas) {
         super.onDraw(c)
         game.updateReviewTarget()
         targetId = if (game.hasHit) game.world.get(game.hx, game.hy, game.hz) else 0
-        targetX = game.hx
-        targetY = game.hy
-        targetZ = game.hz
+        targetX = game.hx; targetY = game.hy; targetZ = game.hz
         buttons.clear()
-
         val w = width.toFloat()
         val h = height.toFloat()
-        val buttonW = dp(88f)
+
+        val settings = settingsRect
+        paint.color = Color.argb(205, 15, 20, 29)
+        c.drawRoundRect(settings, dp(9f), dp(9f), paint)
+        paint.color = Color.WHITE; paint.textSize = dp(18f); paint.textAlign = Paint.Align.CENTER
+        c.drawText("⚙", settings.centerX(), settings.centerY() + dp(6f), paint)
+        buttons.add(settings to "Configurar GitHub")
+
         val buttonH = dp(36f)
         val gap = dp(6f)
+        val buttonW = minOf(dp(88f), (w - dp(32f) - gap * 2f) / 3f)
         val totalW = buttonW * 3f + gap * 2f
-        val left = ((w - totalW) / 2f).coerceAtLeast(dp(8f))
+        val left = (w - totalW) / 2f
         val top = h - dp(16f) - buttonH
 
         if (targetId > 0) {
             val status = prefs.getString("status_$targetId", null)
             val name = B.names.getOrNull(targetId).orEmpty().ifBlank { "Bloco #$targetId" }
-            val label = when (status) {
-                "valid" -> "Válido"
-                "invalid" -> "Inválido"
-                else -> "Sem avaliação"
-            }
+            val label = when (status) { "valid" -> "Válido"; "invalid" -> "Inválido"; else -> "Sem avaliação" }
             val panel = RectF(left, top - dp(31f), left + totalW, top + buttonH)
-            paint.color = Color.argb(210, 15, 20, 29)
-            c.drawRoundRect(panel, dp(9f), dp(9f), paint)
-            paint.color = Color.WHITE
-            paint.textAlign = Paint.Align.CENTER
-            paint.typeface = android.graphics.Typeface.DEFAULT
-            paint.textSize = dp(11f)
+            paint.color = Color.argb(210, 15, 20, 29); c.drawRoundRect(panel, dp(9f), dp(9f), paint)
+            paint.color = Color.WHITE; paint.textAlign = Paint.Align.CENTER; paint.textSize = dp(11f)
             val title = "$name (#$targetId) · $label"
-            val clipped = if (paint.measureText(title) > totalW - dp(12f)) "Bloco #$targetId · $label" else title
-            c.drawText(clipped, left + totalW / 2f, top - dp(11f), paint)
+            c.drawText(if (paint.measureText(title) > totalW - dp(12f)) "Bloco #$targetId · $label" else title,
+                left + totalW / 2f, top - dp(11f), paint)
             addButton(c, RectF(left, top, left + buttonW, top + buttonH), "✓ Válido", Color.rgb(35, 135, 79))
             addButton(c, RectF(left + buttonW + gap, top, left + buttonW * 2f + gap, top + buttonH), "✕ Inválido", Color.rgb(178, 55, 61))
-            addButton(c, RectF(left + (buttonW + gap) * 2f, top, left + (buttonW + gap) * 2f + buttonW, top + buttonH), "Copiar", Color.rgb(62, 91, 151))
+            addButton(c, RectF(left + (buttonW + gap) * 2f, top, left + totalW, top + buttonH), "Copiar", Color.rgb(62, 91, 151))
         } else {
-            // No target: keep a small hint above the bottom edge, but never block gameplay touches.
             paint.color = Color.argb(175, 15, 20, 29)
             val hint = RectF(dp(12f), h - dp(42f), w - dp(12f), h - dp(12f))
             c.drawRoundRect(hint, dp(8f), dp(8f), paint)
-            paint.color = Color.WHITE
-            paint.textSize = dp(11f)
-            paint.textAlign = Paint.Align.CENTER
-            c.drawText(message, w / 2f, h - dp(23f), paint)
+            paint.color = Color.WHITE; paint.textSize = dp(11f); paint.textAlign = Paint.Align.CENTER
+            c.drawText(if (syncing) "Enviando relatório ao GitHub…" else message, w / 2f, h - dp(23f), paint)
         }
         paint.textAlign = Paint.Align.LEFT
-        postInvalidateDelayed(180)
+        postInvalidateDelayed(300)
     }
 
     private fun addButton(c: Canvas, r: RectF, text: String, color: Int) {
-        paint.color = color
-        c.drawRoundRect(r, dp(7f), dp(7f), paint)
-        paint.color = Color.WHITE
-        paint.textSize = dp(11f)
-        paint.typeface = android.graphics.Typeface.DEFAULT_BOLD
-        paint.textAlign = Paint.Align.CENTER
-        c.drawText(text, r.centerX(), r.centerY() + dp(4f), paint)
+        paint.color = color; c.drawRoundRect(r, dp(7f), dp(7f), paint)
+        paint.color = Color.WHITE; paint.textSize = dp(11f); paint.typeface = android.graphics.Typeface.DEFAULT_BOLD
+        paint.textAlign = Paint.Align.CENTER; c.drawText(text, r.centerX(), r.centerY() + dp(4f), paint)
         paint.textAlign = Paint.Align.LEFT
         buttons.add(r to text)
     }
@@ -98,31 +93,21 @@ class BlockReviewOverlay(ctx: Context, private val game: Game) : View(ctx) {
         when (e.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 val hit = buttons.firstOrNull { it.first.contains(e.x, e.y) }
-                if (hit == null) {
-                    pressedButton = null
-                    return false
-                }
+                if (hit == null) { pressedButton = null; return false }
                 pressedButton = hit.second
                 return true
             }
             MotionEvent.ACTION_MOVE -> return pressedButton != null
-            MotionEvent.ACTION_CANCEL -> {
-                pressedButton = null
-                return false
-            }
+            MotionEvent.ACTION_CANCEL -> { pressedButton = null; return false }
             MotionEvent.ACTION_UP -> {
-                val pressed = pressedButton
-                pressedButton = null
+                val pressed = pressedButton; pressedButton = null
                 if (pressed == null) return false
-                val hit = buttons.firstOrNull { it.first.contains(e.x, e.y) && it.second == pressed }
-                if (hit == null || targetId <= 0 || !game.hasHit) {
-                    invalidate()
-                    return true
-                }
+                if (buttons.none { it.first.contains(e.x, e.y) && it.second == pressed }) return true
                 when (pressed) {
-                    "✓ Válido" -> saveStatus("valid")
-                    "✕ Inválido" -> saveStatus("invalid")
-                    "Copiar" -> {
+                    "Configurar GitHub" -> showGitHubDialog()
+                    "✓ Válido" -> if (targetId > 0 && game.hasHit) saveStatus("valid")
+                    "✕ Inválido" -> if (targetId > 0 && game.hasHit) saveStatus("invalid")
+                    "Copiar" -> if (targetId > 0 && game.hasHit) {
                         game.hotbar[game.sel.coerceIn(0, 7)] = targetId
                         message = "Bloco #$targetId copiado para a mão"
                     }
@@ -134,20 +119,85 @@ class BlockReviewOverlay(ctx: Context, private val game: Game) : View(ctx) {
         return pressedButton != null
     }
 
+    private fun showGitHubDialog() {
+        val input = EditText(context).apply {
+            hint = "github_pat_…"
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            setSingleLine(true)
+            textSize = 14f
+        }
+        val info = TextView(context).apply {
+            text = if (syncer.hasToken())
+                "Token protegido pelo Android Keystore. Cole outro para substituir; ou toque em Sincronizar para enviar o relatório salvo."
+            else
+                "Crie um token Fine-grained para o repositório viniciusy30-commits/cubo-land com Contents: Read and write. O token será criptografado neste aparelho e nunca ficará no código."
+            textSize = 13f
+            setTextColor(Color.LTGRAY)
+            setPadding(0, 0, 0, dp(10f).toInt())
+        }
+        val content = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20f).toInt(), dp(8f).toInt(), dp(20f).toInt(), 0)
+            addView(info)
+            addView(input, LinearLayout.LayoutParams(-1, dp(48f).toInt()))
+        }
+        val dialog = AlertDialog.Builder(context)
+            .setTitle("Relatório no GitHub")
+            .setView(content)
+            .setNeutralButton("Sincronizar", null)
+            .setNegativeButton("Apagar token", null)
+            .setPositiveButton("Salvar token", null)
+            .create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).isEnabled = syncer.hasToken()
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).isEnabled = syncer.hasToken()
+            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener { dialog.dismiss(); syncReport() }
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener {
+                syncer.forgetToken()
+                message = "Token removido deste aparelho"
+                dialog.dismiss()
+                invalidate()
+            }
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                try {
+                    syncer.saveToken(input.text.toString().trim())
+                    message = "Token protegido. Sincronizando…"
+                    dialog.dismiss()
+                    syncReport()
+                } catch (e: Exception) {
+                    info.text = e.message ?: "Não foi possível salvar o token."
+                }
+            }
+        }
+        dialog.show()
+    }
+
+    private fun syncReport() {
+        if (!syncer.hasToken()) { message = "Toque em ⚙ e configure o token do GitHub"; invalidate(); return }
+        syncing = true; message = "Enviando relatório ao GitHub…"; invalidate()
+        syncer.sync(exportReport()) { _, result ->
+            post {
+                syncing = false
+                message = result
+                invalidate()
+                android.widget.Toast.makeText(context, result, android.widget.Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     private fun saveStatus(status: String) {
-        val key = "status_$targetId"
+        val id = targetId
         val data = JSONObject()
-        data.put("id", targetId)
-        data.put("name", B.names.getOrNull(targetId).orEmpty())
+        data.put("id", id)
+        data.put("name", B.names.getOrNull(id).orEmpty())
         data.put("status", status)
-        data.put("x", targetX)
-        data.put("y", targetY)
-        data.put("z", targetZ)
+        data.put("x", targetX); data.put("y", targetY); data.put("z", targetZ)
         data.put("updatedAt", SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.US).format(Date()))
         val all = JSONObject(prefs.getString("report", "{}") ?: "{}")
-        all.put(targetId.toString(), data)
-        prefs.edit().putString(key, status).putString("report", all.toString()).apply()
-        message = if (status == "valid") "Bloco #$targetId marcado como válido" else "Bloco #$targetId marcado como inválido"
+        all.put(id.toString(), data)
+        prefs.edit().putString("status_$id", status).putString("report", all.toString(2)).apply()
+        message = "Bloco #$id marcado; enviando relatório…"
+        syncReport()
     }
 
     fun exportReport(): String = prefs.getString("report", "{}") ?: "{}"
