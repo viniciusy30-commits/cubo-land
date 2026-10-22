@@ -1,6 +1,11 @@
 package com.cuboland.app
 
 import android.opengl.GLSurfaceView
+import android.graphics.Bitmap
+import android.os.Build
+import android.os.Handler
+import android.os.Looper
+import android.view.PixelCopy
 import android.os.Bundle
 import android.view.View
 import android.view.WindowManager
@@ -94,7 +99,15 @@ class GameActivity : AppCompatActivity() {
         h.onTvZoom = { tv?.zoom() }
         root.addView(h, 1)
         if (test) {
-            val review = BlockReviewOverlay(this, game)
+            val review = BlockReviewOverlay(this, game) { callback ->
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && gl.width > 0 && gl.height > 0) {
+                    val bitmap = Bitmap.createBitmap(gl.width, gl.height, Bitmap.Config.ARGB_8888)
+                    PixelCopy.request(gl, bitmap, { result ->
+                        if (result == PixelCopy.SUCCESS) callback(bitmap)
+                        else { bitmap.recycle(); callback(null) }
+                    }, Handler(Looper.getMainLooper()))
+                } else callback(null)
+            }
             root.addView(review, 2, FrameLayout.LayoutParams(-1, -1))
         }
         if (test) setupGalleryPanel(root, h)
