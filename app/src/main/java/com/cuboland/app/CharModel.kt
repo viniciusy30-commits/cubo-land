@@ -2134,7 +2134,6 @@ class CharModel {
             }
         }
 
-
             24 -> { // chifres infernais: base óssea, ponta afiada e brilho interno
                 for (sd in intArrayOf(-1, 1)) {
                     val s = sd.toFloat()
