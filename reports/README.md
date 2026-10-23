@@ -2,6 +2,18 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Porta 4 Preto (#3878)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 19, Y 12, Z 37
+- **Atualizado:** 2026-10-23T13:38:14-03:00
+
+![Captura do bloco #3878](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3878-1792773496867.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3878-1792773496867.jpg)
+
+---
+
 ## Porta 4 Cinza (#3879)
 
 - **Status:** ❌ Inválido
