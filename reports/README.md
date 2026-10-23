@@ -4,13 +4,9 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 ## Espresson Café Máquina 2 (#2721)
 
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 25, Y 12, Z 37
-- **Atualizado:** 2026-10-23T00:06:21-03:00
-
-![Captura do bloco #2721](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2721-1792724781163.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2721-1792724781163.jpg)
+- **Status:** ✅ Válido
+- **Coordenadas:** X 16, Y 11, Z 20
+- **Atualizado:** 2026-10-23T13:36:25-03:00
 
 ---
 
