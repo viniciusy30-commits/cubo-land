@@ -671,6 +671,9 @@ for i, short in enumerate(reg['tex']):
     if not pth: continue
     src = frame0(Image.open(pth).convert('RGBA'))
     if max(src.size) <= 64: continue
+    # Estas duas texturas do addon monoDeco têm UVs desenhados para o atlas 64x64;
+    # manter no tile padrão evita artefatos na rota HD 2x2 do renderer do CuboLand.
+    if short in ('espresson_coffee_machine_2_drz', 'freezer_1_drz'): continue
     if src.size == (128, 128): hd = src
     elif src.size[0] >= 128 and src.size[1] >= 128: hd = src.convert('RGBa').resize((128, 128), Image.BOX).convert('RGBA')
     else: hd = src.convert('RGBa').resize((128, 128), Image.LANCZOS).convert('RGBA')   # 72x72, 64x128... (ampliar)
