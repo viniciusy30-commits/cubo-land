@@ -4,9 +4,13 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 ## Freezer 1 (#2725)
 
-- **Status:** ✅ Válido
+- **Status:** ❌ Inválido
 - **Coordenadas:** X 31, Y 12, Z 37
-- **Atualizado:** 2026-10-23T00:02:16-03:00
+- **Atualizado:** 2026-10-23T00:02:26-03:00
+
+![Captura do bloco #2725](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2725-1792724546876.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2725-1792724546876.jpg)
 
 ---
 
