@@ -48,11 +48,10 @@
   "2721": {
     "id": 2721,
     "name": "Espresson Café Máquina 2",
-    "status": "invalid",
-    "x": 25,
-    "y": 12,
-    "z": 37,
-    "updatedAt": "2026-10-23T00:06:21-03:00",
-    "screenshotUrl": "https:\/\/github.com\/viniciusy30-commits\/cubo-land\/blob\/main\/reports\/block-images\/block-2721-1792724781163.jpg"
+    "status": "valid",
+    "x": 16,
+    "y": 11,
+    "z": 20,
+    "updatedAt": "2026-10-23T13:36:25-03:00"
   }
 }
