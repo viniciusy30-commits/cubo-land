@@ -2,6 +2,18 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Porta 3a Branco (#3872)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 19, Y 12, Z 31
+- **Atualizado:** 2026-10-23T13:38:01-03:00
+
+![Captura do bloco #3872](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3872-1792773481184.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3872-1792773481184.jpg)
+
+---
+
 ## Espresson Café Máquina 2 (#2721)
 
 - **Status:** ❌ Inválido
