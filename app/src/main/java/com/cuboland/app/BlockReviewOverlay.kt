@@ -219,6 +219,15 @@ class BlockReviewOverlay(ctx: Context, private val game: Game, private val captu
         }
         if (screenshot != null && status == "invalid") {
             message = "Enviando foto do bloco #$id…"; syncing = true; invalidate()
+            // Embute uma cópia reduzida da foto no próprio JSON (assim ela vem junto no zip/relatório).
+            try {
+                val w = 640; val h = (screenshot.height * w / screenshot.width.coerceAtLeast(1)).coerceAtLeast(1)
+                val small = Bitmap.createScaledBitmap(screenshot, w, h, true)
+                val bos = java.io.ByteArrayOutputStream()
+                small.compress(Bitmap.CompressFormat.JPEG, 70, bos)
+                if (small !== screenshot) small.recycle()
+                data.put("screenshotBase64", android.util.Base64.encodeToString(bos.toByteArray(), android.util.Base64.NO_WRAP))
+            } catch (_: Exception) { }
             syncer.uploadScreenshot(screenshot, id) { ok, result ->
                 post {
                     syncing = false
