@@ -38,11 +38,10 @@
   "2725": {
     "id": 2725,
     "name": "Freezer 1",
-    "status": "invalid",
+    "status": "valid",
     "x": 31,
     "y": 12,
     "z": 37,
-    "updatedAt": "2026-10-22T17:26:03-03:00",
-    "screenshotUrl": "https:\/\/github.com\/viniciusy30-commits\/cubo-land\/blob\/main\/reports\/block-images\/block-2725-1792700763715.jpg"
+    "updatedAt": "2026-10-23T00:02:16-03:00"
   }
 }
