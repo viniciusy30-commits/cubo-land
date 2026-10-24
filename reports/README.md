@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Concreto Cinza-claro (#38)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 20
+- **Atualizado:** 2026-10-24T01:28:50-03:00
+
+---
+
 ## Porta 3b Branco (#3877)
 
 - **Status:** ❌ Inválido
@@ -95,14 +103,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 - **Status:** ✅ Válido
 - **Coordenadas:** X 43, Y 12, Z 19
 - **Atualizado:** 2026-10-22T16:24:40-03:00
-
----
-
-## Concreto Cinza-claro (#38)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 42, Y 10, Z 12
-- **Atualizado:** 2026-10-22T16:24:35-03:00
 
 ---
 
