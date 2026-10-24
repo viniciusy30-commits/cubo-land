@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Cups (#2705)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 67, Y 11, Z 20
+- **Motivo:** Outro
+- **Atualizado:** 2026-10-24T01:36:44-03:00
+
+![Captura do bloco #2705](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2705-1792816604371.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2705-1792816604371.jpg)
+
+---
+
 ## Concreto Cinza-claro (#38)
 
 - **Status:** ✅ Válido
