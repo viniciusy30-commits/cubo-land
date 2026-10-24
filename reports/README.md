@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Sate (#4124)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 132, Y 11, Z 50
+- **Motivo:** Outro
+- **Atualizado:** 2026-10-24T01:49:17-03:00
+
+![Captura do bloco #4124](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4124-1792817381846.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4124-1792817381846.jpg)
+
+---
+
 ## Pizza Caixa (#4104)
 
 - **Status:** ✅ Válido
