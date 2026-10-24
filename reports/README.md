@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Donut (#4069)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 157, Y 11, Z 35
+- **Atualizado:** 2026-10-24T01:52:28-03:00
+
+---
+
 ## Kue Lapis A (#4089)
 
 - **Status:** ✅ Válido
