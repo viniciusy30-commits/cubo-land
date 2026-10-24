@@ -34,6 +34,19 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 ---
 
+## Cake (#4043)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 127, Y 11, Z 30
+- **Motivo:** Peças flutuando, Textura bugada, Tamanho / proporção errados
+- **Atualizado:** 2026-10-24T01:48:51-03:00
+
+![Captura do bloco #4043](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4043-1792817349088.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4043-1792817349088.jpg)
+
+---
+
 ## Crackers C (#4063)
 
 - **Status:** ✅ Válido
