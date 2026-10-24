@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Cake 3 (#4041)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 117, Y 11, Z 30
+- **Atualizado:** 2026-10-24T01:47:03-03:00
+
+---
+
 ## Hishi Mochi (#4081)
 
 - **Status:** ❌ Inválido
