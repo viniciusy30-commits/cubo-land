@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Drink 4 (#3926)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 72, Y 11, Z 25
+- **Atualizado:** 2026-10-24T01:39:34-03:00
+
+---
+
 ## Drink 5 (#3927)
 
 - **Status:** ✅ Válido
