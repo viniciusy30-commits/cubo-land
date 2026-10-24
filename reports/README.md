@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Skull Rizz (#4595)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 14, Y 11, Z 35
+- **Motivo:** Outro
+- **Atualizado:** 2026-10-24T01:36:09-03:00
+
+![Captura do bloco #4595](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4595-1792816569420.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4595-1792816569420.jpg)
+
+---
+
 ## Sniper (#4641)
 
 - **Status:** ❌ Inválido
