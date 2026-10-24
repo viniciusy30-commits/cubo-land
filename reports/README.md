@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Watermelon (#4130)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 162, Y 11, Z 50
+- **Motivo:** Outro
+- **Atualizado:** 2026-10-24T01:53:10-03:00
+
+![Captura do bloco #4130](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4130-1792817681168.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4130-1792817681168.jpg)
+
+---
+
 ## Retail Stuff 2 (#4110)
 
 - **Status:** ❌ Inválido
