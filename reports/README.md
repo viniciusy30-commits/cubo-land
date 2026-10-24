@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Bazooka (#3397)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 25
+- **Atualizado:** 2026-10-24T01:33:10-03:00
+
+---
+
 ## Binoculars (#3536)
 
 - **Status:** ✅ Válido
