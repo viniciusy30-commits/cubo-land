@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Landmine (#4235)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 30
+- **Atualizado:** 2026-10-24T01:34:33-03:00
+
+---
+
 ## Jewerly Ring (#4224)
 
 - **Status:** ✅ Válido
