@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Jewerly Ring A (#4222)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 30
+- **Atualizado:** 2026-10-24T01:34:24-03:00
+
+---
+
 ## Hand Dryer (#4194)
 
 - **Status:** ✅ Válido
