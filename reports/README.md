@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Kue Lapis B (#4090)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 162, Y 11, Z 40
+- **Atualizado:** 2026-10-24T01:53:01-03:00
+
+---
+
 ## Cookie 1a (#4050)
 
 - **Status:** ✅ Válido
