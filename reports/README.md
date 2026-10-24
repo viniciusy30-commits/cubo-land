@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Concreto Branco (#30)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 145, Y 10, Z 20
+- **Atualizado:** 2026-10-24T01:38:13-03:00
+
+---
+
 ## Drink 2 (#3920)
 
 - **Status:** ✅ Válido
@@ -194,19 +202,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 ![Captura do bloco #4641](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4641-1792816559460.jpg)
 
 [Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4641-1792816559460.jpg)
-
----
-
-## Concreto Branco (#30)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 23, Y 10, Z 35
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:35:15-03:00
-
-![Captura do bloco #30](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-30-1792816518172.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-30-1792816518172.jpg)
 
 ---
 
