@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Porta 4 Preto (#3878)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 125, Y 11, Z 20
+- **Motivo:** Direção / rotação errada
+- **Atualizado:** 2026-10-24T13:25:14-03:00
+
+![Captura do bloco #3878](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3878-1792859117551.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3878-1792859117551.jpg)
+
+---
+
 ## Porta 4 Cinza (#3879)
 
 - **Status:** ❌ Inválido
@@ -1719,18 +1732,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 ![Captura do bloco #3877](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3877-1792773498811.jpg)
 
 [Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3877-1792773498811.jpg)
-
----
-
-## Porta 4 Preto (#3878)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 19, Y 12, Z 37
-- **Atualizado:** 2026-10-23T13:38:14-03:00
-
-![Captura do bloco #3878](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3878-1792773496867.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3878-1792773496867.jpg)
 
 ---
 
