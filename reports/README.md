@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Freezer 1 (#2725)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 148, Y 11, Z 20
+- **Motivo:** Textura bugada, Textura piscando
+- **Atualizado:** 2026-10-24T13:24:57-03:00
+
+![Captura do bloco #2725](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2725-1792859097899.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2725-1792859097899.jpg)
+
+---
+
 ## Tumbler 2b (#4827)
 
 - **Status:** ❌ Inválido
@@ -1668,19 +1681,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 ![Captura do bloco #2461](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2461-1792816242508.jpg)
 
 [Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2461-1792816242508.jpg)
-
----
-
-## Freezer 1 (#2725)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 14, Y 11, Z 20
-- **Motivo:** Textura piscando
-- **Atualizado:** 2026-10-24T01:30:04-03:00
-
-![Captura do bloco #2725](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2725-1792816204339.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2725-1792816204339.jpg)
 
 ---
 
