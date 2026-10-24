@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Crackers (#4064)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 132, Y 11, Z 35
+- **Atualizado:** 2026-10-24T01:49:07-03:00
+
+---
+
 ## Canned Biscuit (#4044)
 
 - **Status:** ✅ Válido
