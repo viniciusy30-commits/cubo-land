@@ -18,6 +18,19 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 ---
 
+## Apple B (#4030)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 162, Y 11, Z 25
+- **Motivo:** Textura bugada, Cor errada
+- **Atualizado:** 2026-10-24T01:52:47-03:00
+
+![Captura do bloco #4030](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4030-1792817626484.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4030-1792817626484.jpg)
+
+---
+
 ## Apple A (#4029)
 
 - **Status:** ❌ Inválido
@@ -1061,19 +1074,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 - **Status:** ✅ Válido
 - **Coordenadas:** X 152, Y 11, Z 25
 - **Atualizado:** 2026-10-24T01:38:50-03:00
-
----
-
-## Apple B (#4030)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 162, Y 11, Z 25
-- **Motivo:** Textura bugada, Cor errada
-- **Atualizado:** 2026-10-24T01:38:36-03:00
-
-![Captura do bloco #4030](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4030-1792816744044.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4030-1792816744044.jpg)
 
 ---
 
