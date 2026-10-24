@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Sandwitch (#4122)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 122, Y 11, Z 50
+- **Atualizado:** 2026-10-24T01:47:55-03:00
+
+---
+
 ## Pizza Caixa 1 (#4102)
 
 - **Status:** ✅ Válido
