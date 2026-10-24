@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Cookie 1a (#4050)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 162, Y 11, Z 30
+- **Atualizado:** 2026-10-24T01:52:49-03:00
+
+---
+
 ## Cookie 1 (#4049)
 
 - **Status:** ✅ Válido
