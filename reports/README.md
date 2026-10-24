@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Assault Rifle (#3345)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 24, Y 11, Z 25
+- **Motivo:** Peças flutuando
+- **Atualizado:** 2026-10-24T01:33:15-03:00
+
+![Captura do bloco #3345](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3345-1792816395431.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3345-1792816395431.jpg)
+
+---
+
 ## Bazooka (#3397)
 
 - **Status:** ✅ Válido
