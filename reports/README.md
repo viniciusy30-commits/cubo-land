@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Freezer 1 (#2725)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 14, Y 11, Z 20
+- **Motivo:** Textura piscando
+- **Atualizado:** 2026-10-24T01:30:04-03:00
+
+![Captura do bloco #2725](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2725-1792816204339.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2725-1792816204339.jpg)
+
+---
+
 ## Espresson Café Máquina 2 (#2721)
 
 - **Status:** ❌ Inválido
@@ -68,18 +81,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 ![Captura do bloco #3872](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3872-1792773481184.jpg)
 
 [Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3872-1792773481184.jpg)
-
----
-
-## Freezer 1 (#2725)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 31, Y 12, Z 37
-- **Atualizado:** 2026-10-23T00:02:26-03:00
-
-![Captura do bloco #2725](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2725-1792724546876.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2725-1792724546876.jpg)
 
 ---
 
