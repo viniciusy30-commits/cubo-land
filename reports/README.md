@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Drink A (#3933)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 107, Y 11, Z 25
+- **Atualizado:** 2026-10-24T01:44:54-03:00
+
+---
+
 ## Cake 2a (#4039)
 
 - **Status:** ✅ Válido
@@ -151,14 +159,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 - **Status:** ✅ Válido
 - **Coordenadas:** X 102, Y 11, Z 25
 - **Atualizado:** 2026-10-24T01:39:23-03:00
-
----
-
-## Drink A (#3933)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 107, Y 11, Z 25
-- **Atualizado:** 2026-10-24T01:39:21-03:00
 
 ---
 
