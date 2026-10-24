@@ -18,6 +18,19 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 ---
 
+## Apple A (#4029)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 157, Y 11, Z 25
+- **Motivo:** Textura bugada, Cor errada
+- **Atualizado:** 2026-10-24T01:52:38-03:00
+
+![Captura do bloco #4029](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4029-1792817619616.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4029-1792817619616.jpg)
+
+---
+
 ## Cookie 1 (#4049)
 
 - **Status:** ✅ Válido
@@ -1048,19 +1061,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 - **Status:** ✅ Válido
 - **Coordenadas:** X 152, Y 11, Z 25
 - **Atualizado:** 2026-10-24T01:38:50-03:00
-
----
-
-## Apple A (#4029)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 157, Y 11, Z 25
-- **Motivo:** Textura bugada, Cor errada
-- **Atualizado:** 2026-10-24T01:38:47-03:00
-
-![Captura do bloco #4029](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4029-1792816745634.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4029-1792816745634.jpg)
 
 ---
 
