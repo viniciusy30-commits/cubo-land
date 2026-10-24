@@ -120,7 +120,11 @@ class BlockReviewOverlay(ctx: Context, private val game: Game, private val captu
                         val id = targetId; val x = targetX; val y = targetY; val z = targetZ
                         message = "Capturando bloco #$id…"; syncing = true; invalidate()
                         captureScreenshot { bitmap ->
-                            post { syncing = false; saveStatus("invalid", bitmap, id, x, y, z) }
+                            post {
+                                syncing = false; message = ""; invalidate()
+                                askReasons(id, { reasons, note -> saveStatus("invalid", bitmap, id, x, y, z, reasons, note) },
+                                    { if (bitmap != null && !bitmap.isRecycled) bitmap.recycle() })
+                            }
                         }
                     }
                     "Copiar" -> if (targetId > 0 && game.hasHit) {
@@ -133,6 +137,44 @@ class BlockReviewOverlay(ctx: Context, private val game: Game, private val captu
             }
         }
         return pressedButton != null
+    }
+
+    private val REASONS = listOf("Peças flutuando", "Textura bugada", "Incompleto / faltando partes", "Textura piscando", "Cor errada",
+        "Tamanho / proporção errados", "Direção / rotação errada", "Sem colisão (atravessa)", "Transparência errada", "Não abre / não funciona", "Outro")
+
+    /** Escolha do motivo da invalidação (vários, mais uma observação opcional). Cancelar descarta a invalidação; devolve null se o diálogo não abriu. */
+    private fun askReasons(id: Int, onDone: (List<String>, String) -> Unit, onCancel: () -> Unit) {
+        val boxes = REASONS.map { r -> android.widget.CheckBox(context).apply { text = r; textSize = 15f; setTextColor(Color.WHITE) } }
+        val note = EditText(context).apply {
+            hint = "Observação (opcional)"; textSize = 14f; minLines = 2
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+        }
+        val list = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; for (b in boxes) addView(b) }
+        val content = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20f).toInt(), dp(4f).toInt(), dp(20f).toInt(), 0)
+            addView(android.widget.ScrollView(context).apply { addView(list) }, LinearLayout.LayoutParams(-1, dp(260f).toInt()))
+            addView(note, LinearLayout.LayoutParams(-1, -2))
+        }
+        val name = B.names.getOrNull(id).orEmpty()
+        val dialog = AlertDialog.Builder(context)
+            .setTitle("Por que está inválido?\n$name (#$id)")
+            .setView(content)
+            .setNegativeButton("Cancelar", null)
+            .setPositiveButton("Invalidar", null)
+            .create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val chosen = REASONS.filterIndexed { i, _ -> boxes[i].isChecked }
+                dialog.dismiss()
+                onDone(chosen, note.text.toString().trim())
+            }
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener {
+                dialog.dismiss(); message = "Invalidação cancelada"; invalidate(); onCancel()
+            }
+        }
+        dialog.setOnCancelListener { message = "Invalidação cancelada"; invalidate(); onCancel() }
+        dialog.show()
     }
 
     private fun showGitHubDialog() {
@@ -201,21 +243,30 @@ class BlockReviewOverlay(ctx: Context, private val game: Game, private val captu
     }
 
     private fun saveStatus(status: String, screenshot: Bitmap? = null, reviewedId: Int = targetId,
-                           reviewedX: Int = targetX, reviewedY: Int = targetY, reviewedZ: Int = targetZ) {
+                           reviewedX: Int = targetX, reviewedY: Int = targetY, reviewedZ: Int = targetZ,
+                           reasons: List<String> = emptyList(), note: String = "") {
         val id = reviewedId
         val data = JSONObject()
         data.put("id", id)
         data.put("name", B.names.getOrNull(id).orEmpty())
         data.put("status", status)
         data.put("x", reviewedX); data.put("y", reviewedY); data.put("z", reviewedZ)
+        if (status == "invalid") {
+            data.put("reasons", org.json.JSONArray(reasons))
+            if (note.isNotEmpty()) data.put("note", note)
+        }
         data.put("updatedAt", SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.US).format(Date()))
         fun saveAndSync() {
             val all = JSONObject(prefs.getString("report", "{}") ?: "{}")
+            // relatório antigo do bloco (foto, motivos, observação) é substituído; a foto antiga some do GitHub
+            val oldUrl = all.optJSONObject(id.toString())?.optString("screenshotUrl", "").orEmpty()
+            val newUrl = data.optString("screenshotUrl", "")
             all.put(id.toString(), data)
             prefs.edit().putString("status_$id", status).putString("report", all.toString(2)).apply()
             if (status == "invalid" && screenshot == null) message = "Bloco #$id invalidado; captura indisponível"
             else message = "Bloco #$id marcado; enviando relatório…"
             syncReport()
+            if (oldUrl.isNotEmpty() && oldUrl != newUrl && (status == "valid" || newUrl.isNotEmpty())) syncer.deleteScreenshot(oldUrl)
         }
         if (screenshot != null && status == "invalid") {
             message = "Enviando foto do bloco #$id…"; syncing = true; invalidate()

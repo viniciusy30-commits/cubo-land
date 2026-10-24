@@ -118,6 +118,13 @@ class GithubReportSync(private val context: Context) {
             markdown.append("- **Status:** ").append(status).append("\n")
             markdown.append("- **Coordenadas:** X ").append(item.optInt("x"))
                 .append(", Y ").append(item.optInt("y")).append(", Z ").append(item.optInt("z")).append("\n")
+            val rs = item.optJSONArray("reasons")
+            if (rs != null && rs.length() > 0) {
+                val parts = (0 until rs.length()).map { rs.optString(it) }
+                markdown.append("- **Motivo:** ").append(parts.joinToString(", ")).append("\n")
+            }
+            val nt = item.optString("note", "")
+            if (nt.isNotBlank()) markdown.append("- **Observação:** ").append(nt.replace("\n", " ")).append("\n")
             markdown.append("- **Atualizado:** ").append(item.optString("updatedAt", "—")).append("\n\n")
             val imageUrl = item.optString("screenshotUrl", "")
             if (imageUrl.isNotBlank()) {
@@ -161,6 +168,23 @@ class GithubReportSync(private val context: Context) {
             finally { if (!bitmap.isRecycled) bitmap.recycle() }
         }
     }
+    /** Apaga do repositório a foto de uma invalidação antiga (url no formato devolvido por uploadScreenshot). Falhas são ignoradas: o relatório já não aponta pra ela. */
+    fun deleteScreenshot(url: String) {
+        executor.execute {
+            try {
+                val path = url.substringAfter("/blob/main/", "")
+                if (path.isBlank() || !path.startsWith("reports/block-images/")) return@execute
+                val token = readToken()
+                val encodedPath = path.split("/").joinToString("/") { java.net.URLEncoder.encode(it, "UTF-8") }
+                val get = request("GET", "$API/repos/$REPO/contents/$encodedPath?ref=main", token, null)
+                if (get.first != 200) return@execute
+                val sha = JSONObject(get.second).optString("sha").takeIf { it.isNotBlank() } ?: return@execute
+                val body = JSONObject().put("message", "Remover captura antiga do bloco").put("sha", sha).put("branch", "main")
+                request("DELETE", "$API/repos/$REPO/contents/$encodedPath", token, body.toString())
+            } catch (_: Exception) { }
+        }
+    }
+
     private fun request(method: String, url: String, token: String, body: String?): Pair<Int, String> {
         val connection = URL(url).openConnection() as HttpURLConnection
         try {

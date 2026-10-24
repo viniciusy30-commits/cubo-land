@@ -98,14 +98,68 @@ class World {
         val CZ: Int get() = SZ / CH
         const val WATER_Y = 9
         /** modos extras da galeria de blocos (além das categorias de blocos) */
-        const val GAL_PAGE = 100   // extra >= GAL_PAGE: página (extra - GAL_PAGE) da seção escolhida
+        const val GAL_PAGE = 100   // categoria/seção escolhida (sem páginas: a seção inteira cabe numa sala só)
+        const val GAL_REVIEW_VALID = 9; const val GAL_REVIEW_INVALID = 10   // todos os blocos válidos/inválidos, separados por categoria e seção
+        @JvmField var reviewIds: List<Int> = emptyList()   // preenchido pelo painel antes de gerar o mapa de revisão
         const val GAL_FURN = 1; const val GAL_HOUSE = 2; const val GAL_TREES = 3; const val GAL_FURN2 = 4; const val GAL_CAR = 5; const val GAL_APPS = 6; const val GAL_BUILDING = 7; const val GAL_BLOCK = 8
         const val SAVE_MAGIC = 0x434C3402
         const val ST_MAGIC = 0x53543031   // trailer opcional: itens guardados nos móveis
         const val FS_MAGIC = 0x46533031   // trailer opcional depois do das TVs: estado dos móveis (aberto/ligado)
         const val TV_MAGIC = 0x54563031   // trailer opcional depois dos blocos: tamanho de cada TV
         /** deve ser chamado ANTES de criar World/Game/GameRenderer: o mapa plano é bem maior que a ilha */
-        fun configure(flat: Boolean, tall: Boolean = false) { SX = if (flat) 256 else 96; SZ = if (tall) 384 else SX }   // tall: a galeria de blocos precisa de mais fundo
+        fun configure(flat: Boolean, tall: Boolean = false) { SX = if (flat) 256 else 96; SZ = if (tall) maxOf(384, galleryDepth(SX)) else SX }   // tall: a galeria de blocos ganha o fundo que precisar pra caber tudo de uma vez
+        /** categorias da galeria (mesma divisão da mochila) */
+        fun galleryCats(): List<GalCat> {
+            // os blocos básicos (ids 1..13) não têm categoria própria: entram no começo de cada categoria, a mesma da mochila (Items.cat)
+            val basic = ArrayList<Int>(); for (id in 1..13) if (id != B.WATER && B.defined[id]) basic.add(id)
+            fun basicsOf(c: Int) = basic.filter { Items.cat(it) == c }
+            val cats = ArrayList<GalCat>()
+            cats.add(GalCat("NATUREZA", 2, basicsOf(2) + Blk.defs.filter { it.cat == Blk.C_NAT && it.id !in Blk.hidden }.map { it.id }))
+            cats.add(GalCat("CONSTRUÇÃO", 3, basicsOf(3) + Blk.defs.filter { it.cat == Blk.C_BUILD && it.id !in Blk.hidden }.map { it.id }))
+            cats.add(GalCat("DECORAÇÃO", 4, basicsOf(4) + Blk.defs.filter { it.cat == Blk.C_DEC && it.id !in Blk.hidden }.map { it.id }))
+            cats.add(GalCat("MOBÍLIA", 5, Blk.defs.filter { it.cat == Blk.C_FURN && it.id !in Blk.hidden }.map { it.id }))
+            val other = Blk.defs.filter { it.cat != Blk.C_NAT && it.cat != Blk.C_BUILD && it.cat != Blk.C_DEC && it.cat != Blk.C_FURN }.map { it.id }
+            if (other.isNotEmpty()) cats.add(GalCat("OUTROS", 0, other))
+            return cats
+        }
+
+        /** blocos de cada seção da categoria (mesmo índice de Gallery.sections) */
+        fun galleryBuckets(cat: GalCat): Array<ArrayList<Int>> {
+            val matById = HashMap<Int, Int>(); for (d in Blk.defs) matById[d.id] = d.mat
+            val secs = Gallery.sections(cat.ci)
+            val buckets = Array(secs.size) { ArrayList<Int>() }
+            for (id in cat.ids) buckets[Gallery.classify(cat.ci, B.names[id], matById[id] ?: 0)].add(id)
+            return buckets
+        }
+
+
+        /** posição de cada sala no mapa da galeria: salas em fileiras (esquerda pra direita, depois pra baixo). Usado pra montar o mapa e pra calcular a profundidade que o mapa precisa. */
+        class RoomPlan(val x: IntArray, val z: IntArray, val cols: IntArray, val rows: IntArray, val fits: BooleanArray, val depth: Int)
+        const val ROOM_CELL = 5   // espaço de cada bloco no chão (blocos de 1x1 ficam com 4 de folga entre eles)
+        fun roomCols(n: Int, sx: Int): Int = minOf(n, maxOf(4, minOf((sx - 16) / ROOM_CELL, Math.ceil(Math.sqrt(n * 2.2)).toInt())))
+        fun packRooms(sizes: List<Int>, sx: Int, sz: Int): RoomPlan {
+            val k = sizes.size
+            val xs = IntArray(k); val zs = IntArray(k); val cs = IntArray(k); val rs = IntArray(k); val ok = BooleanArray(k)
+            var cx0 = 6; var cz0 = 18; var rowD = 0; var depth = 0
+            for ((i, n) in sizes.withIndex()) {
+                if (n <= 0) continue
+                val cols = roomCols(n, sx); val rows = (n + cols - 1) / cols
+                val hw = cols * ROOM_CELL; val hd = rows * ROOM_CELL
+                if (cx0 > 6 && cx0 + hw + 4 > sx - 6) { cx0 = 6; cz0 += rowD + 16; rowD = 0 }
+                cs[i] = cols; rs[i] = rows; xs[i] = cx0; zs[i] = cz0
+                if (cz0 + hd + 3 <= sz - 2) ok[i] = true
+                depth = maxOf(depth, cz0 + hd + 6)
+                cx0 += hw + 8; rowD = maxOf(rowD, hd + 3)
+            }
+            return RoomPlan(xs, zs, cs, rs, ok, depth)
+        }
+        /** profundidade (z) do mapa da galeria: a maior que algum modo precisa (todas as salas de todas as categorias), pra nunca faltar espaço */
+        fun galleryDepth(sx: Int): Int {
+            val sizes = ArrayList<Int>()
+            for (c in galleryCats()) for (bk in galleryBuckets(c)) if (bk.isNotEmpty()) sizes.add(bk.size)
+            val need = packRooms(sizes, sx, Int.MAX_VALUE).depth
+            return ((need * 115 / 100 + 64) / CH + 1) * CH
+        }
         val CU = intArrayOf(0, 1); val CV = intArrayOf(0, 1)
         val QU = intArrayOf(0, 1, 1, 0); val QV = intArrayOf(0, 0, 1, 1)
         val AOB = floatArrayOf(0.86f, 0.91f, 0.96f, 1f)
@@ -306,30 +360,6 @@ class World {
     class GalCat(val name: String, val ci: Int, val ids: List<Int>)
     class GalSec(val idx: Int, val title: String, val count: Int)
 
-    /** categorias da galeria (mesma divisão da mochila) */
-    private fun galleryCats(): List<GalCat> {
-        // os blocos básicos (ids 1..13) não têm categoria própria: entram no começo de cada categoria, a mesma da mochila (Items.cat)
-        val basic = ArrayList<Int>(); for (id in 1..13) if (id != B.WATER && B.defined[id]) basic.add(id)
-        fun basicsOf(c: Int) = basic.filter { Items.cat(it) == c }
-        val cats = ArrayList<GalCat>()
-        cats.add(GalCat("NATUREZA", 2, basicsOf(2) + Blk.defs.filter { it.cat == Blk.C_NAT && it.id !in Blk.hidden }.map { it.id }))
-        cats.add(GalCat("CONSTRUÇÃO", 3, basicsOf(3) + Blk.defs.filter { it.cat == Blk.C_BUILD && it.id !in Blk.hidden }.map { it.id }))
-        cats.add(GalCat("DECORAÇÃO", 4, basicsOf(4) + Blk.defs.filter { it.cat == Blk.C_DEC && it.id !in Blk.hidden }.map { it.id }))
-        cats.add(GalCat("MOBÍLIA", 5, Blk.defs.filter { it.cat == Blk.C_FURN && it.id !in Blk.hidden }.map { it.id }))
-        val other = Blk.defs.filter { it.cat != Blk.C_NAT && it.cat != Blk.C_BUILD && it.cat != Blk.C_DEC && it.cat != Blk.C_FURN }.map { it.id }
-        if (other.isNotEmpty()) cats.add(GalCat("OUTROS", 0, other))
-        return cats
-    }
-
-    /** blocos de cada seção da categoria (mesmo índice de Gallery.sections) */
-    private fun galleryBuckets(cat: GalCat): Array<ArrayList<Int>> {
-        val matById = HashMap<Int, Int>(); for (d in Blk.defs) matById[d.id] = d.mat
-        val secs = Gallery.sections(cat.ci)
-        val buckets = Array(secs.size) { ArrayList<Int>() }
-        for (id in cat.ids) buckets[Gallery.classify(cat.ci, B.names[id], matById[id] ?: 0)].add(id)
-        return buckets
-    }
-
     /** menu do painel de escolha: cada categoria com as suas seções que têm blocos */
     fun galleryMenu(): List<Pair<GalCat, List<GalSec>>> = galleryCats().map { c ->
         val secs = Gallery.sections(c.ci); val bk = galleryBuckets(c)
@@ -363,7 +393,8 @@ class World {
             extra == GAL_APPS -> { DecoRooms.build(this, top); spawnX = DecoRooms.spawnX; spawnZ = DecoRooms.spawnZ }
             extra == GAL_CAR -> { vehicleTrack(top); spawnX = 10; spawnZ = 6; carSpawnX = 17; carSpawnZ = 9; carSpawnYaw = 0f }
             extra == GAL_BLOCK -> { layoutSingleBlockTest(secFilter, top, floor, plate); spawnX = 10; spawnZ = 14 }
-            catIdx in cats.indices -> layoutCategory(cats[catIdx], secFilter, if (extra >= GAL_PAGE) extra - GAL_PAGE else 0, top, floor, plate)
+            extra == GAL_REVIEW_VALID || extra == GAL_REVIEW_INVALID -> layoutReview(extra == GAL_REVIEW_VALID, catIdx, top, floor, plate)
+            catIdx in cats.indices -> layoutCategory(cats[catIdx], secFilter, top, floor, plate)
             else -> {
                 labels.add(Label(spawnX + 0.5f, top + 5f, spawnZ + 7f, "GALERIA DE BLOCOS", true))
                 labels.add(Label(spawnX + 0.5f, top + 3.4f, spawnZ + 7f, "Toque em CATEGORIAS no alto da tela", false))
@@ -448,49 +479,80 @@ class World {
         sign(17, 124, "1 bloco", false); sign(41, 124, "2 blocos", false); sign(65, 124, "3 blocos", false)
     }
 
-    /** uma seção da categoria vira uma sala de exposição: pedestais em grade (no máximo 6 por fileira e 24 por página), faixa colorida em volta,
-     *  título grande e uma plaquinha por bloco, sempre na mesma altura. Seções grandes são divididas em páginas (page = 0, 1, 2...). */
-    private fun layoutCategory(cat: GalCat, secFilter: Int, page: Int, top: Int, floor: Int, plate: Int) {
+    /** Uma sala de exposição: título, subtítulo, cor da borda (índice de Gallery.accentName ou nome do bloco) e os blocos, cada um com o nome de plaquinha já pronto. */
+    private class Room(val head: String, val sub: String, val accent: String, val sec: Gallery.Sec, val ids: List<Int>)
+
+    /** Monta todas as salas no mapa, sem dividir em partes: cada sala mostra TODOS os blocos dela, em grade larga, direto no chão
+     *  (piso xadrez marca o espaço de cada bloco). O mapa da galeria já nasce com o fundo necessário (ver galleryDepth). */
+    private fun layoutRooms(rooms: List<Room>, top: Int, floor: Int, plate: Int) {
+        if (rooms.isEmpty()) return
         val colById = HashMap<Int, Int>(); for (d in Blk.defs) colById[d.id] = d.color
         fun blockNamed(n: String) = B.byName[n] ?: floor
-        val secs = Gallery.sections(cat.ci)
-        val buckets = galleryBuckets(cat)
-        var si = secFilter
-        if (si !in secs.indices || buckets[si].isEmpty()) si = buckets.indexOfFirst { it.isNotEmpty() }
-        if (si < 0) return
-        val sec = secs[si]; val all = buckets[si]
-        val pages = (all.size + Gallery.PER_PAGE - 1) / Gallery.PER_PAGE
-        val pg = page.coerceIn(0, maxOf(0, pages - 1))
-        val list = all.subList(pg * Gallery.PER_PAGE, minOf(all.size, (pg + 1) * Gallery.PER_PAGE))
-        val cols = minOf(list.size, 6); val rows = (list.size + cols - 1) / cols
-        val cell = 6; val hx0 = 10; val hz0 = 16
-        val hw = cols * cell; val hd = rows * cell
-        val accent = blockNamed(Gallery.accentName(si))
         val lamp = blockNamed("Bloco Luminoso Branco")
         fun at(x: Int, y: Int, z: Int, b: Int) { if (x in 0 until SX && z in 0 until SZ && y in 0 until SY) blocks[(y * SZ + z) * SX + x] = b }
-        // piso da sala em branco, com borda colorida
-        for (z in hz0 until hz0 + hd) for (x in hx0 until hx0 + hw) setTopB(x, z, plate, top)
-        for (x in hx0 - 1..hx0 + hw) { setTopB(x, hz0 - 1, accent, top); setTopB(x, hz0 + hd, accent, top) }
-        for (z in hz0 - 1..hz0 + hd) { setTopB(hx0 - 1, z, accent, top); setTopB(hx0 + hw, z, accent, top) }
-        // pilares de canto com luz
-        for (px in intArrayOf(hx0 - 1, hx0 + hw)) for (pz in intArrayOf(hz0 - 1, hz0 + hd)) {
-            for (y in 1..5) at(px, top + y, pz, accent)
-            at(px, top + 6, pz, lamp)
+        val cell = ROOM_CELL
+        val plan = packRooms(rooms.map { it.ids.size }, SX, SZ)
+        var skipped = 0
+        for ((ri, room) in rooms.withIndex()) {
+            val n = room.ids.size
+            if (n == 0) continue
+            if (!plan.fits[ri]) { skipped += n; continue }
+            val cols = plan.cols[ri]; val rows = plan.rows[ri]
+            val hw = cols * cell; val hd = rows * cell
+            val hx0 = plan.x[ri] + 1; val hz0 = plan.z[ri]
+            val accent = blockNamed(room.accent)
+            // piso xadrez: cada quadrado é o espaço de um bloco
+            for (r in 0 until rows) for (c in 0 until cols) {
+                val tile = if ((r + c) % 2 == 0) plate else floor
+                for (dz in 0 until cell) for (dx in 0 until cell) setTopB(hx0 + c * cell + dx, hz0 + r * cell + dz, tile, top)
+            }
+            for (x in hx0 - 1..hx0 + hw) { setTopB(x, hz0 - 1, accent, top); setTopB(x, hz0 + hd, accent, top) }
+            for (z in hz0 - 1..hz0 + hd) { setTopB(hx0 - 1, z, accent, top); setTopB(hx0 + hw, z, accent, top) }
+            for (px in intArrayOf(hx0 - 1, hx0 + hw)) for (pz in intArrayOf(hz0 - 1, hz0 + hd)) {
+                for (y in 1..5) at(px, top + y, pz, accent)
+                at(px, top + 6, pz, lamp)
+            }
+            labels.add(Label(hx0 + hw / 2f, top + 9f, hz0 - 3f, room.head, true))
+            labels.add(Label(hx0 + hw / 2f, top + 7.2f, hz0 - 3f, room.sub, false))
+            for ((j, id) in room.ids.withIndex()) {
+                val row = j / cols; val col = j % cols
+                val cx = hx0 + col * cell + cell / 2; val cz = hz0 + row * cell + cell / 2
+                at(cx, top + 1, cz, id)   // direto no chão
+                labels.add(Label(cx + 0.5f, top + 4.0f, cz + 0.5f, Gallery.shortName(room.sec, B.names[id]), false, colById[id] ?: 0))
+            }
         }
-        // fundo da sala: parede baixa colorida atrás dos pedestais
-        for (x in hx0 - 1..hx0 + hw) for (y in 1..2) at(x, top + y, hz0 + hd, accent)
-        val head = "${cat.name}  -  ${sec.title}"
-        labels.add(Label(hx0 + hw / 2f, top + 10f, hz0 - 4f, head, true))
-        val sub = if (pages > 1) "Parte ${pg + 1} de $pages  -  ${list.size} blocos" else "${list.size} blocos"
-        labels.add(Label(hx0 + hw / 2f, top + 8f, hz0 - 4f, sub, false))
-        for ((j, id) in list.withIndex()) {
-            val row = j / cols; val col = j % cols
-            val cx = hx0 + col * cell + cell / 2; val cz = hz0 + row * cell + cell / 2
-            // pedestal 3x3 baixinho e o bloco em cima
-            for (dz in -1..1) for (dx in -1..1) at(cx + dx, top + 1, cz + dz, accent)
-            at(cx, top + 2, cz, id)
-            labels.add(Label(cx + 0.5f, top + 4.6f, cz + 0.5f, Gallery.shortName(sec, B.names[id]), false, colById[id] ?: 0))
+        if (skipped > 0) labels.add(Label(spawnX + 0.5f, top + 3.2f, spawnZ + 5f, "$skipped blocos ficaram de fora (mapa menor que o esperado)", false))
+    }
+
+    /** categoria (ou uma seção dela) -> salas: secFilter = índice da seção, ou -1 pra todas as seções da categoria, cada uma na sua sala */
+    private fun layoutCategory(cat: GalCat, secFilter: Int, top: Int, floor: Int, plate: Int) {
+        val secs = Gallery.sections(cat.ci); val buckets = galleryBuckets(cat)
+        val idx = if (secFilter in secs.indices && buckets[secFilter].isNotEmpty()) listOf(secFilter) else secs.indices.filter { buckets[it].isNotEmpty() }
+        val rooms = idx.map { si -> Room("${cat.name}  -  ${secs[si].title}", "${buckets[si].size} blocos", Gallery.accentName(si), secs[si], buckets[si]) }
+        layoutRooms(rooms, top, floor, plate)
+    }
+
+    /** revisão: todos os blocos válidos (ou inválidos) de uma vez, separados por categoria e, dentro dela, por seção. catIdx = só uma categoria, -1 = todas */
+    private fun layoutReview(valid: Boolean, catIdx: Int, top: Int, floor: Int, plate: Int) {
+        val wanted = reviewIds.toHashSet()
+        val rooms = ArrayList<Room>()
+        val used = HashSet<Int>()
+        val cats = galleryCats()
+        val word = if (valid) "válidos" else "inválidos"
+        for ((ci, cat) in cats.withIndex()) {
+            val secs = Gallery.sections(cat.ci); val buckets = galleryBuckets(cat)
+            for (si in secs.indices) {
+                val ids = buckets[si].filter { it in wanted }
+                used.addAll(ids)
+                if (ids.isEmpty() || (catIdx >= 0 && catIdx != ci)) continue
+                rooms.add(Room("${cat.name}  -  ${secs[si].title}", "${ids.size} blocos $word", if (valid) "Concreto Verde" else "Concreto Vermelho", secs[si], ids))
+            }
         }
+        val rest = wanted.filter { it !in used && it > 0 && it < B.names.size }.sorted()
+        if (catIdx < 0 && rest.isNotEmpty()) rooms.add(Room("OUTROS", "${rest.size} blocos $word", if (valid) "Concreto Verde" else "Concreto Vermelho", Gallery.sections(0).last(), rest))
+        labels.add(Label(spawnX + 0.5f, top + 5f, spawnZ + 7f, if (valid) "BLOCOS VÁLIDOS" else "BLOCOS INVÁLIDOS", true))
+        labels.add(Label(spawnX + 0.5f, top + 3.4f, spawnZ + 7f, "${rooms.sumOf { it.ids.size }} blocos em ${rooms.size} salas, separados por categoria", false))
+        layoutRooms(rooms, top, floor, plate)
     }
 
     /** vitrine da mobília: conjuntos de mesas, sala, escritório e quartos (ficam trancados, mas dá pra sentar) */

@@ -221,7 +221,7 @@ class GalleryPanel(
         inspector.show()
     }
 
-    /** Lista de revisão separada por estado, acessível pela galeria. */
+    /** Revisão por estado: mostra todos de uma vez no mapa. Aqui só se escolhe o recorte (tudo ou uma categoria); lá dentro cada categoria/seção tem a sua sala. */
     private fun showReviewed(status: String) {
         preferInspector = false
         inspector.hide()
@@ -240,43 +240,39 @@ class GalleryPanel(
             body.addView(empty)
             return
         }
-        heading("${ids.size} BLOCOS")
-        val cards = ids.map { id ->
-            val name = B.names.getOrNull(id).orEmpty().ifBlank { "Bloco #$id" }
-            card(name, "ID $id · toque para abrir no mapa", accent, if (valid) "✓" else "✕") {
-                pick(-1, id, World.GAL_BLOCK, "Teste do bloco: $name (#$id)")
-            }
+        val set = ids.toHashSet()
+        val extra = if (valid) World.GAL_REVIEW_VALID else World.GAL_REVIEW_INVALID
+        fun openMap(ci: Int, what: String) { World.reviewIds = ids; pick(ci, -1, extra, what) }
+        heading("VER NO MAPA")
+        addGrid(listOf(card("TODOS (${ids.size})", "todas as categorias, cada seção numa sala", accent, if (valid) "✓" else "✕") {
+            openMap(-1, (if (valid) "Blocos válidos" else "Blocos inválidos") + " - todos")
+        }), 1)
+        heading("POR CATEGORIA")
+        val cards = ArrayList<View>()
+        for ((i, p) in menu.withIndex()) {
+            val n = p.first.ids.count { it in set }
+            if (n == 0) continue
+            cards.add(card(p.first.name, "$n blocos", catColors[i % catColors.size], p.first.name.take(1).uppercase()) {
+                openMap(i, (if (valid) "Válidos" else "Inválidos") + " - " + p.first.name)
+            })
         }
         addGrid(cards, cols())
     }
 
-    /** passo 2: tipos de bloco da categoria (cada um vira uma sala de exposição) */
+    /** passo 2: tipos de bloco da categoria; cada um abre com TODOS os blocos numa sala só (sem partes). O primeiro cartão mostra a categoria inteira. */
     private fun showSecs(ci: Int) {
         val (cat, secs) = menu[ci]
         body.removeAllViews(); backBtn.visibility = View.VISIBLE; closeBtn.visibility = View.VISIBLE
         backBtn.setOnClickListener { showCats() }
         title.text = cat.name; sub.text = "Galeria  ›  ${cat.name}"
         val color = catColors[ci % catColors.size]
+        heading("CATEGORIA INTEIRA")
+        addGrid(listOf(card("VER TUDO", "${cat.ids.size} blocos  -  ${secs.size} salas, uma por tipo", color, "★") {
+            pick(ci, -1, World.GAL_PAGE, cat.name + " - tudo")
+        }), 1)
+        heading("TIPOS")
         val cs = secs.map { s ->
-            val pages = (s.count + Gallery.PER_PAGE - 1) / Gallery.PER_PAGE
-            val subT = if (pages > 1) "${s.count} blocos  -  $pages partes" else "${s.count} blocos"
-            card(s.title, subT, color, s.title.take(1).uppercase()) {
-                if (pages > 1) showPages(ci, s, pages) else pick(ci, s.idx, World.GAL_PAGE, cat.name + " - " + s.title)
-            }
-        }
-        addGrid(cs, cols())
-    }
-
-    /** passo 3 (só tipos grandes): escolher a parte, 24 blocos por vez */
-    private fun showPages(ci: Int, s: World.GalSec, pages: Int) {
-        val cat = menu[ci].first
-        body.removeAllViews(); backBtn.visibility = View.VISIBLE; closeBtn.visibility = View.VISIBLE
-        backBtn.setOnClickListener { showSecs(ci) }
-        title.text = s.title; sub.text = "Galeria  ›  ${cat.name}  ›  ${s.title}"
-        val color = catColors[ci % catColors.size]
-        val cs = (0 until pages).map { pg ->
-            val a = pg * Gallery.PER_PAGE + 1; val z = minOf(s.count, (pg + 1) * Gallery.PER_PAGE)
-            card("Parte ${pg + 1}", "blocos $a a $z", color, "${pg + 1}") { pick(ci, s.idx, World.GAL_PAGE + pg, cat.name + " - " + s.title + " (parte ${pg + 1})") }
+            card(s.title, "${s.count} blocos", color, s.title.take(1).uppercase()) { pick(ci, s.idx, World.GAL_PAGE, cat.name + " - " + s.title) }
         }
         addGrid(cs, cols())
     }

@@ -6,9 +6,6 @@ package com.cuboland.app
  * seção "TELHADOS CERÂMICOS" + plaquinha "Azul-claro" em vez de repetir "Telhado Cerâmico Azul-claro" 16 vezes.
  */
 object Gallery {
-    /** blocos por página na sala de exposição (6 colunas x 4 fileiras) */
-    const val PER_PAGE = 24
-
     /** title = título da seção; strip = parte do nome que o título já diz (cortada da plaquinha); fb = seção reserva (só recebe o que nenhuma outra quis) */
     class Sec(val title: String, val strip: String, val fb: Boolean, val rule: (String, Int) -> Boolean)
 
