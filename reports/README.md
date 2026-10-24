@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Plate A (#2764)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 49, Y 11, Z 20
+- **Motivo:** Outro
+- **Atualizado:** 2026-10-24T01:33:59-03:00
+
+![Captura do bloco #2764](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2764-1792816439872.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2764-1792816439872.jpg)
+
+---
+
 ## Teapot (#2783)
 
 - **Status:** ❌ Inválido
@@ -99,19 +112,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 ![Captura do bloco #2765](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2765-1792816329172.jpg)
 
 [Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2765-1792816329172.jpg)
-
----
-
-## Plate A (#2764)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 49, Y 11, Z 20
-- **Motivo:** Peças flutuando
-- **Atualizado:** 2026-10-24T01:32:02-03:00
-
-![Captura do bloco #2764](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2764-1792816322774.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2764-1792816322774.jpg)
 
 ---
 
