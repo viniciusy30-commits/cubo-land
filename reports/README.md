@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Plate (#2765)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 54, Y 11, Z 20
+- **Motivo:** Peças flutuando
+- **Atualizado:** 2026-10-24T01:32:08-03:00
+
+![Captura do bloco #2765](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2765-1792816329172.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2765-1792816329172.jpg)
+
+---
+
 ## Plate A (#2764)
 
 - **Status:** ❌ Inválido
