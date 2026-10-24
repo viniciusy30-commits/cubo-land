@@ -10,6 +10,18 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 ---
 
+## Ichiroku Tart (#4085)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 137, Y 11, Z 40
+- **Atualizado:** 2026-10-24T01:49:48-03:00
+
+![Captura do bloco #4085](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4085-1792817415600.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4085-1792817415600.jpg)
+
+---
+
 ## Popcorn (#4105)
 
 - **Status:** ❌ Inválido
