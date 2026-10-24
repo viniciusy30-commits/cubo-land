@@ -42,6 +42,19 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 ---
 
+## Kue Ambon (#4088)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 152, Y 11, Z 40
+- **Motivo:** Textura bugada, Textura piscando
+- **Atualizado:** 2026-10-24T01:51:51-03:00
+
+![Captura do bloco #4088](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4088-1792817570668.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4088-1792817570668.jpg)
+
+---
+
 ## Dango (#4068)
 
 - **Status:** ❌ Inválido
