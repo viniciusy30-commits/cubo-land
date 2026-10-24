@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Cat Poop (#3738)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 44, Y 11, Z 25
+- **Motivo:** Peças flutuando
+- **Atualizado:** 2026-10-24T01:32:33-03:00
+
+![Captura do bloco #3738](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3738-1792816353992.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3738-1792816353992.jpg)
+
+---
+
 ## Vidro (#4161)
 
 - **Status:** ✅ Válido
