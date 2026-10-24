@@ -50,6 +50,19 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 ---
 
+## Tempura (#4128)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 152, Y 11, Z 50
+- **Motivo:** Outro
+- **Atualizado:** 2026-10-24T01:51:58-03:00
+
+![Captura do bloco #4128](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4128-1792817581724.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4128-1792817581724.jpg)
+
+---
+
 ## Rendang (#4108)
 
 - **Status:** ❌ Inválido
