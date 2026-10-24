@@ -10,6 +10,19 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 ---
 
+## Dorayaki (#4070)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 162, Y 11, Z 35
+- **Motivo:** Tamanho / proporção errados
+- **Atualizado:** 2026-10-24T01:52:59-03:00
+
+![Captura do bloco #4070](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4070-1792817639172.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4070-1792817639172.jpg)
+
+---
+
 ## Cookie 1a (#4050)
 
 - **Status:** ✅ Válido
