@@ -50,6 +50,19 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 ---
 
+## Tumbler 2 (#4825)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 152, Y 11, Z 60
+- **Motivo:** Outro
+- **Atualizado:** 2026-10-24T01:52:05-03:00
+
+![Captura do bloco #4825](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4825-1792817585319.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4825-1792817585319.jpg)
+
+---
+
 ## Retail Stuff C (#4509)
 
 - **Status:** ❌ Inválido
