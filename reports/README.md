@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Bottles A (#3911)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 97, Y 11, Z 20
+- **Atualizado:** 2026-10-24T01:37:43-03:00
+
+---
+
 ## Bottles 1 (#3910)
 
 - **Status:** ✅ Válido
