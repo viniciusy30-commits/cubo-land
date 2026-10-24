@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Hishi Mochi (#4081)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 117, Y 11, Z 40
+- **Motivo:** Tamanho / proporção errados
+- **Atualizado:** 2026-10-24T01:46:52-03:00
+
+![Captura do bloco #4081](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4081-1792817213103.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4081-1792817213103.jpg)
+
+---
+
 ## Pineapple (#4101)
 
 - **Status:** ❌ Inválido
