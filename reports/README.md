@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Retail Stuff 3i (#4120)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 112, Y 11, Z 50
+- **Motivo:** Outro
+- **Atualizado:** 2026-10-24T01:45:55-03:00
+
+![Captura do bloco #4120](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4120-1792817165598.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4120-1792817165598.jpg)
+
+---
+
 ## Pempek (#4100)
 
 - **Status:** ✅ Válido
