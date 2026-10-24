@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Crackers C (#4063)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 127, Y 11, Z 35
+- **Atualizado:** 2026-10-24T01:48:33-03:00
+
+---
+
 ## Ice Cream B (#4083)
 
 - **Status:** ✅ Válido
