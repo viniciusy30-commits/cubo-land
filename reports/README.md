@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Tumbler C (#4817)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 112, Y 11, Z 60
+- **Motivo:** Outro
+- **Atualizado:** 2026-10-24T01:46:10-03:00
+
+![Captura do bloco #4817](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4817-1792817180015.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4817-1792817180015.jpg)
+
+---
+
 ## Flour Retail (#4501)
 
 - **Status:** ❌ Inválido
