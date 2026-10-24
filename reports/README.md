@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Espresson Café Máquina 2 (#2721)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 9, Y 11, Z 20
+- **Motivo:** Outro
+- **Atualizado:** 2026-10-24T01:29:39-03:00
+
+![Captura do bloco #2721](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2721-1792816179470.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2721-1792816179470.jpg)
+
+---
+
 ## Concreto Cinza-claro (#38)
 
 - **Status:** ✅ Válido
@@ -55,18 +68,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 ![Captura do bloco #3872](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3872-1792773481184.jpg)
 
 [Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3872-1792773481184.jpg)
-
----
-
-## Espresson Café Máquina 2 (#2721)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 16, Y 11, Z 20
-- **Atualizado:** 2026-10-23T13:36:54-03:00
-
-![Captura do bloco #2721](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2721-1792773414066.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2721-1792773414066.jpg)
 
 ---
 
