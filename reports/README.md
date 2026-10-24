@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Dadar Gulung (#4066)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 142, Y 11, Z 35
+- **Atualizado:** 2026-10-24T01:50:24-03:00
+
+---
+
 ## Chicken Katsu (#4046)
 
 - **Status:** ✅ Válido
