@@ -15,11 +15,11 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 - **Status:** ❌ Inválido
 - **Coordenadas:** X 67, Y 11, Z 30
 - **Motivo:** Textura bugada, Cor errada
-- **Atualizado:** 2026-10-24T01:39:47-03:00
+- **Atualizado:** 2026-10-24T01:40:11-03:00
 
-![Captura do bloco #4031](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4031-1792816848957.jpg)
+![Captura do bloco #4031](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4031-1792816850701.jpg)
 
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4031-1792816848957.jpg)
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4031-1792816850701.jpg)
 
 ---
 
