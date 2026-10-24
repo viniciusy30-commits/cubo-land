@@ -18,6 +18,19 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 ---
 
+## Takoyaki (#4127)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 147, Y 11, Z 50
+- **Motivo:** Outro
+- **Atualizado:** 2026-10-24T01:50:58-03:00
+
+![Captura do bloco #4127](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4127-1792817494898.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4127-1792817494898.jpg)
+
+---
+
 ## Retail Stuff B (#4508)
 
 - **Status:** ❌ Inválido
