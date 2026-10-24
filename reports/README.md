@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Pet House Madeira Vinyl Branco (#2466)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 39, Y 11, Z 20
+- **Motivo:** Peças flutuando, Textura bugada
+- **Atualizado:** 2026-10-24T01:31:03-03:00
+
+![Captura do bloco #2466](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2466-1792816267529.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2466-1792816267529.jpg)
+
+---
+
 ## Pet House Madeira Vinyl Escuro (#2465)
 
 - **Status:** ❌ Inválido
