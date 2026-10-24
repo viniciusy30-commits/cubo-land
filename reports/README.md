@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Pet House Madeira Marrom (#2462)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 19, Y 11, Z 20
+- **Motivo:** Peças flutuando, Textura bugada
+- **Atualizado:** 2026-10-24T01:30:47-03:00
+
+![Captura do bloco #2462](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2462-1792816248584.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2462-1792816248584.jpg)
+
+---
+
 ## Pet House Madeira Preto (#2461)
 
 - **Status:** ❌ Inválido
