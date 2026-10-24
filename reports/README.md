@@ -18,6 +18,19 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 ---
 
+## Putu Cake (#4106)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 142, Y 11, Z 45
+- **Motivo:** Outro
+- **Atualizado:** 2026-10-24T01:50:34-03:00
+
+![Captura do bloco #4106](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4106-1792817477691.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4106-1792817477691.jpg)
+
+---
+
 ## Ketupat (#4086)
 
 - **Status:** ✅ Válido
