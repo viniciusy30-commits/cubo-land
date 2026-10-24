@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Retail Stuff 3j (#4121)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 117, Y 11, Z 50
+- **Motivo:** Outro
+- **Atualizado:** 2026-10-24T01:46:42-03:00
+
+![Captura do bloco #4121](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4121-1792817204589.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4121-1792817204589.jpg)
+
+---
+
 ## Retail Item A (#4502)
 
 - **Status:** ❌ Inválido
