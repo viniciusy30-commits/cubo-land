@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Cake 2a (#4039)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 107, Y 11, Z 30
+- **Atualizado:** 2026-10-24T01:44:50-03:00
+
+---
+
 ## Buffet A (#4036)
 
 - **Status:** ✅ Válido
