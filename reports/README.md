@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Binoculars (#3536)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 25
+- **Atualizado:** 2026-10-24T01:33:05-03:00
+
+---
+
 ## Blueprint (#3537)
 
 - **Status:** ✅ Válido
