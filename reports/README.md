@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Tea Cup (#3941)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 147, Y 11, Z 25
+- **Motivo:** Outro
+- **Atualizado:** 2026-10-24T01:51:15-03:00
+
+![Captura do bloco #3941](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3941-1792817511593.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3941-1792817511593.jpg)
+
+---
+
 ## Chicken Noodle (#4047)
 
 - **Status:** ✅ Válido
@@ -849,19 +862,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 - **Status:** ✅ Válido
 - **Coordenadas:** X 142, Y 11, Z 25
 - **Atualizado:** 2026-10-24T01:39:06-03:00
-
----
-
-## Tea Cup (#3941)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 147, Y 11, Z 25
-- **Motivo:** Textura bugada, Tamanho / proporção errados
-- **Atualizado:** 2026-10-24T01:39:02-03:00
-
-![Captura do bloco #3941](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3941-1792816752404.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3941-1792816752404.jpg)
 
 ---
 
