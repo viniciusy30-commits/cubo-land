@@ -139,7 +139,7 @@ class BlockReviewOverlay(ctx: Context, private val game: Game, private val captu
         return pressedButton != null
     }
 
-    private val REASONS = listOf("Peças flutuando", "Textura bugada", "Incompleto / faltando partes", "Textura piscando", "Cor errada",
+    private val REASONS = listOf("Item duplicado / repetido (aparece 2, 3 ou 4 vezes)", "Peças flutuando", "Textura bugada", "Incompleto / faltando partes", "Textura piscando", "Cor errada",
         "Tamanho / proporção errados", "Direção / rotação errada", "Sem colisão (atravessa)", "Transparência errada", "Não abre / não funciona", "Outro")
 
     /** Escolha do motivo da invalidação (vários, mais uma observação opcional). Cancelar descarta a invalidação; devolve null se o diálogo não abriu. */

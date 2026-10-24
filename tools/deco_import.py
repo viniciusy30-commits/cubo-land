@@ -164,8 +164,8 @@ def bake(g):
             b = bones.get(b.get('parent')); seen += 1
         return out
     mats = []; quads = []
-    flip = True   # Bedrock guarda rotation X e Y com sinal invertido em relacao a matematica padrao (so Z igual); sem isso pecas inclinadas ficam soltas
-    def fr(r): return [-r[0], -r[1], r[2]] if flip else r
+    flip = True   # Bedrock gira no sentido oposto da matematica padrao nos 3 eixos (testado: telhado em A da casinha de pet, alca da cafeteira, coronha dos rifles); sem isso pecas inclinadas ficam soltas
+    def fr(r): return [-r[0], -r[1], -r[2]] if flip else r
     for b in g.get('bones', []):
         ch = chain(b)
         for c in b.get('cubes', []):
@@ -207,6 +207,28 @@ def bake(g):
                 mn = fd.get('material_instance', '*')
                 if mn not in mats: mats.append(mn)
                 quads.append((mats.index(mn), int(max(0, min(1, sh))*255), vs, b['name']))
+    # faces coplanares sobrepostas (mesma direcao) de cubos diferentes piscam (z-fighting): a de cubo posterior sobe ~0,001 bloco, a mais nova sempre por cima
+    groups = {}
+    for qi, (slot, sh, vs, bn) in enumerate(quads):
+        ax_ = None
+        for a in range(3):
+            if max(v[a] for v in vs) - min(v[a] for v in vs) < 1e-5: ax_ = a; break
+        if ax_ is None: continue
+        ax1 = [vs[1][i]-vs[0][i] for i in range(3)]; bx1 = [vs[3][i]-vs[0][i] for i in range(3)]
+        nn = [ax1[1]*bx1[2]-ax1[2]*bx1[1], ax1[2]*bx1[0]-ax1[0]*bx1[2], ax1[0]*bx1[1]-ax1[1]*bx1[0]][ax_]
+        if abs(nn) < 1e-9: continue
+        o1, o2 = [i for i in range(3) if i != ax_]
+        rect = (min(v[o1] for v in vs), max(v[o1] for v in vs), min(v[o2] for v in vs), max(v[o2] for v in vs))
+        groups.setdefault((ax_, 1 if nn > 0 else -1, round(vs[0][ax_], 4)), []).append((qi, rect))
+    for (ax_, dr, _pl), lst in groups.items():
+        for i in range(1, len(lst)):
+            qi, r = lst[i]; k = 0
+            for j in range(i):
+                r2 = lst[j][1]
+                if r[0] < r2[1] - 1e-4 and r2[0] < r[1] - 1e-4 and r[2] < r2[3] - 1e-4 and r2[2] < r[3] - 1e-4: k += 1
+            if k:
+                slot, sh, vs, bn = quads[qi]
+                quads[qi] = (slot, sh, [tuple((c + dr * 0.0012 * k) if a_ == ax_ else c for a_, c in enumerate(v[:3])) + tuple(v[3:]) for v in vs], bn)
     return mats, quads
 
 ASM_NAME = {}
@@ -569,8 +591,11 @@ for key in reg['items']:
         pbv = [pm['components']['minecraft:geometry'].get('bone_visibility') for pm in d.get('permutations', []) if isinstance(pm['components'].get('minecraft:geometry'), dict) and 'bone_visibility' in pm['components']['minecraft:geometry']]
         vis_sig = f'|{stvar}|{kind}|' + json.dumps(bv, sort_keys=True) + json.dumps(pbv, sort_keys=True) + json.dumps(state_defaults(d), sort_keys=True)
     bvd = gref.get('bone_visibility') if isinstance(gref, dict) else None
-    if not stvar and isinstance(bvd, dict) and not asm and not dy:   # estado padrao (sem vizinhos, direcao south): so os ossos que valem nele
-        vis_sig = '|bv|' + json.dumps(bvd, sort_keys=True) + json.dumps(state_defaults(d), sort_keys=True)
+    # bone_visibility tambem pode vir so das permutacoes (ex.: md:inout 0 = 'main', 1 = 'in', 2 = 'in2'): sem isto todas as variantes apareciam juntas (item duplicado/triplicado)
+    pbv_any = [pm['components']['minecraft:geometry'].get('bone_visibility') for pm in d.get('permutations', []) if isinstance(pm['components'].get('minecraft:geometry'), dict) and 'bone_visibility' in pm['components']['minecraft:geometry']]
+    usebv = (not stvar) and (not asm) and (not dy) and (isinstance(bvd, dict) or bool(pbv_any))
+    if usebv:   # estado padrao (sem vizinhos, direcao south): so os ossos que valem nele
+        vis_sig = '|bv|' + json.dumps(bvd, sort_keys=True) + json.dumps(pbv_any, sort_keys=True) + json.dumps(state_defaults(d), sort_keys=True)
     gkey2 = gkey + vis_sig
     if gkey2 not in geo_index:
         mats, quads = geo_list[geo_index[gkey]]
@@ -598,8 +623,9 @@ for key in reg['items']:
                 pts = [rot(p_, [0, rr, 0], [0, 0, 0]) for p_ in pts]
                 openbox = [round(min(p_[0] for p_ in pts)/16+0.5+tv[0], 3), round(o_[1]/16, 3), round(min(p_[2] for p_ in pts)/16+0.5+tv[2], 3),
                            round(max(p_[0] for p_ in pts)/16+0.5+tv[0], 3), round((o_[1]+s_[1])/16, 3), round(max(p_[2] for p_ in pts)/16+0.5+tv[2], 3)]
-        elif isinstance(bvd, dict) and not asm and not dy:
-            vis = visible_bones(g, bvd, state_defaults(d))
+        elif usebv:
+            r_ = active_geo(d, state_defaults(d))
+            vis = r_[1] if (r_ and r_[0] == gid) else visible_bones(g, bvd if isinstance(bvd, dict) else {}, state_defaults(d))
             nq = [(slot, sh, vs, 3) for slot, sh, vs, bn in quads if bn in vis]
             if not nq: nq = [(slot, sh, vs, 3) for slot, sh, vs, bn in quads]   # tudo escondido = regra que nao entendi: mostra tudo
             bv_fixed += 1
