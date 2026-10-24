@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Teapot (#2783)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 14, Y 11, Z 25
+- **Motivo:** Outro
+- **Atualizado:** 2026-10-24T01:33:46-03:00
+
+![Captura do bloco #2783](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2783-1792816426510.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2783-1792816426510.jpg)
+
+---
+
 ## Planta Chão (#3044)
 
 - **Status:** ✅ Válido
