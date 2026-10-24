@@ -164,6 +164,8 @@ def bake(g):
             b = bones.get(b.get('parent')); seen += 1
         return out
     mats = []; quads = []
+    flip = True   # Bedrock guarda rotation X e Y com sinal invertido em relacao a matematica padrao (so Z igual); sem isso pecas inclinadas ficam soltas
+    def fr(r): return [-r[0], -r[1], r[2]] if flip else r
     for b in g.get('bones', []):
         ch = chain(b)
         for c in b.get('cubes', []):
@@ -193,8 +195,8 @@ def bake(g):
                 vs = []
                 for (a, bb, cc), (uu, vv) in zip(FACES[fn], cu):
                     p = [x1 if a else x0, y1 if bb else y0, z1 if cc else z0]
-                    if cr and any(cr): p = rot(p, cr, cp)
-                    for r_, pv in ch: p = rot(p, r_, pv)
+                    if cr and any(cr): p = rot(p, fr(cr), cp)
+                    for r_, pv in ch: p = rot(p, fr(r_), pv)
                     vs.append((p[0]/16+0.5, p[1]/16, p[2]/16+0.5, uu/tw, vv/th))
                 # normal -> sombreado
                 ax = [vs[1][i]-vs[0][i] for i in range(3)]; bx = [vs[3][i]-vs[0][i] for i in range(3)]
@@ -211,6 +213,16 @@ ASM_NAME = {}
 def assemble(d, c):
     """Itens de varios blocos (md:segment: cama, armario alto, cortina...): -> [(geometry_id, (dx,dy,dz) em blocos)] ou None.
     Layout (frente padrao, igual aos scripts do addon): left=+x/right=-x (esquerda no indice 0), front=0/mid,back = -z, bottom=0/mid/top = +y."""
+    if 'md:door_type' in d['description'].get('states', {}):   # porta de 2 blocos: baixo (bottom) + cima (top), altura 'two', sem espelho
+        gb = gt = None
+        for pm in d.get('permutations', []):
+            cd = pm['condition']; g_ = pm['components'].get('minecraft:geometry')
+            if g_ is None or "md:door_height') == 'two'" not in cd or "!q.block_state('md:mirror')" not in cd: continue
+            gi_ = g_['identifier'] if isinstance(g_, dict) else g_
+            if "md:door_type') == 'bottom'" in cd: gb = gi_
+            elif "md:door_type') == 'top'" in cd: gt = gi_
+        if gb and gt and gb != gt and gb in geos and gt in geos: return [(gb, (0, 0, 0)), (gt, (0, 1, 0))]
+        return None
     if 'md:segment' not in d['description'].get('states', {}): return None
     if 'tag:md:horizontal_connector' in c or 'tag:md:z_horizontal_connector' in c: return None   # segmentos = alternativas por vizinhanca (dinamico), nao pecas de um moveis grande
     key = next((k for k in c if re.match(r'md:\d', k)), '')

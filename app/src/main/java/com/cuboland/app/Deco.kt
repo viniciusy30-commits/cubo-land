@@ -98,7 +98,7 @@ object Deco {
                 if (dir == 1) { dx = -i; dz = -j } else if (dir == 2) { dx = j; dz = -i } else if (dir == 3) { dx = -j; dz = i }
                 if (ax + dx != x || az + dz != z) continue
                 for (k in fp[2]..fp[3]) if (ay + k == y) {
-                    val base = d.box
+                    val base = if (d.ob != null && toggled(w, ax, ay, az, d.kd)) d.ob else d.box   // porta aberta: a parte de cima também usa a caixa aberta
                     val b = if (base == null) floatArrayOf(0f, 0f, 0f, 1f, 1f, 1f) else floatArrayOf(base[0], base[1], base[2], base[3], if (k < fp[3]) 1f else base[4], base[5])
                     return Extra(ax, ay, az, rotBox(b, dir))
                 }
