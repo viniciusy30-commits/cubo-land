@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Crackers A (#4061)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 117, Y 11, Z 35
+- **Atualizado:** 2026-10-24T01:47:40-03:00
+
+---
+
 ## Cake 4 (#4042)
 
 - **Status:** ✅ Válido
@@ -23,19 +31,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 - **Status:** ✅ Válido
 - **Coordenadas:** X 117, Y 11, Z 30
 - **Atualizado:** 2026-10-24T01:47:03-03:00
-
----
-
-## Crackers A (#4061)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 117, Y 11, Z 35
-- **Motivo:** Tamanho / proporção errados
-- **Atualizado:** 2026-10-24T01:47:01-03:00
-
-![Captura do bloco #4061](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4061-1792817225177.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4061-1792817225177.jpg)
 
 ---
 
