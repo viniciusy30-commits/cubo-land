@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Hotdog (#4027)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 152, Y 11, Z 25
+- **Atualizado:** 2026-10-24T01:38:50-03:00
+
+---
+
 ## Drink 3a (#3924)
 
 - **Status:** ✅ Válido
