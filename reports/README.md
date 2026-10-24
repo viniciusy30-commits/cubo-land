@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Flour Retail (#4501)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 112, Y 11, Z 55
+- **Motivo:** Outro
+- **Atualizado:** 2026-10-24T01:46:04-03:00
+
+![Captura do bloco #4501](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4501-1792817167222.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4501-1792817167222.jpg)
+
+---
+
 ## Retail Stuff 3i (#4120)
 
 - **Status:** ❌ Inválido
