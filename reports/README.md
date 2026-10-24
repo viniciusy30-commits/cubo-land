@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Sniper (#4641)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 19, Y 11, Z 35
+- **Motivo:** Peças flutuando
+- **Atualizado:** 2026-10-24T01:35:59-03:00
+
+![Captura do bloco #4641](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4641-1792816559460.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4641-1792816559460.jpg)
+
+---
+
 ## Concreto Branco (#30)
 
 - **Status:** ❌ Inválido
