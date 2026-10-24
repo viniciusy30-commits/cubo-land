@@ -26,6 +26,19 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 ---
 
+## Sashimi (#4123)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 127, Y 11, Z 50
+- **Motivo:** Outro
+- **Atualizado:** 2026-10-24T01:48:26-03:00
+
+![Captura do bloco #4123](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4123-1792817323679.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4123-1792817323679.jpg)
+
+---
+
 ## Retail Item C (#4504)
 
 - **Status:** ❌ Inválido
