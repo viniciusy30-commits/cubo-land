@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Kue Lapis A (#4089)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 157, Y 11, Z 40
+- **Atualizado:** 2026-10-24T01:52:25-03:00
+
+---
+
 ## Tumpeng Rice (#4129)
 
 - **Status:** ✅ Válido
