@@ -42,6 +42,19 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 ---
 
+## Rendang (#4108)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 152, Y 11, Z 45
+- **Motivo:** Outro
+- **Atualizado:** 2026-10-24T01:51:55-03:00
+
+![Captura do bloco #4108](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4108-1792817580196.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4108-1792817580196.jpg)
+
+---
+
 ## Kue Ambon (#4088)
 
 - **Status:** ❌ Inválido
