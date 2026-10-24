@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Retail Item B (#4503)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 122, Y 11, Z 55
+- **Motivo:** Outro
+- **Atualizado:** 2026-10-24T01:48:00-03:00
+
+![Captura do bloco #4503](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4503-1792817290990.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4503-1792817290990.jpg)
+
+---
+
 ## Sandwitch (#4122)
 
 - **Status:** ✅ Válido
