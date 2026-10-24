@@ -10,6 +10,19 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 ---
 
+## Cake 1c (#3729)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 87, Y 11, Z 20
+- **Motivo:** Textura bugada
+- **Atualizado:** 2026-10-24T01:37:25-03:00
+
+![Captura do bloco #3729](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3729-1792816646923.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3729-1792816646923.jpg)
+
+---
+
 ## Cake 1b (#3728)
 
 - **Status:** ❌ Inválido
