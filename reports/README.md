@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Tumpeng Rice (#4129)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 157, Y 11, Z 50
+- **Atualizado:** 2026-10-24T01:52:15-03:00
+
+---
+
 ## Tea Cup (#3941)
 
 - **Status:** ❌ Inválido
