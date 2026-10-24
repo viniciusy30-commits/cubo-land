@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Apple (#4032)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 72, Y 11, Z 30
+- **Atualizado:** 2026-10-24T01:40:15-03:00
+
+---
+
 ## Drink 3b (#3925)
 
 - **Status:** ✅ Válido
