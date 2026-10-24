@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Retail Item A (#4502)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 117, Y 11, Z 55
+- **Motivo:** Outro
+- **Atualizado:** 2026-10-24T01:46:37-03:00
+
+![Captura do bloco #4502](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4502-1792817198015.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4502-1792817198015.jpg)
+
+---
+
 ## Tumbler D (#4818)
 
 - **Status:** ❌ Inválido
