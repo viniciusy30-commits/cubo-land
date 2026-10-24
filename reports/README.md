@@ -34,6 +34,19 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 ---
 
+## Tea Cup (#3941)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 147, Y 11, Z 25
+- **Motivo:** Textura bugada, Tamanho / proporção errados
+- **Atualizado:** 2026-10-24T01:39:02-03:00
+
+![Captura do bloco #3941](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3941-1792816752404.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3941-1792816752404.jpg)
+
+---
+
 ## Hotdog (#4027)
 
 - **Status:** ✅ Válido
