@@ -18,6 +18,19 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 ---
 
+## Sushi (#4126)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 142, Y 11, Z 50
+- **Motivo:** Outro
+- **Atualizado:** 2026-10-24T01:50:39-03:00
+
+![Captura do bloco #4126](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4126-1792817485803.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4126-1792817485803.jpg)
+
+---
+
 ## Putu Cake (#4106)
 
 - **Status:** ❌ Inválido
