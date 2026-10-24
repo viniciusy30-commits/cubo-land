@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Crackers B (#4062)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 122, Y 11, Z 35
+- **Atualizado:** 2026-10-24T01:47:42-03:00
+
+---
+
 ## Crackers A (#4061)
 
 - **Status:** ✅ Válido
