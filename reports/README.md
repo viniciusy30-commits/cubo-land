@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Pet House Madeira Preto (#2461)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 14, Y 11, Z 20
+- **Motivo:** Peças flutuando, Textura bugada
+- **Atualizado:** 2026-10-24T01:30:42-03:00
+
+![Captura do bloco #2461](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2461-1792816242508.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2461-1792816242508.jpg)
+
+---
+
 ## Freezer 1 (#2725)
 
 - **Status:** ❌ Inválido
