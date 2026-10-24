@@ -18,6 +18,19 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 ---
 
+## Klepon (#4087)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 147, Y 11, Z 40
+- **Motivo:** Outro
+- **Atualizado:** 2026-10-24T01:51:05-03:00
+
+![Captura do bloco #4087](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4087-1792817498508.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4087-1792817498508.jpg)
+
+---
+
 ## Ramen (#4107)
 
 - **Status:** ❌ Inválido
