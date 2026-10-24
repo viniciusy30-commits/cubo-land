@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Drink (#3937)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 127, Y 11, Z 25
+- **Atualizado:** 2026-10-24T01:48:53-03:00
+
+---
+
 ## Crackers C (#4063)
 
 - **Status:** ✅ Válido
@@ -485,14 +493,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 - **Status:** ✅ Válido
 - **Coordenadas:** X 122, Y 11, Z 25
 - **Atualizado:** 2026-10-24T01:39:15-03:00
-
----
-
-## Drink (#3937)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 127, Y 11, Z 25
-- **Atualizado:** 2026-10-24T01:39:13-03:00
 
 ---
 
