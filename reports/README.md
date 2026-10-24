@@ -6,12 +6,12 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ❌ Inválido
 - **Coordenadas:** X 9, Y 11, Z 20
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:29:39-03:00
+- **Motivo:** Peças flutuando
+- **Atualizado:** 2026-10-24T01:29:51-03:00
 
-![Captura do bloco #2721](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2721-1792816179470.jpg)
+![Captura do bloco #2721](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2721-1792816191552.jpg)
 
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2721-1792816179470.jpg)
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2721-1792816191552.jpg)
 
 ---
 
