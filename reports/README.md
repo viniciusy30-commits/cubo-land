@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Drink 5d (#3931)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 97, Y 11, Z 25
+- **Atualizado:** 2026-10-24T01:39:25-03:00
+
+---
+
 ## Drink 5e (#3932)
 
 - **Status:** ✅ Válido
