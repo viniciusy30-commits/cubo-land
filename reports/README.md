@@ -10,6 +10,19 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 ---
 
+## Christmas Candy (#4048)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 152, Y 11, Z 30
+- **Motivo:** Textura bugada, Tamanho / proporção errados
+- **Atualizado:** 2026-10-24T01:51:33-03:00
+
+![Captura do bloco #4048](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4048-1792817541999.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4048-1792817541999.jpg)
+
+---
+
 ## Tea Cup (#3941)
 
 - **Status:** ❌ Inválido
