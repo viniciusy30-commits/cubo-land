@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Concreto Cinza-claro (#38)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 8, Y 10, Z 35
+- **Atualizado:** 2026-10-24T01:36:12-03:00
+
+---
+
 ## Skull Rizz (#4595)
 
 - **Status:** ❌ Inválido
@@ -382,14 +390,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 ![Captura do bloco #2721](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2721-1792816191552.jpg)
 
 [Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2721-1792816191552.jpg)
-
----
-
-## Concreto Cinza-claro (#38)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 9, Y 11, Z 20
-- **Atualizado:** 2026-10-24T01:28:50-03:00
 
 ---
 
