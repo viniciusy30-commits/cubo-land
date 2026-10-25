@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Pet House Madeira Preto (#2461)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:14:14-03:00
+
+---
+
 ## Porta 3a Branco (#3872)
 
 - **Status:** ❌ Inválido
@@ -1720,19 +1728,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 ![Captura do bloco #2462](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2462-1792816248584.jpg)
 
 [Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2462-1792816248584.jpg)
-
----
-
-## Pet House Madeira Preto (#2461)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 14, Y 11, Z 20
-- **Motivo:** Peças flutuando, Textura bugada
-- **Atualizado:** 2026-10-24T01:30:42-03:00
-
-![Captura do bloco #2461](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2461-1792816242508.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2461-1792816242508.jpg)
 
 ---
 
