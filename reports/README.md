@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Apple A (#4029)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 77, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:15:35-03:00
+
+---
+
 ## Tea Cup (#3941)
 
 - **Status:** ✅ Válido
@@ -334,19 +342,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 ![Captura do bloco #4030](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4030-1792817626484.jpg)
 
 [Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4030-1792817626484.jpg)
-
----
-
-## Apple A (#4029)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 157, Y 11, Z 25
-- **Motivo:** Textura bugada, Cor errada
-- **Atualizado:** 2026-10-24T01:52:38-03:00
-
-![Captura do bloco #4029](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4029-1792817619616.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4029-1792817619616.jpg)
 
 ---
 
