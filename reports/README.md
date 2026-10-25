@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Apple C (#4031)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 87, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:15:38-03:00
+
+---
+
 ## Apple B (#4030)
 
 - **Status:** ✅ Válido
@@ -1248,19 +1256,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 - **Status:** ✅ Válido
 - **Coordenadas:** X 72, Y 11, Z 30
 - **Atualizado:** 2026-10-24T01:40:15-03:00
-
----
-
-## Apple C (#4031)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 67, Y 11, Z 30
-- **Motivo:** Textura bugada, Cor errada
-- **Atualizado:** 2026-10-24T01:40:11-03:00
-
-![Captura do bloco #4031](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4031-1792816850701.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4031-1792816850701.jpg)
 
 ---
 
