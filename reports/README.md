@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Plate A (#2764)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:14:44-03:00
+
+---
+
 ## Plate (#2765)
 
 - **Status:** ✅ Válido
@@ -1596,19 +1604,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 - **Status:** ✅ Válido
 - **Coordenadas:** X 9, Y 11, Z 30
 - **Atualizado:** 2026-10-24T01:34:19-03:00
-
----
-
-## Plate A (#2764)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 49, Y 11, Z 20
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:33:59-03:00
-
-![Captura do bloco #2764](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2764-1792816439872.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2764-1792816439872.jpg)
 
 ---
 
