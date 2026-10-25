@@ -1156,6 +1156,9 @@ class Game(val world: World) {
         burst(sx, sy, sz, 0x7FE8FF, 8, 3f)
     }
 
+    /** revisão de blocos: chamado quando a mão vazia bate num bloco (x, y, z do bloco mirado) */
+    @Volatile var onHandHit: ((Int, Int, Int) -> Unit)? = null
+
     private fun attack() {
         val item = cur()
         if (atkCd > 0f) return
@@ -1184,6 +1187,12 @@ class Game(val world: World) {
             if (dot > 0.5f && dist < bd) { bd = dist; best = s }
         }
         if (best != null) { hitSlime(best, Items.damage(item) + (if (stab) 1 else 0), best.x - player.x, best.z - player.z, Items.knock(item) * (if (stab) 1.4f else 1f)); return }
+        if (item == 0) {   // mão vazia: não quebra nada, só avisa a ferramenta de revisão (se estiver ligada)
+            val cb = onHandHit ?: return
+            raycast(camX, camY, camZ, dirX(), dirY(), dirZ(), camDist, camDist + 5.5f)
+            if (hasHit) { hitPulse = 0.3f; cb(hx, hy, hz) }
+            return
+        }
         if (!Items.breaks(item) && item != Items.SWORD) return
         blockHit(item, 1f)
     }

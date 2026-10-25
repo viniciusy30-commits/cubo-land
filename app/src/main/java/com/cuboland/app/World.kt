@@ -167,6 +167,12 @@ class World {
 
     /** 4 bytes por bloco (Int): praticamente sem limite de tipos de bloco */
     val blocks = IntArray(SX * SY * SZ)
+    /** Sala da galeria (área retangular no mapa + os blocos expostos nela). Usada pela revisão pra validar/invalidar uma sala inteira. */
+    class RoomRegion(val title: String, val x0: Int, val z0: Int, val x1: Int, val z1: Int, val y: Int,
+                     val ids: IntArray, val xs: IntArray, val zs: IntArray)
+    val roomRegions = java.util.concurrent.CopyOnWriteArrayList<RoomRegion>()
+    fun roomAt(x: Int, z: Int): RoomRegion? = roomRegions.firstOrNull { x in it.x0..it.x1 && z in it.z0..it.z1 }
+
     /** plaquinhas flutuantes (galeria de blocos) */
     class Label(val x: Float, val y: Float, val z: Float, val text: String, val big: Boolean = false, val col: Int = 0) { val lines: List<String> = text.split('\n') }
     /** CopyOnWrite: a galeria é regerada em outra thread enquanto o HUD desenha as plaquinhas */
@@ -377,7 +383,7 @@ class World {
     fun generateTest(catIdx: Int = -1, secFilter: Int = -1, extra: Int = 0) {
         locked = null
         carSpawnX = -2
-        java.util.Arrays.fill(blocks, 0); labels.clear(); tvSize.clear(); fState.clear(); fStore.clear()
+        java.util.Arrays.fill(blocks, 0); labels.clear(); roomRegions.clear(); tvSize.clear(); fState.clear(); fStore.clear()
         val floor = B.byName["Concreto Cinza-claro"] ?: B.STONE
         val plate = B.byName["Concreto Branco"] ?: floor
         val top = 10
@@ -514,12 +520,15 @@ class World {
             }
             labels.add(Label(hx0 + hw / 2f, top + 9f, hz0 - 3f, room.head, true))
             labels.add(Label(hx0 + hw / 2f, top + 7.2f, hz0 - 3f, room.sub, false))
+            val rxs = IntArray(n); val rzs = IntArray(n)
             for ((j, id) in room.ids.withIndex()) {
                 val row = j / cols; val col = j % cols
                 val cx = hx0 + col * cell + cell / 2; val cz = hz0 + row * cell + cell / 2
+                rxs[j] = cx; rzs[j] = cz
                 at(cx, top + 1, cz, id)   // direto no chão
                 labels.add(Label(cx + 0.5f, top + 4.0f, cz + 0.5f, Gallery.shortName(room.sec, B.names[id]), false, colById[id] ?: 0))
             }
+            roomRegions.add(RoomRegion(room.head, hx0 - 1, hz0 - 1, hx0 + hw, hz0 + hd, top + 1, room.ids.toIntArray(), rxs, rzs))
         }
         if (skipped > 0) labels.add(Label(spawnX + 0.5f, top + 3.2f, spawnZ + 5f, "$skipped blocos ficaram de fora (mapa menor que o esperado)", false))
     }
