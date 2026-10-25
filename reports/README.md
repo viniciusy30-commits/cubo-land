@@ -2,6 +2,390 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Dipper (#2709)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 175, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Axe (#3377)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 180, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Fire Extinguisher (#4025)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 185, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Gas Lpg (#4148)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 190, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Gas Pump A (#4149)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 195, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Gas Pump (#4150)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 200, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Gasoline (#4151)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 205, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Gavel (#4160)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 210, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Guillotine (#4171)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 215, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Hand Truck (#4195)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 220, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Hoe (#4206)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 225, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Ct Scan Hospital A (#4207)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 175, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Ct Scan Hospital (#4208)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 180, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Hospital Stuff 1 (#4209)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 185, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Hospital Stuff 2 (#4210)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 190, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Hospital Stuff 3 (#4211)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 195, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Hospital Stuff 4 (#4212)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 200, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Hospital Stuff 5 (#4213)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 205, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Hospital Stuff (#4214)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 210, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Infant Incubator Hospital (#4215)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 215, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Ultrasound Máquina Hospital (#4216)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 220, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Ventilator Hospital (#4217)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 225, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Lpg 1 (#4252)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 175, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Lpg 1a (#4253)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 180, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Mechanic (#4278)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 185, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Nitrogen Generator (#4310)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 190, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Oxygen Cylinder A (#4315)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 195, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Oxygen Cylinder (#4316)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 200, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Pruning Saw (#4480)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 205, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Scissor Azul (#4549)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 210, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Scissor Verde (#4550)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 215, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Scissor Vermelho (#4551)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 220, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Scissor Amarelo (#4552)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 225, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Steel Rebar (#4687)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 175, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Syringes (#4723)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 180, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Tire (#4730)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 185, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Tire 1 (#4731)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 190, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Water Storage A (#4851)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 195, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Water Storage B (#4852)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 200, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Water Storage C (#4853)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 205, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Water Storage D (#4854)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 210, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Water Storage (#4855)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 215, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Watering Can A (#4856)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 220, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Watering Can B (#4857)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 225, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Watering Can C (#4858)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 175, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Watering Can D (#4859)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 180, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Watering Can (#4860)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 185, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
+## Wheel (#4861)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 190, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:33:18-03:00
+
+---
+
 ## Cat House (#2264)
 
 - **Status:** ✅ Válido
