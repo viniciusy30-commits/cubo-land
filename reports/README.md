@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Watering Can D (#4859)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 180, Y 11, Z 40
+- **Motivo:** Peças flutuando, Textura bugada
+- **Atualizado:** 2026-10-25T20:36:52-03:00
+
+![Captura do bloco #4859](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4859-1792971415685.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4859-1792971415685.jpg)
+
+---
+
 ## Watering Can C (#4858)
 
 - **Status:** ❌ Inválido
@@ -398,14 +411,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 215, Y 11, Z 35
-- **Atualizado:** 2026-10-25T20:33:18-03:00
-
----
-
-## Watering Can D (#4859)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 180, Y 11, Z 40
 - **Atualizado:** 2026-10-25T20:33:18-03:00
 
 ---
