@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Mechanic (#4278)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 185, Y 11, Z 30
+- **Motivo:** Textura bugada
+- **Atualizado:** 2026-10-25T20:34:55-03:00
+
+![Captura do bloco #4278](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4278-1792971295916.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4278-1792971295916.jpg)
+
+---
+
 ## Dipper (#2709)
 
 - **Status:** ✅ Válido
@@ -190,14 +203,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 180, Y 11, Z 30
-- **Atualizado:** 2026-10-25T20:33:18-03:00
-
----
-
-## Mechanic (#4278)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 185, Y 11, Z 30
 - **Atualizado:** 2026-10-25T20:33:18-03:00
 
 ---
