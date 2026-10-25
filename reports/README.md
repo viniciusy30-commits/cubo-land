@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Scissor Verde (#4550)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 215, Y 11, Z 30
+- **Motivo:** Textura bugada, Incompleto / faltando partes
+- **Atualizado:** 2026-10-25T20:35:22-03:00
+
+![Captura do bloco #4550](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4550-1792971323069.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4550-1792971323069.jpg)
+
+---
+
 ## Scissor Azul (#4549)
 
 - **Status:** ❌ Inválido
@@ -248,14 +261,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 205, Y 11, Z 30
-- **Atualizado:** 2026-10-25T20:33:18-03:00
-
----
-
-## Scissor Verde (#4550)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 215, Y 11, Z 30
 - **Atualizado:** 2026-10-25T20:33:18-03:00
 
 ---
