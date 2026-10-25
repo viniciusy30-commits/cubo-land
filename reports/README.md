@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Pet House Madeira Branco (#2467)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:15:08-03:00
+
+---
+
 ## Plate A (#2764)
 
 - **Status:** ✅ Válido
@@ -1665,19 +1673,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 - **Status:** ✅ Válido
 - **Coordenadas:** X 54, Y 11, Z 25
 - **Atualizado:** 2026-10-24T01:32:18-03:00
-
----
-
-## Pet House Madeira Branco (#2467)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 44, Y 11, Z 20
-- **Motivo:** Peças flutuando, Textura bugada
-- **Atualizado:** 2026-10-24T01:31:06-03:00
-
-![Captura do bloco #2467](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2467-1792816273404.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2467-1792816273404.jpg)
 
 ---
 
