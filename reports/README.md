@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Hamburger (#4080)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 77, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:16:09-03:00
+
+---
+
 ## Hishi Mochi (#4081)
 
 - **Status:** ✅ Válido
@@ -1119,19 +1127,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 - **Status:** ✅ Válido
 - **Coordenadas:** X 112, Y 11, Z 45
 - **Atualizado:** 2026-10-24T01:45:50-03:00
-
----
-
-## Hamburger (#4080)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 112, Y 11, Z 40
-- **Motivo:** Tamanho / proporção errados
-- **Atualizado:** 2026-10-24T01:45:47-03:00
-
-![Captura do bloco #4080](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4080-1792817153804.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4080-1792817153804.jpg)
 
 ---
 
