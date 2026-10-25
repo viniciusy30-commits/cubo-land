@@ -2,6 +2,2062 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Iron Cerca Metal (#2733)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Iron Cerca Metal Cinza (#2734)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Iron Cerca Metal Rusted (#2735)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Barber Pole (#3392)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Bike A (#3409)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Bike B (#3410)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Bike C (#3411)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Bike (#3412)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Bike Parking (#3413)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Bike Parking 1 (#3414)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Bike Parking 2 (#3415)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Bollard 1 (#3642)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Bollard 1a (#3643)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Bollard (#3644)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 74, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Catenary Gantry 1 (#3739)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 79, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Catenary Gantry (#3740)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 84, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Catenary Claro Steady Arm (#3741)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 89, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Catenary Pole 1 (#3742)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 94, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Catenary Pole 2 (#3743)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 99, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Catenary Pole 3 (#3744)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 104, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Catenary Pole (#3745)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 109, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Catenary Railway 2 (#3746)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 114, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Catenary Railway 2a (#3747)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 119, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Elevator Floor Indicator A (#3971)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 124, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Elevator Floor Indicator B (#3972)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Elevator Floor Indicator (#3973)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Escalator Bottom (#3974)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Escalator Mid1 (#3975)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Escalator Mid (#3976)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Escalator Top1 (#3977)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Escalator Top (#3978)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Exhaust (#3979)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Exhaust Fan (#3980)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Expansion Joint (#3981)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca (#3982)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 1 Metal (#3983)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 1 Metal Cinza (#3984)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 1 Madeira Preto (#3985)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 74, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 1 Madeira Marrom (#3986)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 79, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 1 Madeira Cinza (#3987)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 84, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 1 Madeira Vinyl Marrom (#3988)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 89, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 1 Madeira Vinyl Escuro (#3989)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 94, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 1 Madeira Vinyl Branco (#3990)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 99, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 1 Madeira Branco (#3991)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 104, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 10 (#3992)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 109, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 10a (#3993)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 114, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 10b (#3994)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 119, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 10c (#3995)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 124, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 10d (#3996)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 10e (#3997)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 2 Metal (#3998)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 2 Metal Cinza (#3999)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 2 Madeira Preto (#4000)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 2 Madeira Marrom (#4001)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 2 Madeira Cinza (#4002)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 2 Madeira Vinyl Marrom (#4003)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 2 Madeira Vinyl Escuro (#4004)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 2 Madeira Vinyl Branco (#4005)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 2 Madeira Branco (#4006)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 3 (#4007)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 4 (#4008)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 5 (#4009)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 74, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 5 Metal (#4010)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 79, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 5 Metal Cinza (#4011)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 84, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 5 Metal Rusted (#4012)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 89, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 6 (#4013)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 94, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 6 Diagonal (#4014)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 99, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 7 (#4015)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 104, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 7a (#4016)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 109, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 7b (#4017)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 114, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 7c (#4018)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 119, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 7d (#4019)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 124, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 7e (#4020)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 8 (#4021)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 9 (#4022)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Cerca 9a (#4023)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Garden Hose A (#4144)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Garden Hose B (#4145)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Garden Hose C (#4146)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Garden Hose (#4147)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Guard Rail 1 Metal (#4165)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Guard Rail 1 Metal Cinza (#4166)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Guard Rail 1 Metal Rusted (#4167)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Guard Rail 2 Metal (#4168)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Guard Rail 2 Metal Cinza (#4169)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Guard Rail 2 Metal Rusted (#4170)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 74, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Hydrant (#4218)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 79, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Hydrant 1 (#4219)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 84, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Ladder (#4229)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 89, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Ladder 1 (#4230)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 94, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Ladder 1a (#4231)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 99, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Ladder 1b (#4232)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 104, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Landing Gear Frame (#4233)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 109, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Landing Gear Wheel (#4234)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 114, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Lawn Mower A (#4247)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 119, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Lawn Mower B (#4248)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 124, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Lawn Mower (#4249)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Mailbox A (#4258)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Mailbox B (#4259)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Mailbox C (#4260)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Mailbox D (#4261)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Mailbox (#4262)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Mailbox Parede A (#4263)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Mailbox Parede B (#4264)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Mailbox Parede C (#4265)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Mailbox Parede D (#4266)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Mailbox Parede (#4267)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Manhole 1 Metal Cinza (#4268)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Manhole 1 Metal (#4269)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Manhole 1 Metal Rusted (#4270)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 74, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Manhole (#4271)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 79, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Net (#4307)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 84, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Parking Meter (#4321)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 89, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Path A (#4328)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 94, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Path B (#4329)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 99, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Path (#4330)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 104, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Path 1 (#4331)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 109, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Path 1a (#4332)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 114, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Path 1b (#4333)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 119, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Path 2 (#4334)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 124, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Path 2a (#4335)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 45
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Path 2b (#4336)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 45
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe (#4370)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 45
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 1 (#4371)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 45
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 1a (#4372)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 45
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 1b (#4373)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 45
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 1c (#4374)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 45
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 1d (#4375)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 45
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 1e (#4376)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 45
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 1f (#4377)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 45
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 2 (#4378)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 45
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 2a (#4379)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 45
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 3 (#4380)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 45
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 3a (#4381)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 74, Y 11, Z 45
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 3b (#4382)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 79, Y 11, Z 45
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 3c (#4383)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 84, Y 11, Z 45
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 3d (#4384)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 89, Y 11, Z 45
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 3e (#4385)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 94, Y 11, Z 45
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 3f (#4386)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 99, Y 11, Z 45
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 4 (#4387)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 104, Y 11, Z 45
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 4a (#4388)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 109, Y 11, Z 45
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 4b (#4389)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 114, Y 11, Z 45
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 4c (#4390)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 119, Y 11, Z 45
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 4d (#4391)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 124, Y 11, Z 45
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 4e (#4392)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 50
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 4f (#4393)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 50
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 5 (#4394)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 50
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 5a (#4395)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 50
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 5b (#4396)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 50
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 5c (#4397)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 50
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 5d (#4398)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 50
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 5e (#4399)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 50
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 5f (#4400)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 50
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 6 (#4401)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 50
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 6a (#4402)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 50
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 6b (#4403)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 50
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 6c (#4404)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 50
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 6d (#4405)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 74, Y 11, Z 50
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 6e (#4406)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 79, Y 11, Z 50
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 6f (#4407)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 84, Y 11, Z 50
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 7 (#4408)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 89, Y 11, Z 50
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 7a (#4409)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 94, Y 11, Z 50
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 7b (#4410)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 99, Y 11, Z 50
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 7c (#4411)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 104, Y 11, Z 50
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 7d (#4412)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 109, Y 11, Z 50
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 7e (#4413)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 114, Y 11, Z 50
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 7f (#4414)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 119, Y 11, Z 50
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 8 (#4415)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 124, Y 11, Z 50
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 8a (#4416)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 55
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 8b (#4417)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 55
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 8c (#4418)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 55
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 8d (#4419)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 55
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 8e (#4420)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 55
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pipe 8f (#4421)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 55
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole 3 (#4426)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 55
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole 3a (#4427)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 55
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole 3b (#4428)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 55
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole 3c (#4429)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 55
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole 3d (#4430)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 55
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole 3e (#4431)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 55
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole 3f (#4432)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 55
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole 3g (#4433)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 74, Y 11, Z 55
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole 4 (#4434)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 79, Y 11, Z 55
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole 4a (#4435)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 84, Y 11, Z 55
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole 4b (#4436)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 89, Y 11, Z 55
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole 4c (#4437)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 94, Y 11, Z 55
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole 4d (#4438)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 99, Y 11, Z 55
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole 4e (#4439)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 104, Y 11, Z 55
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole 4f (#4440)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 109, Y 11, Z 55
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole 4g (#4441)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 114, Y 11, Z 55
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole 1 (#4442)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 119, Y 11, Z 55
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole 1a (#4443)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 124, Y 11, Z 55
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole 1b (#4444)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 60
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole 1c (#4445)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 60
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole 1d (#4446)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 60
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole 1e (#4447)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 60
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole 1f (#4448)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 60
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole 1g (#4449)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 60
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole 2 (#4450)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 60
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole 2a (#4451)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 60
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole 2b (#4452)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 60
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole 2c (#4453)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 60
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole 2d (#4454)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 60
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole 2e (#4455)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 60
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole 2f (#4456)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 60
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole 2g (#4457)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 74, Y 11, Z 60
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole A (#4458)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 79, Y 11, Z 60
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole B (#4459)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 84, Y 11, Z 60
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole C (#4460)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 89, Y 11, Z 60
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole D (#4461)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 94, Y 11, Z 60
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole (#4462)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 99, Y 11, Z 60
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole E (#4463)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 104, Y 11, Z 60
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole F (#4464)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 109, Y 11, Z 60
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Pole G (#4465)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 114, Y 11, Z 60
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Railway Catenary (#4493)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 119, Y 11, Z 60
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Railway Catenary Wire Corner Left (#4494)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 124, Y 11, Z 60
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Railway Catenary Wire Corner Right (#4495)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 65
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Railway Catenary Wire (#4496)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 65
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Road Barrier Metal (#4519)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 65
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Road Barrier Metal Cinza (#4520)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 65
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Road Barrier Metal Rusted (#4521)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 65
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Road Barrier 1 (#4522)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 65
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Road Barrier 1a (#4523)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 65
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Road Barrier 2 (#4524)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 65
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Rubber Parking (#4545)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 65
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Sound Barrier Highway (#4643)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 65
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Stairs 1 Madeira Preto (#4672)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 65
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Stairs 1 Madeira Marrom (#4673)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 65
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Stairs 1 Madeira Cinza (#4674)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 65
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Stairs 1 Madeira Vinyl Marrom (#4675)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 74, Y 11, Z 65
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Stairs 1 Madeira Vinyl Escuro (#4676)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 79, Y 11, Z 65
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Stairs 1 Madeira Vinyl Branco (#4677)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 84, Y 11, Z 65
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Stairs 1 Madeira Branco (#4678)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 89, Y 11, Z 65
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Stairs 2 Madeira Preto (#4679)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 94, Y 11, Z 65
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Stairs 2 Madeira Marrom (#4680)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 99, Y 11, Z 65
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Stairs 2 Madeira Cinza (#4681)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 104, Y 11, Z 65
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Stairs 2 Madeira Vinyl Marrom (#4682)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 109, Y 11, Z 65
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Stairs 2 Madeira Vinyl Escuro (#4683)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 114, Y 11, Z 65
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Stairs 2 Madeira Vinyl Branco (#4684)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 119, Y 11, Z 65
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Stairs 2 Madeira Branco (#4685)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 124, Y 11, Z 65
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Swing A (#4720)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 70
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Swing (#4721)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 70
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Trem Body Skirting (#4795)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 70
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Trem Bogie Left (#4796)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 70
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Trem Bogie Mid (#4797)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 70
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Trem Bogie Right (#4798)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 70
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Trem Conventional 1 Coupler (#4799)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 70
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Trem Conventional Coupler (#4800)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 70
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Trem Electric 1 Coupler (#4801)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 70
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Trem Electric Coupler (#4802)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 70
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Trem Hanger A (#4803)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 70
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Trem Hanger B (#4804)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 70
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Trem Hanger C (#4805)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 70
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Trem Hanger D (#4806)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 74, Y 11, Z 70
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Trem Hanger (#4807)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 79, Y 11, Z 70
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Trem Pantograph 1 (#4808)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 84, Y 11, Z 70
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
+## Trem Pantograph (#4809)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 89, Y 11, Z 70
+- **Atualizado:** 2026-10-25T20:55:59-03:00
+
+---
+
 ## Watering Can (#4860)
 
 - **Status:** ❌ Inválido
