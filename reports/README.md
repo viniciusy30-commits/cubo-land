@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Watering Can B (#4857)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 225, Y 11, Z 35
+- **Motivo:** Peças flutuando, Textura bugada
+- **Atualizado:** 2026-10-25T20:35:53-03:00
+
+![Captura do bloco #4857](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4857-1792971353458.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4857-1792971353458.jpg)
+
+---
+
 ## Scissor Amarelo (#4552)
 
 - **Status:** ❌ Inválido
@@ -367,14 +380,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 220, Y 11, Z 35
-- **Atualizado:** 2026-10-25T20:33:18-03:00
-
----
-
-## Watering Can B (#4857)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 225, Y 11, Z 35
 - **Atualizado:** 2026-10-25T20:33:18-03:00
 
 ---
