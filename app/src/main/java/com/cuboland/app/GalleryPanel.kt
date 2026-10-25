@@ -266,13 +266,21 @@ class GalleryPanel(
         backBtn.setOnClickListener { showCats() }
         title.text = cat.name; sub.text = "Galeria  ›  ${cat.name}"
         val color = catColors[ci % catColors.size]
+        // contagem de válidos/inválidos por tipo (sala)
+        val buckets = World.galleryBuckets(cat)
+        fun stat(ids: List<Int>): String {
+            var v = 0; var i = 0
+            for (id in ids) when (reviewPrefs.getString("status_$id", null)) { "valid" -> v++; "invalid" -> i++ }
+            return "${ids.size} blocos   ✓ $v   ✕ $i" + (if (ids.size - v - i > 0) "   · ${ids.size - v - i} faltam" else "")
+        }
         heading("CATEGORIA INTEIRA")
-        addGrid(listOf(card("VER TUDO", "${cat.ids.size} blocos  -  ${secs.size} salas, uma por tipo", color, "★") {
+        addGrid(listOf(card("VER TUDO", stat(cat.ids) + "  -  ${secs.size} salas", color, "★") {
             pick(ci, -1, World.GAL_PAGE, cat.name + " - tudo")
         }), 1)
         heading("TIPOS")
         val cs = secs.map { s ->
-            card(s.title, "${s.count} blocos", color, s.title.take(1).uppercase()) { pick(ci, s.idx, World.GAL_PAGE, cat.name + " - " + s.title) }
+            val ids = buckets.getOrNull(s.idx) ?: emptyList<Int>()
+            card(s.title, stat(ids), color, s.title.take(1).uppercase()) { pick(ci, s.idx, World.GAL_PAGE, cat.name + " - " + s.title) }
         }
         addGrid(cs, cols())
     }
