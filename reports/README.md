@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Dango (#4068)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 67, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:16:14-03:00
+
+---
+
 ## Dorayaki (#4070)
 
 - **Status:** ✅ Válido
@@ -535,19 +543,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 ![Captura do bloco #4108](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4108-1792817580196.jpg)
 
 [Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4108-1792817580196.jpg)
-
----
-
-## Dango (#4068)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 152, Y 11, Z 35
-- **Motivo:** Peças flutuando, Textura bugada, Tamanho / proporção errados
-- **Atualizado:** 2026-10-24T01:51:38-03:00
-
-![Captura do bloco #4068](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4068-1792817562488.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4068-1792817562488.jpg)
 
 ---
 
