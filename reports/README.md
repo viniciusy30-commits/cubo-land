@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Pineapple (#4101)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 102, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:15:55-03:00
+
+---
+
 ## Bread (#4035)
 
 - **Status:** ✅ Válido
@@ -1045,19 +1053,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 ![Captura do bloco #4081](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4081-1792817213103.jpg)
 
 [Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4081-1792817213103.jpg)
-
----
-
-## Pineapple (#4101)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 117, Y 11, Z 45
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:46:46-03:00
-
-![Captura do bloco #4101](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4101-1792817211352.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4101-1792817211352.jpg)
 
 ---
 
