@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Bread (#4035)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 102, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:15:52-03:00
+
+---
+
 ## Bread 1 (#4034)
 
 - **Status:** ✅ Válido
@@ -1229,15 +1237,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 - **Status:** ✅ Válido
 - **Coordenadas:** X 102, Y 11, Z 30
 - **Atualizado:** 2026-10-24T01:42:33-03:00
-
----
-
-## Bread (#4035)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 87, Y 11, Z 30
-- **Motivo:** Textura bugada, Tamanho / proporção errados
-- **Atualizado:** 2026-10-24T01:41:01-03:00
 
 ---
 
