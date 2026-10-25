@@ -2,6 +2,311 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Cat House (#2264)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:32:55-03:00
+
+---
+
+## Scooter (#4553)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:32:55-03:00
+
+---
+
+## Suitcase A (#4718)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:32:55-03:00
+
+---
+
+## Toothbrush Parede (#4734)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:32:55-03:00
+
+---
+
+## Freezer 1 (#2725)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 148, Y 11, Z 20
+- **Motivo:** Textura bugada, Incompleto / faltando partes, Textura piscando
+- **Atualizado:** 2026-10-25T20:18:11-03:00
+
+---
+
+## Tumbler 2a (#4826)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 102, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:17:36-03:00
+
+---
+
+## Tumbler 2 (#4825)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 97, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:17:34-03:00
+
+---
+
+## Tumbler 1b (#4824)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 92, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:17:32-03:00
+
+---
+
+## Tumbler 1a (#4823)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 87, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:17:30-03:00
+
+---
+
+## Tumbler 1 (#4822)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 82, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:17:28-03:00
+
+---
+
+## Tumbler F (#4821)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 77, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:17:26-03:00
+
+---
+
+## Tumbler E (#4820)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 72, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:17:24-03:00
+
+---
+
+## Tumbler (#4819)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 67, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:17:22-03:00
+
+---
+
+## Tumbler D (#4818)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 62, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:17:20-03:00
+
+---
+
+## Tumbler C (#4817)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 57, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:17:19-03:00
+
+---
+
+## Retail Stuff (#4511)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 52, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:17:17-03:00
+
+---
+
+## Tumbler 2b (#4827)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 47, Y 11, Z 45
+- **Atualizado:** 2026-10-25T20:17:14-03:00
+
+---
+
+## Retail Stuff D (#4510)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 47, Y 11, Z 40
+- **Atualizado:** 2026-10-25T20:17:12-03:00
+
+---
+
+## Takoyaki (#4127)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 47, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:17:10-03:00
+
+---
+
+## Tempura (#4128)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 52, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:17:09-03:00
+
+---
+
+## Watermelon (#4130)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 57, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:17:06-03:00
+
+---
+
+## Flour Retail (#4501)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 62, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:17:01-03:00
+
+---
+
+## Retail Item A (#4502)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 67, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:16:59-03:00
+
+---
+
+## Retail Item B (#4503)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 72, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:16:57-03:00
+
+---
+
+## Retail Item C (#4504)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 77, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:16:56-03:00
+
+---
+
+## Retail Item D (#4505)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 82, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:16:54-03:00
+
+---
+
+## Retail Item (#4506)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 87, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:16:51-03:00
+
+---
+
+## Retail Stuff A (#4507)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 92, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:16:50-03:00
+
+---
+
+## Retail Stuff B (#4508)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 97, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:16:48-03:00
+
+---
+
+## Retail Stuff C (#4509)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 102, Y 11, Z 35
+- **Atualizado:** 2026-10-25T20:16:46-03:00
+
+---
+
+## Sushi (#4126)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 102, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:16:44-03:00
+
+---
+
+## Spicy Rice Cake (#4125)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 97, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:16:43-03:00
+
+---
+
+## Sate (#4124)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 92, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:16:41-03:00
+
+---
+
+## Sashimi (#4123)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 87, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:16:40-03:00
+
+---
+
+## Retail Stuff 3j (#4121)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 82, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:16:38-03:00
+
+---
+
+## Retail Stuff 3i (#4120)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 77, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:16:36-03:00
+
+---
+
+## Retail Stuff 2 (#4110)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 72, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:16:34-03:00
+
+---
+
+## Retail Stuff 1 (#4109)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 67, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:16:32-03:00
+
+---
+
 ## Rendang (#4108)
 
 - **Status:** ✅ Válido
@@ -406,71 +711,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 ---
 
-## Freezer 1 (#2725)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 148, Y 11, Z 20
-- **Motivo:** Textura bugada, Textura piscando
-- **Atualizado:** 2026-10-24T13:24:57-03:00
-
-![Captura do bloco #2725](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2725-1792859097899.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2725-1792859097899.jpg)
-
----
-
-## Tumbler 2b (#4827)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 162, Y 11, Z 60
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:53:17-03:00
-
-![Captura do bloco #4827](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4827-1792817690368.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4827-1792817690368.jpg)
-
----
-
-## Retail Stuff (#4511)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 162, Y 11, Z 55
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:53:13-03:00
-
-![Captura do bloco #4511](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4511-1792817688835.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4511-1792817688835.jpg)
-
----
-
-## Watermelon (#4130)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 162, Y 11, Z 50
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:53:10-03:00
-
-![Captura do bloco #4130](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4130-1792817681168.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4130-1792817681168.jpg)
-
----
-
-## Retail Stuff 2 (#4110)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 162, Y 11, Z 45
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:53:06-03:00
-
-![Captura do bloco #4110](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4110-1792817666325.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4110-1792817666325.jpg)
-
----
-
 ## Kue Lapis B (#4090)
 
 - **Status:** ✅ Válido
@@ -511,89 +751,11 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 ---
 
-## Retail Stuff 1 (#4109)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 157, Y 11, Z 45
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:52:18-03:00
-
-![Captura do bloco #4109](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4109-1792817596685.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4109-1792817596685.jpg)
-
----
-
 ## Tumpeng Rice (#4129)
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 157, Y 11, Z 50
 - **Atualizado:** 2026-10-24T01:52:15-03:00
-
----
-
-## Retail Stuff D (#4510)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 157, Y 11, Z 55
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:52:12-03:00
-
-![Captura do bloco #4510](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4510-1792817588705.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4510-1792817588705.jpg)
-
----
-
-## Tumbler 2a (#4826)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 157, Y 11, Z 60
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:52:08-03:00
-
-![Captura do bloco #4826](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4826-1792817587057.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4826-1792817587057.jpg)
-
----
-
-## Tumbler 2 (#4825)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 152, Y 11, Z 60
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:52:05-03:00
-
-![Captura do bloco #4825](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4825-1792817585319.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4825-1792817585319.jpg)
-
----
-
-## Retail Stuff C (#4509)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 152, Y 11, Z 55
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:52:01-03:00
-
-![Captura do bloco #4509](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4509-1792817583571.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4509-1792817583571.jpg)
-
----
-
-## Tempura (#4128)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 152, Y 11, Z 50
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:51:58-03:00
-
-![Captura do bloco #4128](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4128-1792817581724.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4128-1792817581724.jpg)
 
 ---
 
@@ -610,84 +772,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 - **Status:** ✅ Válido
 - **Coordenadas:** X 147, Y 11, Z 35
 - **Atualizado:** 2026-10-24T01:51:10-03:00
-
----
-
-## Takoyaki (#4127)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 147, Y 11, Z 50
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:50:58-03:00
-
-![Captura do bloco #4127](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4127-1792817494898.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4127-1792817494898.jpg)
-
----
-
-## Retail Stuff B (#4508)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 147, Y 11, Z 55
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:50:54-03:00
-
-![Captura do bloco #4508](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4508-1792817493368.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4508-1792817493368.jpg)
-
----
-
-## Tumbler 1b (#4824)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 147, Y 11, Z 60
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:50:50-03:00
-
-![Captura do bloco #4824](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4824-1792817491418.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4824-1792817491418.jpg)
-
----
-
-## Tumbler 1a (#4823)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 142, Y 11, Z 60
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:50:46-03:00
-
-![Captura do bloco #4823](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4823-1792817489773.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4823-1792817489773.jpg)
-
----
-
-## Retail Stuff A (#4507)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 142, Y 11, Z 55
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:50:42-03:00
-
-![Captura do bloco #4507](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4507-1792817487822.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4507-1792817487822.jpg)
-
----
-
-## Sushi (#4126)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 142, Y 11, Z 50
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:50:39-03:00
-
-![Captura do bloco #4126](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4126-1792817485803.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4126-1792817485803.jpg)
 
 ---
 
@@ -720,84 +804,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 - **Status:** ✅ Válido
 - **Coordenadas:** X 137, Y 11, Z 25
 - **Atualizado:** 2026-10-24T01:50:10-03:00
-
----
-
-## Spicy Rice Cake (#4125)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 137, Y 11, Z 50
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:49:42-03:00
-
-![Captura do bloco #4125](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4125-1792817390047.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4125-1792817390047.jpg)
-
----
-
-## Retail Item (#4506)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 137, Y 11, Z 55
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:49:36-03:00
-
-![Captura do bloco #4506](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4506-1792817388396.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4506-1792817388396.jpg)
-
----
-
-## Tumbler 1 (#4822)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 137, Y 11, Z 60
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:49:32-03:00
-
-![Captura do bloco #4822](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4822-1792817386653.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4822-1792817386653.jpg)
-
----
-
-## Tumbler F (#4821)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 132, Y 11, Z 60
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:49:27-03:00
-
-![Captura do bloco #4821](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4821-1792817384936.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4821-1792817384936.jpg)
-
----
-
-## Retail Item D (#4505)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 132, Y 11, Z 55
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:49:21-03:00
-
-![Captura do bloco #4505](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4505-1792817383382.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4505-1792817383382.jpg)
-
----
-
-## Sate (#4124)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 132, Y 11, Z 50
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:49:17-03:00
-
-![Captura do bloco #4124](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4124-1792817381846.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4124-1792817381846.jpg)
 
 ---
 
@@ -865,71 +871,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 ---
 
-## Sashimi (#4123)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 127, Y 11, Z 50
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:48:26-03:00
-
-![Captura do bloco #4123](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4123-1792817323679.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4123-1792817323679.jpg)
-
----
-
-## Retail Item C (#4504)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 127, Y 11, Z 55
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:48:18-03:00
-
-![Captura do bloco #4504](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4504-1792817321956.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4504-1792817321956.jpg)
-
----
-
-## Tumbler E (#4820)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 127, Y 11, Z 60
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:48:11-03:00
-
-![Captura do bloco #4820](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4820-1792817296142.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4820-1792817296142.jpg)
-
----
-
-## Tumbler (#4819)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 122, Y 11, Z 60
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:48:05-03:00
-
-![Captura do bloco #4819](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4819-1792817292760.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4819-1792817292760.jpg)
-
----
-
-## Retail Item B (#4503)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 122, Y 11, Z 55
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:48:00-03:00
-
-![Captura do bloco #4503](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4503-1792817290990.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4503-1792817290990.jpg)
-
----
-
 ## Sandwitch (#4122)
 
 - **Status:** ✅ Válido
@@ -991,84 +932,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 - **Status:** ✅ Válido
 - **Coordenadas:** X 117, Y 11, Z 30
 - **Atualizado:** 2026-10-24T01:47:03-03:00
-
----
-
-## Retail Stuff 3j (#4121)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 117, Y 11, Z 50
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:46:42-03:00
-
-![Captura do bloco #4121](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4121-1792817204589.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4121-1792817204589.jpg)
-
----
-
-## Retail Item A (#4502)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 117, Y 11, Z 55
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:46:37-03:00
-
-![Captura do bloco #4502](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4502-1792817198015.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4502-1792817198015.jpg)
-
----
-
-## Tumbler D (#4818)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 117, Y 11, Z 60
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:46:14-03:00
-
-![Captura do bloco #4818](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4818-1792817181758.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4818-1792817181758.jpg)
-
----
-
-## Tumbler C (#4817)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 112, Y 11, Z 60
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:46:10-03:00
-
-![Captura do bloco #4817](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4817-1792817180015.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4817-1792817180015.jpg)
-
----
-
-## Flour Retail (#4501)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 112, Y 11, Z 55
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:46:04-03:00
-
-![Captura do bloco #4501](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4501-1792817167222.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4501-1792817167222.jpg)
-
----
-
-## Retail Stuff 3i (#4120)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 112, Y 11, Z 50
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:45:55-03:00
-
-![Captura do bloco #4120](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4120-1792817165598.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4120-1792817165598.jpg)
 
 ---
 
