@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Ramen (#4107)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 57, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:16:28-03:00
+
+---
+
 ## Putu Cake (#4106)
 
 - **Status:** ✅ Válido
@@ -607,19 +615,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 - **Status:** ✅ Válido
 - **Coordenadas:** X 147, Y 11, Z 35
 - **Atualizado:** 2026-10-24T01:51:10-03:00
-
----
-
-## Ramen (#4107)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 147, Y 11, Z 45
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:51:01-03:00
-
-![Captura do bloco #4107](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4107-1792817496636.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4107-1792817496636.jpg)
 
 ---
 
