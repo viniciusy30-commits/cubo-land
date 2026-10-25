@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Bread 1 (#4034)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 97, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:15:50-03:00
+
+---
+
 ## Banana (#4033)
 
 - **Status:** ✅ Válido
@@ -1230,19 +1238,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 - **Coordenadas:** X 87, Y 11, Z 30
 - **Motivo:** Textura bugada, Tamanho / proporção errados
 - **Atualizado:** 2026-10-24T01:41:01-03:00
-
----
-
-## Bread 1 (#4034)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 82, Y 11, Z 30
-- **Motivo:** Textura bugada, Tamanho / proporção errados
-- **Atualizado:** 2026-10-24T01:40:32-03:00
-
-![Captura do bloco #4034](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4034-1792816858890.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4034-1792816858890.jpg)
 
 ---
 
