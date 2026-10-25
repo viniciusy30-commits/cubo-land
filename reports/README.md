@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Teapot (#2783)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:14:36-03:00
+
+---
+
 ## Assault Rifle (#3345)
 
 - **Status:** ✅ Válido
@@ -1611,19 +1619,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 ![Captura do bloco #2764](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2764-1792816439872.jpg)
 
 [Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2764-1792816439872.jpg)
-
----
-
-## Teapot (#2783)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 14, Y 11, Z 25
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:33:46-03:00
-
-![Captura do bloco #2783](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2783-1792816426510.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2783-1792816426510.jpg)
 
 ---
 
