@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Popcorn (#4105)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 47, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:16:23-03:00
+
+---
+
 ## Cake (#4043)
 
 - **Status:** ✅ Válido
@@ -727,19 +735,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 - **Status:** ✅ Válido
 - **Coordenadas:** X 137, Y 11, Z 25
 - **Atualizado:** 2026-10-24T01:50:10-03:00
-
----
-
-## Popcorn (#4105)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 137, Y 11, Z 45
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:49:45-03:00
-
-![Captura do bloco #4105](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4105-1792817403557.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4105-1792817403557.jpg)
 
 ---
 
