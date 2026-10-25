@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Banana (#4033)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 92, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:15:49-03:00
+
+---
+
 ## Apple C (#4031)
 
 - **Status:** ✅ Válido
@@ -1235,19 +1243,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 ![Captura do bloco #4034](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4034-1792816858890.jpg)
 
 [Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4034-1792816858890.jpg)
-
----
-
-## Banana (#4033)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 77, Y 11, Z 30
-- **Motivo:** Textura bugada, Tamanho / proporção errados
-- **Atualizado:** 2026-10-24T01:40:23-03:00
-
-![Captura do bloco #4033](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4033-1792816857039.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4033-1792816857039.jpg)
 
 ---
 
