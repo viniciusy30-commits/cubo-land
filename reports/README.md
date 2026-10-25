@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Skull Rizz (#4595)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:15:12-03:00
+
+---
+
 ## Cat Poop (#3738)
 
 - **Status:** ✅ Válido
@@ -1493,19 +1501,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 - **Status:** ✅ Válido
 - **Coordenadas:** X 8, Y 10, Z 35
 - **Atualizado:** 2026-10-24T01:36:12-03:00
-
----
-
-## Skull Rizz (#4595)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 14, Y 11, Z 35
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:36:09-03:00
-
-![Captura do bloco #4595](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4595-1792816569420.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4595-1792816569420.jpg)
 
 ---
 
