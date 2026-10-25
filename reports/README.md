@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Ichiroku Tart (#4085)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 87, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:16:05-03:00
+
+---
+
 ## Klepon (#4087)
 
 - **Status:** ✅ Válido
@@ -720,19 +728,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 ![Captura do bloco #4065](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4065-1792817429059.jpg)
 
 [Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4065-1792817429059.jpg)
-
----
-
-## Ichiroku Tart (#4085)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 137, Y 11, Z 40
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:49:51-03:00
-
-![Captura do bloco #4085](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4085-1792817422491.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4085-1792817422491.jpg)
 
 ---
 
