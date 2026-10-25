@@ -31,6 +31,7 @@ class BlockReviewOverlay(ctx: Context, private val game: Game, private val captu
     private var targetZ = 0
     private var message = "Mire em um bloco para avaliar"
     private var syncing = false
+    private var expanded = false                  // painel de revisão aberto?
     private var busy = false                       // captura/diálogo de invalidação em andamento: ignora novas batidas
     private var armed: String? = null              // "valid" / "invalid" / null: ação feita ao bater num bloco com a mão vazia
     private var room: World.RoomRegion? = null     // sala (da galeria) onde a mira está
@@ -61,71 +62,70 @@ class BlockReviewOverlay(ctx: Context, private val game: Game, private val captu
         c.drawText("⚙", settings.centerX(), settings.centerY() + dp(6f), paint)
         buttons.add(settings to "Configurar GitHub")
 
-        // Controles compactos, posicionados acima da hotbar.
-        val buttonH = dp(28f)
-        val gap = dp(4f)
-        val buttonW = minOf(dp(78f), (w - dp(28f) - gap * 2f) / 3f)
-        val totalW = buttonW * 3f + gap * 2f
-        val left = (w - totalW) / 2f
-        val top = h - dp(82f) - buttonH
-
         if (game.hasHit) room = game.world.roomAt(game.hx, game.hz)
 
-        // botão pra esvaziar a barra de itens (todos os slots ficam só com a mão)
-        val clear = RectF(w - dp(98f), dp(54f), w - dp(10f), dp(54f) + dp(28f))
-        addButton(c, clear, "Esvaziar barra", Color.rgb(120, 80, 40), 9f)
-
-        var rowBottom = top + buttonH
-        if (targetId > 0) {
-            val status = prefs.getString("status_$targetId", null)
-            val name = B.names.getOrNull(targetId).orEmpty().ifBlank { "Bloco #$targetId" }
-            val label = when (status) { "valid" -> "Válido"; "invalid" -> "Inválido"; else -> "Sem avaliação" }
-            val panel = RectF(left, top - dp(24f), left + totalW, top + buttonH)
-            paint.color = Color.argb(210, 15, 20, 29); c.drawRoundRect(panel, dp(9f), dp(9f), paint)
-            paint.color = Color.WHITE; paint.textAlign = Paint.Align.CENTER; paint.textSize = dp(10f)
-            val title = "$name (#$targetId) · $label"
-            c.drawText(if (paint.measureText(title) > totalW - dp(12f)) "Bloco #$targetId · $label" else title,
-                left + totalW / 2f, top - dp(8f), paint)
-            addButton(c, RectF(left, top, left + buttonW, top + buttonH), "✓ Válido", Color.rgb(35, 135, 79))
-            addButton(c, RectF(left + buttonW + gap, top, left + buttonW * 2f + gap, top + buttonH), "✕ Inválido", Color.rgb(178, 55, 61))
-            addButton(c, RectF(left + (buttonW + gap) * 2f, top, left + totalW, top + buttonH), "Copiar", Color.rgb(62, 91, 151))
-            rowBottom = top - dp(24f)
-        }
-        val half = (totalW - gap) / 2f
-        // sala inteira: aparece quando a mira está dentro de uma sala da galeria
-        val r = room
-        if (r != null) {
-            val rTop = rowBottom - gap - buttonH
-            addButton(c, RectF(left, rTop, left + half, rTop + buttonH), "✓ Sala toda", Color.rgb(35, 135, 79))
-            addButton(c, RectF(left + half + gap, rTop, left + totalW, rTop + buttonH), "✕ Sala toda", Color.rgb(178, 55, 61))
-            rowBottom = rTop
-        }
-        // modo automático: com ele ligado, bater num bloco com a mão vazia aplica a ação marcada
-        val aTop = rowBottom - gap - buttonH
+        // Painel compacto acima da hotbar. Recolhido por padrão: só um botãozinho.
+        val bh = dp(24f); val g = dp(3f)
+        val bw = minOf(dp(78f), (w - dp(28f) - g * 2f) / 3f)
+        val tw = bw * 3f + g * 2f
+        val left = (w - tw) / 2f
+        val bottom = h - dp(58f)
+        val half = (tw - g) / 2f
         val onV = armed == "valid"; val onI = armed == "invalid"
-        addButton(c, RectF(left, aTop, left + half, aTop + buttonH), if (onV) "✓ Auto: LIGADO" else "✓ Auto: off",
-            if (onV) Color.rgb(35, 160, 90) else Color.argb(220, 45, 60, 55), 11f, onV, "Auto ✓")
-        addButton(c, RectF(left + half + gap, aTop, left + totalW, aTop + buttonH), if (onI) "✕ Auto: LIGADO" else "✕ Auto: off",
-            if (onI) Color.rgb(205, 60, 66) else Color.argb(220, 70, 48, 50), 11f, onI, "Auto ✕")
+        var y: Float
+        if (!expanded) {
+            val label = when { onV -> "✓ Auto ligado"; onI -> "✕ Auto ligado"; else -> "Revisão ▲" }
+            val color = when { onV -> Color.rgb(35, 160, 90); onI -> Color.rgb(205, 60, 66); else -> Color.argb(170, 15, 20, 29) }
+            val pw = dp(92f)
+            val pill = RectF((w - pw) / 2f, bottom - bh, (w + pw) / 2f, bottom)
+            addButton(c, pill, label, color, 10f, armed != null, "Painel")
+            y = pill.top
+        } else {
+            val a1 = Color.argb(200, 35, 135, 79); val a2 = Color.argb(200, 178, 55, 61)
+            // linha de baixo: modo automático + esvaziar barra
+            var rt = bottom - bh
+            addButton(c, RectF(left, rt, left + bw, rt + bh), if (onV) "✓ Auto ON" else "✓ Auto", if (onV) Color.rgb(35, 160, 90) else Color.argb(190, 45, 60, 55), 10f, onV, "Auto ✓")
+            addButton(c, RectF(left + bw + g, rt, left + bw * 2f + g, rt + bh), if (onI) "✕ Auto ON" else "✕ Auto", if (onI) Color.rgb(205, 60, 66) else Color.argb(190, 70, 48, 50), 10f, onI, "Auto ✕")
+            addButton(c, RectF(left + (bw + g) * 2f, rt, left + tw, rt + bh), "Esvaziar", Color.argb(200, 120, 80, 40), 10f, false, "Esvaziar barra")
+            y = rt - g
+            if (room != null) {
+                rt = y - bh
+                addButton(c, RectF(left, rt, left + half, rt + bh), "✓ Sala toda", a1, 10f)
+                addButton(c, RectF(left + half + g, rt, left + tw, rt + bh), "✕ Sala toda", a2, 10f)
+                y = rt - g
+            }
+            val head: String
+            if (targetId > 0) {
+                rt = y - bh
+                addButton(c, RectF(left, rt, left + bw, rt + bh), "✓ Válido", a1, 10f)
+                addButton(c, RectF(left + bw + g, rt, left + bw * 2f + g, rt + bh), "✕ Inválido", a2, 10f)
+                addButton(c, RectF(left + (bw + g) * 2f, rt, left + tw, rt + bh), "Copiar", Color.argb(200, 62, 91, 151), 10f)
+                y = rt - g
+                val status = prefs.getString("status_$targetId", null)
+                val name = B.names.getOrNull(targetId).orEmpty().ifBlank { "Bloco" }
+                val st = when (status) { "valid" -> "✓"; "invalid" -> "✕"; else -> "·" }
+                head = "▼ ${name.take(22)} #$targetId $st"
+            } else head = "▼ Revisão"
+            val hr = RectF(left, y - dp(20f), left + tw, y)
+            addButton(c, hr, head, Color.argb(170, 15, 20, 29), 9f, false, "Painel")
+            y = hr.top
+        }
 
-        // Aviso discreto no topo, sem cobrir a hotbar.
+        // Aviso logo acima do painel (não cobre o topo da tela)
         val hint = when {
-            armed != null && game.cur() != 0 -> "Auto ligado: escolha um slot vazio (mão) e bata no bloco"
-            armed == "valid" -> "Auto ✓ ligado: bata no bloco com a mão vazia"
-            armed == "invalid" -> "Auto ✕ ligado: bata no bloco com a mão vazia"
+            armed != null && game.cur() != 0 -> "Auto ligado: escolha um slot vazio (mão)"
+            armed != null -> "Bata no bloco com a mão vazia"
             else -> ""
         }
         val bannerText = if (syncing) "Sincronizando com GitHub…" else if (message.isNotBlank() && message != "Mire em um bloco para avaliar") message else hint
         if (bannerText.isNotBlank()) {
-            paint.textSize = dp(10f); paint.textAlign = Paint.Align.CENTER
+            paint.textSize = dp(10f); paint.textAlign = Paint.Align.CENTER; paint.typeface = android.graphics.Typeface.DEFAULT
             val maxTextW = w - dp(100f)
-            val shown = if (paint.measureText(bannerText) > maxTextW) {
-                if (syncing) "Sincronizando com GitHub…" else bannerText.take(48) + "…"
-            } else bannerText
-            val bannerW = minOf(w - dp(88f), maxOf(dp(150f), paint.measureText(shown) + dp(20f)))
-            val banner = RectF((w - bannerW) / 2f, dp(10f), (w + bannerW) / 2f, dp(34f))
-            paint.color = Color.argb(205, 15, 20, 29); c.drawRoundRect(banner, dp(7f), dp(7f), paint)
-            paint.color = Color.WHITE; c.drawText(shown, w / 2f, dp(25f), paint)
+            val shown = if (paint.measureText(bannerText) > maxTextW) bannerText.take(48) + "…" else bannerText
+            val bannerW = minOf(w - dp(88f), maxOf(dp(120f), paint.measureText(shown) + dp(20f)))
+            val banner = RectF((w - bannerW) / 2f, y - g - dp(20f), (w + bannerW) / 2f, y - g)
+            paint.color = Color.argb(185, 15, 20, 29); c.drawRoundRect(banner, dp(7f), dp(7f), paint)
+            paint.color = Color.WHITE; c.drawText(shown, w / 2f, banner.centerY() + dp(3.5f), paint)
         }
         paint.textAlign = Paint.Align.LEFT
         postInvalidateDelayed(300)
@@ -161,6 +161,7 @@ class BlockReviewOverlay(ctx: Context, private val game: Game, private val captu
                     "Configurar GitHub" -> showGitHubDialog()
                     "✓ Válido" -> if (targetId > 0 && game.hasHit) saveStatus("valid")
                     "✕ Inválido" -> if (targetId > 0 && game.hasHit && !busy) startInvalid(targetId, targetX, targetY, targetZ)
+                    "Painel" -> expanded = !expanded
                     "Auto ✓" -> toggleArmed("valid")
                     "Auto ✕" -> toggleArmed("invalid")
                     "✓ Sala toda" -> room?.let { confirmBulk(it, "valid") }
