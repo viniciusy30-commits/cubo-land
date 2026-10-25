@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Suitcase (#4719)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 30
+- **Atualizado:** 2026-10-25T20:15:16-03:00
+
+---
+
 ## Sniper (#4641)
 
 - **Status:** ✅ Válido
@@ -1509,19 +1517,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 - **Status:** ✅ Válido
 - **Coordenadas:** X 8, Y 10, Z 35
 - **Atualizado:** 2026-10-24T01:36:12-03:00
-
----
-
-## Suitcase (#4719)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 29, Y 11, Z 35
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:35:11-03:00
-
-![Captura do bloco #4719](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4719-1792816511310.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4719-1792816511310.jpg)
 
 ---
 
