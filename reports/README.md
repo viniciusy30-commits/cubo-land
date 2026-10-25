@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Tea Cup (#3941)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 72, Y 11, Z 20
+- **Atualizado:** 2026-10-25T20:15:33-03:00
+
+---
+
 ## Cake 1c (#3729)
 
 - **Status:** ✅ Válido
@@ -501,19 +509,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 ![Captura do bloco #4048](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4048-1792817541999.jpg)
 
 [Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4048-1792817541999.jpg)
-
----
-
-## Tea Cup (#3941)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 147, Y 11, Z 25
-- **Motivo:** Outro
-- **Atualizado:** 2026-10-24T01:51:15-03:00
-
-![Captura do bloco #3941](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3941-1792817511593.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3941-1792817511593.jpg)
 
 ---
 
