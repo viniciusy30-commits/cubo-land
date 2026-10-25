@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Croissant (#4065)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 62, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:16:16-03:00
+
+---
+
 ## Dango (#4068)
 
 - **Status:** ✅ Válido
@@ -721,19 +729,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 ![Captura do bloco #4045](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4045-1792817436434.jpg)
 
 [Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4045-1792817436434.jpg)
-
----
-
-## Croissant (#4065)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 137, Y 11, Z 35
-- **Motivo:** Tamanho / proporção errados
-- **Atualizado:** 2026-10-24T01:49:56-03:00
-
-![Captura do bloco #4065](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4065-1792817429059.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4065-1792817429059.jpg)
 
 ---
 
