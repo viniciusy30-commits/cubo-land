@@ -4,9 +4,14 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 ## Iron Cerca Metal (#2733)
 
-- **Status:** ✅ Válido
+- **Status:** ❌ Inválido
 - **Coordenadas:** X 9, Y 11, Z 20
-- **Atualizado:** 2026-10-25T20:55:59-03:00
+- **Motivo:** Outro
+- **Atualizado:** 2026-10-25T20:56:53-03:00
+
+![Captura do bloco #2733](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2733-1792972614075.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2733-1792972614075.jpg)
 
 ---
 
