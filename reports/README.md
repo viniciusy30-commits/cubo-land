@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Kue Ambon (#4088)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 97, Y 11, Z 25
+- **Atualizado:** 2026-10-25T20:15:57-03:00
+
+---
+
 ## Pineapple (#4101)
 
 - **Status:** ✅ Válido
@@ -500,19 +508,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 ![Captura do bloco #4108](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4108-1792817580196.jpg)
 
 [Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4108-1792817580196.jpg)
-
----
-
-## Kue Ambon (#4088)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 152, Y 11, Z 40
-- **Motivo:** Textura bugada, Textura piscando
-- **Atualizado:** 2026-10-24T01:51:51-03:00
-
-![Captura do bloco #4088](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4088-1792817570668.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4088-1792817570668.jpg)
 
 ---
 
