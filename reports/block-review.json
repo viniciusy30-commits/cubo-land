@@ -1595,5 +1595,437 @@
     "y": 11,
     "z": 35,
     "updatedAt": "2026-10-25T20:32:55-03:00"
+  },
+  "2709": {
+    "id": 2709,
+    "name": "Dipper",
+    "status": "valid",
+    "x": 175,
+    "y": 11,
+    "z": 20,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "3377": {
+    "id": 3377,
+    "name": "Axe",
+    "status": "valid",
+    "x": 180,
+    "y": 11,
+    "z": 20,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4025": {
+    "id": 4025,
+    "name": "Fire Extinguisher",
+    "status": "valid",
+    "x": 185,
+    "y": 11,
+    "z": 20,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4148": {
+    "id": 4148,
+    "name": "Gas Lpg",
+    "status": "valid",
+    "x": 190,
+    "y": 11,
+    "z": 20,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4149": {
+    "id": 4149,
+    "name": "Gas Pump A",
+    "status": "valid",
+    "x": 195,
+    "y": 11,
+    "z": 20,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4150": {
+    "id": 4150,
+    "name": "Gas Pump",
+    "status": "valid",
+    "x": 200,
+    "y": 11,
+    "z": 20,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4151": {
+    "id": 4151,
+    "name": "Gasoline",
+    "status": "valid",
+    "x": 205,
+    "y": 11,
+    "z": 20,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4160": {
+    "id": 4160,
+    "name": "Gavel",
+    "status": "valid",
+    "x": 210,
+    "y": 11,
+    "z": 20,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4171": {
+    "id": 4171,
+    "name": "Guillotine",
+    "status": "valid",
+    "x": 215,
+    "y": 11,
+    "z": 20,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4195": {
+    "id": 4195,
+    "name": "Hand Truck",
+    "status": "valid",
+    "x": 220,
+    "y": 11,
+    "z": 20,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4206": {
+    "id": 4206,
+    "name": "Hoe",
+    "status": "valid",
+    "x": 225,
+    "y": 11,
+    "z": 20,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4207": {
+    "id": 4207,
+    "name": "Ct Scan Hospital A",
+    "status": "valid",
+    "x": 175,
+    "y": 11,
+    "z": 25,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4208": {
+    "id": 4208,
+    "name": "Ct Scan Hospital",
+    "status": "valid",
+    "x": 180,
+    "y": 11,
+    "z": 25,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4209": {
+    "id": 4209,
+    "name": "Hospital Stuff 1",
+    "status": "valid",
+    "x": 185,
+    "y": 11,
+    "z": 25,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4210": {
+    "id": 4210,
+    "name": "Hospital Stuff 2",
+    "status": "valid",
+    "x": 190,
+    "y": 11,
+    "z": 25,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4211": {
+    "id": 4211,
+    "name": "Hospital Stuff 3",
+    "status": "valid",
+    "x": 195,
+    "y": 11,
+    "z": 25,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4212": {
+    "id": 4212,
+    "name": "Hospital Stuff 4",
+    "status": "valid",
+    "x": 200,
+    "y": 11,
+    "z": 25,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4213": {
+    "id": 4213,
+    "name": "Hospital Stuff 5",
+    "status": "valid",
+    "x": 205,
+    "y": 11,
+    "z": 25,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4214": {
+    "id": 4214,
+    "name": "Hospital Stuff",
+    "status": "valid",
+    "x": 210,
+    "y": 11,
+    "z": 25,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4215": {
+    "id": 4215,
+    "name": "Infant Incubator Hospital",
+    "status": "valid",
+    "x": 215,
+    "y": 11,
+    "z": 25,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4216": {
+    "id": 4216,
+    "name": "Ultrasound Máquina Hospital",
+    "status": "valid",
+    "x": 220,
+    "y": 11,
+    "z": 25,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4217": {
+    "id": 4217,
+    "name": "Ventilator Hospital",
+    "status": "valid",
+    "x": 225,
+    "y": 11,
+    "z": 25,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4252": {
+    "id": 4252,
+    "name": "Lpg 1",
+    "status": "valid",
+    "x": 175,
+    "y": 11,
+    "z": 30,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4253": {
+    "id": 4253,
+    "name": "Lpg 1a",
+    "status": "valid",
+    "x": 180,
+    "y": 11,
+    "z": 30,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4278": {
+    "id": 4278,
+    "name": "Mechanic",
+    "status": "valid",
+    "x": 185,
+    "y": 11,
+    "z": 30,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4310": {
+    "id": 4310,
+    "name": "Nitrogen Generator",
+    "status": "valid",
+    "x": 190,
+    "y": 11,
+    "z": 30,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4315": {
+    "id": 4315,
+    "name": "Oxygen Cylinder A",
+    "status": "valid",
+    "x": 195,
+    "y": 11,
+    "z": 30,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4316": {
+    "id": 4316,
+    "name": "Oxygen Cylinder",
+    "status": "valid",
+    "x": 200,
+    "y": 11,
+    "z": 30,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4480": {
+    "id": 4480,
+    "name": "Pruning Saw",
+    "status": "valid",
+    "x": 205,
+    "y": 11,
+    "z": 30,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4549": {
+    "id": 4549,
+    "name": "Scissor Azul",
+    "status": "valid",
+    "x": 210,
+    "y": 11,
+    "z": 30,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4550": {
+    "id": 4550,
+    "name": "Scissor Verde",
+    "status": "valid",
+    "x": 215,
+    "y": 11,
+    "z": 30,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4551": {
+    "id": 4551,
+    "name": "Scissor Vermelho",
+    "status": "valid",
+    "x": 220,
+    "y": 11,
+    "z": 30,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4552": {
+    "id": 4552,
+    "name": "Scissor Amarelo",
+    "status": "valid",
+    "x": 225,
+    "y": 11,
+    "z": 30,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4687": {
+    "id": 4687,
+    "name": "Steel Rebar",
+    "status": "valid",
+    "x": 175,
+    "y": 11,
+    "z": 35,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4723": {
+    "id": 4723,
+    "name": "Syringes",
+    "status": "valid",
+    "x": 180,
+    "y": 11,
+    "z": 35,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4730": {
+    "id": 4730,
+    "name": "Tire",
+    "status": "valid",
+    "x": 185,
+    "y": 11,
+    "z": 35,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4731": {
+    "id": 4731,
+    "name": "Tire 1",
+    "status": "valid",
+    "x": 190,
+    "y": 11,
+    "z": 35,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4851": {
+    "id": 4851,
+    "name": "Water Storage A",
+    "status": "valid",
+    "x": 195,
+    "y": 11,
+    "z": 35,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4852": {
+    "id": 4852,
+    "name": "Water Storage B",
+    "status": "valid",
+    "x": 200,
+    "y": 11,
+    "z": 35,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4853": {
+    "id": 4853,
+    "name": "Water Storage C",
+    "status": "valid",
+    "x": 205,
+    "y": 11,
+    "z": 35,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4854": {
+    "id": 4854,
+    "name": "Water Storage D",
+    "status": "valid",
+    "x": 210,
+    "y": 11,
+    "z": 35,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4855": {
+    "id": 4855,
+    "name": "Water Storage",
+    "status": "valid",
+    "x": 215,
+    "y": 11,
+    "z": 35,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4856": {
+    "id": 4856,
+    "name": "Watering Can A",
+    "status": "valid",
+    "x": 220,
+    "y": 11,
+    "z": 35,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4857": {
+    "id": 4857,
+    "name": "Watering Can B",
+    "status": "valid",
+    "x": 225,
+    "y": 11,
+    "z": 35,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4858": {
+    "id": 4858,
+    "name": "Watering Can C",
+    "status": "valid",
+    "x": 175,
+    "y": 11,
+    "z": 40,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4859": {
+    "id": 4859,
+    "name": "Watering Can D",
+    "status": "valid",
+    "x": 180,
+    "y": 11,
+    "z": 40,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4860": {
+    "id": 4860,
+    "name": "Watering Can",
+    "status": "valid",
+    "x": 185,
+    "y": 11,
+    "z": 40,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
+  },
+  "4861": {
+    "id": 4861,
+    "name": "Wheel",
+    "status": "valid",
+    "x": 190,
+    "y": 11,
+    "z": 40,
+    "updatedAt": "2026-10-25T20:33:18-03:00"
   }
 }
