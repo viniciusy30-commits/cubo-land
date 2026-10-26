@@ -2,6 +2,28 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Janela 3 Open Branco (#4893)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 59, Y 11, Z 50
+- **Motivo:** Item duplicado / repetido (aparece 2, 3 ou 4 vezes), Textura bugada, Não abre / não funciona
+- **Atualizado:** 2026-10-25T21:29:21-03:00
+
+---
+
+## Janela Horizontal Preto (#4907)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 79, Y 11, Z 50
+- **Motivo:** Textura piscando
+- **Atualizado:** 2026-10-25T21:28:56-03:00
+
+![Captura do bloco #4907](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4907-1792974550890.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4907-1792974550890.jpg)
+
+---
+
 ## Janela Horizontal Cinza (#4908)
 
 - **Status:** ❌ Inválido
@@ -1103,14 +1125,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 ---
 
-## Janela 3 Open Branco (#4893)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 59, Y 11, Z 50
-- **Atualizado:** 2026-10-25T21:19:03-03:00
-
----
-
 ## Janela Diagonal Preto (#4894)
 
 - **Status:** ✅ Válido
@@ -1131,14 +1145,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 74, Y 11, Z 50
-- **Atualizado:** 2026-10-25T21:19:03-03:00
-
----
-
-## Janela Horizontal Preto (#4907)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 79, Y 11, Z 50
 - **Atualizado:** 2026-10-25T21:19:03-03:00
 
 ---
