@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Porta 6 (#3885)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 59, Y 11, Z 25
+- **Motivo:** Direção / rotação errada
+- **Atualizado:** 2026-10-25T21:21:16-03:00
+
+![Captura do bloco #3885](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3885-1792974092412.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3885-1792974092412.jpg)
+
+---
+
 ## Porta 6a (#3886)
 
 - **Status:** ❌ Inválido
@@ -341,14 +354,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 54, Y 11, Z 25
-- **Atualizado:** 2026-10-25T21:19:03-03:00
-
----
-
-## Porta 6 (#3885)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 59, Y 11, Z 25
 - **Atualizado:** 2026-10-25T21:19:03-03:00
 
 ---
