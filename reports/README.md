@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Porta Trem A (#3904)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 29, Y 11, Z 30
+- **Motivo:** Textura bugada, Incompleto / faltando partes, Direção / rotação errada, Não abre / não funciona
+- **Atualizado:** 2026-10-25T21:22:36-03:00
+
+![Captura do bloco #3904](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3904-1792974190330.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3904-1792974190330.jpg)
+
+---
+
 ## Porta Slide Japanese (#3903)
 
 - **Status:** ❌ Inválido
@@ -456,14 +469,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 14, Y 11, Z 20
-- **Atualizado:** 2026-10-25T21:19:03-03:00
-
----
-
-## Porta Trem A (#3904)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 29, Y 11, Z 30
 - **Atualizado:** 2026-10-25T21:19:03-03:00
 
 ---
