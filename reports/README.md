@@ -2,6 +2,550 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Jukebox (#1375)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Popcorn Máquina (#2766)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Ac Indoor (#2834)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Ac Outdoor A (#2835)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Ac Outdoor (#2836)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Ac Central Indoor (#2837)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Ac Central Outdoor (#2838)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Ac Indoor 1 (#2839)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Acoustic Panel 1 Preto (#2840)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Acoustic Panel 1 Marrom (#2841)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Acoustic Panel 1 Branco (#2842)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Acoustic Panel Preto (#2843)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Acoustic Panel Block 1 Preto (#2844)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Acoustic Panel Block 1 Marrom (#2845)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Acoustic Panel Block 1 Branco (#2846)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Acoustic Panel Block Preto (#2847)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Acoustic Panel Block Marrom (#2848)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Acoustic Panel Block Branco (#2849)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Acoustic Panel Marrom (#2850)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Acoustic Panel Branco (#2851)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Aquarium (#2852)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Bladeless Fan (#2899)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Livro (#2910)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Fan Teto (#3056)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Fan Chão (#3057)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Globe (#3113)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Jukebox (#3116)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Paper (#3222)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Paper Livro (#3223)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Paper Mail (#3224)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Radiator (#3312)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Radio (#3313)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Telephone (#3314)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Typewriter (#3330)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Vinyl Player (#3332)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Vinyl Player 1 (#3333)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Arcade Máquina Preto (#3339)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Arcade Máquina Azul (#3340)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Arcade Máquina Verde (#3341)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Arcade Máquina Vermelho (#3342)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Arcade Máquina Branco (#3343)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Arcade Máquina Amarelo (#3344)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Boarding Pass Máquina (#3641)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Cup Sealer Máquina (#3832)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Fingerprint Máquina (#4024)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Food Packs (#4028)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Gate Máquina (#4152)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Gate Rail (#4153)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Gate Parking Máquina (#4154)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Newspaper A (#4308)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Newspaper (#4309)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Packs A (#4317)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Packs B (#4318)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Packs (#4319)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Pharmacy Retail (#4356)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Public Telephone (#4481)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Public Telephone Open (#4482)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Recycled Paper (#4497)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Sack (#4548)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Scroll Paper (#4554)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Slot Máquina (#4615)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Tactile Paving A (#4724)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Tactile Paving B (#4725)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Tactile Paving C (#4726)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Tactile Paving (#4727)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Trem Accordion Connector Bottom (#4792)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Trem Accordion Connector Mid (#4793)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
+## Trem Accordion Connector Top (#4794)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:13:09-03:00
+
+---
+
 ## Roof Corner Out (#4539)
 
 - **Status:** ❌ Inválido
