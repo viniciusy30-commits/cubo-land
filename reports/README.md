@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Trem Accordion Connector Bottom (#4792)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 9, Y 11, Z 45
+- **Motivo:** Textura bugada, Textura piscando
+- **Atualizado:** 2026-10-25T21:18:43-03:00
+
+![Captura do bloco #4792](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4792-1792973924015.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4792-1792973924015.jpg)
+
+---
+
 ## Public Telephone Open (#4482)
 
 - **Status:** ❌ Inválido
@@ -538,14 +551,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 69, Y 11, Z 40
-- **Atualizado:** 2026-10-25T21:13:09-03:00
-
----
-
-## Trem Accordion Connector Bottom (#4792)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 9, Y 11, Z 45
 - **Atualizado:** 2026-10-25T21:13:09-03:00
 
 ---
