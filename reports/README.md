@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Roof Corner In (#4535)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 34, Y 11, Z 50
+- **Motivo:** Textura bugada
+- **Atualizado:** 2026-10-25T21:12:03-03:00
+
+![Captura do bloco #4535](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4535-1792973529844.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4535-1792973529844.jpg)
+
+---
+
 ## Roof Corner In C (#4534)
 
 - **Status:** ❌ Inválido
@@ -869,14 +882,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 14, Y 11, Z 50
-- **Atualizado:** 2026-10-25T21:09:37-03:00
-
----
-
-## Roof Corner In (#4535)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 34, Y 11, Z 50
 - **Atualizado:** 2026-10-25T21:09:37-03:00
 
 ---
