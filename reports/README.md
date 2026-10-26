@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Manhole (#4271)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 79, Y 11, Z 40
+- **Motivo:** Não abre / não funciona
+- **Atualizado:** 2026-10-25T21:02:59-03:00
+
+![Captura do bloco #4271](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4271-1792972979987.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4271-1792972979987.jpg)
+
+---
+
 ## Manhole 1 Metal Rusted (#4270)
 
 - **Status:** ❌ Inválido
@@ -893,14 +906,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 59, Y 11, Z 40
-- **Atualizado:** 2026-10-25T20:55:59-03:00
-
----
-
-## Manhole (#4271)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 79, Y 11, Z 40
 - **Atualizado:** 2026-10-25T20:55:59-03:00
 
 ---
