@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Manhole 1 Metal Rusted (#4270)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 74, Y 11, Z 40
+- **Motivo:** Peças flutuando, Textura bugada
+- **Atualizado:** 2026-10-25T21:02:27-03:00
+
+![Captura do bloco #4270](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4270-1792972950798.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4270-1792972950798.jpg)
+
+---
+
 ## Manhole 1 Metal (#4269)
 
 - **Status:** ❌ Inválido
@@ -880,14 +893,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 59, Y 11, Z 40
-- **Atualizado:** 2026-10-25T20:55:59-03:00
-
----
-
-## Manhole 1 Metal Rusted (#4270)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 74, Y 11, Z 40
 - **Atualizado:** 2026-10-25T20:55:59-03:00
 
 ---
