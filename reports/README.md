@@ -2,6 +2,14 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Prison Bars B (#4471)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:26:26-03:00
+
+---
+
 ## Prison Bars (#4472)
 
 - **Status:** ✅ Válido
@@ -20,19 +28,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 ![Captura do bloco #4470](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4470-1792974309559.jpg)
 
 [Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4470-1792974309559.jpg)
-
----
-
-## Prison Bars B (#4471)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 69, Y 11, Z 35
-- **Motivo:** Textura bugada, Incompleto / faltando partes, Direção / rotação errada, Não abre / não funciona
-- **Atualizado:** 2026-10-25T21:24:52-03:00
-
-![Captura do bloco #4471](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4471-1792974307870.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4471-1792974307870.jpg)
 
 ---
 
