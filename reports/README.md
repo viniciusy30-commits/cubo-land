@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Paper Livro (#3223)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 19, Y 11, Z 30
+- **Motivo:** Textura bugada
+- **Atualizado:** 2026-10-25T21:15:53-03:00
+
+![Captura do bloco #3223](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3223-1792973753795.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3223-1792973753795.jpg)
+
+---
+
 ## Jukebox (#1375)
 
 - **Status:** ✅ Válido
@@ -222,14 +235,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 14, Y 11, Z 30
-- **Atualizado:** 2026-10-25T21:13:09-03:00
-
----
-
-## Paper Livro (#3223)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 19, Y 11, Z 30
 - **Atualizado:** 2026-10-25T21:13:09-03:00
 
 ---
