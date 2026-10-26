@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Porta 6b (#3887)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 69, Y 11, Z 25
+- **Motivo:** Direção / rotação errada
+- **Atualizado:** 2026-10-25T21:21:06-03:00
+
+![Captura do bloco #3887](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3887-1792974078853.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3887-1792974078853.jpg)
+
+---
+
 ## Porta Prison A (#3897)
 
 - **Status:** ❌ Inválido
@@ -331,14 +344,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 64, Y 11, Z 25
-- **Atualizado:** 2026-10-25T21:19:03-03:00
-
----
-
-## Porta 6b (#3887)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 69, Y 11, Z 25
 - **Atualizado:** 2026-10-25T21:19:03-03:00
 
 ---
