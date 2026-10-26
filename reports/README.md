@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Gate Máquina (#4152)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 44, Y 11, Z 35
+- **Motivo:** Textura bugada, Incompleto / faltando partes, Textura piscando
+- **Atualizado:** 2026-10-25T21:17:01-03:00
+
+![Captura do bloco #4152](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4152-1792973821341.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4152-1792973821341.jpg)
+
+---
+
 ## Paper Livro (#3223)
 
 - **Status:** ❌ Inválido
@@ -371,14 +384,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 39, Y 11, Z 35
-- **Atualizado:** 2026-10-25T21:13:09-03:00
-
----
-
-## Gate Máquina (#4152)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 44, Y 11, Z 35
 - **Atualizado:** 2026-10-25T21:13:09-03:00
 
 ---
