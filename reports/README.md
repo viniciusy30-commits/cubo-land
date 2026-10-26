@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Porta 3b Cinza (#3875)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 9, Y 11, Z 25
+- **Motivo:** Direção / rotação errada
+- **Atualizado:** 2026-10-25T21:21:51-03:00
+
+![Captura do bloco #3875](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3875-1792974142874.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3875-1792974142874.jpg)
+
+---
+
 ## Porta 3b Verde (#3876)
 
 - **Status:** ❌ Inválido
@@ -391,14 +404,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 14, Y 11, Z 20
-- **Atualizado:** 2026-10-25T21:19:03-03:00
-
----
-
-## Porta 3b Cinza (#3875)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 9, Y 11, Z 25
 - **Atualizado:** 2026-10-25T21:19:03-03:00
 
 ---
