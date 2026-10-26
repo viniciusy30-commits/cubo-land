@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Garage Porta A (#4139)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 64, Y 11, Z 30
+- **Motivo:** Textura bugada, Incompleto / faltando partes, Não abre / não funciona
+- **Atualizado:** 2026-10-25T21:23:42-03:00
+
+![Captura do bloco #4139](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4139-1792974249013.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4139-1792974249013.jpg)
+
+---
+
 ## Elevator Porta (#3970)
 
 - **Status:** ❌ Inválido
@@ -542,14 +555,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 54, Y 11, Z 30
-- **Atualizado:** 2026-10-25T21:19:03-03:00
-
----
-
-## Garage Porta A (#4139)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 64, Y 11, Z 30
 - **Atualizado:** 2026-10-25T21:19:03-03:00
 
 ---
