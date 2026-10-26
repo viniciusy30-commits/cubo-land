@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Porta 5 (#3881)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 39, Y 11, Z 25
+- **Motivo:** Direção / rotação errada
+- **Atualizado:** 2026-10-25T21:21:31-03:00
+
+![Captura do bloco #3881](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3881-1792974110349.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3881-1792974110349.jpg)
+
+---
+
 ## Porta 5a (#3882)
 
 - **Status:** ❌ Inválido
@@ -361,14 +374,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 34, Y 11, Z 25
-- **Atualizado:** 2026-10-25T21:19:03-03:00
-
----
-
-## Porta 5 (#3881)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 39, Y 11, Z 25
 - **Atualizado:** 2026-10-25T21:19:03-03:00
 
 ---
