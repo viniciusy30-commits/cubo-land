@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Roof Corner In A (#4532)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 19, Y 11, Z 50
+- **Motivo:** Textura bugada
+- **Atualizado:** 2026-10-25T21:11:51-03:00
+
+![Captura do bloco #4532](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4532-1792973511921.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4532-1792973511921.jpg)
+
+---
+
 ## Iron Stage 1 Metal (#2736)
 
 - **Status:** ✅ Válido
@@ -830,14 +843,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 14, Y 11, Z 50
-- **Atualizado:** 2026-10-25T21:09:37-03:00
-
----
-
-## Roof Corner In A (#4532)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 19, Y 11, Z 50
 - **Atualizado:** 2026-10-25T21:09:37-03:00
 
 ---
