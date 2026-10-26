@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Public Telephone Open (#4482)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 29, Y 11, Z 40
+- **Motivo:** Textura bugada, Incompleto / faltando partes
+- **Atualizado:** 2026-10-25T21:17:59-03:00
+
+![Captura do bloco #4482](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4482-1792973881200.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4482-1792973881200.jpg)
+
+---
+
 ## Public Telephone (#4481)
 
 - **Status:** ❌ Inválido
@@ -461,14 +474,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 19, Y 11, Z 40
-- **Atualizado:** 2026-10-25T21:13:09-03:00
-
----
-
-## Public Telephone Open (#4482)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 29, Y 11, Z 40
 - **Atualizado:** 2026-10-25T21:13:09-03:00
 
 ---
