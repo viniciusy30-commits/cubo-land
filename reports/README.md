@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Porta 5c (#3884)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 54, Y 11, Z 25
+- **Motivo:** Direção / rotação errada
+- **Atualizado:** 2026-10-25T21:21:21-03:00
+
+![Captura do bloco #3884](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3884-1792974099991.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3884-1792974099991.jpg)
+
+---
+
 ## Porta 6 (#3885)
 
 - **Status:** ❌ Inválido
@@ -346,14 +359,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 49, Y 11, Z 25
-- **Atualizado:** 2026-10-25T21:19:03-03:00
-
----
-
-## Porta 5c (#3884)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 54, Y 11, Z 25
 - **Atualizado:** 2026-10-25T21:19:03-03:00
 
 ---
