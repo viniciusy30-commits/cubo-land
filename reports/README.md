@@ -2,6 +2,152 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Canvas Art 1h (#2926)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 29, Y 11, Z 30
+- **Motivo:** Textura bugada, Incompleto / faltando partes
+- **Atualizado:** 2026-10-25T21:36:08-03:00
+
+---
+
+## Canvas Art 1g (#2925)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 24, Y 11, Z 30
+- **Motivo:** Textura bugada, Incompleto / faltando partes
+- **Atualizado:** 2026-10-25T21:36:04-03:00
+
+---
+
+## Canvas Art 1f (#2924)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 19, Y 11, Z 30
+- **Motivo:** Textura bugada, Incompleto / faltando partes
+- **Atualizado:** 2026-10-25T21:36:00-03:00
+
+---
+
+## Canvas Art 1e (#2923)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 14, Y 11, Z 30
+- **Motivo:** Textura bugada, Incompleto / faltando partes
+- **Atualizado:** 2026-10-25T21:35:55-03:00
+
+---
+
+## Canvas Art 1d (#2922)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 9, Y 11, Z 30
+- **Motivo:** Textura bugada, Incompleto / faltando partes
+- **Atualizado:** 2026-10-25T21:35:50-03:00
+
+---
+
+## Backdrop Brand T (#2873)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 24, Y 11, Z 25
+- **Motivo:** Textura bugada
+- **Atualizado:** 2026-10-25T21:35:40-03:00
+
+---
+
+## Backdrop Brand U (#2874)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 29, Y 11, Z 25
+- **Motivo:** Textura bugada
+- **Atualizado:** 2026-10-25T21:35:36-03:00
+
+---
+
+## Canvas Art 1 (#2918)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 74, Y 11, Z 25
+- **Motivo:** Textura bugada, Incompleto / faltando partes
+- **Atualizado:** 2026-10-25T21:35:25-03:00
+
+---
+
+## Canvas Art 1a (#2919)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 79, Y 11, Z 25
+- **Motivo:** Textura bugada, Incompleto / faltando partes
+- **Atualizado:** 2026-10-25T21:35:20-03:00
+
+---
+
+## Canvas Art 1b (#2920)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 84, Y 11, Z 25
+- **Motivo:** Textura bugada, Incompleto / faltando partes
+- **Atualizado:** 2026-10-25T21:35:14-03:00
+
+![Captura do bloco #2920](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2920-1792974916750.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2920-1792974916750.jpg)
+
+---
+
+## Canvas Art 1c (#2921)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 89, Y 11, Z 25
+- **Motivo:** Textura bugada, Incompleto / faltando partes
+- **Atualizado:** 2026-10-25T21:35:08-03:00
+
+![Captura do bloco #2921](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2921-1792974908572.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2921-1792974908572.jpg)
+
+---
+
+## Backdrop Brand V (#2875)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 34, Y 11, Z 25
+- **Motivo:** Textura bugada
+- **Atualizado:** 2026-10-25T21:33:00-03:00
+
+![Captura do bloco #2875](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2875-1792974805798.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2875-1792974805798.jpg)
+
+---
+
+## Backdrop Brand W (#2876)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 39, Y 11, Z 25
+- **Motivo:** Textura bugada
+- **Atualizado:** 2026-10-25T21:32:57-03:00
+
+![Captura do bloco #2876](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2876-1792974803974.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2876-1792974803974.jpg)
+
+---
+
+## Backdrop Brand X (#2877)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 44, Y 11, Z 25
+- **Motivo:** Textura bugada
+- **Atualizado:** 2026-10-25T21:32:53-03:00
+
+![Captura do bloco #2877](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2877-1792974801863.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2877-1792974801863.jpg)
+
+---
+
 ## Backdrop Brand Y (#2878)
 
 - **Status:** ❌ Inválido
@@ -25,45 +171,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 ![Captura do bloco #2879](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2879-1792974796109.jpg)
 
 [Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2879-1792974796109.jpg)
-
----
-
-## Canvas Art 1 (#2918)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 74, Y 11, Z 25
-- **Motivo:** Incompleto / faltando partes, Textura piscando
-- **Atualizado:** 2026-10-25T21:32:22-03:00
-
-![Captura do bloco #2918](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2918-1792974754668.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2918-1792974754668.jpg)
-
----
-
-## Canvas Art 1a (#2919)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 79, Y 11, Z 25
-- **Motivo:** Incompleto / faltando partes, Textura piscando
-- **Atualizado:** 2026-10-25T21:32:17-03:00
-
-![Captura do bloco #2919](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2919-1792974752332.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2919-1792974752332.jpg)
-
----
-
-## Canvas Art 1b (#2920)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 84, Y 11, Z 25
-- **Motivo:** Incompleto / faltando partes, Textura piscando
-- **Atualizado:** 2026-10-25T21:32:09-03:00
-
-![Captura do bloco #2920](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2920-1792974744338.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2920-1792974744338.jpg)
 
 ---
 
@@ -240,46 +347,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 ---
 
-## Backdrop Brand T (#2873)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 24, Y 11, Z 25
-- **Atualizado:** 2026-10-25T21:30:34-03:00
-
----
-
-## Backdrop Brand U (#2874)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 29, Y 11, Z 25
-- **Atualizado:** 2026-10-25T21:30:34-03:00
-
----
-
-## Backdrop Brand V (#2875)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 34, Y 11, Z 25
-- **Atualizado:** 2026-10-25T21:30:34-03:00
-
----
-
-## Backdrop Brand W (#2876)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 39, Y 11, Z 25
-- **Atualizado:** 2026-10-25T21:30:34-03:00
-
----
-
-## Backdrop Brand X (#2877)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 44, Y 11, Z 25
-- **Atualizado:** 2026-10-25T21:30:34-03:00
-
----
-
 ## Calendar A (#2913)
 
 - **Status:** ✅ Válido
@@ -300,54 +367,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 69, Y 11, Z 25
-- **Atualizado:** 2026-10-25T21:30:34-03:00
-
----
-
-## Canvas Art 1c (#2921)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 89, Y 11, Z 25
-- **Atualizado:** 2026-10-25T21:30:34-03:00
-
----
-
-## Canvas Art 1d (#2922)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 9, Y 11, Z 30
-- **Atualizado:** 2026-10-25T21:30:34-03:00
-
----
-
-## Canvas Art 1e (#2923)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 14, Y 11, Z 30
-- **Atualizado:** 2026-10-25T21:30:34-03:00
-
----
-
-## Canvas Art 1f (#2924)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 19, Y 11, Z 30
-- **Atualizado:** 2026-10-25T21:30:34-03:00
-
----
-
-## Canvas Art 1g (#2925)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 24, Y 11, Z 30
-- **Atualizado:** 2026-10-25T21:30:34-03:00
-
----
-
-## Canvas Art 1h (#2926)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 29, Y 11, Z 30
 - **Atualizado:** 2026-10-25T21:30:34-03:00
 
 ---
