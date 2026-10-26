@@ -2,19 +2,42 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
-## Prison Bars B (#4471)
+## Janela Horizontal Cinza (#4908)
 
-- **Status:** ✅ Válido
-- **Coordenadas:** X 69, Y 11, Z 35
-- **Atualizado:** 2026-10-25T21:26:26-03:00
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 84, Y 11, Z 50
+- **Motivo:** Textura piscando
+- **Atualizado:** 2026-10-25T21:28:53-03:00
+
+![Captura do bloco #4908](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4908-1792974533139.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4908-1792974533139.jpg)
 
 ---
 
 ## Prison Bars (#4472)
 
-- **Status:** ✅ Válido
+- **Status:** ❌ Inválido
 - **Coordenadas:** X 74, Y 11, Z 35
-- **Atualizado:** 2026-10-25T21:26:23-03:00
+- **Motivo:** Não abre / não funciona
+- **Atualizado:** 2026-10-25T21:27:24-03:00
+
+![Captura do bloco #4472](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4472-1792974457702.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4472-1792974457702.jpg)
+
+---
+
+## Prison Bars B (#4471)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 69, Y 11, Z 35
+- **Motivo:** Não abre / não funciona
+- **Atualizado:** 2026-10-25T21:27:18-03:00
+
+![Captura do bloco #4471](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4471-1792974438894.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4471-1792974438894.jpg)
 
 ---
 
@@ -1116,14 +1139,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 79, Y 11, Z 50
-- **Atualizado:** 2026-10-25T21:19:03-03:00
-
----
-
-## Janela Horizontal Cinza (#4908)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 84, Y 11, Z 50
 - **Atualizado:** 2026-10-25T21:19:03-03:00
 
 ---
