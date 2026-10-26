@@ -2,6 +2,84 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Backdrop Brand Y (#2878)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 49, Y 11, Z 25
+- **Motivo:** Textura bugada
+- **Atualizado:** 2026-10-25T21:32:50-03:00
+
+![Captura do bloco #2878](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2878-1792974799298.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2878-1792974799298.jpg)
+
+---
+
+## Backdrop Brand Z (#2879)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 54, Y 11, Z 25
+- **Motivo:** Textura bugada
+- **Atualizado:** 2026-10-25T21:32:47-03:00
+
+![Captura do bloco #2879](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2879-1792974796109.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2879-1792974796109.jpg)
+
+---
+
+## Canvas Art 1 (#2918)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 74, Y 11, Z 25
+- **Motivo:** Incompleto / faltando partes, Textura piscando
+- **Atualizado:** 2026-10-25T21:32:22-03:00
+
+![Captura do bloco #2918](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2918-1792974754668.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2918-1792974754668.jpg)
+
+---
+
+## Canvas Art 1a (#2919)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 79, Y 11, Z 25
+- **Motivo:** Incompleto / faltando partes, Textura piscando
+- **Atualizado:** 2026-10-25T21:32:17-03:00
+
+![Captura do bloco #2919](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2919-1792974752332.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2919-1792974752332.jpg)
+
+---
+
+## Canvas Art 1b (#2920)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 84, Y 11, Z 25
+- **Motivo:** Incompleto / faltando partes, Textura piscando
+- **Atualizado:** 2026-10-25T21:32:09-03:00
+
+![Captura do bloco #2920](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2920-1792974744338.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2920-1792974744338.jpg)
+
+---
+
+## Concreto Cinza-claro (#38)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 88, Y 10, Z 26
+- **Motivo:** Incompleto / faltando partes, Textura piscando
+- **Atualizado:** 2026-10-25T21:32:03-03:00
+
+![Captura do bloco #38](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-38-1792974723782.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-38-1792974723782.jpg)
+
+---
+
 ## Backdrop Brand A (#2853)
 
 - **Status:** ✅ Válido
@@ -202,22 +280,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 ---
 
-## Backdrop Brand Y (#2878)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 49, Y 11, Z 25
-- **Atualizado:** 2026-10-25T21:30:34-03:00
-
----
-
-## Backdrop Brand Z (#2879)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 54, Y 11, Z 25
-- **Atualizado:** 2026-10-25T21:30:34-03:00
-
----
-
 ## Calendar A (#2913)
 
 - **Status:** ✅ Válido
@@ -238,30 +300,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 69, Y 11, Z 25
-- **Atualizado:** 2026-10-25T21:30:34-03:00
-
----
-
-## Canvas Art 1 (#2918)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 74, Y 11, Z 25
-- **Atualizado:** 2026-10-25T21:30:34-03:00
-
----
-
-## Canvas Art 1a (#2919)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 79, Y 11, Z 25
-- **Atualizado:** 2026-10-25T21:30:34-03:00
-
----
-
-## Canvas Art 1b (#2920)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 84, Y 11, Z 25
 - **Atualizado:** 2026-10-25T21:30:34-03:00
 
 ---
@@ -7473,14 +7511,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 - **Status:** ✅ Válido
 - **Coordenadas:** X 92, Y 11, Z 20
 - **Atualizado:** 2026-10-24T01:37:27-03:00
-
----
-
-## Concreto Cinza-claro (#38)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 8, Y 10, Z 35
-- **Atualizado:** 2026-10-24T01:36:12-03:00
 
 ---
 
