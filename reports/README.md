@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Garage Porta D (#4142)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 79, Y 11, Z 30
+- **Motivo:** Textura bugada, Incompleto / faltando partes, Não abre / não funciona
+- **Atualizado:** 2026-10-25T21:24:00-03:00
+
+![Captura do bloco #4142](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4142-1792974266644.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4142-1792974266644.jpg)
+
+---
+
 ## Garage Porta C (#4141)
 
 - **Status:** ❌ Inválido
@@ -581,14 +594,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 54, Y 11, Z 30
-- **Atualizado:** 2026-10-25T21:19:03-03:00
-
----
-
-## Garage Porta D (#4142)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 79, Y 11, Z 30
 - **Atualizado:** 2026-10-25T21:19:03-03:00
 
 ---
