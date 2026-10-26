@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Porta Slide Japanese A (#3900)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 9, Y 11, Z 30
+- **Motivo:** Textura bugada, Incompleto / faltando partes, Direção / rotação errada, Não abre / não funciona
+- **Atualizado:** 2026-10-25T21:22:07-03:00
+
+![Captura do bloco #3900](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3900-1792974165530.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3900-1792974165530.jpg)
+
+---
+
 ## Porta 3b Cinza (#3875)
 
 - **Status:** ❌ Inválido
@@ -404,14 +417,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 14, Y 11, Z 20
-- **Atualizado:** 2026-10-25T21:19:03-03:00
-
----
-
-## Porta Slide Japanese A (#3900)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 9, Y 11, Z 30
 - **Atualizado:** 2026-10-25T21:19:03-03:00
 
 ---
