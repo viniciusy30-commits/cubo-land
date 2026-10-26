@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Porta Prison (#3899)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 84, Y 11, Z 25
+- **Motivo:** Peças flutuando, Textura bugada, Direção / rotação errada, Não abre / não funciona
+- **Atualizado:** 2026-10-25T21:20:38-03:00
+
+![Captura do bloco #3899](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3899-1792974061494.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3899-1792974061494.jpg)
+
+---
+
 ## Porta 3b Azul (#3874)
 
 - **Status:** ❌ Inválido
@@ -316,14 +329,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 79, Y 11, Z 25
-- **Atualizado:** 2026-10-25T21:19:03-03:00
-
----
-
-## Porta Prison (#3899)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 84, Y 11, Z 25
 - **Atualizado:** 2026-10-25T21:19:03-03:00
 
 ---
