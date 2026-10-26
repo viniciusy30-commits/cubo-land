@@ -2,6 +2,910 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Porta 3a Branco (#3872)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 74, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta 4 Cinza (#3879)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta 4 Preto (#3878)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta 3b Branco (#3877)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Rolling Pin (#2775)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Barrier Gate (#3396)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta 1 A (#3861)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta 1 (#3862)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta 3 Preto (#3863)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta 3 Azul (#3864)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta 3 Cinza (#3865)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta 3 Verde (#3866)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta 3 Branco (#3867)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta 3a Preto (#3868)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta 3a Azul (#3869)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta 3a Cinza (#3870)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta 3a Verde (#3871)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta 3b Preto (#3873)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 79, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta 3b Azul (#3874)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 84, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta 3b Cinza (#3875)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta 3b Verde (#3876)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta 4 Branco (#3880)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta 5 (#3881)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta 5a (#3882)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta 5b (#3883)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta 5c (#3884)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta 6 (#3885)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta 6a (#3886)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta 6b (#3887)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta Prison A (#3897)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 74, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta Prison B (#3898)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 79, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta Prison (#3899)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 84, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta Slide Japanese A (#3900)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta Slide Japanese B (#3901)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta Slide Japanese C (#3902)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta Slide Japanese (#3903)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta Trem A (#3904)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta Trem B (#3905)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta Trem C (#3906)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta Trem D (#3907)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Porta Trem (#3908)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Doorbell (#3909)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Elevator Porta (#3970)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Garage Porta A (#4139)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Garage Porta B (#4140)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Garage Porta C (#4141)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 74, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Garage Porta D (#4142)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 79, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Garage Porta (#4143)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 84, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Gate Rail Crossing A (#4155)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Gate Rail Crossing (#4156)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Gate Rolling (#4157)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Gate Rolling 1 (#4158)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Gate Ticket (#4159)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Partition A (#4322)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Partition B (#4323)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Partition (#4324)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Partition 1 (#4325)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Partition 1a (#4326)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Partition 1b (#4327)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Prison Bars A (#4470)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Prison Bars B (#4471)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Prison Bars (#4472)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 74, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Railing Vidro Corner (#4490)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 79, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Railing Vidro (#4491)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 84, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Railing Vidro Mid (#4492)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Rolling Porta A (#4525)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Rolling Porta B (#4526)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Rolling Porta C (#4527)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Rolling Porta (#4528)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Slide Porta A (#4596)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Slide Porta (#4597)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Slide Porta 1 (#4598)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Slide Porta 1a (#4599)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Slide Porta 1b (#4600)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Slide Porta 2 (#4601)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Slide Porta 2a (#4602)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Slide Porta 2b (#4603)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Turnstile Gate (#4828)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 74, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela 4 (#4865)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 79, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela 4a (#4866)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 84, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela 4b (#4867)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela 4c (#4868)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela 5 (#4869)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela 5a (#4870)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela 5b (#4871)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela 5c (#4872)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela Preto (#4873)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela Cinza (#4874)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela Branco (#4875)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela 1 Preto (#4876)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela 1 Cinza (#4877)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela 1 Branco (#4878)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela 1 Alt Preto (#4879)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela 1 Alt Cinza (#4880)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 74, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela 1 Alt Branco (#4881)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 79, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela 1 Corner Left Preto (#4882)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 84, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela 1 Corner Left Cinza (#4883)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela 1 Corner Left Branco (#4884)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela 1 Corner Right Preto (#4885)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela 1 Corner Right Cinza (#4886)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela 1 Corner Right Branco (#4887)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela 3 Close Preto (#4888)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela 3 Close Cinza (#4889)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela 3 Close Branco (#4890)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela 3 Open Preto (#4891)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela 3 Open Cinza (#4892)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela 3 Open Branco (#4893)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela Diagonal Preto (#4894)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela Diagonal Cinza (#4895)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela Diagonal Branco (#4896)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 74, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela Horizontal Preto (#4907)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 79, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela Horizontal Cinza (#4908)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 84, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
+## Janela Horizontal Branco (#4909)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 55
+- **Atualizado:** 2026-10-25T21:19:03-03:00
+
+---
+
 ## Trem Accordion Connector Bottom (#4792)
 
 - **Status:** ❌ Inválido
@@ -4756,58 +5660,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 - **Status:** ✅ Válido
 - **Coordenadas:** X 9, Y 11, Z 20
 - **Atualizado:** 2026-10-25T20:14:14-03:00
-
----
-
-## Porta 3a Branco (#3872)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 115, Y 11, Z 20
-- **Motivo:** Direção / rotação errada
-- **Atualizado:** 2026-10-24T13:25:25-03:00
-
-![Captura do bloco #3872](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3872-1792859128285.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3872-1792859128285.jpg)
-
----
-
-## Porta 3b Branco (#3877)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 120, Y 11, Z 20
-- **Motivo:** Direção / rotação errada
-- **Atualizado:** 2026-10-24T13:25:19-03:00
-
-![Captura do bloco #3877](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3877-1792859126547.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3877-1792859126547.jpg)
-
----
-
-## Porta 4 Preto (#3878)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 125, Y 11, Z 20
-- **Motivo:** Direção / rotação errada
-- **Atualizado:** 2026-10-24T13:25:14-03:00
-
-![Captura do bloco #3878](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3878-1792859117551.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3878-1792859117551.jpg)
-
----
-
-## Porta 4 Cinza (#3879)
-
-- **Status:** ❌ Inválido
-- **Coordenadas:** X 130, Y 11, Z 20
-- **Motivo:** Direção / rotação errada
-- **Atualizado:** 2026-10-24T13:25:08-03:00
-
-![Captura do bloco #3879](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3879-1792859108842.jpg)
-
-[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3879-1792859108842.jpg)
 
 ---
 
