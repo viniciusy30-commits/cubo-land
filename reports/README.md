@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Elevator Porta (#3970)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 59, Y 11, Z 30
+- **Motivo:** Textura bugada, Incompleto / faltando partes, Direção / rotação errada, Não abre / não funciona
+- **Atualizado:** 2026-10-25T21:23:25-03:00
+
+![Captura do bloco #3970](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3970-1792974234954.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3970-1792974234954.jpg)
+
+---
+
 ## Porta Trem (#3908)
 
 - **Status:** ❌ Inválido
@@ -529,14 +542,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 54, Y 11, Z 30
-- **Atualizado:** 2026-10-25T21:19:03-03:00
-
----
-
-## Elevator Porta (#3970)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 59, Y 11, Z 30
 - **Atualizado:** 2026-10-25T21:19:03-03:00
 
 ---
