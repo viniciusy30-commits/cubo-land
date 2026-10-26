@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Public Telephone (#4481)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 24, Y 11, Z 40
+- **Motivo:** Textura bugada, Incompleto / faltando partes
+- **Atualizado:** 2026-10-25T21:17:53-03:00
+
+![Captura do bloco #4481](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4481-1792973873800.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4481-1792973873800.jpg)
+
+---
+
 ## Gate Máquina (#4152)
 
 - **Status:** ❌ Inválido
@@ -448,14 +461,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 19, Y 11, Z 40
-- **Atualizado:** 2026-10-25T21:13:09-03:00
-
----
-
-## Public Telephone (#4481)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 24, Y 11, Z 40
 - **Atualizado:** 2026-10-25T21:13:09-03:00
 
 ---
