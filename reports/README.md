@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Porta 3 Verde (#3866)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 44, Y 11, Z 20
+- **Motivo:** Direção / rotação errada
+- **Atualizado:** 2026-10-25T21:19:42-03:00
+
+![Captura do bloco #3866](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3866-1792973991447.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3866-1792973991447.jpg)
+
+---
+
 ## Porta 3 Cinza (#3865)
 
 - **Status:** ❌ Inválido
@@ -111,14 +124,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 14, Y 11, Z 20
-- **Atualizado:** 2026-10-25T21:19:03-03:00
-
----
-
-## Porta 3 Verde (#3866)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 44, Y 11, Z 20
 - **Atualizado:** 2026-10-25T21:19:03-03:00
 
 ---
