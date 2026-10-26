@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Garage Porta C (#4141)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 74, Y 11, Z 30
+- **Motivo:** Textura bugada, Incompleto / faltando partes, Não abre / não funciona
+- **Atualizado:** 2026-10-25T21:23:54-03:00
+
+![Captura do bloco #4141](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4141-1792974258367.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4141-1792974258367.jpg)
+
+---
+
 ## Garage Porta B (#4140)
 
 - **Status:** ❌ Inválido
@@ -568,14 +581,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 54, Y 11, Z 30
-- **Atualizado:** 2026-10-25T21:19:03-03:00
-
----
-
-## Garage Porta C (#4141)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 74, Y 11, Z 30
 - **Atualizado:** 2026-10-25T21:19:03-03:00
 
 ---
