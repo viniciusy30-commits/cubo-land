@@ -4427,5 +4427,1103 @@
     "y": 11,
     "z": 70,
     "updatedAt": "2026-10-25T20:55:59-03:00"
+  },
+  "2736": {
+    "id": 2736,
+    "name": "Iron Stage 1 Metal",
+    "status": "valid",
+    "x": 9,
+    "y": 11,
+    "z": 20,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "2737": {
+    "id": 2737,
+    "name": "Iron Stage 1 Metal Cinza",
+    "status": "valid",
+    "x": 14,
+    "y": 11,
+    "z": 20,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "2738": {
+    "id": 2738,
+    "name": "Iron Stage 1 Metal Vermelho",
+    "status": "valid",
+    "x": 19,
+    "y": 11,
+    "z": 20,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "2739": {
+    "id": 2739,
+    "name": "Iron Stage 1 Metal Rusted",
+    "status": "valid",
+    "x": 24,
+    "y": 11,
+    "z": 20,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "2740": {
+    "id": 2740,
+    "name": "Iron Stage Metal",
+    "status": "valid",
+    "x": 29,
+    "y": 11,
+    "z": 20,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "2741": {
+    "id": 2741,
+    "name": "Iron Stage Metal Cinza",
+    "status": "valid",
+    "x": 34,
+    "y": 11,
+    "z": 20,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "2742": {
+    "id": 2742,
+    "name": "Iron Stage Metal Vermelho",
+    "status": "valid",
+    "x": 39,
+    "y": 11,
+    "z": 20,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "2743": {
+    "id": 2743,
+    "name": "Iron Stage Metal Rusted",
+    "status": "valid",
+    "x": 44,
+    "y": 11,
+    "z": 20,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3357": {
+    "id": 3357,
+    "name": "Awning 2",
+    "status": "valid",
+    "x": 49,
+    "y": 11,
+    "z": 20,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3358": {
+    "id": 3358,
+    "name": "Awning 2a",
+    "status": "valid",
+    "x": 54,
+    "y": 11,
+    "z": 20,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3359": {
+    "id": 3359,
+    "name": "Awning 2b",
+    "status": "valid",
+    "x": 59,
+    "y": 11,
+    "z": 20,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3360": {
+    "id": 3360,
+    "name": "Awning 2c",
+    "status": "valid",
+    "x": 64,
+    "y": 11,
+    "z": 20,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3361": {
+    "id": 3361,
+    "name": "Awning 2d",
+    "status": "valid",
+    "x": 69,
+    "y": 11,
+    "z": 20,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3362": {
+    "id": 3362,
+    "name": "Awning 2e",
+    "status": "valid",
+    "x": 74,
+    "y": 11,
+    "z": 20,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3363": {
+    "id": 3363,
+    "name": "Awning 2f",
+    "status": "valid",
+    "x": 79,
+    "y": 11,
+    "z": 20,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3364": {
+    "id": 3364,
+    "name": "Awning 2g",
+    "status": "valid",
+    "x": 84,
+    "y": 11,
+    "z": 20,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3365": {
+    "id": 3365,
+    "name": "Awning 1 Preto",
+    "status": "valid",
+    "x": 89,
+    "y": 11,
+    "z": 20,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3366": {
+    "id": 3366,
+    "name": "Awning 1 Azul",
+    "status": "valid",
+    "x": 9,
+    "y": 11,
+    "z": 25,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3367": {
+    "id": 3367,
+    "name": "Awning 1 Verde",
+    "status": "valid",
+    "x": 14,
+    "y": 11,
+    "z": 25,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3368": {
+    "id": 3368,
+    "name": "Awning 1 Rosa",
+    "status": "valid",
+    "x": 19,
+    "y": 11,
+    "z": 25,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3369": {
+    "id": 3369,
+    "name": "Awning 1 Vermelho",
+    "status": "valid",
+    "x": 24,
+    "y": 11,
+    "z": 25,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3370": {
+    "id": 3370,
+    "name": "Awning 1 Amarelo",
+    "status": "valid",
+    "x": 29,
+    "y": 11,
+    "z": 25,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3371": {
+    "id": 3371,
+    "name": "Awning Preto",
+    "status": "valid",
+    "x": 34,
+    "y": 11,
+    "z": 25,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3372": {
+    "id": 3372,
+    "name": "Awning Azul",
+    "status": "valid",
+    "x": 39,
+    "y": 11,
+    "z": 25,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3373": {
+    "id": 3373,
+    "name": "Awning Verde",
+    "status": "valid",
+    "x": 44,
+    "y": 11,
+    "z": 25,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3374": {
+    "id": 3374,
+    "name": "Awning Rosa",
+    "status": "valid",
+    "x": 49,
+    "y": 11,
+    "z": 25,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3375": {
+    "id": 3375,
+    "name": "Awning Vermelho",
+    "status": "valid",
+    "x": 54,
+    "y": 11,
+    "z": 25,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3376": {
+    "id": 3376,
+    "name": "Awning Amarelo",
+    "status": "valid",
+    "x": 59,
+    "y": 11,
+    "z": 25,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3691": {
+    "id": 3691,
+    "name": "Brick Sidewalk 1",
+    "status": "valid",
+    "x": 64,
+    "y": 11,
+    "z": 25,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3692": {
+    "id": 3692,
+    "name": "Brick Sidewalk 1a",
+    "status": "valid",
+    "x": 69,
+    "y": 11,
+    "z": 25,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3693": {
+    "id": 3693,
+    "name": "Brick Sidewalk 2",
+    "status": "valid",
+    "x": 74,
+    "y": 11,
+    "z": 25,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3694": {
+    "id": 3694,
+    "name": "Brick Sidewalk 2a",
+    "status": "valid",
+    "x": 79,
+    "y": 11,
+    "z": 25,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3695": {
+    "id": 3695,
+    "name": "Brick Sidewalk 3",
+    "status": "valid",
+    "x": 84,
+    "y": 11,
+    "z": 25,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3696": {
+    "id": 3696,
+    "name": "Brick Sidewalk 4",
+    "status": "valid",
+    "x": 89,
+    "y": 11,
+    "z": 25,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3697": {
+    "id": 3697,
+    "name": "Brick Sidewalk 5",
+    "status": "valid",
+    "x": 9,
+    "y": 11,
+    "z": 30,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3698": {
+    "id": 3698,
+    "name": "Brick Sidewalk 5a",
+    "status": "valid",
+    "x": 14,
+    "y": 11,
+    "z": 30,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3699": {
+    "id": 3699,
+    "name": "Brick Sidewalk 5b",
+    "status": "valid",
+    "x": 19,
+    "y": 11,
+    "z": 30,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3700": {
+    "id": 3700,
+    "name": "Brick Sidewalk",
+    "status": "valid",
+    "x": 24,
+    "y": 11,
+    "z": 30,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3701": {
+    "id": 3701,
+    "name": "Brick Madeira Preto",
+    "status": "valid",
+    "x": 29,
+    "y": 11,
+    "z": 30,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3702": {
+    "id": 3702,
+    "name": "Brick Madeira Marrom",
+    "status": "valid",
+    "x": 34,
+    "y": 11,
+    "z": 30,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3703": {
+    "id": 3703,
+    "name": "Brick Madeira Cinza",
+    "status": "valid",
+    "x": 39,
+    "y": 11,
+    "z": 30,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3704": {
+    "id": 3704,
+    "name": "Brick Madeira Vinyl Marrom",
+    "status": "valid",
+    "x": 44,
+    "y": 11,
+    "z": 30,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3705": {
+    "id": 3705,
+    "name": "Brick Madeira Vinyl Escuro",
+    "status": "valid",
+    "x": 49,
+    "y": 11,
+    "z": 30,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3706": {
+    "id": 3706,
+    "name": "Brick Madeira Vinyl Branco",
+    "status": "valid",
+    "x": 54,
+    "y": 11,
+    "z": 30,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3707": {
+    "id": 3707,
+    "name": "Brick Madeira Branco",
+    "status": "valid",
+    "x": 59,
+    "y": 11,
+    "z": 30,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3708": {
+    "id": 3708,
+    "name": "Brick 1 Sidewalk 1",
+    "status": "valid",
+    "x": 64,
+    "y": 11,
+    "z": 30,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3709": {
+    "id": 3709,
+    "name": "Brick 1 Sidewalk 1a",
+    "status": "valid",
+    "x": 69,
+    "y": 11,
+    "z": 30,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3710": {
+    "id": 3710,
+    "name": "Brick 1 Sidewalk 2",
+    "status": "valid",
+    "x": 74,
+    "y": 11,
+    "z": 30,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3711": {
+    "id": 3711,
+    "name": "Brick 1 Sidewalk 2a",
+    "status": "valid",
+    "x": 79,
+    "y": 11,
+    "z": 30,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3712": {
+    "id": 3712,
+    "name": "Brick 1 Sidewalk 3",
+    "status": "valid",
+    "x": 84,
+    "y": 11,
+    "z": 30,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3713": {
+    "id": 3713,
+    "name": "Brick 1 Sidewalk 4",
+    "status": "valid",
+    "x": 89,
+    "y": 11,
+    "z": 30,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3714": {
+    "id": 3714,
+    "name": "Brick 1 Sidewalk 5",
+    "status": "valid",
+    "x": 9,
+    "y": 11,
+    "z": 35,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3715": {
+    "id": 3715,
+    "name": "Brick 1 Sidewalk 5a",
+    "status": "valid",
+    "x": 14,
+    "y": 11,
+    "z": 35,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3716": {
+    "id": 3716,
+    "name": "Brick 1 Sidewalk 5b",
+    "status": "valid",
+    "x": 19,
+    "y": 11,
+    "z": 35,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3717": {
+    "id": 3717,
+    "name": "Brick 1 Sidewalk",
+    "status": "valid",
+    "x": 24,
+    "y": 11,
+    "z": 35,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3718": {
+    "id": 3718,
+    "name": "Brick 1 Madeira Preto",
+    "status": "valid",
+    "x": 29,
+    "y": 11,
+    "z": 35,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3719": {
+    "id": 3719,
+    "name": "Brick 1 Madeira Marrom",
+    "status": "valid",
+    "x": 34,
+    "y": 11,
+    "z": 35,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3720": {
+    "id": 3720,
+    "name": "Brick 1 Madeira Cinza",
+    "status": "valid",
+    "x": 39,
+    "y": 11,
+    "z": 35,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3721": {
+    "id": 3721,
+    "name": "Brick 1 Madeira Vinyl Marrom",
+    "status": "valid",
+    "x": 44,
+    "y": 11,
+    "z": 35,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3722": {
+    "id": 3722,
+    "name": "Brick 1 Madeira Vinyl Escuro",
+    "status": "valid",
+    "x": 49,
+    "y": 11,
+    "z": 35,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3723": {
+    "id": 3723,
+    "name": "Brick 1 Madeira Vinyl Branco",
+    "status": "valid",
+    "x": 54,
+    "y": 11,
+    "z": 35,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3724": {
+    "id": 3724,
+    "name": "Brick 1 Madeira Branco",
+    "status": "valid",
+    "x": 59,
+    "y": 11,
+    "z": 35,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3833": {
+    "id": 3833,
+    "name": "Curve Corner A",
+    "status": "valid",
+    "x": 64,
+    "y": 11,
+    "z": 35,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3834": {
+    "id": 3834,
+    "name": "Curve Corner B",
+    "status": "valid",
+    "x": 69,
+    "y": 11,
+    "z": 35,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3835": {
+    "id": 3835,
+    "name": "Curve Corner C",
+    "status": "valid",
+    "x": 74,
+    "y": 11,
+    "z": 35,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3836": {
+    "id": 3836,
+    "name": "Curve Corner D",
+    "status": "valid",
+    "x": 79,
+    "y": 11,
+    "z": 35,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3837": {
+    "id": 3837,
+    "name": "Curve Corner",
+    "status": "valid",
+    "x": 84,
+    "y": 11,
+    "z": 35,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3838": {
+    "id": 3838,
+    "name": "Curve Corner E",
+    "status": "valid",
+    "x": 89,
+    "y": 11,
+    "z": 35,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3839": {
+    "id": 3839,
+    "name": "Curve Corner F",
+    "status": "valid",
+    "x": 9,
+    "y": 11,
+    "z": 40,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3840": {
+    "id": 3840,
+    "name": "Curve Corner Flip A",
+    "status": "valid",
+    "x": 14,
+    "y": 11,
+    "z": 40,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3841": {
+    "id": 3841,
+    "name": "Curve Corner Flip B",
+    "status": "valid",
+    "x": 19,
+    "y": 11,
+    "z": 40,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3842": {
+    "id": 3842,
+    "name": "Curve Corner Flip C",
+    "status": "valid",
+    "x": 24,
+    "y": 11,
+    "z": 40,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3843": {
+    "id": 3843,
+    "name": "Curve Corner Flip D",
+    "status": "valid",
+    "x": 29,
+    "y": 11,
+    "z": 40,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3844": {
+    "id": 3844,
+    "name": "Curve Corner Flip",
+    "status": "valid",
+    "x": 34,
+    "y": 11,
+    "z": 40,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3845": {
+    "id": 3845,
+    "name": "Curve Corner Flip E",
+    "status": "valid",
+    "x": 39,
+    "y": 11,
+    "z": 40,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3846": {
+    "id": 3846,
+    "name": "Curve Corner Flip F",
+    "status": "valid",
+    "x": 44,
+    "y": 11,
+    "z": 40,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3847": {
+    "id": 3847,
+    "name": "Curve Corner Flip G",
+    "status": "valid",
+    "x": 49,
+    "y": 11,
+    "z": 40,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3848": {
+    "id": 3848,
+    "name": "Curve Corner Flip H",
+    "status": "valid",
+    "x": 54,
+    "y": 11,
+    "z": 40,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3849": {
+    "id": 3849,
+    "name": "Curve Corner Flip I",
+    "status": "valid",
+    "x": 59,
+    "y": 11,
+    "z": 40,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3850": {
+    "id": 3850,
+    "name": "Curve Corner Flip J",
+    "status": "valid",
+    "x": 64,
+    "y": 11,
+    "z": 40,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3851": {
+    "id": 3851,
+    "name": "Curve Corner Flip K",
+    "status": "valid",
+    "x": 69,
+    "y": 11,
+    "z": 40,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3852": {
+    "id": 3852,
+    "name": "Curve Corner G",
+    "status": "valid",
+    "x": 74,
+    "y": 11,
+    "z": 40,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3853": {
+    "id": 3853,
+    "name": "Curve Corner H",
+    "status": "valid",
+    "x": 79,
+    "y": 11,
+    "z": 40,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3854": {
+    "id": 3854,
+    "name": "Curve Corner I",
+    "status": "valid",
+    "x": 84,
+    "y": 11,
+    "z": 40,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3855": {
+    "id": 3855,
+    "name": "Curve Corner J",
+    "status": "valid",
+    "x": 89,
+    "y": 11,
+    "z": 40,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "3856": {
+    "id": 3856,
+    "name": "Curve Corner K",
+    "status": "valid",
+    "x": 9,
+    "y": 11,
+    "z": 45,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4196": {
+    "id": 4196,
+    "name": "Handrail",
+    "status": "valid",
+    "x": 14,
+    "y": 11,
+    "z": 45,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4363": {
+    "id": 4363,
+    "name": "Pillar 1 Branco",
+    "status": "valid",
+    "x": 19,
+    "y": 11,
+    "z": 45,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4364": {
+    "id": 4364,
+    "name": "Pillar 2 Branco",
+    "status": "valid",
+    "x": 24,
+    "y": 11,
+    "z": 45,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4365": {
+    "id": 4365,
+    "name": "Pillar 3 Branco",
+    "status": "valid",
+    "x": 29,
+    "y": 11,
+    "z": 45,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4366": {
+    "id": 4366,
+    "name": "Pillar 4",
+    "status": "valid",
+    "x": 34,
+    "y": 11,
+    "z": 45,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4367": {
+    "id": 4367,
+    "name": "Pillar 4a",
+    "status": "valid",
+    "x": 39,
+    "y": 11,
+    "z": 45,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4368": {
+    "id": 4368,
+    "name": "Pillar 4b",
+    "status": "valid",
+    "x": 44,
+    "y": 11,
+    "z": 45,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4422": {
+    "id": 4422,
+    "name": "Podium",
+    "status": "valid",
+    "x": 49,
+    "y": 11,
+    "z": 45,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4423": {
+    "id": 4423,
+    "name": "Podium 1",
+    "status": "valid",
+    "x": 54,
+    "y": 11,
+    "z": 45,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4483": {
+    "id": 4483,
+    "name": "Pulpit Madeira Preto",
+    "status": "valid",
+    "x": 59,
+    "y": 11,
+    "z": 45,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4484": {
+    "id": 4484,
+    "name": "Pulpit Madeira Marrom",
+    "status": "valid",
+    "x": 64,
+    "y": 11,
+    "z": 45,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4485": {
+    "id": 4485,
+    "name": "Pulpit Madeira Vinyl Marrom",
+    "status": "valid",
+    "x": 69,
+    "y": 11,
+    "z": 45,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4486": {
+    "id": 4486,
+    "name": "Pulpit Madeira Vinyl Escuro",
+    "status": "valid",
+    "x": 74,
+    "y": 11,
+    "z": 45,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4487": {
+    "id": 4487,
+    "name": "Pulpit Madeira Vinyl Branco",
+    "status": "valid",
+    "x": 79,
+    "y": 11,
+    "z": 45,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4488": {
+    "id": 4488,
+    "name": "Pulpit Madeira Branco",
+    "status": "valid",
+    "x": 84,
+    "y": 11,
+    "z": 45,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4529": {
+    "id": 4529,
+    "name": "Roof A",
+    "status": "valid",
+    "x": 89,
+    "y": 11,
+    "z": 45,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4530": {
+    "id": 4530,
+    "name": "Roof B",
+    "status": "valid",
+    "x": 9,
+    "y": 11,
+    "z": 50,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4531": {
+    "id": 4531,
+    "name": "Roof C",
+    "status": "valid",
+    "x": 14,
+    "y": 11,
+    "z": 50,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4532": {
+    "id": 4532,
+    "name": "Roof Corner In A",
+    "status": "valid",
+    "x": 19,
+    "y": 11,
+    "z": 50,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4533": {
+    "id": 4533,
+    "name": "Roof Corner In B",
+    "status": "valid",
+    "x": 24,
+    "y": 11,
+    "z": 50,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4534": {
+    "id": 4534,
+    "name": "Roof Corner In C",
+    "status": "valid",
+    "x": 29,
+    "y": 11,
+    "z": 50,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4535": {
+    "id": 4535,
+    "name": "Roof Corner In",
+    "status": "valid",
+    "x": 34,
+    "y": 11,
+    "z": 50,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4536": {
+    "id": 4536,
+    "name": "Roof Corner Out A",
+    "status": "valid",
+    "x": 39,
+    "y": 11,
+    "z": 50,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4537": {
+    "id": 4537,
+    "name": "Roof Corner Out B",
+    "status": "valid",
+    "x": 44,
+    "y": 11,
+    "z": 50,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4538": {
+    "id": 4538,
+    "name": "Roof Corner Out C",
+    "status": "valid",
+    "x": 49,
+    "y": 11,
+    "z": 50,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4539": {
+    "id": 4539,
+    "name": "Roof Corner Out",
+    "status": "valid",
+    "x": 54,
+    "y": 11,
+    "z": 50,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4540": {
+    "id": 4540,
+    "name": "Roof",
+    "status": "valid",
+    "x": 59,
+    "y": 11,
+    "z": 50,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4541": {
+    "id": 4541,
+    "name": "Roof Top",
+    "status": "valid",
+    "x": 64,
+    "y": 11,
+    "z": 50,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4542": {
+    "id": 4542,
+    "name": "Roof Toq",
+    "status": "valid",
+    "x": 69,
+    "y": 11,
+    "z": 50,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4543": {
+    "id": 4543,
+    "name": "Roof Tor",
+    "status": "valid",
+    "x": 74,
+    "y": 11,
+    "z": 50,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4544": {
+    "id": 4544,
+    "name": "Roof Tos",
+    "status": "valid",
+    "x": 79,
+    "y": 11,
+    "z": 50,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4594": {
+    "id": 4594,
+    "name": "Sirine Rail Crossing",
+    "status": "valid",
+    "x": 84,
+    "y": 11,
+    "z": 50,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4649": {
+    "id": 4649,
+    "name": "Speed Bump",
+    "status": "valid",
+    "x": 89,
+    "y": 11,
+    "z": 50,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4810": {
+    "id": 4810,
+    "name": "Travelator",
+    "status": "valid",
+    "x": 9,
+    "y": 11,
+    "z": 55,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4910": {
+    "id": 4910,
+    "name": "Wine Parede",
+    "status": "valid",
+    "x": 14,
+    "y": 11,
+    "z": 55,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
+  },
+  "4911": {
+    "id": 4911,
+    "name": "Wine Parede 1",
+    "status": "valid",
+    "x": 19,
+    "y": 11,
+    "z": 55,
+    "updatedAt": "2026-10-25T21:09:37-03:00"
   }
 }
