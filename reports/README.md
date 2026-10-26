@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Net (#4307)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 84, Y 11, Z 40
+- **Motivo:** Textura bugada
+- **Atualizado:** 2026-10-25T21:04:18-03:00
+
+![Captura do bloco #4307](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4307-1792973058829.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4307-1792973058829.jpg)
+
+---
+
 ## Manhole (#4271)
 
 - **Status:** ❌ Inválido
@@ -906,14 +919,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 59, Y 11, Z 40
-- **Atualizado:** 2026-10-25T20:55:59-03:00
-
----
-
-## Net (#4307)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 84, Y 11, Z 40
 - **Atualizado:** 2026-10-25T20:55:59-03:00
 
 ---
