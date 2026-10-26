@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Porta Prison B (#3898)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 79, Y 11, Z 25
+- **Motivo:** Textura bugada, Incompleto / faltando partes, Não abre / não funciona
+- **Atualizado:** 2026-10-25T21:20:50-03:00
+
+![Captura do bloco #3898](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3898-1792974069231.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3898-1792974069231.jpg)
+
+---
+
 ## Porta Prison (#3899)
 
 - **Status:** ❌ Inválido
@@ -321,14 +334,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 74, Y 11, Z 25
-- **Atualizado:** 2026-10-25T21:19:03-03:00
-
----
-
-## Porta Prison B (#3898)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 79, Y 11, Z 25
 - **Atualizado:** 2026-10-25T21:19:03-03:00
 
 ---
