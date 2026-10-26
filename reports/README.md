@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Canvas Art 1o (#2933)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 64, Y 11, Z 30
+- **Motivo:** Textura bugada, Incompleto / faltando partes
+- **Atualizado:** 2026-10-25T21:37:40-03:00
+
+![Captura do bloco #2933](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2933-1792975083854.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-2933-1792975083854.jpg)
+
+---
+
 ## Canvas Art 1n (#2932)
 
 - **Status:** ❌ Inválido
@@ -445,14 +458,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 69, Y 11, Z 25
-- **Atualizado:** 2026-10-25T21:30:34-03:00
-
----
-
-## Canvas Art 1o (#2933)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 64, Y 11, Z 30
 - **Atualizado:** 2026-10-25T21:30:34-03:00
 
 ---
