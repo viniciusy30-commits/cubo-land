@@ -2,6 +2,1030 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Backdrop Brand A (#2853)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Backdrop Brand B (#2854)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Backdrop Brand C (#2855)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Backdrop Brand D (#2856)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Backdrop Brand (#2857)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Backdrop Brand E (#2858)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Backdrop Brand F (#2859)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Backdrop Brand G (#2860)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Backdrop Brand H (#2861)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Backdrop Brand I (#2862)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Backdrop Brand J (#2863)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Backdrop Brand K (#2864)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Backdrop Brand L (#2865)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Backdrop Brand M (#2866)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 74, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Backdrop Brand N (#2867)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 79, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Backdrop Brand O (#2868)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 84, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Backdrop Brand P (#2869)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 89, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Backdrop Brand Q (#2870)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Backdrop Brand R (#2871)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Backdrop Brand S (#2872)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Backdrop Brand T (#2873)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Backdrop Brand U (#2874)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Backdrop Brand V (#2875)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Backdrop Brand W (#2876)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Backdrop Brand X (#2877)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Backdrop Brand Y (#2878)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Backdrop Brand Z (#2879)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Calendar A (#2913)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Calendar B (#2914)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Calendar (#2915)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art 1 (#2918)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 74, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art 1a (#2919)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 79, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art 1b (#2920)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 84, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art 1c (#2921)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 89, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art 1d (#2922)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art 1e (#2923)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art 1f (#2924)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art 1g (#2925)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art 1h (#2926)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art 1i (#2927)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art 1j (#2928)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art 1k (#2929)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art 1l (#2930)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art 1m (#2931)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art 1n (#2932)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art 1o (#2933)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art A (#2934)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art Aa (#2935)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 74, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art Ab (#2936)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 79, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art Ac (#2937)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 84, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art Ad (#2938)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 89, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art Ae (#2939)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art Af (#2940)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art Ag (#2941)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art Ah (#2942)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art Ai (#2943)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art Aj (#2944)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art Ak (#2945)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art Al (#2946)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art Am (#2947)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art B (#2948)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art C (#2949)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art D (#2950)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art (#2951)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art E (#2952)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 74, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art F (#2953)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 79, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art G (#2954)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 84, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art H (#2955)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 89, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art I (#2956)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art J (#2957)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art K (#2958)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art L (#2959)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art M (#2960)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art N (#2961)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art O (#2962)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art P (#2963)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art Q (#2964)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art R (#2965)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art S (#2966)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art T (#2967)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art U (#2968)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art V (#2969)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 74, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art W (#2970)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 79, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art X (#2971)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 84, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art Y (#2972)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 89, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Canvas Art Z (#2973)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Cinema Poster A (#2999)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Cinema Poster B (#3000)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Cinema Poster C (#3001)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Cinema Poster D (#3002)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Cinema Poster (#3003)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Convex Espelho (#3030)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Espelho Corner (#3219)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Espelho (#3220)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Moderno Art (#3221)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Photo A (#3225)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Photo B (#3226)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Photo C (#3227)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Photo (#3228)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 74, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Quadro Parede A (#3229)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 79, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Quadro Parede B (#3230)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 84, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Quadro Parede C (#3231)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 89, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Quadro Parede D (#3232)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Quadro Parede (#3233)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Quadro Parede E (#3234)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Quadro Parede F (#3235)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Quadro Parede 1 (#3236)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Quadro Parede 1a (#3237)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Quadro Parede 1b (#3238)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Porta Frame Metal (#3888)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Porta Frame Metal Cinza (#3889)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Porta Frame Madeira Preto (#3890)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Porta Frame Madeira Marrom (#3891)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Porta Frame Madeira Cinza (#3892)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Porta Frame Madeira Vinyl Marrom (#3893)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Porta Frame Madeira Vinyl Escuro (#3894)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 74, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Porta Frame Madeira Vinyl Branco (#3895)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 79, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Porta Frame Madeira Branco (#3896)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 84, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Janela Frame Metal (#4897)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 89, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Janela Frame Metal Cinza (#4898)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 55
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Janela Frame Madeira Preto (#4899)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 55
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Janela Frame Madeira Marrom (#4900)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 55
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Janela Frame Madeira Cinza (#4901)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 55
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Janela Frame Madeira Vinyl Marrom (#4902)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 55
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Janela Frame Madeira Vinyl Escuro (#4903)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 55
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Janela Frame Madeira Vinyl Branco (#4904)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 55
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Janela Frame Madeira Branco (#4905)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 55
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
+## Janela Frame 2 (#4906)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 55
+- **Atualizado:** 2026-10-25T21:30:34-03:00
+
+---
+
 ## Janela 3 Open Preto (#4891)
 
 - **Status:** ❌ Inválido
