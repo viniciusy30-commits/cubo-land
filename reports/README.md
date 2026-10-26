@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Prison Bars (#4472)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 74, Y 11, Z 35
+- **Motivo:** Textura bugada, Incompleto / faltando partes, Direção / rotação errada, Não abre / não funciona
+- **Atualizado:** 2026-10-25T21:24:47-03:00
+
+![Captura do bloco #4472](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4472-1792974306148.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4472-1792974306148.jpg)
+
+---
+
 ## Garage Porta (#4143)
 
 - **Status:** ❌ Inválido
@@ -711,14 +724,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 69, Y 11, Z 35
-- **Atualizado:** 2026-10-25T21:19:03-03:00
-
----
-
-## Prison Bars (#4472)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 74, Y 11, Z 35
 - **Atualizado:** 2026-10-25T21:19:03-03:00
 
 ---
