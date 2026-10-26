@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Porta Trem C (#3906)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 39, Y 11, Z 30
+- **Motivo:** Textura bugada, Incompleto / faltando partes, Direção / rotação errada, Não abre / não funciona
+- **Atualizado:** 2026-10-25T21:23:04-03:00
+
+![Captura do bloco #3906](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3906-1792974212489.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3906-1792974212489.jpg)
+
+---
+
 ## Porta Trem B (#3905)
 
 - **Status:** ❌ Inválido
@@ -482,14 +495,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 14, Y 11, Z 20
-- **Atualizado:** 2026-10-25T21:19:03-03:00
-
----
-
-## Porta Trem C (#3906)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 39, Y 11, Z 30
 - **Atualizado:** 2026-10-25T21:19:03-03:00
 
 ---
