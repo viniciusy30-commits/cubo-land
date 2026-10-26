@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Janela 3 Open Preto (#4891)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 49, Y 11, Z 50
+- **Motivo:** Item duplicado / repetido (aparece 2, 3 ou 4 vezes), Textura bugada, Não abre / não funciona
+- **Atualizado:** 2026-10-25T21:29:40-03:00
+
+![Captura do bloco #4891](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4891-1792974588814.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-4891-1792974588814.jpg)
+
+---
+
 ## Janela 3 Open Cinza (#4892)
 
 - **Status:** ❌ Inválido
@@ -1118,14 +1131,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 44, Y 11, Z 50
-- **Atualizado:** 2026-10-25T21:19:03-03:00
-
----
-
-## Janela 3 Open Preto (#4891)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 49, Y 11, Z 50
 - **Atualizado:** 2026-10-25T21:19:03-03:00
 
 ---
