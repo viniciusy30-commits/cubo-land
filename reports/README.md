@@ -2,6 +2,982 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Iron Stage 1 Metal (#2736)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Iron Stage 1 Metal Cinza (#2737)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Iron Stage 1 Metal Vermelho (#2738)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Iron Stage 1 Metal Rusted (#2739)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Iron Stage Metal (#2740)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Iron Stage Metal Cinza (#2741)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Iron Stage Metal Vermelho (#2742)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Iron Stage Metal Rusted (#2743)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Awning 2 (#3357)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Awning 2a (#3358)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Awning 2b (#3359)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Awning 2c (#3360)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Awning 2d (#3361)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Awning 2e (#3362)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 74, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Awning 2f (#3363)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 79, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Awning 2g (#3364)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 84, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Awning 1 Preto (#3365)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 89, Y 11, Z 20
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Awning 1 Azul (#3366)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Awning 1 Verde (#3367)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Awning 1 Rosa (#3368)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Awning 1 Vermelho (#3369)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Awning 1 Amarelo (#3370)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Awning Preto (#3371)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Awning Azul (#3372)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Awning Verde (#3373)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Awning Rosa (#3374)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Awning Vermelho (#3375)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Awning Amarelo (#3376)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Brick Sidewalk 1 (#3691)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Brick Sidewalk 1a (#3692)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Brick Sidewalk 2 (#3693)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 74, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Brick Sidewalk 2a (#3694)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 79, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Brick Sidewalk 3 (#3695)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 84, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Brick Sidewalk 4 (#3696)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 89, Y 11, Z 25
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Brick Sidewalk 5 (#3697)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Brick Sidewalk 5a (#3698)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Brick Sidewalk 5b (#3699)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Brick Sidewalk (#3700)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Brick Madeira Preto (#3701)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Brick Madeira Marrom (#3702)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Brick Madeira Cinza (#3703)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Brick Madeira Vinyl Marrom (#3704)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Brick Madeira Vinyl Escuro (#3705)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Brick Madeira Vinyl Branco (#3706)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Brick Madeira Branco (#3707)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Brick 1 Sidewalk 1 (#3708)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Brick 1 Sidewalk 1a (#3709)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Brick 1 Sidewalk 2 (#3710)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 74, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Brick 1 Sidewalk 2a (#3711)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 79, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Brick 1 Sidewalk 3 (#3712)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 84, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Brick 1 Sidewalk 4 (#3713)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 89, Y 11, Z 30
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Brick 1 Sidewalk 5 (#3714)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Brick 1 Sidewalk 5a (#3715)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Brick 1 Sidewalk 5b (#3716)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Brick 1 Sidewalk (#3717)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Brick 1 Madeira Preto (#3718)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Brick 1 Madeira Marrom (#3719)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Brick 1 Madeira Cinza (#3720)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Brick 1 Madeira Vinyl Marrom (#3721)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Brick 1 Madeira Vinyl Escuro (#3722)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Brick 1 Madeira Vinyl Branco (#3723)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Brick 1 Madeira Branco (#3724)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Curve Corner A (#3833)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Curve Corner B (#3834)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Curve Corner C (#3835)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 74, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Curve Corner D (#3836)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 79, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Curve Corner (#3837)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 84, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Curve Corner E (#3838)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 89, Y 11, Z 35
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Curve Corner F (#3839)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Curve Corner Flip A (#3840)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Curve Corner Flip B (#3841)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Curve Corner Flip C (#3842)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Curve Corner Flip D (#3843)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Curve Corner Flip (#3844)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Curve Corner Flip E (#3845)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Curve Corner Flip F (#3846)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Curve Corner Flip G (#3847)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Curve Corner Flip H (#3848)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Curve Corner Flip I (#3849)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Curve Corner Flip J (#3850)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Curve Corner Flip K (#3851)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Curve Corner G (#3852)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 74, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Curve Corner H (#3853)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 79, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Curve Corner I (#3854)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 84, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Curve Corner J (#3855)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 89, Y 11, Z 40
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Curve Corner K (#3856)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Handrail (#4196)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Pillar 1 Branco (#4363)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Pillar 2 Branco (#4364)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Pillar 3 Branco (#4365)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Pillar 4 (#4366)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Pillar 4a (#4367)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Pillar 4b (#4368)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Podium (#4422)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Podium 1 (#4423)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Pulpit Madeira Preto (#4483)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Pulpit Madeira Marrom (#4484)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Pulpit Madeira Vinyl Marrom (#4485)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Pulpit Madeira Vinyl Escuro (#4486)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 74, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Pulpit Madeira Vinyl Branco (#4487)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 79, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Pulpit Madeira Branco (#4488)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 84, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Roof A (#4529)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 89, Y 11, Z 45
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Roof B (#4530)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Roof C (#4531)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Roof Corner In A (#4532)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Roof Corner In B (#4533)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 24, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Roof Corner In C (#4534)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 29, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Roof Corner In (#4535)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 34, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Roof Corner Out A (#4536)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 39, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Roof Corner Out B (#4537)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 44, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Roof Corner Out C (#4538)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 49, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Roof Corner Out (#4539)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 54, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Roof (#4540)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 59, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Roof Top (#4541)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 64, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Roof Toq (#4542)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 69, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Roof Tor (#4543)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 74, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Roof Tos (#4544)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 79, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Sirine Rail Crossing (#4594)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 84, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Speed Bump (#4649)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 89, Y 11, Z 50
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Travelator (#4810)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 9, Y 11, Z 55
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Wine Parede (#4910)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 14, Y 11, Z 55
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
+## Wine Parede 1 (#4911)
+
+- **Status:** ✅ Válido
+- **Coordenadas:** X 19, Y 11, Z 55
+- **Atualizado:** 2026-10-25T21:09:37-03:00
+
+---
+
 ## Net (#4307)
 
 - **Status:** ❌ Inválido
