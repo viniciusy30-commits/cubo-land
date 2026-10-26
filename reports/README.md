@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Espelho Corner (#3219)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 44, Y 11, Z 45
+- **Motivo:** Textura bugada
+- **Atualizado:** 2026-10-25T21:39:37-03:00
+
+![Captura do bloco #3219](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3219-1792975177965.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3219-1792975177965.jpg)
+
+---
+
 ## Canvas Art 1o (#2933)
 
 - **Status:** ❌ Inválido
@@ -826,14 +839,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 39, Y 11, Z 45
-- **Atualizado:** 2026-10-25T21:30:34-03:00
-
----
-
-## Espelho Corner (#3219)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 44, Y 11, Z 45
 - **Atualizado:** 2026-10-25T21:30:34-03:00
 
 ---
