@@ -2,6 +2,19 @@
 
 Este relatório é atualizado automaticamente pelo CuboLand.
 
+## Porta Trem B (#3905)
+
+- **Status:** ❌ Inválido
+- **Coordenadas:** X 34, Y 11, Z 30
+- **Motivo:** Textura bugada, Incompleto / faltando partes, Direção / rotação errada, Não abre / não funciona
+- **Atualizado:** 2026-10-25T21:22:52-03:00
+
+![Captura do bloco #3905](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3905-1792974198057.jpg)
+
+[Abrir imagem em tamanho original](https://raw.githubusercontent.com/viniciusy30-commits/cubo-land/main/reports/block-images/block-3905-1792974198057.jpg)
+
+---
+
 ## Porta Trem A (#3904)
 
 - **Status:** ❌ Inválido
@@ -469,14 +482,6 @@ Este relatório é atualizado automaticamente pelo CuboLand.
 
 - **Status:** ✅ Válido
 - **Coordenadas:** X 14, Y 11, Z 20
-- **Atualizado:** 2026-10-25T21:19:03-03:00
-
----
-
-## Porta Trem B (#3905)
-
-- **Status:** ✅ Válido
-- **Coordenadas:** X 34, Y 11, Z 30
 - **Atualizado:** 2026-10-25T21:19:03-03:00
 
 ---
